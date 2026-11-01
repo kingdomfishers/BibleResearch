@@ -1,0 +1,57 @@
+{
+  "version": "1.0.0",
+  "benchmarks": [
+    {
+      "id": "motif-well-marriage",
+      "subject": "well",
+      "target": "marriage",
+      "mode": "explain",
+      "expectedCategory": "interpretive",
+      "expectedPredicate": "narrative_parallel",
+      "requiredEpisodes": [
+        { "episodeKey": "gen-24-rebekah-well", "encounterRef": "Genesis 24:11-27", "marriageRef": "Genesis 24:67", "location": "Beer-lahai-roi / Nahor" },
+        { "episodeKey": "gen-29-rachel-well", "encounterRef": "Genesis 29:2-12", "marriageRef": "Genesis 29:28", "location": "Haran" },
+        { "episodeKey": "exod-2-zipporah-well", "encounterRef": "Exodus 2:15-20", "marriageRef": "Exodus 2:21", "location": "Midian" }
+      ],
+      "requiredControls": [
+        { "controlKey": "gen-21-hagar-well", "ref": "Genesis 21:19", "reason": "Water provision in wilderness of Beersheba without betrothal/marriage motif" },
+        { "controlKey": "gen-26-isaac-wells", "ref": "Genesis 26:18-33", "reason": "Covenant and water-rights disputes in Gerar/Beersheba without betrothal motif" }
+      ],
+      "prohibitedClaims": ["lexical_synonym", "dictionary_definition_of_well"]
+    },
+    {
+      "id": "motif-lampstand-seven-spirits",
+      "subject": "menorah",
+      "target": "seven spirits of God",
+      "mode": "explain",
+      "expectedCategory": "interpretive",
+      "expectedPredicate": "possible_allusion",
+      "requiredPassages": [
+        { "ref": "Exodus 25:31-40", "role": "Tabernacle seven-branched gold lampstand (menorah, H4501) instruction" },
+        { "ref": "Zechariah 4:2-10", "role": "Vision of gold lampstand (H4501) with seven lamps (H5216) and eyes of the LORD / Spirit (H7307)" },
+        { "ref": "Revelation 4:5", "role": "Textual identification: seven torches/lamps of fire (G2985) are the seven spirits of God (G4151)" },
+        { "ref": "Revelation 5:6", "role": "Seven horns and seven eyes, which are the seven spirits of God sent out into all the earth" }
+      ],
+      "requiredControls": [
+        { "controlKey": "rev-1-20-churches", "ref": "Revelation 1:20", "reason": "Explicitly identifies the seven golden lampstands (G3087 luchnia) as the seven churches, not the seven spirits" }
+      ],
+      "lexicalDistinctions": [
+        { "termA": "H4501 / G3087 (menorah / luchnia = lampstand)", "termB": "H5216 / G2985 / G3088 (ner / lampas / luchnos = lamp or torch)" }
+      ],
+      "prohibitedClaims": ["global_identity_lampstand_equals_spirit", "shared_number_seven_proof"]
+    }
+  ],
+  "controls": [
+    {
+      "id": "control-homograph-h1254",
+      "query": "H1254",
+      "expectedSubdivisions": ["H1254a (bara I: create)", "H1254b (bara II: cut down / clear forest)", "H1254c (bara III: be fat)"]
+    },
+    {
+      "id": "control-cross-language-number",
+      "queryA": "H7225",
+      "queryB": "G7225",
+      "mustNotEquateNumericPortion": true
+    }
+  ]
+}

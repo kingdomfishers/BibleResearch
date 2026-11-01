@@ -1,0 +1,11 @@
+{
+  "passages": [
+    { "book": 1, "chapter": 1, "verse": 1 },
+    { "book": 43, "chapter": 1, "verse": 1 },
+    { "book": 19, "chapter": 3, "verse": 0 },
+    { "book": 66, "chapter": 21, "verse": 2 },
+    { "book": 1, "chapter": 29, "verse": 10 }
+  ],
+  "invalid": [null, {}, { "passages": [] }, { "passages": "1:1:1" }, { "passages": [{ "book": 0, "chapter": 1, "verse": 1 }] }, { "passages": [{ "book": "1", "chapter": 1, "verse": 1 }] }, { "passages": [{ "book": 1, "chapter": 1.5, "verse": 1 }] }, { "passages": [{ "book": 1, "chapter": 1, "verse": 1 }], "occurrences": { "mode": "sample", "limit": 101 } }, { "passages": [{ "book": 1, "chapter": 1, "verse": 1 }], "unknown": true }],
+  "missing": { "book": 1, "chapter": 150, "verse": 176 }
+}

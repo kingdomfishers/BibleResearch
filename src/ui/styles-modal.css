@@ -1,0 +1,39 @@
+.word-modal { width: min(590px, calc(100vw - 32px)); max-height: calc(100dvh - 40px); overflow: auto; padding: 35px; background: var(--panel); color: var(--text); border: 1px solid #746342; border-radius: 12px; box-shadow: 0 25px 100px #0008; }
+.word-modal::backdrop { background: #050b12b8; backdrop-filter: blur(5px); }
+.modal-close { position: absolute; right: 17px; top: 12px; border: 0; background: transparent; color: var(--muted); font-size: 28px; cursor: pointer; }
+.modal-close:hover { color: var(--gold-light); }
+.modal-original { font: 45px/1.5 'Times New Roman', serif; text-align: left; margin: 20px 0 0; }
+.modal-transliteration { font: 18px Georgia, serif; color: var(--gold-light); margin: 0 0 20px; }
+.word-meta { display: flex; flex-wrap: wrap; gap: 9px; }
+.word-meta > span, .translations > span { display: inline-block; border: 1px solid var(--border); border-radius: 4px; padding: 7px 10px; font-size: 11px; color: var(--gold-light); }
+.modal-source { font-size: 10px; line-height: 1.7; color: var(--green); margin: 19px 0 23px; }
+.word-modal section { border-top: 1px solid var(--border); padding-top: 20px; margin-top: 22px; }
+.word-modal h3 { color: var(--text); font-size: 12px; margin-bottom: 10px; }
+.word-modal section p { font-size: 13px; color: var(--muted); line-height: 1.7; margin: 0; }
+.word-modal .translation-note { font-size: 10px; margin-bottom: 12px; color: var(--muted); }
+.translations { display: flex; flex-wrap: wrap; gap: 6px; }
+
+/* Prompt 2: Occurrences */
+.occurrences-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; max-height: 180px; overflow-y: auto; padding-right: 4px; }
+.occurrence-chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 9px; background: var(--background); border: 1px solid var(--border); border-radius: 4px; color: var(--gold-light); font-size: 11px; cursor: pointer; }
+.occurrence-chip:hover { border-color: var(--gold); background: #162436; }
+.occurrence-chip .count { font-size: 9px; color: var(--muted); background: #050b12; padding: 2px 5px; border-radius: 3px; }
+.occurrence-more { font-size: 11px; color: var(--muted); padding: 5px 8px; align-self: center; }
+
+/* Prompt 3: Co-occurrences */
+.related-words { display: flex; flex-direction: column; gap: 8px; }
+.related-card { display: flex; gap: 8px; align-items: stretch; }
+.related-inspect-btn { flex: 1; display: flex; flex-direction: column; gap: 7px; text-align: left; padding: 12px; color: var(--muted); background: var(--background); border: 1px solid var(--border); border-radius: 5px; cursor: pointer; font-size: 10px; }
+.related-inspect-btn:hover { border-color: var(--gold); }
+.related-compare-btn { padding: 0 12px; border: 1px solid var(--border); border-radius: 5px; background: var(--panel); color: var(--gold-light); font-size: 11px; cursor: pointer; white-space: nowrap; }
+.related-compare-btn:hover { border-color: var(--gold); background: #162436; }
+.related-title { font-size: 17px; color: var(--gold-light); }
+
+/* Prompt 4: Relationships */
+.relationships-list { display: flex; flex-direction: column; gap: 6px; max-height: 180px; overflow-y: auto; margin-top: 8px; }
+.relationship-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--background); border: 1px solid var(--border); border-radius: 4px; color: var(--text); font-size: 11px; cursor: pointer; }
+.relationship-item:hover { border-color: var(--gold); background: #162436; }
+.relationship-item .ref { color: var(--gold-light); }
+.score-badge { font-size: 10px; color: var(--gold); background: #262112; border: 1px solid #746342; border-radius: 3px; padding: 2px 6px; }
+
+@media (max-width: 560px) { .word-modal { padding: 25px; } .related-card { flex-direction: column; } }

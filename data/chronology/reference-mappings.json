@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "source": "Theographic KJV 1769",
+  "target": "STEP English/NRSV references; TAHOT primary / TAGNT NA28 membership",
+  "stepCommit": "be4191f0082aeedddb0eff0c02c966292b2bd641",
+  "rules": [
+    "OT: standard English addresses, only in chapters whose numbered verse counts agree; Hebrew parenthetical references are not KJV references.",
+    "NT: parse each selected NA28 token's KJV square-bracket address in TAGNT. Unmarked tokens use their English/NRSV address.",
+    "A target verse spanning multiple KJV addresses retains each source address and marks partial correspondence; never treat as exact text alignment.",
+    "Psalm headings at verse 0 have no KJV numbered verse counterpart; keep unresolved until explicitly reviewed.",
+    "Missing source addresses and unverified chapter boundaries remain unresolved. No chronological inference from neighboring addresses."
+  ],
+  "dateFixtures": [
+    {"year": -1, "label": "2 BC"},
+    {"year": 0, "label": "1 BC"},
+    {"year": 1, "label": "AD 1"},
+    {"year": -4003, "label": "4004 BC"}
+  ],
+  "anchorFixtures": [
+    {"resurrectionYear": 30, "offsetYears": 4000, "adamYear": -3970},
+    {"resurrectionYear": 33, "offsetYears": 4000, "adamYear": -3967}
+  ]
+}

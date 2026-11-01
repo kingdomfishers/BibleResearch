@@ -1,0 +1,23 @@
+:root {
+  color-scheme: dark;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  color: #e9e8e2;
+  background: #10181f;
+  font-synthesis: none;
+  --background: #10181f;
+  --panel: #172129;
+  --text: #e9e8e2;
+  --muted: #98a4ac;
+  --gold: #c4a36b;
+  --gold-light: #ddc391;
+  --border: #2c3740;
+  --green: #a2c5ae;
+}
+* { box-sizing: border-box; }
+body { margin: 0; padding: 0 34px; min-width: 320px; }
+button, input, select { font: inherit; }
+button { touch-action: manipulation; }
+a, button, input, select { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 2px solid var(--gold-light); outline-offset: 4px; }
+[hidden] { display: none !important; }
+@media (max-width: 560px) { body { padding: 0 18px; } }

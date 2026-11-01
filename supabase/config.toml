@@ -1,0 +1,11 @@
+project_id = "ejoperxiwxlcbsqrkrvb"
+
+[auth]
+enable_anonymous_sign_ins = true
+
+# The Bible corpus is already public. MCP clients connect without a Supabase JWT.
+# The function always reads as anon; no administrative credentials are used.
+[functions.bible-mcp]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/bible-mcp/index.ts"

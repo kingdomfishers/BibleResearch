@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "author": "User-confirmed premise, scenario arithmetic implemented by Codex",
+  "models": [
+    {"id": "adam-resurrection-30-v1", "name": "Adam: 4,000 years before resurrection (AD 30 scenario)", "resurrectionYear": 30, "offsetYears": 4000},
+    {"id": "adam-resurrection-33-v1", "name": "Adam: 4,000 years before resurrection (AD 33 scenario)", "resurrectionYear": 33, "offsetYears": 4000}
+  ],
+  "contexts": [
+    {"book": 1, "chapter": 1, "firstVerse": 26, "lastVerse": 28, "citation": "Genesis 1:26-28", "locator": "https://www.biblegateway.com/passage/?search=Genesis%201%3A26-28&version=KJV"},
+    {"book": 1, "chapter": 2, "firstVerse": 4, "lastVerse": 25, "citation": "Genesis 2:4-25", "locator": "https://www.biblegateway.com/passage/?search=Genesis%202%3A4-25&version=KJV"}
+  ],
+  "method": "relative_anchor_scenario",
+  "rationale": "Apply the user's approximate relative Adam-creation premise to the cited creation narrative context. AD 30/33 is an explicit scenario, not a user-confirmed resurrection year. No archaeological dating or universal shift of other biblical dates is implied.",
+  "uncertainty": "Approximate premise; single displayed scenario year is arithmetic, not measured one-year historical precision. Dates outside these cited contexts remain unresolved in this model."
+}

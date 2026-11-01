@@ -1,0 +1,83 @@
+{
+  "version": 1,
+  "items": [
+    {
+      "key": "theographic-verse-method", "source": "theographic-verses", "category": "scholarly_interpretation",
+      "title": "Theographic verse-year source and convention",
+      "citation": "Theographic, Chronology and Dates: Verse years (yearNum); pinned commit 744355c7a5f38efd407bc67a5257c99aca9532bc",
+      "locator": "https://github.com/robertrouse/theographic-bible-metadata/blob/744355c7a5f38efd407bc67a5257c99aca9532bc/docs/chronology-and-dates.md#verse-years-yearnum",
+      "summary": "The imported verse placements follow Ussher through Torrey's marginal chronology. They are distinct from the dataset's Jones event timeline.",
+      "dating_method": "Attributed marginal chronology, projected through explicit reference mappings",
+      "scope": "Explains the imported source estimate; does not independently date composition or every event mentioned",
+      "uncertainty": "Approximate source year; differing chronology traditions and reference-level projection remain visible",
+      "review_status": "source_import"
+    },
+    {
+      "key": "theographic-event-method", "source": "theographic-events", "category": "scholarly_interpretation",
+      "title": "Theographic event chronology",
+      "citation": "Theographic, Chronology and Dates: Jones framework and Acts contribution by Todd Atwood",
+      "locator": "https://github.com/robertrouse/theographic-bible-metadata/blob/744355c7a5f38efd407bc67a5257c99aca9532bc/docs/chronology-and-dates.md",
+      "summary": "The event layer uses a different chronology from verse years. A source event's start and duration do not establish the setting date of every associated verse.",
+      "dating_method": "Source event chronology and dependency metadata",
+      "scope": "Event association only; retained calendar-day precision belongs to the source claim",
+      "uncertainty": "Model-dependent chronology; imported exact-looking dates are not independent historical verification",
+      "review_status": "source_import"
+    },
+    {
+      "key": "adam-relative-premise", "source": "user-premise", "category": "model_premise",
+      "title": "User's relative Adam-creation anchor",
+      "citation": "User-confirmed model premise, 2026-11-01: approximately 4,000 years before the resurrection",
+      "locator": "local:context-estimates.json",
+      "summary": "Subtract approximately 4,000 elapsed years from the selected AD 30 or AD 33 resurrection scenario. The result is a conditional model placement.",
+      "dating_method": "Explicit relative premise and astronomical-year arithmetic",
+      "scope": "Cited Adam-creation narrative context only; other dates are not recalculated",
+      "uncertainty": "Premise and resurrection-year scenario are not archaeological measurements",
+      "review_status": "model_assumption"
+    },
+    {
+      "key": "genesis-creation-text", "source": "user-premise", "category": "textual",
+      "title": "Adam-creation narrative context",
+      "citation": "Genesis 1:26-28; Genesis 2:4-25",
+      "locator": "https://www.biblegateway.com/passage/?search=Genesis%201%3A26-28%3BGenesis%202%3A4-25&version=KJV",
+      "summary": "These passages identify the creation narrative to which the model premise is applied. They do not supply an absolute BC date.",
+      "dating_method": "Explicit narrative context; absolute placement supplied separately by the model premise",
+      "scope": "Contextual association, not independent support for the 4,000-year interval",
+      "uncertainty": "No archaeological date or complete genealogical derivation is claimed",
+      "review_status": "reviewed"
+    },
+    {
+      "key": "pentecost-text", "source": "theographic-events", "category": "textual",
+      "title": "Pentecost narrative context",
+      "citation": "Acts 2:1-4",
+      "locator": "https://www.biblegateway.com/passage/?search=Acts%202%3A1-4&version=KJV",
+      "summary": "Acts locates the scene at Pentecost. An absolute AD year comes from an additional chronology model rather than these verses alone.",
+      "dating_method": "Textual festival context plus separately attributed absolute chronology",
+      "scope": "Pentecost association, not a resolution of the AD 30 versus AD 33 difference",
+      "uncertainty": "The competing source placements are retained",
+      "review_status": "reviewed"
+    },
+    {
+      "key": "sennacherib-jerusalem-prism", "source": "israel-museum-prism", "category": "archaeological",
+      "title": "Sennacherib's campaign: Jerusalem Prism",
+      "citation": "Israel Museum, IMJ 71.72.249; exhibition text by Laura A. Peri, December 30, 2025",
+      "locator": "https://www.imj.org.il/en/exhibitions/special-display-assyrian-campaign-judah-told-sennacherib-prism",
+      "summary": "The museum dates the prism to 691 BC and the campaign in Judah under Hezekiah to 701 BC, linking it to the Kings, Isaiah and Chronicles narratives.",
+      "dating_method": "Museum catalog dating of inscribed object and historical campaign; two distinct dates",
+      "scope": "Campaign context for 2 Kings 18:13 and Isaiah 36:1; does not establish the composition date or every narrative detail",
+      "uncertainty": "Year-level historical context; museum attribution verified by Codex, not an independent expert adjudication",
+      "object_year": -690, "event_year": -700, "review_status": "reviewed",
+      "provenance": {"object_id": "IMJ 71.72.249", "institution": "Israel Museum", "verified_on": "2026-11-01", "reviewer": "Codex source verification", "license": "Original short summary and catalog link; no museum image or transcription copied"}
+    },
+    {
+      "key": "sennacherib-text", "source": "israel-museum-prism", "category": "textual",
+      "title": "Sennacherib and Hezekiah in the biblical narrative",
+      "citation": "2 Kings 18:13; Isaiah 36:1",
+      "locator": "https://www.biblegateway.com/passage/?search=2%20Kings%2018%3A13%3BIsaiah%2036%3A1&version=KJV",
+      "summary": "These verses identify Sennacherib's attack in Hezekiah's reign. Correlating the campaign with the museum's chronology is an explicit historical interpretation.",
+      "dating_method": "Regnal narrative correlated with an attributed external campaign chronology",
+      "scope": "Campaign identity only; chronology disagreements remain separate",
+      "uncertainty": "Correlation and source-model differences require continued review",
+      "review_status": "reviewed"
+    }
+  ]
+}

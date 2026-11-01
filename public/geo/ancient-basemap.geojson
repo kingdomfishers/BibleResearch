@@ -1,0 +1,132 @@
+{
+  "type": "FeatureCollection",
+  "name": "AncientBiblicalWorldBasemap",
+  "metadata": {
+    "source": "Natural Earth 1:110m Physical Vectors (simplified regional coastlines, inland seas, and major rivers)",
+    "license": "Public Domain (CC0)",
+    "attribution": "Made with Natural Earth (naturalearthdata.com)"
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "feature_type": "land", "name": "Levant, Sinai, Egypt & Arabia" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[24.0, 22.0], [32.3, 31.3], [33.8, 31.0], [34.2, 31.2], [34.9, 32.8], [35.1, 33.1], [35.8, 34.4], [36.1, 35.9], [36.2, 36.8], [48.5, 30.0], [50.0, 26.0], [44.0, 12.5], [43.0, 13.0], [38.0, 20.0], [34.5, 27.8], [32.5, 29.9], [33.0, 29.0], [34.5, 27.8], [35.5, 24.0], [24.0, 22.0]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "feature_type": "land", "name": "Anatolia, Mesopotamia & Persia" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[26.0, 36.8], [26.2, 40.0], [28.0, 41.0], [32.0, 41.8], [36.0, 41.2], [41.5, 41.5], [50.0, 40.0], [52.0, 36.5], [56.0, 27.0], [48.5, 30.0], [36.2, 36.8], [35.8, 36.2], [33.0, 36.1], [30.4, 36.2], [27.4, 36.7], [26.0, 36.8]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "feature_type": "land", "name": "Greece, Macedonia & Thrace" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[19.5, 39.8], [20.5, 38.8], [21.3, 37.5], [22.5, 36.4], [23.5, 37.7], [24.0, 37.6], [23.8, 38.4], [22.9, 39.3], [22.9, 40.6], [24.5, 40.8], [26.5, 40.8], [28.0, 41.2], [26.0, 42.5], [21.0, 42.0], [19.5, 39.8]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "feature_type": "land", "name": "Italian Peninsula & Sicily" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[11.5, 44.0], [12.4, 41.8], [14.2, 40.8], [15.8, 38.0], [15.1, 36.7], [12.5, 37.8], [15.5, 38.3], [17.2, 40.4], [18.5, 40.1], [16.0, 41.9], [13.8, 43.6], [12.3, 45.4], [11.5, 44.0]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "feature_type": "land", "name": "Cyprus" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[32.3, 34.9], [33.0, 34.6], [34.0, 35.0], [34.6, 35.7], [33.2, 35.4], [32.3, 34.9]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "feature_type": "land", "name": "Crete" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[23.5, 35.2], [24.8, 35.0], [26.3, 35.2], [25.2, 35.4], [23.6, 35.5], [23.5, 35.2]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "feature_type": "water", "name": "Sea of Galilee (Kinneret)" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[35.53, 32.71], [35.62, 32.72], [35.66, 32.83], [35.61, 32.90], [35.53, 32.86], [35.53, 32.71]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "feature_type": "water", "name": "Dead Sea (Salt Sea)" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[35.38, 31.08], [35.52, 31.12], [35.58, 31.48], [35.56, 31.76], [35.43, 31.76], [35.38, 31.35], [35.38, 31.08]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "feature_type": "river", "name": "Jordan River" },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [[35.62, 33.24], [35.58, 32.90], [35.57, 32.71], [35.55, 32.40], [35.54, 32.10], [35.55, 31.76]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "feature_type": "river", "name": "Nile River & Delta" },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [[32.89, 24.09], [32.65, 25.69], [31.18, 27.18], [31.23, 30.04], [30.40, 31.40], [31.23, 30.04], [31.80, 31.50]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "feature_type": "river", "name": "Euphrates River" },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [[38.80, 37.80], [38.00, 36.80], [39.02, 35.95], [40.15, 35.33], [42.40, 34.40], [44.40, 32.50], [46.10, 31.00], [47.80, 30.50]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "feature_type": "river", "name": "Tigris River" },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [[40.20, 37.90], [43.13, 36.34], [43.60, 34.20], [44.38, 33.34], [45.80, 32.50], [47.40, 31.00], [47.80, 30.50]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "feature_type": "region_label", "name": "MEDITERRANEAN SEA (GREAT SEA)" },
+      "geometry": { "type": "Point", "coordinates": [31.5, 33.8] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "feature_type": "region_label", "name": "SINAI & WILDERNESS" },
+      "geometry": { "type": "Point", "coordinates": [33.8, 29.5] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "feature_type": "region_label", "name": "CANAAN / JUDEA & SAMARIA" },
+      "geometry": { "type": "Point", "coordinates": [35.2, 32.0] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "feature_type": "region_label", "name": "MESOPOTAMIA (ARAM-NAHARAIM)" },
+      "geometry": { "type": "Point", "coordinates": [40.5, 36.3] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "feature_type": "region_label", "name": "AEGEAN & GREECE" },
+      "geometry": { "type": "Point", "coordinates": [24.2, 38.2] }
+    }
+  ]
+}

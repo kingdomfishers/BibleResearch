@@ -1,0 +1,2151 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "BibleResearch API",
+    "description": "Database-native research API for original-language Hebrew/Aramaic Old Testament and Greek New Testament Scriptures, context-aware biblical chronology, and evidence-based biblical geography. All research prompts and context resolvers run directly in PostgreSQL via Supabase PostgREST RPC endpoints, providing ordered interlinear verse tokens, cross-corpus word occurrences, lexical co-occurrence statistics, multi-word proximity relationships, multi-model verse chronology, and 5-tier context-aware verse geography with zero client-side join overhead. Versioned reader translations provide source-inflected English and private per-occurrence overrides. get_verse_research_v1 provides one-call hydrated verse packets for deeper AI pattern research.",
+    "version": "1.3.0"
+  },
+  "servers": [
+    {
+      "url": "https://ejoperxiwxlcbsqrkrvb.supabase.co/rest/v1",
+      "description": "Supabase PostgREST production endpoint"
+    }
+  ],
+  "security": [
+    {
+      "apiKeyHeader": []
+    },
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/rpc/prompt_verse_words": {
+      "post": {
+        "operationId": "promptVerseWords",
+        "summary": "Retrieve ordered original-language tokens for a verse (Prompt 1)",
+        "description": "Prompt 1: Returns ordered original-language words/tokens for a specific Bible passage. Tokens include word position, database word ID, Hebrew/Aramaic/Greek text, transliteration, Strong's number, morphology grammar code, primary English translation gloss, and millennium index. Canonical books are numbered 1 (Genesis) to 66 (Revelation). Verse 0 represents Psalm headings.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "p_book",
+                  "p_chapter",
+                  "p_verse"
+                ],
+                "properties": {
+                  "p_book": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 66,
+                    "description": "Canonical book number (1=Genesis, 19=Psalms, 40=Matthew, 43=John, 66=Revelation)"
+                  },
+                  "p_chapter": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 150,
+                    "description": "Chapter number within the book"
+                  },
+                  "p_verse": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 176,
+                    "description": "Verse number within the chapter (0 for Psalm heading)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "List of ordered tokens in the requested verse",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/VerseWordToken"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameter values"
+          }
+        }
+      }
+    },
+    "/rpc/prompt_word_occurrences": {
+      "post": {
+        "operationId": "promptWordOccurrences",
+        "summary": "Find all verse occurrences of a word across the Bible (Prompt 2)",
+        "description": "Prompt 2: Finds all passages containing a specific lexical word across all its inflections and forms using GIN indexing. Groups inflections by Strong's number. Returns book, chapter, verse_nr, millennium, and occurrence count within that verse.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "p_word_query"
+                ],
+                "properties": {
+                  "p_word_query": {
+                    "type": "string",
+                    "description": "Word identifier: Strong's number (e.g. 'H7225' or 'G3056'), positive integer word ID (e.g. '129386'), exact original script ('בְּרֵאשִׁית'), or transliteration ('bereshit')"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "List of verses where the word occurs with occurrence counts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WordOccurrence"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameter values"
+          }
+        }
+      }
+    },
+    "/rpc/prompt_word_cooccurrences": {
+      "post": {
+        "operationId": "promptWordCooccurrences",
+        "summary": "Find top co-occurring lexical partners for a word (Prompt 3)",
+        "description": "Prompt 3: Returns the top cached co-occurring lexical partners for a word, ranked by statistical association score. Includes co-occurring word ID, Strong's number, original script, transliteration, primary English gloss, association score, co-occurrence frequency, and average token distance.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "p_word_query"
+                ],
+                "properties": {
+                  "p_word_query": {
+                    "type": "string",
+                    "description": "Word identifier: Strong's number (e.g. 'H7225' or 'G3056'), positive integer word ID, exact original script, or transliteration"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "List of top co-occurring words with association statistics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/HydratedCoOccurrence"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameter values"
+          }
+        }
+      }
+    },
+    "/rpc/prompt_word_relationships": {
+      "post": {
+        "operationId": "promptWordRelationships",
+        "summary": "Calculate cross-verse relationship density for multiple words (Prompt 4)",
+        "description": "Prompt 4: Finds all verses where two or more specified words co-occur and computes a relationship density score based on verse length and word co-presence. Requires positive integer word IDs (which can be obtained via resolve_word_id or prompt_verse_words).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "p_word_ids"
+                ],
+                "properties": {
+                  "p_word_ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer"
+                    },
+                    "minItems": 1,
+                    "description": "Array of positive integer word IDs to evaluate shared verse co-presence. Example: [129386, 79640]"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "List of verses containing all target words, ordered by relationship density score",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WordRelationship"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameter values"
+          }
+        }
+      }
+    },
+    "/rpc/resolve_word_id": {
+      "post": {
+        "operationId": "resolveWordId",
+        "summary": "Resolve a query string to a canonical database word ID",
+        "description": "Helper RPC: Resolves a Strong's number (e.g. 'H7225' or 'G3056'), transliteration, original script form, or numeric string to a single positive database integer word ID. Useful for preparing word ID arguments for prompt_word_relationships.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "p_query"
+                ],
+                "properties": {
+                  "p_query": {
+                    "type": "string",
+                    "description": "Strong's number (e.g. 'H7225'), original script, transliteration, or numeric ID"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Resolved canonical database word ID, or null if not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid query format"
+          }
+        }
+      }
+    },
+    "/rpc/get_verse_chronology_v1": {
+      "post": {
+        "operationId": "getVerseChronology",
+        "summary": "Retrieve multi-model historical and composition chronology for a verse (Prompt 5)",
+        "description": "Prompt 5: Returns a structured JSON packet containing historical event chronology, composition dating, archaeological/textual evidence, and competing chronological models (e.g., 'theographic-verse-v1', 'creation-am-v1', 'thiele-mcfall-v1', 'textual-witness-v1') for any Bible verse. Never fabricates precise dates for timeless wisdom or symbolic apocalyptic passages.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "p_book",
+                  "p_chapter",
+                  "p_verse"
+                ],
+                "properties": {
+                  "p_book": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 66,
+                    "description": "Canonical book number (1=Genesis, 11=1 Kings, 19=Psalms, 42=Luke, 66=Revelation)"
+                  },
+                  "p_chapter": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 150,
+                    "description": "Chapter number within the book"
+                  },
+                  "p_verse": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 176,
+                    "description": "Verse number within the chapter (0 for Psalm heading)"
+                  },
+                  "p_model_id": {
+                    "type": "string",
+                    "default": "theographic-verse-v1",
+                    "description": "Chronological model ID ('theographic-verse-v1', 'creation-am-v1', 'thiele-mcfall-v1', 'textual-witness-v1')"
+                  },
+                  "p_run_id": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "default": null,
+                    "description": "Optional specific chronology run UUID"
+                  },
+                  "p_evidence_cursor": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "default": null,
+                    "description": "Optional cursor for paginating chronology evidence"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Structured chronological context packet for the requested verse",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerseChronologyPacket"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameter values"
+          }
+        }
+      }
+    },
+    "/rpc/get_verse_geography": {
+      "post": {
+        "operationId": "getVerseGeography",
+        "summary": "Retrieve context-aware biblical geography and scholarly identifications for a verse (Prompt 6)",
+        "description": "Prompt 6: Resolves where the events described in a verse occurred using a deterministic 5-tier hierarchy (direct event setting, narrative passage context, Theographic event metadata, regional inference, or symbolic/unknown). Distinguishes event settings from mentioned places, travel origins, and travel destinations, and returns coordinates, polygons, confidence scores, scholarly evidence, and disputed alternative identifications.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "p_book",
+                  "p_chapter",
+                  "p_verse"
+                ],
+                "properties": {
+                  "p_book": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 66,
+                    "description": "Canonical book number (1=Genesis, 2=Exodus, 43=John, 44=Acts, 66=Revelation)"
+                  },
+                  "p_chapter": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 150,
+                    "description": "Chapter number within the book"
+                  },
+                  "p_verse": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 176,
+                    "description": "Verse number within the chapter (0 for Psalm heading)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Structured geographical context packet for the requested verse",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerseGeographyPacket"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameter values"
+          }
+        }
+      }
+    },
+    "/rpc/research_relationships_v1": {
+      "post": {
+        "operationId": "researchRelationships",
+        "summary": "Retrieve one-lookup disambiguated lexemes, narrative parallels, allusions, and controls (Prompt 7)",
+        "description": "Prompt 7: Resolves words, concepts, or Strong's numbers in one PostgreSQL call, returning disambiguated lexemes (including homograph subdivisions), reviewed literary/intertextual evidence paths, counterexample controls, and corpus co-occurrence statistics.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "p_request"
+                ],
+                "properties": {
+                  "p_request": {
+                    "type": "object",
+                    "properties": {
+                      "subject": {
+                        "type": "object",
+                        "properties": {
+                          "text": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "target": {
+                        "type": "object",
+                        "properties": {
+                          "text": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "mode": {
+                        "type": "string",
+                        "enum": [
+                          "explain",
+                          "discover"
+                        ]
+                      },
+                      "corpus": {
+                        "type": "string",
+                        "default": "primary"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Structured relationship research packet",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RelationshipResearchPacket"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rpc/get_verse_translations_v1": {
+      "post": {
+        "operationId": "getVerseTranslationsV1",
+        "summary": "Read ordered source English and private occurrence choices",
+        "security": [
+          {
+            "apiKeyHeader": []
+          }
+        ],
+        "description": "Public reads return source renderings. A user access token restores only that reader’s private choices. Alternatives preserve the exact original form and grammar; they are observed STEP renderings, not an exhaustive dictionary.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "p_book",
+                  "p_chapter",
+                  "p_verse"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "p_book": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 66
+                  },
+                  "p_chapter": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "p_verse": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/VerseTranslationToken"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid occurrence or rendering"
+          },
+          "401": {
+            "description": "Missing or expired reader session"
+          },
+          "403": {
+            "description": "Access denied by ownership or grants"
+          }
+        }
+      }
+    },
+    "/rpc/save_word_translation_v1": {
+      "post": {
+        "operationId": "saveWordTranslationV1",
+        "summary": "Save a private translation for one verse occurrence",
+        "security": [
+          {
+            "apiKeyHeader": [],
+            "bearerAuth": []
+          }
+        ],
+        "description": "Requires a Supabase Auth user access token (anonymous sign-in users are supported). The owner is derived from auth.uid(); callers cannot supply an owner ID. Invalid rendering or occurrence is rejected.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "p_book",
+                  "p_chapter",
+                  "p_verse",
+                  "p_word_position",
+                  "p_word_id",
+                  "p_english"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "p_book": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 66
+                  },
+                  "p_chapter": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "p_verse": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "p_word_position": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "p_word_id": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "p_english": {
+                    "type": "string",
+                    "maxLength": 2000
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranslationSaveResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid occurrence or rendering"
+          },
+          "401": {
+            "description": "Missing or expired reader session"
+          },
+          "403": {
+            "description": "Access denied by ownership or grants"
+          }
+        }
+      }
+    },
+    "/rpc/reset_word_translation_v1": {
+      "post": {
+        "operationId": "resetWordTranslationV1",
+        "summary": "Restore the source translation for one verse occurrence",
+        "security": [
+          {
+            "apiKeyHeader": [],
+            "bearerAuth": []
+          }
+        ],
+        "description": "Requires a Supabase Auth user access token (anonymous sign-in users are supported). The owner is derived from auth.uid(); callers cannot supply an owner ID. Invalid rendering or occurrence is rejected.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "p_book",
+                  "p_chapter",
+                  "p_verse",
+                  "p_word_position",
+                  "p_word_id"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "p_book": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 66
+                  },
+                  "p_chapter": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "p_verse": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "p_word_position": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "p_word_id": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranslationSaveResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid occurrence or rendering"
+          },
+          "401": {
+            "description": "Missing or expired reader session"
+          },
+          "403": {
+            "description": "Access denied by ownership or grants"
+          }
+        }
+      }
+    },
+    "/rpc/get_verse_research_v1": {
+      "post": {
+        "operationId": "getVerseResearch",
+        "summary": "Hydrate 1-5 verses for AI research in one JSON response",
+        "description": "Ordered tokens, public source renderings, Strong's, grammar, definitions, full occurrence references/counts, seven ranked cached connections per base Strong's, chronology, map data and available reviewed semantic evidence. Shared lexical_entries avoid duplication. Inspect coverage, component statuses and homograph ambiguity. Full occurrences are the default; samples are explicit. Errors never silently truncate an oversized packet (8 MiB cap). Private translation choices are excluded.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "p_request": {
+                    "$ref": "#/components/schemas/VerseResearchRequest"
+                  }
+                },
+                "required": [
+                  "p_request"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "p_request": {
+                  "passages": [
+                    {
+                      "book": 1,
+                      "chapter": 1,
+                      "verse": 1
+                    }
+                  ],
+                  "occurrences": {
+                    "mode": "all"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Hydrated packet or explicit validation/size error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/VerseResearchPacket"
+                    },
+                    {
+                      "$ref": "#/components/schemas/VerseResearchError"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKeyHeader": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "apikey",
+        "description": "Supabase anonymous API key for public access"
+      },
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Supabase Bearer token (anon key or user JWT)"
+      }
+    },
+    "schemas": {
+      "VerseWordToken": {
+        "type": "object",
+        "properties": {
+          "word_position": {
+            "type": "integer",
+            "description": "1-based sequential position within the verse"
+          },
+          "word_id": {
+            "type": "integer",
+            "description": "Canonical database word ID"
+          },
+          "original_word": {
+            "type": "string",
+            "description": "Hebrew, Aramaic, or Greek text with pointing/accents"
+          },
+          "transliteration": {
+            "type": "string",
+            "description": "Latin-character phonetic transliteration"
+          },
+          "strongs_nr": {
+            "type": "string",
+            "description": "Strong's number identifier (e.g. H7225, G3056)"
+          },
+          "grammar_code": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Morphological analysis code"
+          },
+          "primary_english": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Primary English translation gloss"
+          },
+          "millennium": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Historical millennium index (1-7), if available"
+          }
+        },
+        "required": [
+          "word_position",
+          "word_id",
+          "original_word",
+          "transliteration",
+          "strongs_nr"
+        ]
+      },
+      "WordOccurrence": {
+        "type": "object",
+        "properties": {
+          "book": {
+            "type": "integer",
+            "description": "Canonical book number (1-66)"
+          },
+          "chapter": {
+            "type": "integer",
+            "description": "Chapter number"
+          },
+          "verse_nr": {
+            "type": "integer",
+            "description": "Verse number (0 for Psalm heading)"
+          },
+          "millennium": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Historical millennium index (1-7)"
+          },
+          "occurrence_count": {
+            "type": "integer",
+            "description": "Number of times the word appears in this specific verse"
+          }
+        },
+        "required": [
+          "book",
+          "chapter",
+          "verse_nr",
+          "occurrence_count"
+        ]
+      },
+      "HydratedCoOccurrence": {
+        "type": "object",
+        "properties": {
+          "word_id": {
+            "type": "integer",
+            "description": "Canonical database word ID of the co-occurring word"
+          },
+          "strongs_nr": {
+            "type": "string",
+            "description": "Strong's number of the co-occurring word"
+          },
+          "original_word": {
+            "type": "string",
+            "description": "Original language script of the co-occurring word"
+          },
+          "transliteration": {
+            "type": "string",
+            "description": "Phonetic transliteration of the co-occurring word"
+          },
+          "primary_english": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "English gloss of the co-occurring word"
+          },
+          "score": {
+            "type": "number",
+            "description": "Statistical association score between the two words"
+          },
+          "frequency": {
+            "type": "integer",
+            "description": "Frequency of co-occurrence across the corpus"
+          },
+          "avg_distance": {
+            "type": "number",
+            "description": "Average word token distance in verses where they co-occur"
+          }
+        },
+        "required": [
+          "word_id",
+          "strongs_nr",
+          "original_word",
+          "transliteration",
+          "score",
+          "frequency",
+          "avg_distance"
+        ]
+      },
+      "WordRelationship": {
+        "type": "object",
+        "properties": {
+          "book": {
+            "type": "integer",
+            "description": "Canonical book number (1-66)"
+          },
+          "chapter": {
+            "type": "integer",
+            "description": "Chapter number"
+          },
+          "verse_nr": {
+            "type": "integer",
+            "description": "Verse number"
+          },
+          "millennium": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Historical millennium index (1-7)"
+          },
+          "relationship_score": {
+            "type": "number",
+            "description": "Computed lexical density relationship score (0-100)"
+          }
+        },
+        "required": [
+          "book",
+          "chapter",
+          "verse_nr",
+          "relationship_score"
+        ]
+      },
+      "VerseChronologyPacket": {
+        "type": "object",
+        "properties": {
+          "schema_version": {
+            "type": "integer"
+          },
+          "status": {
+            "type": "string"
+          },
+          "passage": {
+            "type": "object",
+            "properties": {
+              "book": {
+                "type": "integer"
+              },
+              "chapter": {
+                "type": "integer"
+              },
+              "verse": {
+                "type": "integer"
+              },
+              "is_heading": {
+                "type": "boolean"
+              }
+            }
+          },
+          "assignment_status": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "object",
+            "properties": {
+              "axis": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "earliest_year": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "latest_year": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "label": {
+                "type": "string"
+              },
+              "millennium_first": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "millennium_last": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              }
+            }
+          },
+          "assertions": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "alternatives": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "models": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        },
+        "required": [
+          "schema_version",
+          "status",
+          "passage",
+          "summary"
+        ]
+      },
+      "VerseGeographyPacket": {
+        "type": "object",
+        "properties": {
+          "schema_version": {
+            "type": "integer"
+          },
+          "status": {
+            "type": "string"
+          },
+          "passage": {
+            "type": "object",
+            "properties": {
+              "book": {
+                "type": "integer"
+              },
+              "chapter": {
+                "type": "integer"
+              },
+              "verse": {
+                "type": "integer"
+              },
+              "is_heading": {
+                "type": "boolean"
+              }
+            }
+          },
+          "resolution_status": {
+            "type": "string",
+            "enum": [
+              "direct_event_location",
+              "passage_context",
+              "event_metadata",
+              "regional_context",
+              "symbolic_non_physical",
+              "unknown"
+            ]
+          },
+          "resolution_tier": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "summary_banner": {
+            "type": "string"
+          },
+          "passage_context": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "locations": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        },
+        "required": [
+          "schema_version",
+          "status",
+          "passage",
+          "resolution_status",
+          "locations"
+        ]
+      },
+      "RelationshipResearchPacket": {
+        "type": "object",
+        "properties": {
+          "schema_version": {
+            "type": "integer"
+          },
+          "status": {
+            "type": "string"
+          },
+          "mode": {
+            "type": "string"
+          },
+          "resolution": {
+            "type": "object"
+          },
+          "evidence_paths": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "controls_and_distinctions": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "statistical_cooccurrences": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "coverage": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "schema_version",
+          "status",
+          "resolution",
+          "evidence_paths"
+        ]
+      },
+      "VerseTranslationToken": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/VerseWordToken"
+          },
+          {
+            "type": "object",
+            "required": [
+              "source_english",
+              "english_translations",
+              "selected_english",
+              "has_choice",
+              "source_ref"
+            ],
+            "properties": {
+              "source_english": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "english_translations": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "selected_english": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "has_choice": {
+                "type": "boolean"
+              },
+              "source_ref": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "TranslationSaveResult": {
+        "type": "object",
+        "required": [
+          "saved",
+          "english",
+          "source_english"
+        ],
+        "properties": {
+          "saved": {
+            "type": "boolean"
+          },
+          "english": {
+            "type": "string"
+          },
+          "source_english": {
+            "type": "string"
+          }
+        }
+      },
+      "ResearchPassage": {
+        "type": "object",
+        "properties": {
+          "book": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 66
+          },
+          "chapter": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 150
+          },
+          "verse": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 176
+          }
+        },
+        "required": [
+          "book",
+          "chapter",
+          "verse"
+        ],
+        "additionalProperties": false
+      },
+      "VerseResearchRequest": {
+        "type": "object",
+        "properties": {
+          "passages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResearchPassage"
+            },
+            "minItems": 1,
+            "maxItems": 5,
+            "uniqueItems": true
+          },
+          "occurrences": {
+            "type": "object",
+            "properties": {
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "all",
+                  "sample"
+                ],
+                "default": "all"
+              },
+              "limit": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100,
+                "default": 20
+              }
+            },
+            "required": [],
+            "additionalProperties": false,
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "mode": {
+                      "const": "sample"
+                    }
+                  },
+                  "required": [
+                    "mode"
+                  ]
+                },
+                "then": {},
+                "else": {
+                  "not": {
+                    "required": [
+                      "limit"
+                    ]
+                  }
+                }
+              }
+            ],
+            "description": "Default all includes every occurrence reference and exact counts. Explicit sample mode limits references only; totals remain exact. limit is valid only with sample."
+          },
+          "chronology_model_id": {
+            "type": "string",
+            "default": "theographic-verse-v1"
+          }
+        },
+        "required": [
+          "passages"
+        ],
+        "additionalProperties": false
+      },
+      "ResearchLexemeCandidate": {
+        "type": "object",
+        "properties": {
+          "lexeme_key": {
+            "type": "string"
+          },
+          "language": {
+            "type": "string"
+          },
+          "base_strongs": {
+            "type": "string"
+          },
+          "extended_strongs": {
+            "type": "string"
+          },
+          "disambiguated_strongs": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "unified_strongs": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "original_lemma": {
+            "type": "string"
+          },
+          "transliteration": {
+            "type": "string"
+          },
+          "pos": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "primary_gloss": {
+            "type": "string"
+          },
+          "homograph_note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source_release_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "lexeme_key",
+          "language",
+          "base_strongs",
+          "extended_strongs",
+          "disambiguated_strongs",
+          "unified_strongs",
+          "original_lemma",
+          "transliteration",
+          "pos",
+          "primary_gloss",
+          "homograph_note",
+          "source_release_id"
+        ]
+      },
+      "HydratedResearchWord": {
+        "type": "object",
+        "properties": {
+          "word_position": {
+            "type": "integer"
+          },
+          "word_id": {
+            "type": "integer"
+          },
+          "original_word": {
+            "type": "string"
+          },
+          "transliteration": {
+            "type": "string"
+          },
+          "strongs_nr": {
+            "type": "string"
+          },
+          "lexical_entry_key": {
+            "type": "string"
+          },
+          "grammar": {
+            "type": "object",
+            "properties": {
+              "raw_code": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "scheme": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "decoded_features": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              },
+              "unresolved_tags": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "raw_code",
+              "scheme",
+              "decoded_features",
+              "unresolved_tags"
+            ]
+          },
+          "translations": {
+            "type": "object",
+            "properties": {
+              "source_english": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "source_ref": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "source_name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "source_commit": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "corpus_gloss": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "available_renderings": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "source_english",
+              "source_ref",
+              "source_name",
+              "source_commit",
+              "corpus_gloss",
+              "available_renderings"
+            ]
+          },
+          "definitions": {
+            "type": "object",
+            "properties": {
+              "biblical": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "physical": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "source_release_key": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "biblical",
+              "physical",
+              "source_release_key"
+            ]
+          },
+          "lexeme_candidates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResearchLexemeCandidate"
+            }
+          }
+        },
+        "required": [
+          "word_position",
+          "word_id",
+          "original_word",
+          "transliteration",
+          "strongs_nr",
+          "lexical_entry_key",
+          "grammar",
+          "translations",
+          "definitions",
+          "lexeme_candidates"
+        ]
+      },
+      "ResearchOccurrence": {
+        "type": "object",
+        "properties": {
+          "book": {
+            "type": "integer"
+          },
+          "chapter": {
+            "type": "integer"
+          },
+          "verse": {
+            "type": "integer"
+          },
+          "occurrence_count": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "book",
+          "chapter",
+          "verse",
+          "occurrence_count"
+        ]
+      },
+      "ResearchConnectedWord": {
+        "type": "object",
+        "properties": {
+          "rank": {
+            "type": "integer"
+          },
+          "word_id": {
+            "type": "integer"
+          },
+          "strongs_nr": {
+            "type": "string"
+          },
+          "original_word": {
+            "type": "string"
+          },
+          "transliteration": {
+            "type": "string"
+          },
+          "primary_english": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "score": {
+            "type": "number"
+          },
+          "frequency": {
+            "type": "integer"
+          },
+          "avg_distance": {
+            "type": "number"
+          },
+          "english_translations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "biblical_def": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "physical_def": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source_release_key": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "rank",
+          "word_id",
+          "strongs_nr",
+          "original_word",
+          "transliteration",
+          "primary_english",
+          "score",
+          "frequency",
+          "avg_distance",
+          "english_translations",
+          "biblical_def",
+          "physical_def",
+          "source_release_key"
+        ]
+      },
+      "HydratedLexicalEntry": {
+        "type": "object",
+        "properties": {
+          "identity_scope": {
+            "const": "base_strongs"
+          },
+          "strongs_nr": {
+            "type": "string"
+          },
+          "lexeme_candidates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResearchLexemeCandidate"
+            }
+          },
+          "needs_disambiguation": {
+            "type": "boolean"
+          },
+          "sense_status": {
+            "const": "not_assigned_to_token"
+          },
+          "semantic_annotation_status": {
+            "type": "string"
+          },
+          "occurrences": {
+            "type": "object",
+            "properties": {
+              "counting_method": {
+                "type": "string"
+              },
+              "corpus_token_total": {
+                "type": "integer"
+              },
+              "distinct_passage_total": {
+                "type": "integer"
+              },
+              "returned_reference_count": {
+                "type": "integer"
+              },
+              "complete": {
+                "type": "boolean"
+              },
+              "references": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ResearchOccurrence"
+                }
+              }
+            },
+            "required": [
+              "counting_method",
+              "corpus_token_total",
+              "distinct_passage_total",
+              "returned_reference_count",
+              "complete",
+              "references"
+            ]
+          },
+          "top_connected_words": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResearchConnectedWord"
+            },
+            "maxItems": 7
+          },
+          "connection_coverage": {
+            "type": "object",
+            "properties": {
+              "requested": {
+                "type": "integer"
+              },
+              "returned": {
+                "type": "integer"
+              },
+              "status": {
+                "type": "string"
+              },
+              "method": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "requested",
+              "returned",
+              "status",
+              "method"
+            ]
+          },
+          "limitations": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "identity_scope",
+          "strongs_nr",
+          "lexeme_candidates",
+          "needs_disambiguation",
+          "sense_status",
+          "semantic_annotation_status",
+          "occurrences",
+          "top_connected_words",
+          "connection_coverage",
+          "limitations"
+        ]
+      },
+      "HydratedSemanticEvidence": {
+        "type": "object",
+        "properties": {
+          "assertion_key": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "object": {
+            "type": "string"
+          },
+          "predicate": {
+            "type": "string"
+          },
+          "epistemic_category": {
+            "type": "string",
+            "enum": [
+              "lexical",
+              "linguistic",
+              "statistical",
+              "textual",
+              "interpretive"
+            ]
+          },
+          "review_status": {
+            "type": "string"
+          },
+          "scope_reference": {
+            "type": "string"
+          },
+          "denominator_note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "summary": {
+            "type": "string"
+          },
+          "limitations_note": {
+            "type": "string"
+          },
+          "source_attribution": {
+            "type": "string"
+          },
+          "rank_order": {
+            "type": "integer"
+          },
+          "evidence_spans": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "evidence_role": {
+                  "type": "string"
+                },
+                "reference_display": {
+                  "type": "string"
+                },
+                "book": {
+                  "type": "integer"
+                },
+                "start_chapter": {
+                  "type": "integer"
+                },
+                "start_verse": {
+                  "type": "integer"
+                },
+                "end_chapter": {
+                  "type": "integer"
+                },
+                "end_verse": {
+                  "type": "integer"
+                },
+                "original_terms": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "explanation": {
+                  "type": "string"
+                },
+                "step_url": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "step_order": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "evidence_role",
+                "reference_display",
+                "book",
+                "start_chapter",
+                "start_verse",
+                "end_chapter",
+                "end_verse",
+                "original_terms",
+                "explanation",
+                "step_url",
+                "step_order"
+              ]
+            }
+          }
+        },
+        "required": [
+          "assertion_key",
+          "subject",
+          "object",
+          "predicate",
+          "epistemic_category",
+          "review_status",
+          "scope_reference",
+          "denominator_note",
+          "summary",
+          "limitations_note",
+          "source_attribution",
+          "rank_order",
+          "evidence_spans"
+        ]
+      },
+      "HydratedResearchVerse": {
+        "type": "object",
+        "properties": {
+          "verse_id": {
+            "type": "integer"
+          },
+          "passage": {
+            "type": "object",
+            "properties": {
+              "book": {
+                "type": "integer"
+              },
+              "chapter": {
+                "type": "integer"
+              },
+              "verse": {
+                "type": "integer"
+              },
+              "is_heading": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "book",
+              "chapter",
+              "verse",
+              "is_heading"
+            ]
+          },
+          "words": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HydratedResearchWord"
+            }
+          },
+          "chronology": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VerseChronologyPacket"
+              },
+              {
+                "$ref": "#/components/schemas/ResearchComponentError"
+              }
+            ]
+          },
+          "geography": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VerseGeographyPacket"
+              },
+              {
+                "$ref": "#/components/schemas/ResearchComponentError"
+              }
+            ]
+          },
+          "semantic_evidence": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HydratedSemanticEvidence"
+            }
+          },
+          "coverage": {
+            "type": "object",
+            "properties": {
+              "semantic_scope": {
+                "type": "string"
+              },
+              "grammar_decoding": {
+                "type": "string"
+              },
+              "semantic_domains": {
+                "type": "string"
+              },
+              "token_senses": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "semantic_scope",
+              "grammar_decoding",
+              "semantic_domains",
+              "token_senses"
+            ]
+          }
+        },
+        "required": [
+          "verse_id",
+          "passage",
+          "words",
+          "chronology",
+          "geography",
+          "semantic_evidence",
+          "coverage"
+        ]
+      },
+      "VerseResearchPacket": {
+        "type": "object",
+        "properties": {
+          "schema_version": {
+            "const": 1
+          },
+          "status": {
+            "const": "ok"
+          },
+          "verses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HydratedResearchVerse"
+            }
+          },
+          "lexical_entries": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/HydratedLexicalEntry"
+            }
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "release_key": {
+                  "type": "string"
+                },
+                "dataset": {
+                  "type": "string"
+                },
+                "commit_sha": {
+                  "type": "string"
+                },
+                "license": {
+                  "type": "string"
+                },
+                "attribution": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "release_key",
+                "dataset",
+                "commit_sha",
+                "license",
+                "attribution"
+              ]
+            }
+          },
+          "coverage": {
+            "type": "object",
+            "properties": {
+              "corpus": {
+                "type": "string"
+              },
+              "requested_passage_count": {
+                "type": "integer"
+              },
+              "returned_passage_count": {
+                "type": "integer"
+              },
+              "lexical_entry_count": {
+                "type": "integer"
+              },
+              "occurrence_mode": {
+                "type": "string",
+                "enum": [
+                  "all",
+                  "sample"
+                ]
+              },
+              "occurrences_complete": {
+                "type": "boolean"
+              },
+              "chronology_evidence_complete": {
+                "type": "boolean"
+              },
+              "component_statuses": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "passage": {
+                      "type": "object",
+                      "properties": {
+                        "book": {
+                          "type": "integer"
+                        },
+                        "chapter": {
+                          "type": "integer"
+                        },
+                        "verse": {
+                          "type": "integer"
+                        },
+                        "is_heading": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "book",
+                        "chapter",
+                        "verse",
+                        "is_heading"
+                      ]
+                    },
+                    "chronology": {
+                      "type": "string"
+                    },
+                    "geography": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "passage",
+                    "chronology",
+                    "geography"
+                  ]
+                }
+              },
+              "max_passages": {
+                "type": "integer"
+              },
+              "max_packet_bytes": {
+                "type": "integer"
+              },
+              "semantic_coverage": {
+                "type": "string"
+              },
+              "private_translation_choices_included": {
+                "const": false
+              }
+            },
+            "required": [
+              "corpus",
+              "requested_passage_count",
+              "returned_passage_count",
+              "lexical_entry_count",
+              "occurrence_mode",
+              "occurrences_complete",
+              "chronology_evidence_complete",
+              "component_statuses",
+              "max_passages",
+              "max_packet_bytes",
+              "semantic_coverage",
+              "private_translation_choices_included"
+            ]
+          }
+        },
+        "required": [
+          "schema_version",
+          "status",
+          "verses",
+          "lexical_entries",
+          "sources",
+          "coverage"
+        ]
+      },
+      "VerseResearchError": {
+        "type": "object",
+        "properties": {
+          "schema_version": {
+            "const": 1
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "invalid_request",
+              "passage_not_found",
+              "packet_limit_exceeded"
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "requested_passages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResearchPassage"
+            }
+          },
+          "measured_bytes": {
+            "type": "integer"
+          },
+          "max_packet_bytes": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "schema_version",
+          "status"
+        ]
+      },
+      "ResearchComponentError": {
+        "type": "object",
+        "properties": {
+          "schema_version": {
+            "const": 1
+          },
+          "status": {
+            "type": "string",
+            "not": {
+              "const": "ok"
+            }
+          }
+        },
+        "required": [
+          "schema_version",
+          "status"
+        ]
+      }
+    }
+  }
+}
