@@ -1,6 +1,8 @@
 // End-to-end protocol and read-only boundary checks. Node 22+; no API keys or dependencies.
 import assert from 'node:assert/strict';
 import { PATTERN_PROMPTS } from '../supabase/functions/bible-mcp/pattern-prompts.ts';
+import { WORKFLOW_VERSION } from '../supabase/functions/bible-mcp/research-workflow.ts';
+import { mkdir, writeFile } from 'node:fs/promises';
 const defaultUrl = 'https://ejoperxiwxlcbsqrkrvb.supabase.co/functions/v1/bible-mcp/mcp';
 const endpoint = process.env.BIBLE_MCP_URL ?? defaultUrl;
 const url = new URL(endpoint);
@@ -39,8 +41,9 @@ const status = await health.json();
 assert.equal(status.read_only, true);
 assert.equal(status.authentication, 'none');
 assert.equal(status.tools, 11);
-assert.equal(status.prompts, 16);
-pass('anonymous health endpoint (11 tools, 16 prompts)');
+assert.equal(status.prompts, 17);
+assert.equal(status.version, WORKFLOW_VERSION);
+pass('anonymous health endpoint (11 tools, 17 prompts)');
 
 for (const protocolVersion of ['2025-03-26', '2025-06-18', '2025-11-25']) {
   const init = await result('initialize', { protocolVersion, capabilities: {},
@@ -70,6 +73,15 @@ for (const t of listed.tools) {
   assert.equal(t.inputSchema.type, 'object');
 }
 pass('exact allowlist of eleven read-only tools with input schemas');
+if (process.argv.includes('--catalog-only')) {
+  const workflow = await tool('get_research_prompt', { subject: 'Explain John 1:1' });
+  assert.equal(workflow.name, 'study_bible');
+  assert.equal(workflow.workflow.version, WORKFLOW_VERSION);
+  assert.deepEqual([...workflow.workflow.expected_tools].sort(), listed.tools.map(t => t.name).sort());
+  assert.equal((await result('prompts/list')).prompts.length, 17);
+  pass('workflow discovery metadata matches every live tool and exposes the general router');
+  process.exit(0);
+}
 
 const verse = await tool('prompt_verse_words', { p_book: 1, p_chapter: 1, p_verse: 1 });
 assert.equal(verse.source, 'live');
@@ -91,6 +103,35 @@ assert.equal(hydrated.coverage.occurrences_complete, false);
 assert.ok(hydrated.lexical_entries.H7225.top_connected_words.length <= 7);
 assert.ok(hydrated.verses[1].words.some(w => w.strongs_nr === 'G3056'));
 pass('one-call hydrated JSON with shared occurrences, grammar, translations, dates and map data');
+const analysisPacket = await tool('get_verse_research', {
+  profile: 'analysis', p_request: { passages: [{ book: 43, chapter: 1, verse: 1 }] },
+});
+const fullPacket = await tool('get_verse_research', {
+  profile: 'full', p_request: { passages: [{ book: 43, chapter: 1, verse: 1 }] },
+});
+assert.equal(analysisPacket.status, 'ok'); assert.equal(fullPacket.status, 'ok');
+assert.deepEqual(analysisPacket.verses, fullPacket.verses, 'Profiles must preserve requested-verse evidence');
+assert.equal(analysisPacket.coverage.occurrences_complete, false);
+assert.equal(fullPacket.coverage.occurrences_complete, true);
+for (const [key, entry] of Object.entries(analysisPacket.lexical_entries)) {
+  const fullEntry = fullPacket.lexical_entries[key];
+  assert.ok(entry.occurrences.references.length <= 5);
+  for (const count of ['corpus_token_total', 'distinct_passage_total']) {
+    assert.equal(entry.occurrences[count], fullEntry.occurrences[count]);
+  }
+  assert.deepEqual(entry.top_connected_words, fullEntry.top_connected_words);
+  assert.deepEqual(entry.lexeme_candidates, fullEntry.lexeme_candidates);
+}
+const analysisBytes = Buffer.byteLength(JSON.stringify(analysisPacket));
+const fullBytes = Buffer.byteLength(JSON.stringify(fullPacket));
+assert.ok(analysisBytes < fullBytes);
+const measurement = { server_version: WORKFLOW_VERSION, passage: { book: 43, chapter: 1, verse: 1 },
+  analysis_bytes: analysisBytes, full_bytes: fullBytes,
+  reduction_percent: Math.round((1 - analysisBytes / fullBytes) * 1000) / 10,
+  exact_totals_and_verse_evidence_preserved: true };
+await mkdir('.artifacts/research-plugin', { recursive: true });
+await writeFile('.artifacts/research-plugin/measurements.json', JSON.stringify(measurement, null, 2) + '\n');
+pass(`analysis profile preserves evidence/totals with ${measurement.reduction_percent}% smaller structured JSON (${analysisBytes} vs ${fullBytes} bytes)`);
 
 const resolved = await tool('resolve_word_id', { p_query: 'H7225' });
 assert.equal(resolved.rows.length, 1);
@@ -143,7 +184,7 @@ pass('chronology, geography, and relationship evidence-graph tools return live p
 const prompts = (await result('prompts/list')).prompts;
 assert.deepEqual(
   prompts.map(p => p.name).sort(),
-  ['compare_words', 'study_chronology', 'study_geography', 'study_relationships', 'study_verse', 'study_word', ...Object.keys(PATTERN_PROMPTS)].sort(),
+  ['compare_words', 'study_bible', 'study_chronology', 'study_geography', 'study_relationships', 'study_verse', 'study_word', ...Object.keys(PATTERN_PROMPTS)].sort(),
 );
 for (const prompt of prompts) {
   const native = await result('prompts/get', { name: prompt.name, arguments: { subject: 'John 4:7' } });
@@ -155,7 +196,12 @@ for (const prompt of prompts) {
     }
   }
 }
-pass('sixteen native prompts match compatibility retrieval; ten pattern prompts require evidence and controls');
+const generalWorkflow = await tool('get_research_prompt', { subject: 'Investigate wells and marriage' });
+assert.equal(generalWorkflow.name, 'study_bible');
+assert.equal(generalWorkflow.workflow.version, WORKFLOW_VERSION);
+assert.deepEqual([...generalWorkflow.workflow.expected_tools].sort(), listed.tools.map(t => t.name).sort());
+assert.ok(generalWorkflow.workflow.routes.motif.starting_tools.includes('research_relationships'));
+pass('seventeen native prompts match retrieval; general workflow routing and ten pattern templates are available');
 
 const missing = await tool('prompt_word_occurrences', { p_word_query: 'H999999' });
 assert.deepEqual(missing.rows, []);

@@ -1,0 +1,14 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "bible-research",
+  "version": "1.4.0",
+  "description": "Study biblical passages and test textual patterns with original-language evidence, chronology, geography and explicit uncertainty.",
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "BibleResearch",
+        "shortDescription": "Grounded Bible study and pattern research"
+      }
+    }
+  }
+}

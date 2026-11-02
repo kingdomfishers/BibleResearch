@@ -68,7 +68,7 @@ const tools = (await rpc('tools/list')).payload.result.tools;
 assert.equal(tools.length, 11);
 assert.ok(tools.every(t => t.annotations.readOnlyHint && !t.annotations.destructiveHint));
 const prompts = (await rpc('prompts/list')).payload.result.prompts;
-assert.equal(prompts.length, 16);
+assert.equal(prompts.length, 17);
 const call = async (name, args) => (await rpc('tools/call', { name, arguments: args })).payload;
 const hydrated = (await call('get_verse_research', { p_request: { passages: [{ book: 1, chapter: 1, verse: 1 }] } })).result.structuredContent;
 assert.equal(hydrated.status, 'ok');
@@ -76,6 +76,22 @@ assert.equal(hydrated.verses.length, 1);
 assert.equal(requests.at(-1).url.searchParams.has('limit'), false);
 assert.equal(requests.at(-1).url.searchParams.has('offset'), false);
 assert.deepEqual(JSON.parse(requests.at(-1).init.body), { p_request: { passages: [{ book: 1, chapter: 1, verse: 1 }] } });
+const general = (await call('get_research_prompt', { subject: 'Explain John 1:1' })).result.structuredContent;
+assert.equal(general.name, 'study_bible');
+assert.deepEqual([...general.workflow.expected_tools].sort(), tools.map(t => t.name).sort());
+assert.deepEqual(general.workflow.profiles.analysis, { mode: 'sample', limit: 5 });
+assert.deepEqual(general.workflow.routes.geography.starting_tools, ['get_verse_geography']);
+assert.ok(general.workflow.routes.motif.starting_tools.includes('research_relationships'));
+await call('get_verse_research', { profile: 'analysis', p_request: { passages: [{ book: 43, chapter: 1, verse: 1 }] } });
+assert.deepEqual(JSON.parse(requests.at(-1).init.body).p_request.occurrences, { mode: 'sample', limit: 5 });
+for (const [profile, occurrences] of [
+  ['analysis', { mode: 'all' }], ['analysis', { mode: 'sample', limit: 2 }], ['full', { mode: 'sample', limit: 7 }],
+]) {
+  await call('get_verse_research', { profile, p_request: { passages: [{ book: 1, chapter: 1, verse: 1 }], occurrences } });
+  assert.deepEqual(JSON.parse(requests.at(-1).init.body).p_request.occurrences, occurrences, 'Explicit settings must win');
+}
+await call('get_verse_chronology_v1', { p_book: 1, p_chapter: 1, p_verse: 1, p_run_id: '123' });
+assert.equal(JSON.parse(requests.at(-1).init.body).p_run_id, '123');
 const first = (await call('prompt_verse_words', { p_book: 1, p_chapter: 1, p_verse: 1, limit: 1 })).result.structuredContent;
 assert.equal(first.rows.length, 1);
 assert.equal(first.page.next_offset, 1);
@@ -119,7 +135,7 @@ const health = await app(new Request('https://example/bible-mcp/health'));
 const healthJson = await health.json();
 assert.equal(healthJson.read_only, true);
 assert.equal(healthJson.tools, 11);
-assert.equal(healthJson.prompts, 16);
+assert.equal(healthJson.prompts, 17);
 let attempts = 0;
 const retryReader = createDatabaseReader({ url: 'https://example.supabase.co', publicKey: 'sb_publishable_test' },
   async () => ++attempts === 1 ? new Response('Transient upstream failure', { status: 500 })
@@ -132,5 +148,5 @@ const failingReader = createDatabaseReader({ url: 'https://example.supabase.co',
   async () => { attempts++; return new Response('Unavailable', { status: 503 }); });
 await assert.rejects(() => failingReader({ name: 'prompt_verse_words', args: {}, limit: 1, offset: 0 }));
 assert.equal(attempts, 2, 'Persistent failures must not loop');
-console.log('PASS: MCP initialization; eleven read-only tools; sixteen native/compatibility prompts; hydration without pagination; invalid/unknown inputs; credential isolation; secret-key rejection; CORS; health.');
+console.log('PASS: eleven read-only tools; seventeen native/compatibility prompts; general workflow; analysis/full presets and explicit overrides; decimal chronology run IDs; pagination; invalid inputs; credential isolation; CORS; health.');
 console.log('PASS: transient upstream failures retry once; persistent failures terminate after two attempts.');

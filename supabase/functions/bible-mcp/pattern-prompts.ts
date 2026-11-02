@@ -2,7 +2,10 @@
 // @feature: api
 // @tables: none
 // @candidates: none
-// @toc: types | logic:instructions | logic:patterns | logic:prompt
+// @toc: imports | types | logic:instructions | logic:patterns | logic:prompt
+
+// === @section:imports ===
+import { WORKFLOW_INSTRUCTIONS } from './research-workflow.ts';
 
 // === @section:types ===
 interface PatternTemplate { title: string; description: string; instruction: string }
@@ -10,14 +13,14 @@ interface PatternTemplate { title: string; description: string; instruction: str
 // === @section:logic:instructions ===
 const evidenceRules = [
   'First resolve explicit passage references and call get_verse_research with p_request.passages (1-5 per call).',
-  'Use occurrences.mode="all" unless the user requests a sample. Reuse lexical_entries through each word.lexical_entry_key.',
+  'For routine exploration select profile="analysis"; for all occurrences, exhaustive evidence or full JSON select profile="full". Explicit occurrence settings always win. Reuse lexical_entries through each word.lexical_entry_key.',
   'For additional candidates use word occurrences, co-occurrences, shared passages, or research_relationships; inspect candidate verses with get_verse_research before citing them.',
   'Read coverage and nested chronology/geography statuses. On packet_limit_exceeded request fewer verses; never silently substitute a sample for complete results.',
   'Base Strong\'s groups inflections and may conflate homographs. Lexeme candidates are not token-sense assignments; cached connections are statistics, not synonyms or proof.',
   'Keep missing semantic domains, unresolved grammar tags, uncertain dates, symbolic places and annotation gaps explicit. English glosses are not a continuous Bible translation.',
   'Separate observed text, linguistic/statistical evidence, reviewed annotations and interpretive hypotheses. Cite book/chapter/verse and word positions for each proposed correspondence.',
   'Seek counterexamples and competing explanations. Do not invent significance tests, numerical probabilities, dates, coordinates, lexical equivalences or numerological proof.',
-  'Return JSON with observations, candidate_patterns, evidence, counterexamples, alternative_explanations, uncertainty, coverage, and next_checks. Each candidate needs an epistemic_category and a qualitative confidence explanation.',
+  'Match the user\'s requested format. Cover observations, candidate_patterns, evidence, counterexamples, alternative_explanations, uncertainty, coverage, and next_checks as relevant; use JSON when requested. Each candidate needs an epistemic_category and a qualitative confidence explanation.',
 ].join(' ');
 const pattern = (title: string, description: string, focus: string): PatternTemplate =>
   ({ title, description, instruction: `${evidenceRules} Research focus: ${focus}` });
@@ -49,5 +52,5 @@ export type PatternName = keyof typeof PATTERN_PROMPTS;
 
 // === @section:logic:prompt ===
 export function patternPrompt(name: PatternName, subject: string): string {
-  return `${PATTERN_PROMPTS[name].instruction}\nResearch subject: ${JSON.stringify(subject)}`;
+  return `${WORKFLOW_INSTRUCTIONS}\n${PATTERN_PROMPTS[name].instruction}\nResearch subject: ${JSON.stringify(subject)}`;
 }

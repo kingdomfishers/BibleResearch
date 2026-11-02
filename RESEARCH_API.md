@@ -102,8 +102,8 @@ timeouts remain unchanged.
 
 ## 5. Deep pattern prompts
 
-Public MCP v1.3.0 exposes 11 read-only tools and 16 native prompts: the existing
-six study templates plus ten patterns. Retrieve any template with
+Public MCP v1.4.0 exposes 11 read-only tools and 17 native prompts: the existing
+six study templates, ten patterns and the general study_bible workflow. Retrieve any template with
 `get_research_prompt({name,subject})` or MCP prompts/get. UI prompt-plus-data copy
 uses the same shared pattern catalog and includes the complete fetched packet.
 
@@ -125,6 +125,49 @@ alternative_explanations, uncertainty, coverage, and next_checks as JSON. Every
 candidate needs verse/token citations, an epistemic category and a qualitative
 confidence explanation. Templates guide AI analysis; they do not claim that a
 literary pattern is already verified by a discovery algorithm.
+
+## 6. Shared skill and optimized research workflow (v1.4.0)
+
+`skills/bible-research/SKILL.md` is the canonical skill. The package builder
+generates the server-readable version and copies the same source into portable
+OpenAI/Gemini CLI packages. For substantial research, retrieve
+`get_research_prompt({subject:"..."})` once; name defaults to `study_bible`.
+The result adds workflow metadata: version, expected tool names, profiles and
+intent routes. Simple token/date/place lookups can call their data tool directly.
+The previous sixteen prompt names remain supported.
+
+The MCP hydration tool accepts an optional top-level profile:
+
+```json
+{
+  "profile": "analysis",
+  "p_request": { "passages": [{ "book": 43, "chapter": 1, "verse": 1 }] }
+}
+```
+
+Analysis supplies `occurrences:{mode:"sample",limit:5}` only when that field is
+omitted. All requested verse tokens, translations, raw grammar, definitions,
+chronology, map data and reviewed semantic evidence remain hydrated. Exact corpus
+totals and top connections remain unchanged. Coverage explicitly identifies
+incomplete occurrence references. Full is the default for existing clients;
+explicit occurrence settings always override a profile, including all references
+under analysis or a reader-chosen sample under full. No server-side joins or
+statistics move out of PostgreSQL. REST callers keep their existing request.
+
+Workflow guidance matches the reader's requested output instead of always
+forcing JSON. It distinguishes textual observations, statistical measurements,
+reviewed annotations and interpretation; asks for controls when testing a
+pattern; preserves missing semantic/grammar evidence; and does not infer
+cross-edition alignment or theological proof from lexical/numerical resemblance.
+Chronology continuation accepts returned decimal run IDs rather than UUIDs.
+
+Validation includes local profile/default/override and catalog contracts, skill
+validation, official portable manifest schemas, browser copying/export behavior,
+and 14 groups of live MCP checks. John 1:1 analysis/full comparison measured
+242,204 versus 1,274,531 structured JSON bytes (81% smaller) with evidence/totals
+parity. The 22 cases in `scripts/fixtures/research-workflow-cases.json` provide
+an activation/quality rubric for actual ChatGPT/Gemini evaluations; they do not
+represent completed provider runs.
 
 Verification: `node scripts/verify-hydrated-research.mjs`,
 `node scripts/verify-openapi.mjs --hydration-only`,

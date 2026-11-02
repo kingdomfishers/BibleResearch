@@ -1,0 +1,9 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+  "mcpServers": {
+    "bibleresearch": {
+      "type": "streamable-http",
+      "url": "https://ejoperxiwxlcbsqrkrvb.supabase.co/functions/v1/bible-mcp/mcp"
+    }
+  }
+}

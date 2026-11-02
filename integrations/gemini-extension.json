@@ -1,0 +1,11 @@
+{
+  "name": "bible-research",
+  "version": "1.4.0",
+  "description": "Evidence-based original-language Bible study and pattern research.",
+  "contextFileName": "GEMINI.md",
+  "mcpServers": {
+    "bibleresearch": {
+      "httpUrl": "https://ejoperxiwxlcbsqrkrvb.supabase.co/functions/v1/bible-mcp/mcp"
+    }
+  }
+}

@@ -1,7 +1,7 @@
 # BibleResearch MCP — deployed on Supabase
 
 The server is deployed as the `bible-mcp` Supabase Edge Function in project `ejoperxiwxlcbsqrkrvb`.
-Deployment version 5 is active (server v1.3.0, 11 read-only tools, 16 prompts). You can connect now; no local server, additional host, or API-key entry is needed.
+Deployment version 7 is active (server v1.4.0, 11 read-only tools, 17 prompts). You can connect now; no local server, additional host, or API-key entry is needed.
 
 **Server URL — paste this into both assistants:**
 
@@ -18,6 +18,70 @@ https://ejoperxiwxlcbsqrkrvb.supabase.co/functions/v1/bible-mcp/mcp
 | Health check | https://ejoperxiwxlcbsqrkrvb.supabase.co/functions/v1/bible-mcp/health |
 
 This is a personal MCP connection. Public directory publication is a separate, optional process.
+
+## Shared research skill and client packages
+
+The canonical skill is `skills/bible-research/SKILL.md`, with a focused contract
+reference and an OpenAI MCP dependency declaration. It routes simple lookups
+directly and guides larger investigations through retrieval, context, controls,
+alternative explanations and a sourced answer. User choices of edition,
+completeness, interpretation and output format take precedence.
+
+Build and validate the portable package:
+
+```powershell
+node scripts/build-research-plugin.mjs
+node scripts/verify-research-workflow.mjs
+```
+
+The package folder is `.artifacts/research-plugin/bible-research`. It contains
+portable `plugin.json`, `mcp.json`, the skill and its references, plus
+`gemini-extension.json` and short Gemini context. The distributable archive is
+`.artifacts/research-plugin/bible-research-1.4.0.zip`. Neither includes credentials,
+database files or source datasets. Published Agent Plugins schemas validate the
+portable manifests; Gemini's manifest uses its documented local-extension format.
+
+On this computer, the skill is also installed under the personal Codex skills
+directory. A new personal marketplace named `bible-research-local`, displayed as
+**BibleResearch local**, points to `~/.codex/plugins/bible-research`. Codex's
+marketplace listing verifies that source. Restart ChatGPT desktop, open its
+Plugins directory, choose that source and install BibleResearch to use the
+packaged skill there. Registration makes the package available; it does not
+claim that a host-side plugin install has already happened. This is a private
+local package, not a public directory publication.
+
+For Gemini CLI, install from the generated directory when the CLI is available:
+
+```powershell
+gemini extensions install C:\Projects\BibleResearch\.artifacts\research-plugin\bible-research
+gemini extensions list
+```
+
+Restart Gemini CLI and inspect `/skills list` and `/mcp`. Gemini CLI is not
+installed in this environment, so that client-side installation has not been run.
+Gemini web/mobile use the deployed MCP workflow without a CLI skill install.
+
+For multi-step study, call `get_research_prompt` with `subject`; omitted `name`
+selects `study_bible`. Its metadata advertises the expected tools and routes so
+assistants can recognize an incomplete client catalog. Simple lookups need no
+extra workflow call. The server still exposes the previous sixteen templates.
+
+Routine hydration can use `profile: "analysis"` outside `p_request`, selecting
+five occurrence references per word while keeping exact totals and all requested
+verse evidence. `full` remains the compatibility default. Explicit
+`p_request.occurrences` overrides either profile. The John 1:1 live comparison
+reduced structured JSON by 81% (242,204 versus 1,274,531 bytes) while preserving
+verse data, totals, ranked connections and lexical candidates. This is a measured
+case, not a universal payload or answer-quality guarantee.
+
+After refreshing existing ChatGPT/Gemini MCP connections, verify 11 tools and
+17 prompts, including `get_verse_research` and `study_bible`. A client still
+showing seven tools has not loaded the complete catalog. Restart/new-chat may
+be required after host-side schema refresh. This session's tool list cannot be
+replaced by server deployment alone.
+
+References: [OpenAI package and local marketplace setup](https://developers.openai.com/plugins/build/plugins),
+[Gemini extension installation](https://geminicli.com/docs/extensions/reference/).
 
 ## Add to ChatGPT
 
@@ -88,10 +152,11 @@ Official instructions: [Gemini CLI MCP servers](https://geminicli.com/docs/tools
 
 ## Research prompts you can use immediately
 
-All sixteen templates accept one required string argument named `subject`.
+All seventeen templates accept one required string argument named `subject`.
 
 | Template | Example subject | Workflow |
 | --- | --- | --- |
+| `study_bible` | `Investigate wells and marriage` | General research router, proportionate retrieval and evidence checks |
 | `study_verse` | `Genesis 1:1` | Original tokens, morphology, glosses and significant word definitions |
 | `study_word` | `H7225` | Definition, occurrences, associated words and representative passages |
 | `compare_words` | `H7225, H1254` | Resolve real word IDs, find shared passages and explain density scores |
@@ -134,11 +199,11 @@ Templates return instructions; the assistant then performs the actual research t
 | `prompt_word_relationships` | `p_word_ids` (2–10 positive database IDs) |
 | `resolve_word_id` | `p_query` |
 | `get_word_details` | `word_id` |
-| `get_research_prompt` | `name`, `subject` |
+| `get_research_prompt` | `subject` (optional `name`, default `study_bible`) |
 | `get_verse_chronology_v1` | `p_book`, `p_chapter`, `p_verse` |
 | `get_verse_geography` | `p_book`, `p_chapter`, `p_verse` |
 | `research_relationships` | `subject` (optional `target`, `mode`) |
-| `get_verse_research` | `p_request` containing 1-5 `passages` |
+| `get_verse_research` | `p_request` containing 1-5 `passages`; optional `profile` (`full` default or `analysis`) |
 
 The four research tools additionally accept `limit` (1–100, default 25) and `offset` (default 0).
 Legacy database results have `source: "live"`, `rows`, and `page` metadata. Continue with `page.next_offset`
@@ -167,10 +232,15 @@ lexeme candidates and nested component statuses. An oversized packet returns
 
 ## Verification and maintenance
 
-The automated live suite checks all eleven tools, all sixteen native and compatibility prompts, three legacy MCP
+The automated live suite checks all eleven tools, all seventeen native and compatibility prompts, three legacy MCP
 initialization versions, Hebrew/Greek token ordering, pagination, missing results, invalid arguments,
 unknown operations, caller credential isolation, CORS, malformed JSON and request size limits.
 The H7225 corpus check verifies 49 passages and 51 tokens across three pages, without duplicate references.
+It also verifies analysis/full parity and records live size measurements in
+`.artifacts/research-plugin/measurements.json`. `--catalog-only` checks discovery
+without repeating all data reads. Workflow fixtures contain 22 realistic requests
+and rubrics for ChatGPT/Gemini evaluation. These fixtures and contract checks do
+not claim that either provider's model was run against all scenarios.
 
 Run it without credentials or extra packages:
 
@@ -204,7 +274,10 @@ npx supabase functions deploy bible-mcp --project-ref ejoperxiwxlcbsqrkrvb --no-
 This command requires an authenticated CLI or a scoped `SUPABASE_ACCESS_TOKEN` with `edge_functions_write`.
 The current deployment is complete; you do not need to run it to connect your assistants.
 When deploying through the Supabase MCP tool, explicitly set `import_map_path` to `deno.json` along with the
-`index.ts`, `catalog.ts`, and `deno.json` files, to avoid retaining an import-map path from an older deployment.
+`index.ts`, `catalog.ts`, `pattern-prompts.ts`, `research-workflow.ts`,
+`workflow-contract.ts`, and `deno.json` files, to avoid retaining an import-map
+path or omitting workflow dependencies. Run the package builder first because
+it generates research-workflow.ts from the canonical skill.
 
 After changing tool descriptions or schemas, refresh the ChatGPT plugin connection and start a new conversation.
 In Gemini Developer Mode use **Sync schema**, or refresh/reconnect the custom app. Restart Gemini CLI to rediscover tools.
@@ -212,4 +285,6 @@ In Gemini Developer Mode use **Sync schema**, or refresh/reconnect the custom ap
 Supabase hosting reference: [MCP servers on Edge Functions](https://supabase.com/docs/guides/functions/examples/mcp-server-mcp-lite).
 This implementation uses the official MCP SDK; the hosting guide's mcp-lite framework is an alternative.
 
-No OpenAPI import is needed for this MCP connection. `supabase/openapi.json` remains an unrelated placeholder for the older Actions workflow.
+No OpenAPI import is needed for this MCP connection. `supabase/openapi.json`
+documents the separately verified REST research and translation contracts. The
+MCP-only profile preset does not change the database/REST request signatures.

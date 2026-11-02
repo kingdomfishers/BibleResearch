@@ -7,6 +7,9 @@
 // === @section:imports ===
 import { createMcpHandler } from '@modelcontextprotocol/server';
 import { createResearchServer, type DatabasePage, type DatabaseQuery, type DatabaseReader } from './catalog.ts';
+import { PROMPTS } from './catalog.ts';
+import { WORKFLOW_VERSION } from './research-workflow.ts';
+import { RESEARCH_TOOL_NAMES } from './workflow-contract.ts';
 
 // === @section:types ===
 export interface DatabaseConfig { url: string; publicKey: string }
@@ -105,8 +108,9 @@ export function createApp(config: DatabaseConfig, fetcher: typeof fetch = fetch)
     const path = new URL(request.url).pathname.replace(/\/+$/, '') || '/';
     if (request.method === 'OPTIONS') return withCors(new Response(null, { status: 204 }));
     if (request.method === 'GET' && path.endsWith('/health')) {
-      return withCors(Response.json({ name: 'BibleResearch', version: '1.3.0', status: 'ok',
-        transport: 'streamable-http', authentication: 'none', read_only: true, tools: 11, prompts: 16 }));
+      return withCors(Response.json({ name: 'BibleResearch', version: WORKFLOW_VERSION, status: 'ok',
+        transport: 'streamable-http', authentication: 'none', read_only: true,
+        tools: RESEARCH_TOOL_NAMES.length, prompts: Object.keys(PROMPTS).length }));
     }
     if (!paths.has(path)) return withCors(Response.json({ error: 'Not found' }, { status: 404 }));
     try { return withCors(await mcp.fetch(request)); }
