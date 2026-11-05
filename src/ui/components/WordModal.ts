@@ -12,7 +12,7 @@ import { formatVerseRef } from '../utils';
 // === @section:ui:details ===
 function renderDetails(container: HTMLElement, word: WordRecord, sample: boolean) {
   container.innerHTML = `<p class="eyebrow">WORD INSPECTOR</p><h2 id="word-modal-title" class="modal-original"></h2>
-    <p class="modal-transliteration"></p><div class="word-meta"><span class="strongs"></span><span class="grammar"></span></div>
+    <p class="modal-transliteration"></p><div class="word-meta"><span class="strongs"></span><span class="grammar"></span><span class="gematria"></span></div>
     <p class="modal-source"></p><section><h3>Biblical definition</h3><p class="biblical-definition"></p></section>
     <section><h3>Physical definition</h3><p class="physical-definition"></p></section>
     <section><h3>English translations</h3><p class="translation-note">Ordered by frequency when available. Counts are not supplied.</p><div class="translations"></div></section>`;
@@ -24,6 +24,12 @@ function renderDetails(container: HTMLElement, word: WordRecord, sample: boolean
   set('.modal-transliteration', word.transliteration);
   set('.strongs', `Strong’s ${word.strongs_nr}`);
   set('.grammar', word.grammar_code ?? 'Grammar not available');
+  const gematriaEl = container.querySelector<HTMLElement>('.gematria')!;
+  if (word.gematria != null) {
+    gematriaEl.textContent = `Gematria ${word.gematria}`;
+  } else {
+    gematriaEl.hidden = true;
+  }
   set('.modal-source', sample ? 'Built-in sample · Definitions are concise study notes; relationship scores are illustrative.' : 'Live database word record');
   set('.biblical-definition', word.biblical_def || 'Not yet available.');
   set('.physical-definition', word.physical_def || 'Not yet available.');

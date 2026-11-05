@@ -33,6 +33,7 @@ try {
   await page.locator('.word-inspect').first().click();
   await page.locator('.strongs').waitFor();
   assert.match(await page.locator('dialog').innerText(), /H7225/);
+  assert.match(await page.locator('dialog').innerText(), /Gematria 913/);
   assert.match(await page.locator('dialog').innerText(), /Frequency 1/);
   await page.screenshot({ path: `${output}/word-inspector.png`, fullPage: true });
   await page.locator('.related-words button').first().click();
@@ -49,6 +50,7 @@ try {
   await page.locator('.word-inspect').nth(4).click();
   await page.locator('.strongs').waitFor();
   assert.match(await page.locator('dialog').innerText(), /G3056/);
+  assert.match(await page.locator('dialog').innerText(), /Gematria 373/);
   await page.getByRole('button', { name: 'Close word inspector' }).click();
   await page.screenshot({ path: `${output}/john-desktop.png`, fullPage: true });
   await page.goBack();

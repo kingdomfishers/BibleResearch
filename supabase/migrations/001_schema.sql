@@ -9,11 +9,13 @@ create table public.words (
   co_occurrences jsonb default '[]'::jsonb,
   biblical_def text,
   physical_def text,
-  english_translations text[] default '{}'
+  english_translations text[] default '{}',
+  gematria integer
 );
 create index idx_words_strongs on public.words(strongs_nr);
 create index idx_words_translit on public.words(transliteration);
 create index idx_words_original on public.words(original_word);
+create index idx_words_gematria on public.words(gematria);
 
 create table public.verses (
   id serial primary key,

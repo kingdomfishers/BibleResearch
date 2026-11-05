@@ -1,8 +1,8 @@
 // @file: src/api/types.ts
 // @feature: api
-// @tables: words | verses | verse_translation_sources | word_translation_choices | chronology_models | chronology_runs | chronology_assertions | chronology_evidence | places | place_locations | verse_geography | passage_geography | geography_sources | lexemes | concepts | assertions | assertion_evidence
+// @tables: words | verses | verse_translation_sources | word_translation_choices | chronology_models | chronology_runs | chronology_assertions | chronology_evidence | places | place_locations | verse_geography | passage_geography | geography_sources | lexemes | concepts | assertions | assertion_evidence | books
 // @candidates: none
-// @toc: types | types:chronology-models | types:chronology-packet | types:geography-packet | types:research-packet | types:hydrated-words | types:hydrated-packet | types:reader
+// @toc: types | types:chronology-models | types:chronology-packet | types:geography-packet | types:research-packet | types:hydrated-words | types:hydrated-packet | types:reader | types:books
 
 // === @section:types ===
 export interface ActivePassage { book: number; chapter: number; verse: number }
@@ -17,6 +17,7 @@ export interface WordRecord {
   biblical_def: string | null;
   physical_def: string | null;
   english_translations: string[] | null;
+  gematria: number | null;
 }
 export interface VerseWordToken {
   word_position: number;
@@ -320,4 +321,32 @@ export interface ReaderTimeline {
 export interface ReaderSearchResult {
   id: number; strongs_nr: string; original_word: string;
   transliteration: string; biblical_def: string | null;
+}
+
+// === @section:types:books ===
+export interface BibleBook {
+  id: number;
+  name: string;
+  testament: 'OT' | 'NT';
+  original_language: 'hbo' | 'arc' | 'grc' | 'hbo/arc';
+  total_chapters: number;
+  usfm: string;
+  theographic_code: string;
+  division:
+    | 'Law'
+    | 'Historical'
+    | 'Poetical'
+    | 'Major Prophets'
+    | 'Minor Prophets'
+    | 'Gospels'
+    | 'History'
+    | 'Pauline Epistles'
+    | 'General Epistles'
+    | 'Apocalyptic';
+}
+
+export interface BibleBooksResponse {
+  schema_version: 1;
+  status: 'ok';
+  books: BibleBook[];
 }

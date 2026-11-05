@@ -1,6 +1,6 @@
 // @file: src/api/rpc.ts
 // @feature: api
-// @tables: words | verses | verse_translation_sources | word_translation_choices | chronology_models | chronology_runs | chronology_assertions | chronology_evidence | places | place_locations | verse_geography | passage_geography | geography_sources | lexemes | concepts | assertions | assertion_evidence
+// @tables: words | verses | verse_translation_sources | word_translation_choices | chronology_models | chronology_runs | chronology_assertions | chronology_evidence | places | place_locations | verse_geography | passage_geography | geography_sources | lexemes | concepts | assertions | assertion_evidence | books
 // @candidates: none
 // @toc: imports | logic:sample-words | logic:sample-verses | logic:request | logic:chronology | logic:geography | logic:translations | logic:hydrated-research | logic:reader | logic:gateway
 
@@ -8,34 +8,35 @@
 import { ensureReaderSession, restoreReaderSession, supabase } from './supabase';
 import type { ActivePassage, ChronologyResponse, DataResult, HydratedCoOccurrence,
   RelationshipResearchPacket, TranslationSaveResult, VerseGeographyResponse, VerseTranslationToken,
-  VerseWordToken, WordOccurrence, WordRecord, WordRelationship, VerseResearchRequest, VerseResearchResponse } from './types';
+  VerseWordToken, WordOccurrence, WordRecord, WordRelationship, VerseResearchRequest, VerseResearchResponse,
+  BibleBook, BibleBooksResponse } from './types';
 import type { ReaderPassage, ReaderOverview, ReaderWord, ReaderTimeline, ReaderSearchResult } from './types';
 
 // === @section:logic:sample-words ===
 // Negative IDs isolate fixtures from the database's positive word IDs.
-const entries: [number, string, string, string, string, string, string][] = [
-  [-1, 'בְּרֵאשִׁית', 'bə·rê·šîṯ', 'H7225', 'HR/Ncfsa', 'in beginning', 'The beginning or first part; here with the prefix “in”.'],
-  [-2, 'בָּרָא', 'bā·rā', 'H1254', 'HVqp3ms', 'he created', 'To create; here a completed action with God as subject.'],
-  [-3, 'אֱלֹהִים', '’ĕ·lō·hîm', 'H430', 'HNcmpa', 'God', 'God; a plural noun form used here with a singular verb.'],
-  [-4, 'אֵת', '’êṯ', 'H853', 'HTo', '[object marker]', 'Marks the definite direct object; usually untranslated.'],
-  [-5, 'הַשָּׁמַיִם', 'haš·šā·ma·yim', 'H8064', 'HTd/Ncmpa', 'the heavens', 'The heavens or sky, with the definite article.'],
-  [-6, 'וְאֵת', 'wə·’êṯ', 'H853', 'HC/To', 'and [object marker]', 'The conjunction “and” attached to the direct-object marker.'],
-  [-7, 'הָאָרֶץ', 'hā·’ā·reṣ', 'H776', 'HTd/Ncbsa', 'the earth', 'The earth or land, with the definite article.'],
-  [-8, 'Ἐν', 'en', 'G1722', 'PREP', 'in', 'In, within, or among; here introducing a time expression.'],
-  [-9, 'ἀρχῇ', 'archē', 'G746', 'N-DSF', 'beginning', 'Beginning or origin; here in the dative singular.'],
-  [-10, 'ἦν', 'ēn', 'G1510', 'V-IAI-3S', 'was', 'To be or exist; imperfect active indicative, third person singular.'],
-  [-11, 'ὁ', 'ho', 'G3588', 'T-NSM', 'the', 'The definite article; nominative masculine singular.'],
-  [-12, 'λόγος', 'logos', 'G3056', 'N-NSM', 'Word', 'Word, speech, or account; here the Word in John’s prologue.'],
-  [-13, 'καὶ', 'kai', 'G2532', 'CONJ', 'and', 'And, also, or even; connects the clauses here.'],
-  [-14, 'πρὸς', 'pros', 'G4314', 'PREP', 'with', 'Toward or with; here with the accusative, expressing relationship.'],
-  [-15, 'τὸν', 'ton', 'G3588', 'T-ASM', 'the', 'The definite article; accusative masculine singular.'],
-  [-16, 'θεόν', 'theon', 'G2316', 'N-ASM', 'God', 'God; accusative masculine singular after the preposition.'],
-  [-17, 'θεὸς', 'theos', 'G2316', 'N-NSM', 'God', 'God; nominative masculine singular in the final clause.'],
+const entries: [number, string, string, string, string, string, string, number][] = [
+  [-1, 'בְּרֵאשִׁית', 'bə·rê·šîṯ', 'H7225', 'HR/Ncfsa', 'in beginning', 'The beginning or first part; here with the prefix “in”.', 913],
+  [-2, 'בָּרָא', 'bā·rā', 'H1254', 'HVqp3ms', 'he created', 'To create; here a completed action with God as subject.', 203],
+  [-3, 'אֱלֹהִים', '’ĕ·lō·hîm', 'H430', 'HNcmpa', 'God', 'God; a plural noun form used here with a singular verb.', 86],
+  [-4, 'אֵת', '’êṯ', 'H853', 'HTo', '[object marker]', 'Marks the definite direct object; usually untranslated.', 401],
+  [-5, 'הַשָּׁמַיִם', 'haš·šā·ma·yim', 'H8064', 'HTd/Ncmpa', 'the heavens', 'The heavens or sky, with the definite article.', 395],
+  [-6, 'וְאֵת', 'wə·’êṯ', 'H853', 'HC/To', 'and [object marker]', 'The conjunction “and” attached to the direct-object marker.', 407],
+  [-7, 'הָאָרֶץ', 'hā·’ā·reṣ', 'H776', 'HTd/Ncbsa', 'the earth', 'The earth or land, with the definite article.', 296],
+  [-8, 'Ἐν', 'en', 'G1722', 'PREP', 'in', 'In, within, or among; here introducing a time expression.', 55],
+  [-9, 'ἀρχῇ', 'archē', 'G746', 'N-DSF', 'beginning', 'Beginning or origin; here in the dative singular.', 709],
+  [-10, 'ἦν', 'ēn', 'G1510', 'V-IAI-3S', 'was', 'To be or exist; imperfect active indicative, third person singular.', 58],
+  [-11, 'ὁ', 'ho', 'G3588', 'T-NSM', 'the', 'The definite article; nominative masculine singular.', 70],
+  [-12, 'λόγος', 'logos', 'G3056', 'N-NSM', 'Word', 'Word, speech, or account; here the Word in John’s prologue.', 373],
+  [-13, 'καὶ', 'kai', 'G2532', 'CONJ', 'and', 'And, also, or even; connects the clauses here.', 31],
+  [-14, 'πρὸς', 'pros', 'G4314', 'PREP', 'with', 'Toward or with; here with the accusative, expressing relationship.', 450],
+  [-15, 'τὸν', 'ton', 'G3588', 'T-ASM', 'the', 'The definite article; accusative masculine singular.', 420],
+  [-16, 'θεόν', 'theon', 'G2316', 'N-ASM', 'God', 'God; accusative masculine singular after the preposition.', 134],
+  [-17, 'θεὸς', 'theos', 'G2316', 'N-NSM', 'God', 'God; nominative masculine singular in the final clause.', 284],
 ];
 const sampleWords = new Map<number, WordRecord>(entries.map(([id, original_word,
-  transliteration, strongs_nr, grammar_code, english, biblical_def]) => [id, {
+  transliteration, strongs_nr, grammar_code, english, biblical_def, gematria]) => [id, {
   id, original_word, transliteration, strongs_nr, grammar_code, biblical_def,
-  physical_def: null, english_translations: [english], co_occurrences: [],
+  physical_def: null, english_translations: [english], co_occurrences: [], gematria,
 }]));
 
 // === @section:logic:sample-verses ===
@@ -239,9 +240,25 @@ function readerPassage(p: ActivePassage): Promise<DataResult<ReaderPassage | nul
   passagePending.set(key, promise); return promise;
 }
 const passageArgs = (p: ActivePassage) => ({ p_book: p.book, p_chapter: p.chapter, p_verse: p.verse });
+let cachedBooks: BibleBook[] | null = null;
+async function fetchBibleBooks(): Promise<DataResult<BibleBook[]>> {
+  if (cachedBooks) return result(cachedBooks, 'live');
+  if (!supabase) return result([], 'unavailable', 'Database is not configured.');
+  try {
+    const { data, error } = await supabase.rpc('get_bible_books_v1').abortSignal(AbortSignal.timeout(10000));
+    if (error || !data || (data as BibleBooksResponse).status !== 'ok') {
+      return result([], 'unavailable', error?.message ?? 'Could not load canonical books.');
+    }
+    cachedBooks = (data as BibleBooksResponse).books;
+    return result(cachedBooks, 'live');
+  } catch (err) {
+    return result([], 'unavailable', err instanceof Error ? err.message : 'Failed to fetch canonical books.');
+  }
+}
 
 // === @section:logic:gateway ===
 export const BibleRPC = {
+  getBibleBooks: fetchBibleBooks,
   getReaderPassage: readerPassage,
   preloadReaderPassages: readerPassages,
   getReaderOverview: (p: ActivePassage) => readerRPC<ReaderOverview>('get_reader_overview_v1', passageArgs(p)),

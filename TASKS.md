@@ -11,6 +11,15 @@ Goal: database-native original-language Scripture reader, multi-model chronology
 - TypeScript edits require `npm.cmd run check:types` and `npm.cmd run check:size`.
 - Joins, word order, co-occurrence, context resolution, and traversal/scoring stay in PostgreSQL.
 
+## Active Feature: Deterministic Relationship Discovery Engine (Foundations)
+
+Approved by user 2026-11-05. Deliverables & Plan: [AUDIT_REPORT.md](.artifacts/AUDIT_REPORT.md).
+Canonical data layer serving Web and MCP without AI-generated relationships.
+
+- [x] **FOUNDATION-01 Apply Safe Foundational Indexes & GIN Optimization** | Files: supabase/migrations/20261105175000_foundational_indexes_and_perf.sql | Verify: [AUTO-TEST] Missing foreign key indexes added, duplicate index dropped, GIN occurrence optimization verified via verify-hydrated-research.mjs and verify-bible-mcp.mjs.
+- [x] **FOUNDATION-02 Create Canonical Books Metadata Table & RPC** | Files: supabase/migrations/20261105180000_canonical_books.sql, src/api/types.ts, src/api/rpc.ts | Verify: [AUTO-TEST] Table public.books created with 66 canonical books (testaments, original languages, chapter counts, standard/STEP/Theographic abbreviations), RLS enabled, get_bible_books_v1 RPC created and verified.
+- [-] **FOUNDATION-03 Ingest Corpus-Wide STEP Lexemes & Disambiguation** | Files: scripts/import-lexemes.mjs, supabase/migrations/20261105183000_corpus_lexemes_schema.sql | Verify: [AUTO-TEST] Pinned STEP TBESH/TBESG lexicon ingested into public.lexemes for all 13,913 Strong's numbers with homograph subdivisions preserved; get_verse_research_v1 populates lexeme_candidates for any biblical passage.
+
 ## Proposed feature: complete UX refresh
 
 Requested 2026-11-05. Design: [UX_STRATEGY.md](UX_STRATEGY.md).
@@ -172,9 +181,9 @@ visual user sign-off; no checkpoint committed.
 
 Design: [ARCHITECTURE.md](ARCHITECTURE.md). Standard Hebrew Gematria and Greek Isopsephy computed in PostgreSQL and displayed in WordModal.
 
-- [ ] **G1 Database Gematria calculation and schema migration** | Files: supabase/migrations/20261102000000_word_gematria.sql, scripts/verify-gematria-db.sql | Verify: [AUTO-TEST] Live caller-RLS database function `public.calculate_gematria(text)` and `public.words.gematria` column return exact values for Hebrew (Genesis 1:1) and Greek (John 1:1) words.
-- [ ] **G2 Canonical types, sample fixtures, and gateway** | Files: src/api/types.ts, src/api/rpc.ts | Verify: [AUTO-TEST] `WordRecord` interface includes `gematria: number | null`, `sampleWords` fixture is populated, and `BibleRPC.getWordDetails` provides gematria under type and size checks.
-- [ ] **G3 Word Inspector modal UI integration** | Files: src/ui/components/WordModal.ts, src/ui/styles-modal.css | Verify: [USER-CHECK] Word modal renders discrete Gematria badge in `.word-meta` with verified values upon word inspection.
+- [x] **G1 Database Gematria calculation and schema migration** | Files: supabase/migrations/20261102000000_word_gematria.sql, scripts/verify-gematria-db.sql | Verify: [AUTO-TEST] Live caller-RLS database function `public.calculate_gematria(text)` and `public.words.gematria` column return exact values for Hebrew (Genesis 1:1) and Greek (John 1:1) words.
+- [x] **G2 Canonical types, sample fixtures, and gateway** | Files: src/api/types.ts, src/api/rpc.ts | Verify: [AUTO-TEST] `WordRecord` interface includes `gematria: number | null`, `sampleWords` fixture is populated, and `BibleRPC.getWordDetails` provides gematria under type and size checks.
+- [-] **G3 Word Inspector modal UI integration** | Files: src/ui/components/WordModal.ts, src/ui/styles-modal.css | Verify: [USER-CHECK] Word modal renders discrete Gematria badge in `.word-meta` with verified values upon word inspection.
 
 ## Shipped feature: hydrated verse AI research and deeper pattern prompts
 

@@ -6,6 +6,7 @@
 .modal-transliteration { font: 18px Georgia, serif; color: var(--gold-light); margin: 0 0 20px; }
 .word-meta { display: flex; flex-wrap: wrap; gap: 9px; }
 .word-meta > span, .translations > span { display: inline-block; border: 1px solid var(--border); border-radius: 4px; padding: 7px 10px; font-size: 11px; color: var(--gold-light); }
+.word-meta > span[hidden] { display: none; }
 .modal-source { font-size: 10px; line-height: 1.7; color: var(--green); margin: 19px 0 23px; }
 .word-modal section { border-top: 1px solid var(--border); padding-top: 20px; margin-top: 22px; }
 .word-modal h3 { color: var(--text); font-size: 12px; margin-bottom: 10px; }
