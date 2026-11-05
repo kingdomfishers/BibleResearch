@@ -7,15 +7,17 @@ const env = Object.fromEntries((await fs.readFile('.env', 'utf8')).split(/\r?\n/
   }));
 
 const url = env.VITE_SUPABASE_URL;
-const key = env.VITE_SUPABASE_ANON_KEY;
+const readKey = env.VITE_SUPABASE_ANON_KEY;
+const writeKey = process.env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_SERVICE_ROLE_KEY;
+const dryRun = process.argv.includes('--dry-run') || !writeKey;
 
-console.log('Fetching existing lexemes to preserve existing keys & notes...');
-const existingResp = await fetch(`${url}/rest/v1/lexemes?select=*&limit=100`, {
-  headers: { apikey: key },
+console.log('Fetching existing curated lexemes to preserve existing keys & notes...');
+const existingResp = await fetch(`${url}/rest/v1/lexemes?select=*&id=lte.15&order=id.asc`, {
+  headers: { apikey: readKey },
 });
 assert.equal(existingResp.status, 200, 'Could not fetch existing lexemes');
 const existingRows = await existingResp.json();
-console.log(`Found ${existingRows.length} existing lexemes in public.lexemes sample.`);
+console.log(`Found ${existingRows.length} curated lexemes in public.lexemes.`);
 
 const existingByExt = new Map(existingRows.map(r => [r.extended_strongs, r]));
 const existingByKey = new Map(existingRows.map(r => [r.lexeme_key, r]));
@@ -40,7 +42,9 @@ function parseFile(fn, isGreek) {
     let translit = parts[4]?.trim() || '';
     const morph = parts[5]?.trim() || '';
     let gloss = parts[6]?.trim() || '';
-    const meaning = parts[7]?.trim() || null;
+    // Licensing rule (DATA_SOURCES.md): TBESH col 7 ("Meaning") derives from Online Bible
+    // and MUST NOT be imported. TBESG col 7 (Abbott-Smith / Middle Liddell / STEP) is CC BY 4.0.
+    const meaning = isGreek ? (parts[7]?.trim() || null) : null;
 
     if (!lemma) {
       const m = meaning?.match(/<b>([^<]+)<\/b>/);
@@ -59,11 +63,18 @@ function parseFile(fn, isGreek) {
       language = 'arc';
     }
 
-    // Preserve existing row's lexeme_key, primary_gloss, and homograph_note if matched
+    // Preserve existing curated row's lexeme_key, primary_gloss, and homograph_note if matched
     const existing = existingByExt.get(dstrongCode) || existingByKey.get(dstrongCode);
     const lexeme_key = existing ? existing.lexeme_key : dstrongCode;
     const primary_gloss = existing ? existing.primary_gloss : gloss;
-    const homograph_note = existing?.homograph_note ?? (meaning ? meaning.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 500) : null);
+    const stepRelMarker = !isGreek && dstrongRaw && /=\s+[A-Za-z]/.test(dstrongRaw)
+      ? `STEP dStrong relation: ${dstrongRaw.replace(/^[HG0-9A-Za-z]+\s*/, '')}${ustrong ? ` ${ustrong}` : ''}`
+      : null;
+    const homograph_note = existing?.homograph_note ?? (
+      isGreek && meaning
+        ? meaning.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 500)
+        : stepRelMarker
+    );
 
     results.push({
       lexeme_key,
@@ -101,6 +112,10 @@ for (const item of [...hebrewLexemes, ...greekLexemes]) {
   }
 }
 console.log(`Total unique lexemes to ingest: ${allLexemes.length}`);
+if (dryRun) {
+  console.log('Dry-run complete (set SUPABASE_SERVICE_ROLE_KEY to execute privileged batch RPC).');
+  process.exit(0);
+}
 
 // Ingest in batches of 200 with retry
 const BATCH_SIZE = 200;
@@ -114,7 +129,8 @@ async function postBatch(batch, batchNum) {
       const resp = await fetch(`${url}/rest/v1/rpc/ingest_lexemes_batch_v1`, {
         method: 'POST',
         headers: {
-          apikey: key,
+          apikey: writeKey,
+          Authorization: `Bearer ${writeKey}`,
           'Content-Type': 'application/json',
           Connection: 'close',
         },

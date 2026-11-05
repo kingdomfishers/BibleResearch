@@ -142,3 +142,27 @@ for both clients; contract tests do not substitute for actual model evaluations.
     │   └── styles-map.css
     └── main.ts                 # Top-level application shell
 ```
+
+## 3. Canonical Biblical Lexical & Evidence Database (2026-11-05)
+
+Extends the PostgreSQL data layer additively (preserving all existing tables, IDs, and RPCs) to model biblical vocabulary, editions, versification, morphology, syntax, external factual knowledge, and sourced evidence relationships without conflation or AI-generated assignments:
+
+1. **Strict Entity Separation (Modeling Invariants):**
+   - **Inflected Word Form (`public.words`):** Surface orthography + grammar tag (`150,105` forms); linked via `public.word_form_lemmas` to morphemes/lemmas—never treated as a lemma.
+   - **Canonical Lemma (`public.lemmas`):** Dictionary headword (`hbo`/`arc`/`grc`) preserving homograph indices (`H1254A`/`B`/`C`, `H5869a`/`b`).
+   - **Lexical Entry (`public.lexemes` + `public.lexeme_identifiers`):** Edition-specific lexicon entries (`TBESH`/`TBESG`) and namespaced identifiers (`base_strongs`, `extended_strongs`, `disambiguated_strongs`, `unified_strongs`).
+   - **Documented Root (`public.lexical_roots` + `public.lemma_root_links`):** Etymological roots/stems and documented derivations (`TBESH`/`TBESG` `dStrong -> uStrong` and Abbott-Smith Greek derivations). Roots carry no "root meaning" column, and shared-root words are never automatically marked synonymous.
+   - **Lexical Sense (`public.lexical_senses`):** Source-attributed sense definitions (`TBESH` CC BY gloss/sense subdivisions, excluding restricted Online Bible `TBESH` column 7; `TBESG` CC BY glosses and Abbott-Smith/Middle Liddell numbered senses).
+   - **Translation Glosses & Choices (`public.verse_translation_sources`, `public.reader_rendering_groups`, `public.word_translation_choices`):** Attested contextual English renderings and owner-scoped private choices, kept separate from lexical senses and without claiming English word-for-word alignment.
+   - **Passages & Versification (`public.verses`, `public.source_editions`, `public.edition_passages`, `public.versification_mappings`):** Explicit Masoretic Hebrew (`TAHOT` `Eng(Heb)`), Psalm superscription, KJV bracket (`TAGNT`), and `webp-2026-11` mappings.
+   - **Syntax & Semantic Annotations (`public.token_morphemes`, `public.syntax_nodes`, `public.syntax_edges`, `public.semantic_annotations`):** Morpheme segmentation (`TAHOT`), Greek grammatical dependency chains (`TAGNT` `Conjoin word`), and source-tagged sub-meaning labels (`origin_mode = 'directly_imported'`).
+   - **External Concepts & Evidence Graph (`public.concepts`, `public.concept_properties`, `public.concept_external_links`, `public.research_nodes`, `public.relation_types`, `public.entity_relationships`):** External factual properties/URIs (`epistemic_layer = 'external_factual'`) separated from primary biblical observations and reviewed/user-authored interpretations. Every relationship stores `source_release_id`, `source_edition_id`, `source_record_id`, `relation_type`, supporting span/citation, `origin_mode` (`directly_imported` | `algorithmically_calculated` | `user_authored`), `derivation_method`, and `algorithm_version`.
+
+2. **Deterministic Lookup RPCs (`SECURITY INVOKER`, `SET search_path = ''`, `8s` timeout):**
+   - `lookup_word_to_lemma_senses_v1(p_word_id, p_query)` — Original word form $\to$ canonical lemma(s) $\to$ documented lexical senses.
+   - `lookup_lemma_occurrences_v1(p_lemma_query, p_after_verse_id, p_limit)` — Lemma $\to$ exact corpus totals + paginated occurrences across all inflected forms.
+   - `lookup_lemma_root_relatives_v1(p_lemma_query)` — Lemma $\to$ documented roots, etymological links, and root-relative lemmas (explicitly non-synonymous).
+   - `lookup_lemma_english_glosses_v1(p_lemma_query, p_limit)` — Lemma $\to$ attested corpus occurrence glosses distinguished from lexicon sense glosses.
+   - `lookup_passage_tokens_syntax_v1(p_book, p_chapter, p_verse, p_edition_key)` — Passage $\to$ versification mappings, ordered tokens, morphemes, decoded morphology, syntax nodes/edges, and sourced semantic annotations.
+   - `lookup_concept_properties_v1(p_concept_query)` — Concept $\to$ definitions, aliases, documented external properties, and verified hyperlinks.
+   - `lookup_entity_relationships_v1(p_entity_query, p_relation_type, p_origin_mode, p_limit)` — Entity $\to$ directly documented relationships with complete provenance metadata.
