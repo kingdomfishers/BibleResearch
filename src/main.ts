@@ -1,12 +1,15 @@
 // @file: src/main.ts
 // @feature: app-shell
-// @tables: words | verses | verse_translation_sources | word_translation_choices | chronology_models | chronology_runs | chronology_assertions | chronology_evidence | places | place_locations | verse_geography | passage_geography | geography_sources
+// @tables: words | verses | reader_english_verses | reader_rendering_groups | reader_text_events | places | chronology_models
 // @candidates: none
-// @toc: imports | ui:main | logic:passage
+// @toc: imports | ui:main | logic:selection | logic:passage
 
 // === @section:imports ===
 import './ui/styles.css';
+import './ui/styles-mobile.css';
+import './ui/styles-workspace.css';
 import { BibleRPC } from './api/rpc';
+import type { ActivePassage } from './api/types';
 import { appState } from './ui/state';
 import { createNavSelector } from './ui/components/NavSelector';
 import { createVerseReader } from './ui/components/VerseReader';
@@ -14,52 +17,88 @@ import { createWordModal } from './ui/components/WordModal';
 import { createVerseMap } from './ui/components/VerseMap';
 import { createChronologyPanel } from './ui/components/ChronologyPanel';
 import { createResearchPanel } from './ui/components/ResearchPanel';
-import './ui/styles-mobile.css';
+import { createContextPreview } from './ui/components/ContextPreview';
+import { createWordInspector } from './ui/components/WordInspector';
+import { createEventTimeline } from './ui/components/EventTimeline';
+import { createPassageComparison } from './ui/components/PassageComparison';
+import { createStudySearch } from './ui/components/StudySearch';
 
 // === @section:ui:main ===
 const app = document.querySelector<HTMLDivElement>('#app')!;
-app.innerHTML = `<header class="site-header"><a class="brand" href="#1-1-1" aria-label="Bible Research home">
-  <span class="brand-mark" aria-hidden="true">א</span><span>BIBLE<span class="brand-sub">RESEARCH</span></span></a>
-  <span class="header-note">A closer reading of Scripture</span><span class="language-pill">HEBREW <span> / </span> GREEK</span></header>
-  <main><section class="intro"><p class="eyebrow"><span class="gold-line"></span> THE ORIGINAL LANGUAGE EXPLORER</p>
-  <h1>Scripture, <em>word by word.</em></h1><p>Read the original. Follow a word. Discover its meaning.</p></section>
-  <div id="navigation"></div><div class="workspace-heading"><span class="eyebrow">INTERLINEAR READER</span>
-  <span class="click-hint">Original: inspect · English: choose translation <span aria-hidden="true">↗</span></span></div>
-  <div id="reader"></div><div id="geography"></div><div id="chronology"></div><div id="research-prompts"></div><aside class="sample-strip" aria-label="Available sample passages"><div><span class="status-dot"></span>
-  <strong>Start with a sample</strong><span class="sample-description">Ready to explore, even before the database is populated.</span></div>
-  <div class="sample-links"><a href="#1-1-1">Genesis 1:1 <span>א</span></a><a href="#43-1-1">John 1:1 <span>α</span></a></div></aside>
-  <section class="study-guide" aria-label="How to study"><article><span>01</span><h3>Choose a passage</h3><p>Navigate the 66 books with the book, chapter, and verse selectors.</p></article>
-  <article><span>02</span><h3>Read the original</h3><p>Hebrew reads right to left; Greek reads left to right. Transliteration follows each word.</p></article>
-  <article><span>03</span><h3>Look a little closer</h3><p>Open a word to see its grammar, definitions, and connections.</p></article></section>
-  <footer class="site-footer"><span>BIBLE RESEARCH</span><span>Ancient words. A closer understanding.</span></footer></main>`;
-const nav = createNavSelector(p => appState.setPassage(p));
-const geography = createVerseMap();
-const chronology = createChronologyPanel(summary => nav.updateChronology(summary));
-const modal = createWordModal(p => appState.setPassage(p));
-const reader = createVerseReader(id => { void modal.openWordModal(id); });
-const research = createResearchPanel({
-  onSelectPassage: p => appState.setPassage(p),
-  onInspectWord: id => { void modal.openWordModal(id); },
+app.innerHTML = `<header class="study-header"><a class="study-brand" href="#1-1-1"><span class="study-brand-symbol" aria-hidden="true">א</span><span>BIBLE RESEARCH<small>WORDS. PLACES. CONNECTIONS.</small></span></a>
+ <button class="study-button" id="appearance" type="button">Appearance</button></header>
+ <main class="study-main"><div class="study-intro"><div><p class="eyebrow">A CLOSER READING OF SCRIPTURE</p><h1>Ancient words. New connections.</h1></div><div id="study-search"></div></div>
+ <div id="navigation"></div><div class="passage-stepper"><button class="text-action" id="previous-passage" type="button">← Previous verse</button><span>Read the English. Notice the original. Follow a connection.</span><button class="text-action" id="next-passage" type="button">Next verse →</button></div>
+ <div class="study-workspace"><div id="reader"></div><div id="inspector"></div></div><div id="comparison"></div>
+ <div id="geography"></div><details class="study-advanced" id="chronology-disclosure"><summary>Chronology models & historical evidence</summary><div id="chronology"></div></details>
+ <details class="study-advanced" id="research-disclosure"><summary>Advanced study, patterns & exports</summary><div id="research-prompts"></div></details>
+ <footer class="study-footer"><span>Original text & lexical renderings: STEP Bible · CC BY 4.0</span><span>English: World English Bible · Public domain</span></footer></main>`;
+const navigate = (p: ActivePassage) => appState.setPassage(p);
+const comparison = createPassageComparison(navigate);
+const preview = createContextPreview(navigate, target => { void comparison.open(appState.getPassage(), target); });
+const inspector = createWordInspector(preview, navigate);
+const timeline = createEventTimeline(preview, key => geography.focusPlace(key));
+const geography = createVerseMap(packet => timeline.setGeography(packet));
+const reader = createVerseReader({ context: timeline.element, preview, onWord: selectWord, onPlace: key => geography.focusPlace(key) });
+const nav = createNavSelector(navigate);
+const modal = createWordModal(navigate);
+let timelineModel = 'theographic-verse-v1';
+const chronology = createChronologyPanel(summary => nav.updateChronology(summary), packet => {
+  if (packet.model.id !== timelineModel) { timelineModel = packet.model.id; void timeline.load(appState.getPassage(), timelineModel); }
 });
-app.append(modal.element);
-app.querySelector('#navigation')!.append(nav.element);
-app.querySelector('#reader')!.append(reader.element);
-app.querySelector('#geography')!.append(geography.element);
-app.querySelector('#chronology')!.append(chronology.element);
-app.querySelector('#research-prompts')!.append(research.element);
+const research = createResearchPanel({ onSelectPassage: navigate, onInspectWord: id => { void modal.openWordModal(id); } });
+const search = createStudySearch(navigate, id => selectWord(id));
+for (const [selector, element] of [['#navigation', nav.element], ['#reader', reader.element], ['#inspector', inspector.element],
+  ['#comparison', comparison.element], ['#geography', geography.element], ['#chronology', chronology.element],
+  ['#research-prompts', research.element], ['#study-search', search.element]] as const) app.querySelector(selector)!.append(element);
+app.append(modal.element, preview.element);
+let overview: Awaited<ReturnType<typeof BibleRPC.getReaderOverview>>['data'] = null;
+const previous = app.querySelector<HTMLButtonElement>('#previous-passage')!, next = app.querySelector<HTMLButtonElement>('#next-passage')!;
+previous.addEventListener('click', () => { if (overview?.previous) navigate(overview.previous); });
+next.addEventListener('click', () => { if (overview?.next) navigate(overview.next); });
+const appearance = app.querySelector<HTMLButtonElement>('#appearance')!;
+function setTheme(theme: string) {
+  document.documentElement.dataset.theme = theme; appearance.textContent = theme === 'dark' ? 'Light appearance' : 'Dark appearance';
+}
+try { setTheme(localStorage.getItem('bible-reading-theme') ?? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')); } catch { setTheme('dark'); }
+appearance.addEventListener('click', () => {
+  const theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; setTheme(theme);
+  try { localStorage.setItem('bible-reading-theme', theme); } catch { /* Reading works without storage. */ }
+});
+
+// === @section:logic:selection ===
+const selections = new Map<string, { id: number; position?: number; english?: string; rendering?: string }>();
+const key = (p: ActivePassage) => `${p.book}-${p.chapter}-${p.verse}`;
+function selectWord(id: number, position?: number, english?: string, rendering?: string, suggested = false) {
+  const selection = { id, position, english, rendering }; selections.set(key(appState.getPassage()), selection);
+  reader.selectPosition(position ?? null); void inspector.inspect(id, { position, english, rendering, suggested });
+}
 
 // === @section:logic:passage ===
 let request = 0;
-appState.subscribe(async p => {
+appState.subscribe(p => {
   const current = ++request;
-  modal.close();
-  nav.update(p);
-  research.updatePassage(p);
-  void geography.load(p);
-  void chronology.load(p);
+  modal.close(); preview.dismiss(); inspector.reset(); comparison.close(); timeline.reset();
+  overview = null; previous.disabled = true; next.disabled = true;
+  nav.update(p); research.updatePassage(p); reader.setOverview(null); inspector.setOverview(null); reader.selectPosition(null);
+  reader.setEnglish(null, 'Loading English verse…');
   const sample = BibleRPC.getSampleTranslations(p);
   reader.render(p, { data: sample, source: sample.length ? 'sample' : 'unavailable', error: null }, !sample.length);
-  const result = await BibleRPC.getVerseTranslations(p);
-  if (current !== request) return;
-  reader.render(p, result);
+  void geography.load(p); void chronology.load(p); void timeline.load(p, timelineModel);
+  void BibleRPC.getReaderPassage(p).then(result => { if (current === request) reader.setEnglish(result.data, result.error); });
+  const words = BibleRPC.getVerseTranslations(p).then(result => {
+    if (current === request) reader.render(p, result); return result;
+  });
+  const context = BibleRPC.getReaderOverview(p).then(result => {
+    if (current !== request) return;
+    overview = result.data; reader.setOverview(overview); inspector.setOverview(overview);
+    previous.disabled = !overview?.previous; next.disabled = !overview?.next;
+  });
+  void Promise.all([words, context]).then(([result]) => {
+    if (current !== request || result.source !== 'live') return;
+    const remembered = selections.get(key(p));
+    if (remembered) { selectWord(remembered.id, remembered.position, remembered.english, remembered.rendering, true); return; }
+    const token = result.data.find(t => /N|V/.test(t.grammar_code ?? '')) ?? result.data[0];
+    if (token) selectWord(token.word_id, token.word_position, token.selected_english ?? token.source_english ?? '', undefined, true);
+  });
 });

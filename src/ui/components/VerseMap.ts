@@ -2,7 +2,7 @@
 // @feature: verse-reader
 // @tables: places | place_locations | verse_geography | passage_geography | geography_sources
 // @candidates: none
-// @toc: imports | types | ui:labels | ui:cards | ui:main | ui:sidebar | logic:load
+// @toc: imports | types | ui:labels | ui:cards | ui:main | ui:controls | ui:sidebar | logic:load
 
 // === @section:imports ===
 import '../styles-map.css';
@@ -15,6 +15,7 @@ import { type BasemapMode, createVerseMapCanvas } from './VerseMapCanvas';
 export interface VerseMapHandle {
   element: HTMLDetailsElement;
   load: (p: ActivePassage) => Promise<void>;
+  focusPlace: (placeKey: string) => void;
 }
 
 // === @section:ui:labels ===
@@ -94,10 +95,10 @@ function renderPlaceCard(
 }
 
 // === @section:ui:main ===
-export function createVerseMap(): VerseMapHandle {
+export function createVerseMap(onResolved?: (packet: VerseGeographyPacket | null) => void): VerseMapHandle {
   const element = document.createElement('details');
   element.className = 'verse-map-panel';
-  element.open = true;
+  element.open = false;
   element.setAttribute('aria-label', 'Biblical Geography Map');
   element.innerHTML = `<summary class="verse-map-summary">
     <div class="verse-map-summary-title"><p class="eyebrow"><span class="gold-line"></span> CONTEXT-AWARE BIBLICAL GEOGRAPHY</p>
@@ -151,7 +152,13 @@ export function createVerseMap(): VerseMapHandle {
       el.classList.toggle('active', (el as HTMLElement).dataset.placeKey === placeKey);
     });
   });
-  element.addEventListener('toggle', () => { if (element.open) canvas.resize(); });
+  // === @section:ui:controls ===
+  let pendingFocus: string | null = null;
+  element.addEventListener('toggle', () => {
+    if (element.open) { void canvas.renderPacket(currentPacket, selectedAltIds).then(() => {
+      canvas.resize(); if (pendingFocus) canvas.focusPlace(pendingFocus);
+    }); }
+  });
   element.querySelector('#btn-fit-map')!.addEventListener('click', () => { void canvas.renderPacket(currentPacket, selectedAltIds); });
   element.querySelectorAll<HTMLButtonElement>('.mode-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
@@ -221,6 +228,7 @@ export function createVerseMap(): VerseMapHandle {
     const res = await BibleRPC.getVerseGeography(p);
     if (current !== generation) return;
     if (!res.data || res.data.status !== 'ok') {
+      onResolved?.(null);
       currentPacket = null;
       badge.dataset.status = 'unknown';
       badge.textContent = 'Geography unavailable';
@@ -229,10 +237,11 @@ export function createVerseMap(): VerseMapHandle {
       emptyTitle.textContent = 'No reliable geographical location identified for this verse.';
       emptySub.textContent = res.error ?? 'Geography could not be loaded.';
       sidebar.innerHTML = `<p class="chronology-muted">${res.error ?? 'No reliable geographical location identified for this verse.'}</p>`;
-      await canvas.renderPacket(null, {});
+      if (element.open) await canvas.renderPacket(null, {});
       return;
     }
     const packet = res.data;
+    onResolved?.(packet);
     currentPacket = packet;
     badge.dataset.status = packet.resolution_status;
     if (packet.chronological_context) {
@@ -250,7 +259,14 @@ export function createVerseMap(): VerseMapHandle {
       emptyOverlay.hidden = true;
     }
     renderSidebar(packet, p);
-    await canvas.renderPacket(packet, selectedAltIds);
+    if (element.open) {
+      await canvas.renderPacket(packet, selectedAltIds);
+      if (pendingFocus) canvas.focusPlace(pendingFocus);
+    }
   }
-  return { element, load };
+  return { element, load, focusPlace: (placeKey: string) => {
+    pendingFocus = placeKey; element.open = true;
+    if (currentPacket) void canvas.renderPacket(currentPacket, selectedAltIds).then(() => canvas.focusPlace(placeKey));
+    element.scrollIntoView({ block: 'start' }); element.querySelector('summary')?.focus();
+  } };
 }

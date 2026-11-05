@@ -171,7 +171,7 @@ function renderBody(packet: ChronologyPacket, selectModel: (id: string) => void,
 }
 
 // === @section:ui:main ===
-export function createChronologyPanel(onSummary: SummaryCallback) {
+export function createChronologyPanel(onSummary: SummaryCallback, onPacket?: (packet: ChronologyPacket) => void) {
   const element = node('section', 'chronology-panel');
   element.setAttribute('aria-label', 'Verse chronology'); element.setAttribute('aria-busy', 'false');
   const heading = node('div', 'chronology-heading');
@@ -242,7 +242,7 @@ export function createChronologyPanel(onSummary: SummaryCallback) {
           : 'Chronology could not be loaded for this reference and model.';
       message(text, data.status !== 'passage_not_found'); return;
     }
-    show(data); onSummary(data.summary);
+    show(data); onSummary(data.summary); onPacket?.(data);
   }
 
   // === @section:logic:pagination ===

@@ -2,7 +2,7 @@
 // @feature: api
 // @tables: words | verses | verse_translation_sources | word_translation_choices | chronology_models | chronology_runs | chronology_assertions | chronology_evidence | places | place_locations | verse_geography | passage_geography | geography_sources | lexemes | concepts | assertions | assertion_evidence
 // @candidates: none
-// @toc: types | types:chronology-models | types:chronology-packet | types:geography-packet | types:research-packet | types:hydrated-words | types:hydrated-packet
+// @toc: types | types:chronology-models | types:chronology-packet | types:geography-packet | types:research-packet | types:hydrated-words | types:hydrated-packet | types:reader
 
 // === @section:types ===
 export interface ActivePassage { book: number; chapter: number; verse: number }
@@ -282,3 +282,42 @@ export interface VerseResearchError {
   message?: string; requested_passages?: VerseSpanInput[]; measured_bytes?: number; max_packet_bytes?: number;
 }
 export type VerseResearchResponse = VerseResearchPacket | VerseResearchError;
+
+// === @section:types:reader ===
+export interface ReaderPassage {
+  passage: ActivePassage; text: string | null; edition: string; edition_id: string;
+  mapping_status: 'same_reference' | 'unavailable';
+}
+export interface ReaderRendering extends ActivePassage {
+  label: string; token_total: number; verse_total: number;
+}
+export interface ReaderOverview {
+  status: 'ok' | 'passage_not_found'; ranges: Record<string, ReaderRendering[]>;
+  grammar: Record<string, Record<string, unknown>>;
+  place_anchors: { word_position: number; place_key: string; name: string }[];
+  previous: ActivePassage | null; next: ActivePassage | null;
+}
+export interface ReaderOccurrence extends ActivePassage {
+  verse_id: number; occurrence_count: number; source_english: string;
+}
+export interface ReaderWord {
+  status: 'ok' | 'word_not_found'; word: WordRecord | null;
+  lexemes: ResearchLexemeCandidate[]; token_total: number; verse_total: number;
+  scope: string; occurrences: ReaderOccurrence[]; next_cursor: number | null;
+}
+export interface ReaderEvent {
+  event_key: string; title: string; era: string; reason: string;
+  source_url: string; source_reference: string; relationship: 'setting' | 'parallel_text';
+  year_start: number | null; year_end: number | null;
+  passages: (ActivePassage & { label: string })[];
+}
+export interface ReaderTimeline {
+  status: 'ok'; model_id: string; summary: ChronologySummary | null;
+  events: ReaderEvent[];
+  published_events: { event_key: string; title: string; start_year: number; relationship: string }[];
+  neighbors: { event_key: string; title: string; start_year: number }[];
+}
+export interface ReaderSearchResult {
+  id: number; strongs_nr: string; original_word: string;
+  transliteration: string; biblical_def: string | null;
+}

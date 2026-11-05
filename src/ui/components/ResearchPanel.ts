@@ -24,15 +24,15 @@ export interface ResearchPanelHandle {
 // === @section:ui:tabs ===
 function renderTabs(container: HTMLElement, onTabChange: (id: string) => void) {
   const tabs = [
-    { id: 'p1', label: '1 · Verse Words' },
-    { id: 'p2', label: '2 · Occurrences' },
-    { id: 'p3', label: '3 · Co-occurrences' },
-    { id: 'p4', label: '4 · Density' },
-    { id: 'p5', label: '5 · Chronology AI' },
-    { id: 'p6', label: '6 · Geography AI' },
-    { id: 'p7', label: '7 · Evidence Graph' },
-    { id: 'p8', label: '8 · Hydrated Verse & Patterns' },
-    { id: 'api', label: 'OpenAPI 3.1.0 & MCP' },
+    { id: 'p1', label: 'Verse words' },
+    { id: 'p2', label: 'Find occurrences' },
+    { id: 'p3', label: 'Word companions' },
+    { id: 'p4', label: 'Compare words' },
+    { id: 'p5', label: 'Study chronology' },
+    { id: 'p6', label: 'Study geography' },
+    { id: 'p7', label: 'Connections & evidence' },
+    { id: 'p8', label: 'Research & patterns' },
+    { id: 'api', label: 'Integrations' },
   ];
   container.innerHTML = `<div class="research-tablist" role="tablist" aria-label="Research Prompts">` +
     tabs.map((t, i) => `<button type="button" role="tab" id="tab-${t.id}" aria-selected="${i === 0}"
@@ -225,9 +225,9 @@ export function createResearchPanel(props: ResearchPanelProps): ResearchPanelHan
   element.className = 'research-panel';
   element.setAttribute('aria-label', 'Database Research Prompts');
   element.innerHTML = `<div class="research-header">
-    <div class="research-header-title"><span class="gold-line"></span><span class="eyebrow">DATABASE RESEARCH PROMPTS & AI CONSOLE</span>
-    <h2>Expose Scripture, Chronology, Geography & Evidence Graph Prompts</h2></div>
-    <p class="research-sub">Explore 8 database research tools and 10 deep-pattern templates, or connect AI assistants via OpenAPI 3.1.0 and the public <code>bible-mcp</code> server.</p>
+    <div class="research-header-title"><span class="gold-line"></span><span class="eyebrow">GO DEEPER</span>
+    <h2>Study the patterns. Follow the evidence.</h2></div>
+    <p class="research-sub">Compare words, explore historical context, prepare research and connect your study tools.</p>
     </div><div class="research-tabs-mount"></div><div class="research-panels-mount"></div>`;
   const tabsMount = element.querySelector<HTMLElement>('.research-tabs-mount')!;
   const panelsMount = element.querySelector<HTMLElement>('.research-panels-mount')!;

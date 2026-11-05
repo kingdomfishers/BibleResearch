@@ -2,13 +2,14 @@
 // @feature: api
 // @tables: words | verses | verse_translation_sources | word_translation_choices | chronology_models | chronology_runs | chronology_assertions | chronology_evidence | places | place_locations | verse_geography | passage_geography | geography_sources | lexemes | concepts | assertions | assertion_evidence
 // @candidates: none
-// @toc: imports | logic:sample-words | logic:sample-verses | logic:request | logic:chronology | logic:geography | logic:translations | logic:hydrated-research | logic:gateway
+// @toc: imports | logic:sample-words | logic:sample-verses | logic:request | logic:chronology | logic:geography | logic:translations | logic:hydrated-research | logic:reader | logic:gateway
 
 // === @section:imports ===
 import { ensureReaderSession, restoreReaderSession, supabase } from './supabase';
 import type { ActivePassage, ChronologyResponse, DataResult, HydratedCoOccurrence,
   RelationshipResearchPacket, TranslationSaveResult, VerseGeographyResponse, VerseTranslationToken,
   VerseWordToken, WordOccurrence, WordRecord, WordRelationship, VerseResearchRequest, VerseResearchResponse } from './types';
+import type { ReaderPassage, ReaderOverview, ReaderWord, ReaderTimeline, ReaderSearchResult } from './types';
 
 // === @section:logic:sample-words ===
 // Negative IDs isolate fixtures from the database's positive word IDs.
@@ -200,8 +201,53 @@ async function verseResearch(request: VerseResearchRequest): Promise<DataResult<
   } catch { return result(null, 'unavailable', 'Verse research could not be loaded. Try again.'); }
 }
 
+// === @section:logic:reader ===
+async function readerRPC<T>(name: string, args: Record<string, unknown>): Promise<DataResult<T | null>> {
+  if (!supabase) return result(null, 'unavailable', 'Study data is not configured.');
+  try {
+    const { data, error } = await supabase.rpc(name, args).abortSignal(AbortSignal.timeout(10000));
+    return error || !data ? result(null, 'unavailable', 'Study data could not be loaded. Try again.') : result(data as T, 'live');
+  } catch { return result(null, 'unavailable', 'Study data could not be loaded. Try again.'); }
+}
+const passageCache = new Map<string, ReaderPassage>();
+const passagePending = new Map<string, Promise<DataResult<ReaderPassage | null>>>();
+const passageKey = (p: ActivePassage) => `webp-2026-11:${p.book}:${p.chapter}:${p.verse}`;
+async function readerPassages(passages: ActivePassage[]): Promise<void> {
+  const missing = passages.filter(p => !passageCache.has(passageKey(p))).slice(0, 12);
+  if (!missing.length) return;
+  const response = await readerRPC<{ status: string; passages: ReaderPassage[] }>('get_reader_passages_v1', { p_passages: missing });
+  if (response.data?.status !== 'ok') return;
+  for (const item of response.data.passages) {
+    if (!item.text) continue;
+    if (passageCache.size >= 150) passageCache.delete(passageCache.keys().next().value!);
+    passageCache.set(passageKey(item.passage), item);
+  }
+}
+function readerPassage(p: ActivePassage): Promise<DataResult<ReaderPassage | null>> {
+  const key = passageKey(p), cached = passageCache.get(key);
+  if (cached) return Promise.resolve(result(cached, 'live'));
+  const pending = passagePending.get(key); if (pending) return pending;
+  const promise = (async () => {
+    const response = await readerRPC<{ status: string; passages: ReaderPassage[] }>('get_reader_passages_v1', { p_passages: [p] });
+    const item = response.data?.status === 'ok' ? response.data.passages[0] : null;
+    if (item?.text) {
+      if (passageCache.size >= 150) passageCache.delete(passageCache.keys().next().value!);
+      passageCache.set(key, item);
+    }
+    return item ? result(item, 'live') : result(null, 'unavailable', response.error ?? 'English verse unavailable.');
+  })().finally(() => passagePending.delete(key));
+  passagePending.set(key, promise); return promise;
+}
+const passageArgs = (p: ActivePassage) => ({ p_book: p.book, p_chapter: p.chapter, p_verse: p.verse });
+
 // === @section:logic:gateway ===
 export const BibleRPC = {
+  getReaderPassage: readerPassage,
+  preloadReaderPassages: readerPassages,
+  getReaderOverview: (p: ActivePassage) => readerRPC<ReaderOverview>('get_reader_overview_v1', passageArgs(p)),
+  getReaderWord: (wordId: number, after = 0, rendering: string | null = null) => readerRPC<ReaderWord>('get_reader_word_v1', { p_word_id: wordId, p_after: after, p_rendering: rendering }),
+  getReaderTimeline: (p: ActivePassage, modelId = 'theographic-verse-v1') => readerRPC<ReaderTimeline>('get_reader_timeline_v1', { ...passageArgs(p), p_model_id: modelId }),
+  searchReaderWords: (query: string) => readerRPC<ReaderSearchResult[]>('search_reader_words_v1', { p_query: query }),
   getVerseResearch: verseResearch,
   getSampleTranslations: sampleTranslations,
   getVerseTranslations: verseTranslations,
