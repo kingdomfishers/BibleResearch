@@ -1,6 +1,6 @@
 # TASKS.md - Bible relationship, chronology, and geography implementation queue
 
-Updated: 2026-11-01. Designs: [RELATIONSHIP_ARCHITECTURE.md](RELATIONSHIP_ARCHITECTURE.md), [CHRONOLOGY_ARCHITECTURE.md](CHRONOLOGY_ARCHITECTURE.md), [ARCHITECTURE.md](ARCHITECTURE.md).
+Updated: 2026-11-05 (UX proposal added; existing queue statuses preserved). Designs: [UX_STRATEGY.md](UX_STRATEGY.md), [RELATIONSHIP_ARCHITECTURE.md](RELATIONSHIP_ARCHITECTURE.md), [CHRONOLOGY_ARCHITECTURE.md](CHRONOLOGY_ARCHITECTURE.md), [ARCHITECTURE.md](ARCHITECTURE.md).
 Goal: database-native original-language Scripture reader, multi-model chronology, context-aware biblical geography, and one-call relationship evidence graph accessible via UI, OpenAPI 3.1.0, and the public `bible-mcp` server.
 
 ## Execution rules
@@ -10,6 +10,81 @@ Goal: database-native original-language Scripture reader, multi-model chronology
 - Preserve existing RPCs and clients. New precise behavior uses versioned contracts.
 - TypeScript edits require `npm.cmd run check:types` and `npm.cmd run check:size`.
 - Joins, word order, co-occurrence, context resolution, and traversal/scoring stay in PostgreSQL.
+
+## Proposed feature: complete UX refresh
+
+Requested 2026-11-05. Design: [UX_STRATEGY.md](UX_STRATEGY.md).
+**Planning only: all tasks below are open; do not start implementation until the
+user approves the strategy.** Target: a passage-centered reader that makes word
+meaning and typed connections understandable immediately, with complete English
+verse previews on hover/focus and equivalent explicit touch/keyboard actions.
+
+Proposed hierarchy: reading area + persistent word inspector; grouped connections
+and comparison alongside the source passage; compact expandable place/time;
+existing advanced research and integrations behind clear study-oriented entries.
+Separate lexical recurrence, statistical association, reviewed concepts, and
+interpretive parallels. Preserve ambiguous lexemes, exact counting scope,
+private occurrence translations, existing passage links and public contracts.
+
+Full English text is a new audited source dependency: current glosses cannot
+substitute for a continuous translation. Source/edition/reference mapping must
+pass before full-verse previews can be accepted. Precise English highlighting
+requires verified alignment; otherwise identify matched original words separately.
+The diagram is a secondary view; Septuagint links retain their independent L1–L9
+dependencies and approval status. Existing queues and pending O5/M1 checks remain.
+
+Execute sequentially after approval; proposed file names can be refined during
+design review. Each numbered task targets one or two files. Run the mandatory
+pre-code/post-code pipeline for future source/database edits. Browser-check UI
+tasks before requesting the applicable visual user check.
+
+### UX design and text foundation
+
+- [ ] **UX01 Review strategy and wireframes** | Files: UX_STRATEGY.md, UX_WIREFRAMES.md | Verify: [USER-CHECK] Approve desktop/phone hierarchy and no-selection, ambiguous-word, preview, comparison, and unavailable-data states; no application code changes.
+- [ ] **UX02 Record approved architecture and capability audit** | Files: ARCHITECTURE.md, UX_STRATEGY.md | Verify: [AUTO-TEST] Live UI/data findings, existing-feature inventory, proposed RPC fields, legacy-link rules, counting scope, and independent-queue dependencies match the approved design; no inferred token senses or unverified coverage claims.
+- [ ] **UX03 Audit readable English edition** | Files: scripts/audit-english-text.mjs, DATA_SOURCES.md | Verify: [AUTO-TEST] Pin source/edition/files/hashes, reuse terms, book coverage, heading/verse mappings and textual differences; report unmapped reasons and independently measured counts before import.
+- [ ] **UX04 Prepare reproducible English import** | Files: scripts/import-english-text.mjs, scripts/verify-english-text.mjs | Verify: [AUTO-TEST] Dry-run output matches audited source and mapping totals; original corpus IDs/hashes and private choices remain unchanged; missing/split verses are explicit.
+- [ ] **UX05 Add English text storage** | Files: new additive English-text migration, scripts/verify-english-text.sql | Verify: [AUTO-TEST] Source/edition/reference identity, deterministic import, indexes, public SELECT access and denied unauthorized writes pass against audited counts.
+- [ ] **UX06 Add bounded verse preview RPC** | Files: new additive verse-preview migration, scripts/verify-verse-previews.sql | Verify: [AUTO-TEST] Small batched requests return full attributed English text, mapping status and available matching-token evidence in stable order; payload limits, unavailable cases and query plans pass; existing RPCs retain behavior.
+- [ ] **UX06a Add bounded word overview and occurrence continuation** | Files: new additive word-overview migration, scripts/verify-word-overview.sql | Verify: [AUTO-TEST] Versioned overview reuses existing definitions, grammar and candidate lexemes; stable occurrence cursors and exact token/verse totals retain base-Strong's scope and explicit unassigned senses without downloading the complete reference corpus; caller access and measured query plans pass.
+- [ ] **UX06b Add bounded discovery search** | Files: new additive discovery-search migration, scripts/verify-discovery-search.sql | Verify: [AUTO-TEST] References, original forms, transliterations, English concepts and identifiers return labeled, stably paginated candidate types; ambiguous results remain distinct; normalization, coverage, access and measured query limits pass without changing legacy resolver behavior.
+- [ ] **UX07 Type and expose new reader contracts** | Files: src/api/types.ts, src/api/rpc.ts | Verify: [AUTO-TEST] Canonical preview/overview/search types and single-gateway reads preserve edition identity, lexical ambiguity, count scope, cursors and explicit errors; required type/size/build checks pass.
+
+### UX reading workspace and word understanding
+
+- [ ] **UX08 Model intentional exploration state** | Files: src/ui/state.ts, scripts/verify-exploration-state.mjs | Verify: [AUTO-TEST] Repeated-token position, selected lexical candidate, source/target, connection filters, return state and legacy passage hashes behave consistently; hover creates no history entries or permanent selection changes.
+- [ ] **UX09 Establish accessible visual foundations** | Files: src/ui/styles-base.css, src/ui/styles.css | Verify: [USER-CHECK] Approved type hierarchy, script/diacritic legibility, selection cues, light/dark contrast, focus visibility and reduced-motion behavior work on actual Hebrew/Greek passages.
+- [ ] **UX10 Replace introductory layout with study workspace** | Files: src/main.ts, src/ui/styles-workspace.css | Verify: [USER-CHECK] Reader and inspector dominate the first desktop view; source passage remains visible during exploration; current navigation and private translations remain reachable.
+- [ ] **UX11 Refresh passage and word lookup** | Files: src/ui/components/NavSelector.ts, src/ui/styles-navigation.css | Verify: [USER-CHECK] Reference lookup, previous/next, word/concept/identifier result labels, ambiguity and invalid-reference feedback are understandable and keyboard accessible using the audited UX06b/UX07 contract.
+- [ ] **UX12 Add readable English and improve interlinear rhythm** | Files: src/ui/components/VerseReader.ts, src/ui/styles-reader.css | Verify: [USER-CHECK] Attributed full English text and occurrence glosses remain distinct; token selection, RTL/LTR, repeated words, unavailable edition text and private rendering affordances work without fabricated English alignment.
+- [ ] **UX13 Build persistent word inspector** | Files: src/ui/components/WordInspector.ts, src/ui/styles-inspector.css | Verify: [USER-CHECK] Original form, transliteration, sourced meaning, readable grammar, ambiguity and evidence precede advanced metadata; no unsupported contextual sense or empty physical-definition section appears.
+- [ ] **UX14 Wire inspector and preserve return paths** | Files: src/main.ts, src/ui/components/WordModal.ts | Verify: [USER-CHECK] Selected occurrence and documented suggested-word behavior update the inspector; related-word exploration and Back restore context; modal compatibility is deliberately migrated without stale results or lost focus.
+
+### UX shared previews and visible connections
+
+- [ ] **UX15 Bound preview requests and reuse public data** | Files: src/ui/preview-state.ts, scripts/verify-preview-state.mjs | Verify: [AUTO-TEST] Edition-aware bounded cache, small-batch prefetch, request deduplication and stale-response handling pass rapid target/navigation tests; public text and private rendering state remain separate.
+- [ ] **UX16 Build shared preview surface** | Files: src/ui/components/ContextPreview.ts, src/ui/styles-preview.css | Verify: [USER-CHECK] Pointer dwell/focus preview is dismissible, hoverable and persistent; explicit detail actions use accessible focus behavior; viewport edges, long verses, pinning, loading/retry and touch sheets work without nested popups.
+- [ ] **UX17 Connect reader and inspector previews** | Files: src/ui/components/VerseReader.ts, src/ui/components/WordInspector.ts | Verify: [USER-CHECK] Original words, grammar and available lexical references expose the shared preview; hover preserves selected occurrence and never changes a private translation.
+- [ ] **UX18 Build occurrence discovery rows** | Files: src/ui/components/WordOccurrences.ts, src/ui/styles-connections.css | Verify: [USER-CHECK] Connection reason, representative excerpt, exact token/verse scope, returned/total count and reachable continuation appear together; full-verse preview, Compare and Open are available for pointer, touch and keyboard.
+- [ ] **UX19 Mount occurrence rows and typed connection groups** | Files: src/ui/components/WordConnections.ts, src/ui/components/WordInspector.ts | Verify: [USER-CHECK] Occurrence discovery is reachable from the inspector; same-word, co-occurrence, related-concept and interpretive groups use real evidence and distinct labels; each explains why connected; unknown coverage and counterexamples are accessible; current cached top-seven scope is explicit.
+- [ ] **UX20 Add compact optional connection diagram** | Files: src/ui/components/ConnectionDiagram.ts, src/ui/styles-connections.css | Verify: [USER-CHECK] Small stable graph and equivalent list expose the same typed evidence and preview actions; one-step expansion, edge explanations, keyboard access and reduced motion work without implying unsupported relationships.
+- [ ] **UX21 Add passage comparison** | Files: src/ui/components/PassageComparison.ts, src/ui/styles-comparison.css | Verify: [USER-CHECK] Source and target retain full English text, edition labels and original-word evidence; narrow layouts stack clearly; explicit navigation and return restore the original word and reading position.
+
+### UX contextual tools, mobile and acceptance
+
+- [ ] **UX22 Integrate context and existing research tools** | Files: src/main.ts, src/ui/components/ResearchPanel.ts | Verify: [USER-CHECK] Compact place/time entries retain model/uncertainty access; study-oriented navigation reaches all existing research, patterns, exports and OpenAPI/MCP information without requiring prompt numbers for ordinary reading.
+- [ ] **UX23 Complete phone and tablet interaction** | Files: src/ui/styles-mobile.css, src/main.ts | Verify: [USER-CHECK] 320–430 px phones and tablet widths support full verse reading, selected-word summary, reachable sheet close, explicit previews, stacked comparison and comfortable touch targets with no page overflow or nested sheets.
+- [ ] **UX24 Verify exploration journeys and accessibility** | Files: scripts/verify-ux-refresh.mjs, scripts/fixtures/ux-refresh-cases.json | Verify: [AUTO-TEST] Hebrew/Greek, repeated words, homographs, heading/edition gaps, exact scoped totals, pagination, keyboard/focus, touch, offline/partial data and stale requests pass meaningful browser assertions; collect cold/warm preview latency and request volume.
+- [ ] **UX25 Migrate existing research navigation assertions** | Files: scripts/verify-research-ui.mjs, scripts/verify-hydrated-ui.mjs | Verify: [AUTO-TEST] Replace obsolete tab-count assumptions with capability/journey checks; retain all existing research, prompt/export and hydration coverage; run existing reader/translation regressions and required type/size/build gates.
+- [ ] **UX26 Validate first-glance understanding** | Files: UX_STRATEGY.md, UX_VALIDATION.md | Verify: [USER-CHECK] Record observed novice/experienced-reader results against proposed meaning/connection, preview and comparison targets; revise labels/hierarchy where needed; distinguish measured results from hypotheses and retain unresolved acceptance items.
+- [ ] **UX27 Synchronize approved delivery documentation** | Files: PROJECTMAP.md, TASKS.md | Verify: [AUTO-TEST] Component registry, reusable preview ownership, verification commands and actual completion evidence match delivery; independent queues retain their statuses and no unapproved rollout is implied.
+
+First usable milestone: UX01–UX19 (including UX06a/UX06b), completing the refreshed
+reader, persistent summary, grouped connections and occurrence previews. Then finish the diagram, comparison and
+integration. The optional diagram can be deferred if formative testing shows
+the grouped list explains connections more clearly. UX24–UX26 acceptance applies
+to each delivered milestone, not only to the final release. Performance goals
+are hypotheses to measure, not claims that current contracts meet them.
 
 ## Proposed feature: direct Septuagint word connections
 
