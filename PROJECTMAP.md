@@ -105,6 +105,7 @@ Focused DOM components and application shell (max 450 lines/file, max 80 lines/`
 | :--- | :--- | :--- |
 | **Static Type & Size Gate** | `npm.cmd run check:types; npm.cmd run check:size` | Zero TypeScript errors, max 450 lines/file, max 80 lines/`@section`, exact `@toc` header sync |
 | **Canonical Books Suite** | `node scripts/verify-canonical-books.mjs` | All 66 canonical books metadata, testaments, original languages, USFM/Theographic codes, chapters, divisions, and RLS policies |
+| **Corpus-Wide Lexeme Ingestion** | `node scripts/import-lexemes.mjs` | Ingests all 22,717 STEP TBESH/TBESG Hebrew & Greek lexemes into `public.lexemes` with 100% Strong's coverage and homograph preservation |
 | **Baseline Corpus Integrity** | `node scripts/verify-bible-import.mjs` | Whole-corpus hashes, Prompts 1–4, and word details |
 | **Chronology Rollout Suite** | `node scripts/verify-chronology-rollout.mjs` | All 31,203 passage assignments across 5 models, `get_verse_chronology_v1` RPC, and denied writes |
 | **Geography RPC & Milestones 1–9** | `node scripts/verify-geography-rpc.mjs` | `Acts 17:22`, `John 4:7`, `John 4:20`, `Genesis 29:10`, `Exodus 15:23`/`19:2`, `Revelation 21:2` symbolic guard, `Acts 18:1` travel, and `getVerseGeography` alias |

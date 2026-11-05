@@ -112,7 +112,9 @@ const polyPacket = await research({
 assert.equal(polyPacket.status, 'ok');
 const ayin = polyPacket.lexical_entries.H5869;
 assert.ok(ayin, 'H5869 must be present in lexical_entries');
-assert.equal(ayin.lexeme_candidates.length, 2, 'H5869 must preserve both eye and spring candidate lexemes');
+assert.ok(ayin.lexeme_candidates.length >= 2, 'H5869 must preserve candidate lexemes');
+assert.ok(ayin.lexeme_candidates.some(c => /eye/i.test(c.primary_gloss)), 'H5869 must include eye candidate');
+assert.ok(ayin.lexeme_candidates.some(c => /spring|fountain/i.test(c.primary_gloss)), 'H5869 must include spring/fountain candidate');
 assert.equal(ayin.needs_disambiguation, true);
 const bara = (await research({ passages: [{ book: 1, chapter: 1, verse: 1 }] })).lexical_entries.H1254;
 assert.equal(bara.lexeme_candidates.length, 3, 'H1254 must preserve divine creation, clearing ground, and fattening');

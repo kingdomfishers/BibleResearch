@@ -18,7 +18,7 @@ Canonical data layer serving Web and MCP without AI-generated relationships.
 
 - [x] **FOUNDATION-01 Apply Safe Foundational Indexes & GIN Optimization** | Files: supabase/migrations/20261105175000_foundational_indexes_and_perf.sql | Verify: [AUTO-TEST] Missing foreign key indexes added, duplicate index dropped, GIN occurrence optimization verified via verify-hydrated-research.mjs and verify-bible-mcp.mjs.
 - [x] **FOUNDATION-02 Create Canonical Books Metadata Table & RPC** | Files: supabase/migrations/20261105180000_canonical_books.sql, src/api/types.ts, src/api/rpc.ts | Verify: [AUTO-TEST] Table public.books created with 66 canonical books (testaments, original languages, chapter counts, standard/STEP/Theographic abbreviations), RLS enabled, get_bible_books_v1 RPC created and verified.
-- [-] **FOUNDATION-03 Ingest Corpus-Wide STEP Lexemes & Disambiguation** | Files: scripts/import-lexemes.mjs, supabase/migrations/20261105183000_corpus_lexemes_schema.sql | Verify: [AUTO-TEST] Pinned STEP TBESH/TBESG lexicon ingested into public.lexemes for all 13,913 Strong's numbers with homograph subdivisions preserved; get_verse_research_v1 populates lexeme_candidates for any biblical passage.
+- [x] **FOUNDATION-03 Ingest Corpus-Wide STEP Lexemes & Disambiguation** | Files: scripts/import-lexemes.mjs, supabase/migrations/20261105183000_corpus_lexemes_schema.sql | Verify: [AUTO-TEST] Pinned STEP TBESH/TBESG lexicon ingested into public.lexemes for all 13,913 Strong's numbers with homograph subdivisions preserved; get_verse_research_v1 populates lexeme_candidates for any biblical passage.
 
 ## Proposed feature: complete UX refresh
 
