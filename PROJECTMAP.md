@@ -36,9 +36,13 @@ Core modules used across 2+ components. Import these directly—never duplicate 
 | `supabase/migrations/20261101211815_hydrated_occurrence_batch.sql` | Set-based occurrence hydration with a single corpus token pass for all target Strong's groups | `get_verse_research_v1` replacement |
 | `supabase/migrations/20261101212136_research_function_timeouts.sql` | Bounded per-function HTTP timeouts without changing role/global limits | Hydration 10s; initial relationship evidence budget |
 | `supabase/migrations/20261101212411_relationship_timeout_budget.sql` | Match the relationship function to the existing eight-second reader budget; verify public REST regression | Relationship evidence 8s |
-| `supabase/functions/bible-mcp/catalog.ts` | 11 read-only MCP tools and 16 native research prompts, including direct JSON `get_verse_research` | `createResearchServer`, `researchPrompt`, `PROMPTS` |
+| `supabase/migrations/20261102010000_grammar_and_polysemy.sql` | PostgreSQL server-side grammar decoding function and polysemous candidate lexemes (`H5869a`/`b`) | `decode_grammar_v1`, `lexemes` |
+| `supabase/migrations/20261102020000_optimized_hydrated_research.sql` | Contiguous verse range spans up to 100 verses, top-level hoisted deduplication dictionaries, server-side grammar decoding, and 15s function-scoped timeout | `get_verse_research_v1` |
+| `supabase/functions/bible-mcp/catalog.ts` | 11 read-only tools and 17 prompts; default study_bible workflow, catalog metadata and analysis/full hydration profiles | `createResearchServer`, `researchPrompt`, `PROMPTS` |
 | `supabase/functions/bible-mcp/pattern-prompts.ts` | Shared pure catalog used by MCP and browser prompt-plus-data copy | `PATTERN_PROMPTS`, `PatternName`, `patternPrompt` |
-| `supabase/functions/bible-mcp/index.ts` | Stateless Streamable HTTP endpoint (`v1.3.0`) deployed to Supabase Edge Functions | `createApp`, `createDatabaseReader` |
+| `supabase/functions/bible-mcp/index.ts` | Stateless Streamable HTTP endpoint (`v1.4.0`) with health metadata derived from the shared catalog | `createApp`, `createDatabaseReader` |
+| `supabase/functions/bible-mcp/research-workflow.ts` | Generated Edge-safe copy of the canonical skill and contract reference | `WORKFLOW_VERSION`, `WORKFLOW_INSTRUCTIONS` |
+| `supabase/functions/bible-mcp/workflow-contract.ts` | Delivery defaults, research intent routes and expected tool inventory | `RESEARCH_PROFILES`, `WORKFLOW_ROUTES`, `RESEARCH_TOOL_NAMES` |
 
 ---
 
@@ -80,6 +84,7 @@ Focused DOM components and application shell (max 450 lines/file, max 80 lines/`
 | `src/ui/components/HydratedResearch.ts` | `app-shell` | One-call multi-verse hydration, ten shared pattern templates, full JSON/prompt copy and download, explicit samples and stale-response protection | `createHydratedResearch`, `HydratedResearchHandle` |
 | `src/ui/components/RelationshipExplorer.ts` | `app-shell` | Renders disambiguated lexemes, narrative parallels, intertextual chains, and counterexample controls | `renderRelationshipExplorerView` |
 | `src/main.ts` | `app-shell` | Mounts all reader, map, chronology, modal, and research components and coordinates `appState` transitions | *(Entrypoint)* |
+| `src/ui/styles-mobile.css` | `app-shell` | Responsive phone/tablet layout, 44px touch targets, 16px form controls, contained research text, and reachable inspector close button; imported after component styles | *(Stylesheet)* |
 
 ---
 
@@ -103,11 +108,31 @@ Focused DOM components and application shell (max 450 lines/file, max 80 lines/`
 | **Geography RPC & Milestones 1–9** | `node scripts/verify-geography-rpc.mjs` | `Acts 17:22`, `John 4:7`, `John 4:20`, `Genesis 29:10`, `Exodus 15:23`/`19:2`, `Revelation 21:2` symbolic guard, `Acts 18:1` travel, and `getVerseGeography` alias |
 | **Geography UI Contract Suite** | `node scripts/verify-geography-ui.mjs` | `VerseMap.ts`, `VerseMapCanvas.ts`, `styles-map.css`, and Milestone Tests 1–9 |
 | **Relationship Evidence RPC** | `node scripts/verify-research-rpc.mjs` | `well` -> `marriage` (Gen 24, 29, Exod 2 + Gen 21/26 controls), `menorah` -> `seven spirits of God` (Exod 25, Zech 4, Rev 4:5/5:6 + Rev 1:20 control), and `H1254` homographs |
-| **OpenAPI 3.1.0 & PostgREST** | `node scripts/verify-openapi.mjs` | Validates `supabase/openapi.json` and tests all 8 live PostgREST endpoints |
-| **Public MCP Edge Function** | `node scripts/verify-bible-mcp.mjs` | End-to-end verification of all 11 read-only tools and 16 MCP prompts on `bible-mcp` |
+| **OpenAPI 3.1.0 & PostgREST** | `node scripts/verify-openapi.mjs` | Validates `supabase/openapi.json` and tests 9 public research/lookup endpoints |
+| **Public MCP Edge Function** | `node scripts/verify-bible-mcp.mjs` | End-to-end verification of all 11 read-only tools and 17 MCP prompts on `bible-mcp` |
 | **Translation RPC and ownership** | `node scripts/verify-translations.mjs`, then execute generated `.artifacts/stepbible/verify-translation-ownership.sql` via MCP | Source-inflected English, sequence parity, denied anonymous writes, rollback-only private save/reset and two-reader RLS tests |
 | **Translation browser acceptance** | `node scripts/verify-translations-ui.mjs` with `PLAYWRIGHT_MODULE` and optional `BROWSER_EXECUTABLE` | Source rows, options, RTL/LTR, mobile, offline labels, real private reload/reset and repeated-word isolation; reports pending when anonymous sign-in is disabled |
-| **Hydrated research RPC** | `node scripts/verify-hydrated-research.mjs`; optional `--stress-only`; `scripts/verify-hydrated-research.sql` via MCP | Source parity, full occurrence lists/counts, top-seven ranking, homographs, heading, symbolic geography, reviewed evidence, validation, caller privileges, packet size and public HTTP stress |
+| **Hydrated research RPC** | `node scripts/verify-hydrated-research.mjs`; optional `--stress-only`; `scripts/verify-grammar-decoding.sql` and `scripts/verify-hydrated-research.sql` via MCP | Source parity, server grammar decoding, contiguous spans (up to 100 verses in analysis profile), top-level hoisted dictionaries (60-70% payload compression), polysemy preservation (H5869, H1254), caller privileges, packet size and public HTTP stress |
 | **Hydrated research browser** | `node scripts/verify-hydrated-ui.mjs` with `PLAYWRIGHT_MODULE` and optional `BROWSER_EXECUTABLE` | One-call batches, ten templates, full JSON/prompt copy/download, explicit samples, offline errors, stale responses, keyboard and mobile |
 | **Hydrated OpenAPI schema** | `node scripts/update-hydrated-openapi.mjs`; `node scripts/verify-hydrated-schema.mjs`; `node scripts/verify-openapi.mjs --hydration-only` | Reproducible OpenAPI generation, JSON Schema 2020-12 validation against the full browser-exported live packet, strict input boundaries and public RPC |
-| **MCP local transport regression** | Deno run with `.artifacts/mcp-tools/deno.json` on `scripts/verify-bible-mcp-local.mjs` | Eleven read-only tools, sixteen native/compatibility prompts, direct hydration, input rejection, credential isolation, pagination and bounded retries |
+| **MCP local transport regression** | Deno run with `.artifacts/mcp-tools/deno.json` on `scripts/verify-bible-mcp-local.mjs` | Eleven read-only tools, seventeen prompts, general workflow/defaults, profile overrides, decimal chronology run IDs, direct hydration, input rejection, credential isolation, pagination and bounded retries |
+| **Shared skill/package contract** | `node scripts/build-research-plugin.mjs`; `node scripts/verify-research-workflow.mjs` | Canonical skill and generated workflow parity, matching OpenAI/Gemini packages, public-only manifests, profile defaults and 22 behavioral evaluation rubrics |
+| **Portable manifest schemas** | `node scripts/verify-research-package-schema.mjs` with optional AJV_MODULE | Validate plugin.json/mcp.json against the published Agent Plugins schemas |
+
+## Shared research skill and packages
+
+`skills/bible-research/SKILL.md` defines activation and proportionate research;
+`references/tool-contracts.md` supplies packet/argument details, and
+`agents/openai.yaml` declares its public MCP dependency. `integrations/` holds
+portable OpenAI and Gemini CLI manifests/context. The builder produces
+`.artifacts/research-plugin/bible-research` and the server workflow module.
+The distributable archive is `.artifacts/research-plugin/bible-research-1.4.0.zip`.
+Personal Codex skill installation and the verified `bible-research-local`
+marketplace make it available on this computer; host installation/refresh is
+distinct from server deployment. Gemini CLI is not installed here.
+
+The live MCP script additionally supports `--catalog-only`, checks the default
+router and expected tool inventory, and measures analysis/full parity and size
+in `.artifacts/research-plugin/measurements.json`. Local transport tests cover
+17 prompts, profile overrides and decimal chronology continuation IDs. The
+scenario fixtures are evaluation rubrics, not completed model-provider runs.

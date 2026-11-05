@@ -15,22 +15,29 @@ Hydration arguments use this structure:
 ```json
 {
   "profile": "analysis",
-  "p_request": { "passages": [{ "book": 43, "chapter": 1, "verse": 1 }] }
+  "p_request": {
+    "passages": [
+      { "book": 38, "chapter": 4, "start_verse": 1, "end_verse": 14 }
+    ]
+  }
 }
 ```
 
 `profile` is an MCP delivery preset, not an RPC parameter. Omitted profile
 retains `full`. `analysis` supplies sample mode with five references only when
-occurrences is omitted. Explicit `p_request.occurrences` wins, including all
-references or a sample limit of 1-100. Requested verse tokens remain fully
-hydrated in both modes. Default full behavior and REST contracts are unchanged.
+occurrences is omitted and allows up to 100 verses in a single round-trip. Explicit
+`p_request.occurrences` wins, including all references or a sample limit of 1-100.
+Requested verse tokens remain fully hydrated in both modes. Default full behavior
+and REST contracts are unchanged.
 
 The hydration result is a direct packet, not a rows envelope. Check `status`,
-`coverage`, `verses[].coverage`, chronology/geography status, and evidence
-cursors. Each word's `lexical_entry_key` refers to the shared dictionary, where
-occurrence totals and `complete` describe the actual returned references.
-`decoded_features` may be empty; unresolved tags and absent semantics stay
-explicit. Review all homograph candidates before assigning a sense.
+`coverage`, `verses[].coverage`, component statuses, and evidence cursors. To minimize
+payload size, repetitive metadata (`chronology`, `geography`, and `semantic_evidence`)
+is hoisted to top-level dictionaries keyed by verse reference string (`"{book}:{chapter}:{verse}"`),
+reducing packet size by ~60–70%. Each word includes structured server-decoded grammar
+(`decoded_grammar`) with part of speech, stem, aspect, gender, number, and state.
+Each word's `lexical_entry_key` refers to `lexical_entries`, where all polysemous
+candidate lexemes are preserved without collapsing homographs or multi-valent roots.
 
 Legacy database tools return `source`, `rows`, and `page`. Word IDs are real
 positive database IDs, not Strong's numeric suffixes. `get_verse_chronology_v1`

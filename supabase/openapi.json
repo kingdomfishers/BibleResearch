@@ -1228,17 +1228,64 @@
         ],
         "additionalProperties": false
       },
+      "ResearchPassageRange": {
+        "type": "object",
+        "properties": {
+          "book": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 66
+          },
+          "chapter": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 150
+          },
+          "start_verse": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 176
+          },
+          "end_verse": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 176
+          }
+        },
+        "required": [
+          "book",
+          "chapter",
+          "start_verse",
+          "end_verse"
+        ],
+        "additionalProperties": false
+      },
       "VerseResearchRequest": {
         "type": "object",
         "properties": {
           "passages": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/ResearchPassage"
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/ResearchPassage"
+                },
+                {
+                  "$ref": "#/components/schemas/ResearchPassageRange"
+                }
+              ]
             },
             "minItems": 1,
-            "maxItems": 5,
+            "maxItems": 100,
             "uniqueItems": true
+          },
+          "profile": {
+            "type": "string",
+            "enum": [
+              "analysis",
+              "full"
+            ],
+            "default": "full"
           },
           "occurrences": {
             "type": "object",
@@ -1400,11 +1447,11 @@
                   "null"
                 ]
               },
+              "decoded_grammar": {
+                "type": "object"
+              },
               "decoded_features": {
-                "type": "object",
-                "additionalProperties": {
-                  "type": "string"
-                }
+                "type": "object"
               },
               "unresolved_tags": {
                 "type": "array",
@@ -1416,6 +1463,7 @@
             "required": [
               "raw_code",
               "scheme",
+              "decoded_grammar",
               "decoded_features",
               "unresolved_tags"
             ]
@@ -1845,6 +1893,9 @@
           "verse_id": {
             "type": "integer"
           },
+          "verse_ref": {
+            "type": "string"
+          },
           "passage": {
             "type": "object",
             "properties": {
@@ -1874,32 +1925,6 @@
               "$ref": "#/components/schemas/HydratedResearchWord"
             }
           },
-          "chronology": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/VerseChronologyPacket"
-              },
-              {
-                "$ref": "#/components/schemas/ResearchComponentError"
-              }
-            ]
-          },
-          "geography": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/VerseGeographyPacket"
-              },
-              {
-                "$ref": "#/components/schemas/ResearchComponentError"
-              }
-            ]
-          },
-          "semantic_evidence": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/HydratedSemanticEvidence"
-            }
-          },
           "coverage": {
             "type": "object",
             "properties": {
@@ -1926,11 +1951,9 @@
         },
         "required": [
           "verse_id",
+          "verse_ref",
           "passage",
           "words",
-          "chronology",
-          "geography",
-          "semantic_evidence",
           "coverage"
         ]
       },
@@ -1947,6 +1970,41 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/HydratedResearchVerse"
+            }
+          },
+          "chronology": {
+            "type": "object",
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/VerseChronologyPacket"
+                },
+                {
+                  "$ref": "#/components/schemas/ResearchComponentError"
+                }
+              ]
+            }
+          },
+          "geography": {
+            "type": "object",
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/VerseGeographyPacket"
+                },
+                {
+                  "$ref": "#/components/schemas/ResearchComponentError"
+                }
+              ]
+            }
+          },
+          "semantic_evidence": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/HydratedSemanticEvidence"
+              }
             }
           },
           "lexical_entries": {

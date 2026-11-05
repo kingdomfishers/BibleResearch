@@ -11,6 +11,75 @@ Goal: database-native original-language Scripture reader, multi-model chronology
 - TypeScript edits require `npm.cmd run check:types` and `npm.cmd run check:size`.
 - Joins, word order, co-occurrence, context resolution, and traversal/scoring stay in PostgreSQL.
 
+## Proposed feature: direct Septuagint word connections
+
+Design: [SEPTUAGINT_DESIGN.md](SEPTUAGINT_DESIGN.md). Requested 2026-11-02;
+awaiting pre-code approval for the additive schema/API architecture. Preserve
+the independent workflow, gematria and translation queues.
+
+- [ ] **L1 Source payload and coverage audit** | Files: scripts/audit-lxx.mjs, DATA_SOURCES.md | Verify: [AUTO-TEST] Pin actual MACULA release/files/hashes; inspect equivalents, namespace rules, references, edition metadata and rights; publish measured coverage and unmapped reasons before schema work.
+- [ ] **L2 Additive evidence storage and import** | Files: new additive migration, scripts/import-lxx.mjs | Verify: [AUTO-TEST] Source units and grouped correspondences retain provenance; imported counts match independent audit; both-direction indexes, RLS and grants pass; existing corpus hashes remain unchanged.
+- [ ] **L3 Bidirectional database lookup** | Files: new additive migration, scripts/verify-lxx.sql | Verify: [AUTO-TEST] Versioned RPC returns exact distinct evidence totals, stable pagination, both directions, mapping status and coverage with measured query plans.
+- [ ] **L4 Canonical contract and gateway** | Files: src/api/types.ts, src/api/rpc.ts | Verify: [AUTO-TEST] Typed lookup uses the existing gateway and real optional counterpart IDs; type/size/build and unavailable/error behavior pass.
+- [ ] **L5 Septuagint evidence component** | Files: src/ui/components/LxxConnections.ts, src/ui/styles-lxx.css | Verify: [AUTO-TEST] Source equivalents, counts, evidence expansion, accessible controls and explicit missing/unmapped states render correctly.
+- [ ] **L6 Inspector navigation and integration** | Files: src/ui/components/WordModal.ts, src/main.ts | Verify: [USER-CHECK] Hebrew-to-Greek and Greek-to-Hebrew counterpart navigation, RTL/LTR, keyboard/mobile and stale-response protection work in the reader.
+- [ ] **L7 Public REST and MCP contracts** | Files: supabase/openapi.json, supabase/functions/bible-mcp/catalog.ts | Verify: [AUTO-TEST] Both public surfaces expose the same read-only paginated SQL evidence without breaking existing tools.
+- [ ] **L8 Hydrated research integration** | Files: new additive migration, src/api/types.ts | Verify: [AUTO-TEST] Optional additive LXX evidence has standalone RPC parity and explicit coverage without expanding default packets unexpectedly.
+- [ ] **L9 Regression and rollout documentation** | Files: scripts/verify-lxx.mjs, RESEARCH_API.md | Verify: [AUTO-TEST] Live SQL/REST/MCP parity, existing regression and static/build gates pass; measured coverage, limits, deployment and registry documentation are synchronized.
+
+## Active feature: hydrated research optimization, contiguous ranges (up to 100 verses), payload deduplication, grammar decoding, and polysemy preservation
+
+User approved on 2026-11-02 with verse limit expanded up to 100 verses max in analysis profile.
+
+- [x] **O1 Server-Side Grammar Decoding & Lexeme Polysemy Migration** | Files: supabase/migrations/20261102010000_grammar_and_polysemy.sql, scripts/verify-grammar-decoding.sql | Verify: [AUTO-TEST] PostgreSQL function public.decode_grammar_v1(text) returns structured JSON for Hebrew (HVhrmsa, HNcmpa) and Greek (V-PAP-NSM, N-ASF); additive lexemes for H5869a/b are registered in public.lexemes.
+- [x] **O2 Bounded Range Hydration & Top-Level Deduplication RPC** | Files: supabase/migrations/20261102020000_optimized_hydrated_research.sql, scripts/verify-hydrated-research.sql | Verify: [AUTO-TEST] get_verse_research_v1 expands contiguous spans up to 100 verses under profile: "analysis", hoists chronology, geography, and semantic_evidence to top-level dictionaries keyed by verse ref, and includes decoded grammar.
+- [x] **O3 Canonical Research Types and Gateway Update** | Files: src/api/types.ts, src/api/rpc.ts | Verify: [AUTO-TEST] Updated VerseResearchRequest, HydratedResearchWord, and VerseResearchPacket typecheck cleanly under npm.cmd run check:types and npm.cmd run check:size.
+- [x] **O4 MCP Hydration & Workflow Contract Alignment** | Files: supabase/functions/bible-mcp/catalog.ts, supabase/functions/bible-mcp/workflow-contract.ts, supabase/functions/bible-mcp/research-workflow.ts, skills/bible-research/SKILL.md | Verify: [AUTO-TEST] MCP tool get_verse_research accepts range inputs up to 100 verses and returns hoisted dictionaries; prompt instructions explicitly enforce polysemy and homograph exploration.
+- [-] **O5 Hydrated Research UI Integration** | Files: src/ui/components/HydratedResearch.ts, src/ui/styles.css | Verify: [USER-CHECK] Verse range entry (e.g. Zechariah 4:1–14), JSON preview, and prompt export adapt to top-level dictionaries with zero console errors.
+- [x] **O6 OpenAPI 3.1.0 and Acceptance Test Suite** | Files: supabase/openapi.json, scripts/verify-hydrated-research.mjs, scripts/fixtures/hydrated-research-cases.json, RESEARCH_API.md | Verify: [AUTO-TEST] Up to 100-verse pericope ingestion, payload size benchmarks (~60–70% reduction), grammar decoding assertions, and OpenAPI validation pass.
+
+## Active feature: shared AI research skill and workflow
+
+User approved implementation of the preceding workflow recommendation on
+2026-11-02. This queue preserves the independent gematria and translation work.
+
+- [x] **W1 Shared research skill** | Files: skills/bible-research/SKILL.md, skills/bible-research/references/tool-contracts.md | Verify: [AUTO-TEST] Focused activation, intent routing, proportional research, evidence/interpretation distinctions and graceful missing-tool behavior are defined without overriding user choices.
+- [x] **W2 Portable client packages** | Files: integrations/*, scripts/build-research-plugin.mjs | Verify: [AUTO-TEST] One canonical skill produces matching OpenAI/Gemini packages and server workflow text; manifests contain only public MCP connection data and packages are reproducible.
+- [x] **W3 MCP workflow and analysis profile** | Files: supabase/functions/bible-mcp/catalog.ts, supabase/functions/bible-mcp/pattern-prompts.ts | Verify: [AUTO-TEST] Default study_bible workflow is tool-accessible, all prior prompts remain, explicit analysis profile reduces reference volume while preserving exact totals, and explicit/full requests retain their behavior.
+- [x] **W4 Workflow verification and evaluation cases** | Files: scripts/verify-research-workflow.mjs, scripts/fixtures/research-workflow-cases.json | Verify: [AUTO-TEST] Routing/profile contracts, client packages, missing/ambiguous data, prompt injection boundaries, and a reusable ChatGPT/Gemini behavioral rubric are checked without claiming unrun provider evaluations.
+- [x] **W5 Deploy and document workflow** | Files: supabase/functions/bible-mcp/index.ts, MCP_SETUP.md | Verify: [AUTO-TEST] Live discovery, workflow retrieval, profile data parity/size, existing MCP checks, type/size/build and package validation pass; unchanged REST contracts and remaining client-side installation/refresh actions are documented.
+
+Workflow verification on 2026-11-02: MCP deployment 7 serves v1.4.0 with 11 tools,
+17 prompts and expected-tool metadata for detecting stale client catalogs.
+The Skill Creator validator and official portable manifest schemas pass. The
+canonical skill, generated server module, OpenAI/Gemini package copies and local
+profile/default/override/chronology contracts pass. All 14 live MCP check groups
+and hydration browser checks pass. John 1:1 analysis/full parity preserves verse
+evidence, exact totals, ranked connections and lexeme candidates while reducing
+structured JSON by 81% (242,204 vs 1,274,531 bytes). Type, size/TOC, build and
+Edge Function typechecks pass. Personal Codex skill installation is complete;
+Codex recognizes the bible-research-local personal marketplace, with the package
+available for ChatGPT desktop installation after restart. The portable package
+is prepared for Gemini CLI, which is not installed here. Existing web clients
+still need schema refresh; no tool can replace this chat's cached tool list.
+Twenty-two scenarios are evaluation rubrics, not completed ChatGPT/Gemini model
+runs. Other feature queues and their acceptance status are preserved.
+
+## Mobile UI improvements
+
+- [-] **M1 Responsive reader and research interface** | Files: src/main.ts, src/ui/styles-mobile.css | Verify: [USER-CHECK] Phone navigation, readable forms, touch targets, word inspector, chronology, map controls, and all research tabs fit 320–430px screens; desktop layout preserved.
+
+Agent verification (2026-11-02): type, size/TOC, build, diff whitespace, and all six
+existing reader browser regression groups pass. Edge phone emulation checks at
+320, 360, 390, 430, 680, and 768px pass for both Hebrew and Greek, all nine
+research tabs, page width, form/touch sizes, passage submission, and reachable
+inspector close after scrolling, with zero page errors. Recorded public John 1:1
+geography/chronology responses verify context layouts and map/disclosure controls
+at 320, 390, 430, and 768px. Live context verification timed out. The older
+`verify-research-ui.mjs` stops at its obsolete five-tab assertion (the app has
+nine); the targeted mobile check covers all nine. M1 awaits the post-code skill's
+visual user sign-off; no checkpoint committed.
+
 ## Active Feature: Word Gematria (Hebrew & Greek Standard)
 
 Design: [ARCHITECTURE.md](ARCHITECTURE.md). Standard Hebrew Gematria and Greek Isopsephy computed in PostgreSQL and displayed in WordModal.

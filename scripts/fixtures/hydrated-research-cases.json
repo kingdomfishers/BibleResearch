@@ -6,6 +6,21 @@
     { "book": 66, "chapter": 21, "verse": 2 },
     { "book": 1, "chapter": 29, "verse": 10 }
   ],
-  "invalid": [null, {}, { "passages": [] }, { "passages": "1:1:1" }, { "passages": [{ "book": 0, "chapter": 1, "verse": 1 }] }, { "passages": [{ "book": "1", "chapter": 1, "verse": 1 }] }, { "passages": [{ "book": 1, "chapter": 1.5, "verse": 1 }] }, { "passages": [{ "book": 1, "chapter": 1, "verse": 1 }], "occurrences": { "mode": "sample", "limit": 101 } }, { "passages": [{ "book": 1, "chapter": 1, "verse": 1 }], "unknown": true }],
+  "ranges": [
+    { "book": 38, "chapter": 4, "start_verse": 1, "end_verse": 14 }
+  ],
+  "polysemy": { "book": 1, "chapter": 24, "verse": 16 },
+  "invalid": [
+    null,
+    {},
+    { "passages": [] },
+    { "passages": "1:1:1" },
+    { "passages": [{ "book": 0, "chapter": 1, "verse": 1 }] },
+    { "passages": [{ "book": "1", "chapter": 1, "verse": 1 }] },
+    { "passages": [{ "book": 1, "chapter": 1.5, "verse": 1 }] },
+    { "passages": [{ "book": 1, "chapter": 1, "verse": 1 }], "occurrences": { "mode": "sample", "limit": 101 } },
+    { "passages": [{ "book": 1, "chapter": 1, "verse": 1 }], "unknown": true },
+    { "passages": [{ "book": 38, "chapter": 4, "start_verse": 14, "end_verse": 1 }] }
+  ],
   "missing": { "book": 1, "chapter": 150, "verse": 176 }
 }

@@ -35,57 +35,66 @@ The existing relationship graph contract remains compatible.
 - `statistical_cooccurrences`: Live corpus co-occurrence statistics when the subject resolves to a lexical word.
 - `coverage`: Corpus denominator (`31,203` passages, `443,524` tokens) and `51,200`-byte cap metadata.
 
-## 4. One-call hydrated verses (v1.3.0)
+## 4. One-call hydrated verses (v1.5.0)
 
 - REST: `POST /rest/v1/rpc/get_verse_research_v1`
 - Public MCP tool: `get_verse_research`
 - Frontend gateway: `BibleRPC.getVerseResearch(request)`
 - UI: Research panel → **8 · Hydrated Verse & Patterns**
 
-REST and MCP use the same arguments:
+REST and MCP support both discrete verses and contiguous verse range spans:
 
 ```json
 {
+  "profile": "analysis",
   "p_request": {
     "passages": [
-      { "book": 1, "chapter": 1, "verse": 1 },
+      { "book": 38, "chapter": 4, "start_verse": 1, "end_verse": 14 },
       { "book": 43, "chapter": 1, "verse": 1 }
     ],
-    "occurrences": { "mode": "all" },
+    "occurrences": { "mode": "sample", "limit": 20 },
     "chronology_model_id": "theographic-verse-v1"
   }
 }
 ```
 
-Request 1-5 distinct verses, including retained Psalm headings at verse 0. The
+Request 1–5 distinct verses in default/full mode, or contiguous pericopes up to
+**100 verses max** when `profile: "analysis"` (or sample mode) is active. The
 MCP tool returns the packet directly as structuredContent (rather than a paged
 rows envelope). The gateway receives the inner request object without p_request.
 
 `verses[].words` preserves every token's position, source English rendering,
 available translations, original form, transliteration, Strong's, raw grammar
 and source scheme, definitions, and available lexeme candidates.
+Every word also contains **server-decoded grammar** (`decoded_grammar` and
+`decoded_features`), structured via PostgreSQL's `decode_grammar_v1` into
+standard linguistic properties (`pos`, `stem`, `aspect`, `gender`, `number`,
+`state`, `person`, `case`, `degree`, etc.) for Hebrew (ETCBC/Westminster) and
+Greek (Robinson) tags.
+
 `words[].lexical_entry_key` points into shared `lexical_entries`, where each
-base-Strong's group has exact corpus token and passage totals, every occurrence
-reference/count by default, and its top seven available cached connections with
-translations, definitions, scores, frequency and distance. Repeated words retain
+base-Strong's group has exact corpus token and passage totals, occurrence
+references (all or sample), and top cached connections. Repeated words retain
 independent occurrence information while sharing corpus statistics.
+**Polysemy & Homograph Preservation:** Candidate lexemes for homographs and
+shared roots (e.g. `H5869a` eye vs `H5869b` spring; `H1254a`/`b`/`c`) are
+never filtered out. When a base Strong's number maps to multiple semantic
+domains, all candidate lexemes are retained in `lexical_entries` to facilitate
+the theological and linguistic exploration of paronomasia and conceptual stacking.
 
-Each verse also contains the existing `chronology` and `geography` packets
-(including alternatives, provenance, coordinates/bounds, ancient names and
-composition/audience locations where supplied), plus relevant reviewed
-`semantic_evidence` and counterexamples. Top-level sources identify the lexical
-and annotation releases; nested chronology/geography retain their own sources.
-
-Raw grammatical tags remain in `unresolved_tags` until a verified decoder is
-available; decoded_features is currently empty. Semantic domains and token-sense
-assignments are unavailable. Lexeme candidates preserve homographs and are not
-assigned senses. Semantic evidence matches include passage spans and lexically
-related concept candidates; inspect the citations before asserting a pattern.
-Empty annotation arrays do not establish that no relationship exists.
+**Top-Level Payload Deduplication:** Repetitive metadata is hoisted out of
+individual verse objects into top-level dictionaries keyed by verse reference string
+(`"{book}:{chapter}:{verse}"`):
+- `packet.chronology`: Chronology event assertions and evidence keyed by verse ref.
+- `packet.geography`: Context-aware geographical location data keyed by verse ref.
+- `packet.semantic_evidence`: Reviewed thematic/semantic evidence keyed by verse ref.
+Each verse retains its canonical `verse_ref` string for constant-time lookup.
+This hoisting eliminates redundant schema nesting, compressing the overall
+packet payload size by ~60–70%.
 
 `coverage` declares occurrence completeness, chronology evidence completeness,
 component statuses, source scope and resource limits. Base-Strong's aggregation
-groups inflections and may combine homographs; cached scores measure corpus
+groups inflections and retains homographs; cached scores measure corpus
 associations, not synonymy or theological proof. Public hydration excludes private
 translation choices even when called by an authenticated reader.
 
@@ -96,9 +105,9 @@ The maximum JSON packet is 8 MiB; oversized results return
 `packet_limit_exceeded` with measured bytes and a smaller-request/sample hint.
 Other packet errors are `invalid_request` and `passage_not_found`. Inspect nested
 component errors and evidence cursors before claiming complete dating/map data.
-Hydration has a function-scoped 10s database budget within the 12s client budget;
-the existing relationship evidence function has an 8s budget. Role and global
-timeouts remain unchanged.
+Hydration has a function-scoped 15s database budget (`set statement_timeout = '15s'`)
+to comfortably accommodate 100-verse contiguous batches; the existing relationship
+evidence function has an 8s budget. Role and global timeouts remain unchanged.
 
 ## 5. Deep pattern prompts
 

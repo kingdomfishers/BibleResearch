@@ -1,0 +1,138 @@
+/* Loaded after component styles so responsive rules share one predictable cascade. */
+@media (max-width: 900px) {
+  .research-panel, .research-tabpanel, .prompt-meta, .spec-card,
+  .inputs-row > label, .inputs-row input, .inputs-row select { min-width: 0; }
+  .api-signature, .spec-row { max-width: 100%; overflow-wrap: anywhere; }
+  .inputs-row .flex-grow { min-width: min(220px, 100%); }
+  .inputs-row input, .inputs-row select { max-width: 100%; }
+  .research-header-title { flex-wrap: wrap; }
+  .research-header-title h2 { flex-basis: 100%; }
+  .p3-item, .p3-left, .p3-right { flex-wrap: wrap; gap: 10px; }
+}
+
+@media (max-width: 680px) {
+  body {
+    padding-left: max(14px, env(safe-area-inset-left));
+    padding-right: max(14px, env(safe-area-inset-right));
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .site-header { height: 74px; gap: 14px; }
+  .brand { font-size: 13px; gap: 10px; }
+  .brand-mark { width: 36px; height: 40px; font-size: 29px; }
+  .brand-sub { font-size: 9px; }
+  .language-pill { font-size: 8px; padding: 8px; letter-spacing: .08em; }
+  .intro { padding: 30px 0 24px; }
+  .intro .eyebrow { font-size: 9px; letter-spacing: .13em; margin-bottom: 18px; gap: 9px; }
+  h1 { font-size: clamp(34px, 8.5vw, 46px); margin-bottom: 14px; }
+  .intro > p:last-child { font-size: 14px; line-height: 1.6; margin-bottom: 0; }
+
+  /* Keep chapter, verse, and the primary action together below the book. */
+  .passage-nav {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(130px, 1.6fr);
+    align-items: end;
+    gap: 12px 8px;
+    padding: 16px;
+  }
+  .passage-nav label { min-width: 0; gap: 7px; font-size: 12px; }
+  .book-field { grid-column: 1 / -1; }
+  .passage-nav select, .passage-nav input { width: 100%; min-width: 0; height: 48px; font-size: 16px; padding: 0 10px; }
+  .primary-button { min-height: 48px; padding: 0 8px; }
+  .primary-button span { padding-left: 5px; }
+  .millennium {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px 12px;
+    min-width: 0;
+    margin: 2px 0 0;
+    padding: 12px 0 0;
+    border-left: 0;
+    border-top: 1px solid var(--border);
+  }
+  .millennium > span { margin: 0; font-size: 9px; }
+  .millennium strong { font-size: 12px; overflow-wrap: anywhere; }
+  .workspace-heading { margin: 24px 0 12px; flex-wrap: wrap; gap: 8px; }
+  .workspace-heading .eyebrow { font-size: 10px; }
+  .click-hint { font-size: 11px; line-height: 1.5; }
+  .click-hint span { margin-left: 4px; }
+  .reader-heading { padding: 20px 16px 0; gap: 12px; flex-wrap: wrap; }
+  .reader-heading .eyebrow { font-size: 9px; }
+  .source-badge { font-size: 11px; }
+  .word-grid { padding: 20px 8px; gap: 8px 4px; align-items: start; }
+  .word-grid .word-token { min-width: 0; padding: 10px 6px; gap: 9px; }
+  .word-inspect { min-width: 44px; min-height: 48px; max-width: 100%; }
+  .original { overflow-wrap: anywhere; }
+  .transliteration { max-width: 100%; overflow-wrap: anywhere; font-size: 13px; text-align: center; }
+  .translation-choice .english-slot { min-height: 44px; font-size: 16px; max-width: min(220px, 64vw); }
+  .translation-status { font-size: 11px; }
+  .translation-reset { min-height: 44px; min-width: 44px; font-size: 12px; }
+  .reader-footer { padding: 14px 16px; gap: 10px; flex-wrap: wrap; font-size: 11px; line-height: 1.5; }
+
+  /* A contained, scrollable dialog leaves its close button within reach. */
+  .word-modal { padding: 24px 20px; max-height: calc(100dvh - 24px); overscroll-behavior: contain; overflow-wrap: anywhere; }
+  .modal-close { position: sticky; top: 0; z-index: 2; display: block; margin: -12px -8px -32px auto; width: 44px; height: 44px; background: var(--panel); border-radius: 6px; }
+  .modal-original { padding-right: 28px; }
+  .word-meta > span, .translations > span { max-width: 100%; }
+  .occurrence-chip, .relationship-item, .related-compare-btn { min-height: 44px; }
+  .related-card { flex-direction: column; }
+  .related-inspect-btn { min-width: 0; }
+  .relationship-item { gap: 8px; flex-wrap: wrap; text-align: left; }
+
+  .verse-map-summary { padding: 16px; gap: 12px; }
+  .verse-map-summary-meta { gap: 8px; }
+  .verse-map-summary-title h2, .chronology-heading h2 { font-size: 22px; }
+  .verse-map-stage { display: grid; grid-template-columns: minmax(0, 1fr); min-height: 0; }
+  .verse-map-canvas { grid-column: 1; grid-row: 2; height: 300px; min-height: 300px; }
+  .verse-map-toolbar { position: static; grid-row: 1; padding: 10px; gap: 8px; }
+  .verse-map-mode-group { display: flex; width: 100%; order: 1; }
+  .verse-map-btn { min-height: 44px; padding: 8px; line-height: 1.4; }
+  .verse-map-mode-group .verse-map-btn { flex: 1; min-width: 0; }
+  .verse-map-empty-overlay { position: relative; inset: auto; grid-column: 1; grid-row: 2; min-height: 300px; }
+  .verse-map-legend { position: static; grid-row: 3; margin: 10px; gap: 6px 10px; }
+  .maplibregl-ctrl-group button { width: 44px; height: 44px; }
+  .verse-map-sidebar { padding: 16px; max-height: none; overflow-wrap: anywhere; }
+  .verse-map-attribution { padding: 12px 16px; overflow-wrap: anywhere; }
+  .place-card-header { flex-wrap: wrap; }
+  .place-card-title, .alt-btn { min-height: 44px; }
+  .chronology-heading, .chronology-content { padding: 18px 16px; }
+  .chronology-controls select { min-height: 48px; font-size: 16px; }
+  .chronology-detail summary { min-height: 44px; align-content: center; }
+  .chronology-button { min-height: 44px; }
+  .chronology-alternative { flex-wrap: wrap; gap: 10px; }
+
+  /* Every tool stays visible; forms stack without forcing page-wide scrolling. */
+  .research-panel { margin-top: 24px; padding: 20px 16px; }
+  .research-header-title { gap: 10px; }
+  .research-header-title .eyebrow { flex: 1; font-size: 9px; line-height: 1.6; letter-spacing: .12em; }
+  .research-header-title h2 { font-size: 25px; line-height: 1.2; }
+  .research-sub { font-size: 13px; }
+  .research-tablist { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .research-tab { min-width: 0; min-height: 44px; padding: 10px 8px; line-height: 1.5; text-align: left; overflow-wrap: anywhere; }
+  .research-tab:last-child { grid-column: 1 / -1; }
+  .api-signature { font-size: 11px; line-height: 1.7; }
+  .prompt-form { padding: 14px; }
+  .inputs-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 10px; }
+  .inputs-row label { min-width: 0; font-size: 12px; line-height: 1.5; }
+  .inputs-row label:has(select), .inputs-row .flex-grow { grid-column: 1 / -1; min-width: 0; }
+  .inputs-row input, .inputs-row select, .inputs-row input[type="number"] { width: 100%; min-height: 48px; font-size: 16px; }
+  .run-btn { grid-column: 1 / -1; width: 100%; min-height: 48px; white-space: normal; line-height: 1.5; }
+  .quick-samples { gap: 8px; }
+  .quick-samples button { min-height: 44px; padding: 8px 10px; font-size: 12px; text-align: left; }
+  .p1-tokens-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .p1-token-card { min-width: 0; overflow-wrap: anywhere; }
+  .p2-chip, .p4-item { min-height: 44px; gap: 8px; flex-wrap: wrap; text-align: left; }
+  .p3-item { flex-direction: column; align-items: start; padding: 14px; }
+  .p3-left, .p3-right { max-width: 100%; overflow-wrap: anywhere; }
+  .spec-card { padding: 14px; }
+  .research-tabpanel > details > summary { min-height: 44px; align-content: center; cursor: pointer; }
+  #hydrated-status { font-size: 13px; line-height: 1.6; }
+  .sample-strip { padding: 16px; margin-bottom: 30px; }
+  .sample-links { flex-wrap: wrap; width: 100%; }
+  .sample-links a { display: inline-flex; align-items: center; justify-content: center; flex: 1; min-height: 44px; font-size: 12px; }
+  .study-guide { grid-template-columns: 1fr; gap: 22px; }
+  .study-guide h3 { font-size: 14px; }
+  .study-guide p { font-size: 13px; }
+  .site-footer { flex-wrap: wrap; gap: 12px; margin-top: 32px; font-size: 11px; }
+}

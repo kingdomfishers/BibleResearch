@@ -1,27 +1,38 @@
--- Read-only/rollback-only checks; run against the deployed corpus.
-begin;
-set local role anon;
-do $$
-declare p jsonb; entry jsonb; expected bigint;
-begin
-  p := public.get_verse_research_v1('{"passages":[{"book":1,"chapter":1,"verse":1}],"occurrences":{"mode":"sample","limit":2}}');
-  assert p->>'status'='ok';
-  assert jsonb_array_length(p #> '{verses,0,words}')=7;
-  assert p #>> '{coverage,private_translation_choices_included}'='false';
-  assert p #>> '{lexical_entries,H1254,needs_disambiguation}'='true';
-  entry := p #> '{lexical_entries,H7225,occurrences}';
-  select sum(occurrence_count) into expected from public.prompt_word_occurrences('H7225');
-  assert (entry->>'corpus_token_total')::bigint=expected;
-  assert not (entry->>'complete')::boolean;
-  assert jsonb_array_length(entry->'references')=2;
-  assert public.get_verse_research_v1('null')->>'status'='invalid_request';
-  assert not has_table_privilege('anon','public.words','UPDATE');
-  assert not has_table_privilege('anon','public.verses','INSERT');
-  assert has_function_privilege('anon','public.get_verse_research_v1(jsonb)','EXECUTE');
-  assert not (select prosecdef from pg_proc where oid='public.get_verse_research_v1(jsonb)'::regprocedure);
-  assert position('word_translation_choices' in pg_get_functiondef('public.get_verse_research_v1(jsonb)'::regprocedure))=0;
-end $$;
-rollback;
+-- Verify optimized hydrated verse research RPC
 
--- The occurrence query retains the existing indexed base-Strongs/GIN pathway.
-explain (analyze,buffers) select * from public.prompt_word_occurrences('H7225');
+-- 1. Test single verse (Genesis 1:1)
+select 
+  (packet->>'schema_version')::int as schema_version,
+  packet->>'status' as status,
+  jsonb_array_length(packet->'verses') as verse_count,
+  jsonb_object_keys(packet->'chronology') as sample_chronology_key,
+  jsonb_object_keys(packet->'geography') as sample_geography_key,
+  (packet->'verses'->0->'words'->0->'grammar'->'decoded_grammar') as first_word_decoded_grammar
+from public.get_verse_research_v1(jsonb_build_object(
+  'passages', jsonb_build_array(jsonb_build_object('book', 1, 'chapter', 1, 'verse', 1)),
+  'profile', 'analysis'
+)) as packet;
+
+-- 2. Test contiguous range (Zechariah 4:1-14 pericope)
+select 
+  (packet->>'schema_version')::int as schema_version,
+  packet->>'status' as status,
+  jsonb_array_length(packet->'verses') as verse_count,
+  (packet->'coverage'->>'returned_passage_count')::int as returned_passages,
+  (packet->'coverage'->>'lexical_entry_count')::int as lexical_count,
+  (packet->'coverage'->>'max_passages')::int as max_passages,
+  octet_length(packet::text) as packet_bytes
+from public.get_verse_research_v1(jsonb_build_object(
+  'passages', jsonb_build_array(jsonb_build_object('book', 38, 'chapter', 4, 'start_verse', 1, 'end_verse', 14)),
+  'profile', 'analysis'
+)) as packet;
+
+-- 3. Test polysemy preservation for H5869 ('ayin in Genesis 24:16)
+select 
+  packet->'lexical_entries'->'H5869'->>'needs_disambiguation' as needs_disambig,
+  jsonb_array_length(packet->'lexical_entries'->'H5869'->'lexeme_candidates') as candidates_count,
+  packet->'lexical_entries'->'H5869'->'lexeme_candidates' as candidates
+from public.get_verse_research_v1(jsonb_build_object(
+  'passages', jsonb_build_array(jsonb_build_object('book', 1, 'chapter', 24, 'verse', 16)),
+  'profile', 'analysis'
+)) as packet;

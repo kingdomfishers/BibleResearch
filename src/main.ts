@@ -14,6 +14,7 @@ import { createWordModal } from './ui/components/WordModal';
 import { createVerseMap } from './ui/components/VerseMap';
 import { createChronologyPanel } from './ui/components/ChronologyPanel';
 import { createResearchPanel } from './ui/components/ResearchPanel';
+import './ui/styles-mobile.css';
 
 // === @section:ui:main ===
 const app = document.querySelector<HTMLDivElement>('#app')!;

@@ -6,7 +6,7 @@
 
 // === @section:imports ===
 import { BibleRPC } from '../../api/rpc';
-import type { ActivePassage, VerseResearchPacket } from '../../api/types';
+import type { ActivePassage, VerseResearchPacket, VerseSpanInput } from '../../api/types';
 import { BIBLE_BOOKS, formatVerseRef } from '../utils';
 import { PATTERN_PROMPTS, patternPrompt, type PatternName } from '../../../supabase/functions/bible-mcp/pattern-prompts';
 
@@ -16,32 +16,46 @@ export interface HydratedResearchHandle {
 }
 
 // === @section:logic:references ===
-function additionalReferences(text: string): ActivePassage[] {
-  if (!text.trim()) return [];
-  return text.split(';').map(value => {
-    const numeric = value.trim().match(/^(\d+):(\d+):(\d+)$/);
-    const named = value.trim().match(/^(.+?)\s+(\d+):(\d+)$/);
-    if (!numeric && !named) throw new Error('Use references such as John 1:1; Genesis 1:2.');
-    const book = numeric ? Number(numeric[1]) : BIBLE_BOOKS.findIndex(b => b.toLowerCase() === named![1].toLowerCase()) + 1;
-    const chapter = Number((numeric ?? named)![2]), verse = Number((numeric ?? named)![3]);
-    if (book < 1 || book > 66 || chapter < 1 || chapter > 150 || verse < 0 || verse > 176) {
-      throw new Error('Check the book, chapter and verse in each additional reference.');
+function parseRef(text: string): VerseSpanInput {
+  const val = text.trim();
+  const rangeNum = val.match(/^(\d+):(\d+):(\d+)-(\d+)$/);
+  const rangeName = val.match(/^(.+?)\s+(\d+):(\d+)-(\d+)$/);
+  if (rangeNum || rangeName) {
+    const m = rangeNum ?? rangeName!;
+    const book = rangeNum ? Number(m[1]) : BIBLE_BOOKS.findIndex(b => b.toLowerCase() === m[1].toLowerCase()) + 1;
+    const chapter = Number(m[2]), start_verse = Number(m[3]), end_verse = Number(m[4]);
+    if (book < 1 || book > 66 || chapter < 1 || chapter > 150 || start_verse < 0 || end_verse > 176 || start_verse > end_verse) {
+      throw new Error(`Check range bounds in "${val}".`);
     }
-    return { book, chapter, verse };
-  });
+    return { book, chapter, start_verse, end_verse };
+  }
+  const numeric = val.match(/^(\d+):(\d+):(\d+)$/);
+  const named = val.match(/^(.+?)\s+(\d+):(\d+)$/);
+  if (!numeric && !named) throw new Error('Use references like John 1:1, Zechariah 4:1-14, or 38:4:1-14.');
+  const book = numeric ? Number(numeric[1]) : BIBLE_BOOKS.findIndex(b => b.toLowerCase() === named![1].toLowerCase()) + 1;
+  const chapter = Number((numeric ?? named)![2]), verse = Number((numeric ?? named)![3]);
+  if (book < 1 || book > 66 || chapter < 1 || chapter > 150 || verse < 0 || verse > 176) {
+    throw new Error(`Check reference bounds in "${val}".`);
+  }
+  return { book, chapter, verse };
+}
+function additionalReferences(text: string): VerseSpanInput[] {
+  if (!text.trim()) return [];
+  return text.split(';').filter(s => s.trim().length > 0).map(parseRef);
 }
 
 // === @section:ui:form ===
 function renderForm(container: HTMLElement): void {
   container.innerHTML = `<div class="prompt-meta"><p class="prompt-desc">
-    <strong>Hydrated Verse & Deep Patterns</strong>: Get words, source translations, Strong’s, grammar,
-    occurrence references, seven connected words, dating, map data and available semantic evidence in one JSON packet.</p></div>
+    <strong>Hydrated Verse & Deep Patterns</strong>: Get words, source translations, Strong’s, server-decoded grammar,
+    occurrence references, connections, dating, map data and reviewed semantics in one deduplicated JSON packet.</p></div>
     <form class="prompt-form" id="hydrated-form"><div class="inputs-row">
       <label>Book <select id="hydrated-book">${BIBLE_BOOKS.map((b, i) => `<option value="${i + 1}">${b}</option>`).join('')}</select></label>
       <label>Chapter <input id="hydrated-chapter" type="number" min="1" max="150" value="1" required></label>
       <label>Verse <input id="hydrated-verse" type="number" min="0" max="176" value="1" required></label>
-      <label class="flex-grow">Additional passages (up to four, separated by ;)
-        <input id="hydrated-additional" placeholder="John 1:1; Genesis 1:2" maxlength="500"></label>
+      <label>To verse <input id="hydrated-end-verse" type="number" min="0" max="176" placeholder="Optional range"></label>
+      <label class="flex-grow">Additional passages or ranges (separated by ;)
+        <input id="hydrated-additional" placeholder="Zech 4:1-14; John 1:1" maxlength="500"></label>
       <label>Occurrences <select id="hydrated-mode"><option value="all">All references</option><option value="sample">Sample references</option></select></label>
       <label>Sample size <input id="hydrated-limit" type="number" min="1" max="100" value="20" disabled></label>
       <button class="run-btn" id="hydrated-run" type="submit">Hydrate verses</button></div>
@@ -63,7 +77,8 @@ export function createHydratedResearch(container: HTMLElement): HydratedResearch
   renderForm(container);
   const field = <T extends HTMLElement>(id: string) => container.querySelector<T>(`#hydrated-${id}`)!;
   const book = field<HTMLSelectElement>('book'), chapter = field<HTMLInputElement>('chapter');
-  const verse = field<HTMLInputElement>('verse'), additional = field<HTMLInputElement>('additional');
+  const verse = field<HTMLInputElement>('verse'), endVerse = field<HTMLInputElement>('end-verse');
+  const additional = field<HTMLInputElement>('additional');
   const mode = field<HTMLSelectElement>('mode'), limit = field<HTMLInputElement>('limit');
   const status = field<HTMLParagraphElement>('status'), runButton = field<HTMLButtonElement>('run');
   const copyJson = field<HTMLButtonElement>('copy-json'), copyPrompt = field<HTMLButtonElement>('copy-prompt');
@@ -77,7 +92,7 @@ export function createHydratedResearch(container: HTMLElement): HydratedResearch
   };
   field<HTMLFormElement>('form').addEventListener('submit', e => { e.preventDefault(); void run(); });
   mode.addEventListener('change', () => { limit.disabled = mode.value !== 'sample'; });
-  for (const input of [book, chapter, verse, additional, mode, limit]) {
+  for (const input of [book, chapter, verse, endVerse, additional, mode, limit]) {
     input.addEventListener('input', () => { clear(); status.textContent = 'Passages or occurrence settings changed. Hydrate again.'; });
   }
   copyJson.addEventListener('click', () => { void copy(false); });
@@ -90,6 +105,7 @@ export function createHydratedResearch(container: HTMLElement): HydratedResearch
   });
   return { updatePassage(passage) {
     clear(); book.value = String(passage.book); chapter.value = String(passage.chapter); verse.value = String(passage.verse);
+    endVerse.value = '';
     status.textContent = 'Passage changed. Hydrate again to use the current selection.';
   } };
 
@@ -97,14 +113,19 @@ export function createHydratedResearch(container: HTMLElement): HydratedResearch
   async function run(): Promise<void> {
     clear(); const requestId = generation;
     try {
-      const passages = [{ book: Number(book.value), chapter: Number(chapter.value), verse: Number(verse.value) }, ...additionalReferences(additional.value)];
-      if (passages.length > 5) throw new Error('Choose at most five passages per request.');
-      if (new Set(passages.map(p => `${p.book}:${p.chapter}:${p.verse}`)).size !== passages.length) {
-        throw new Error('Remove duplicate passages before hydrating.');
-      }
+      const b = Number(book.value), c = Number(chapter.value), v = Number(verse.value);
+      const ev = endVerse.value.trim() ? Number(endVerse.value) : null;
+      const initial: VerseSpanInput = ev !== null && ev > v
+        ? { book: b, chapter: c, start_verse: v, end_verse: ev }
+        : { book: b, chapter: c, verse: v };
+      const passages = [initial, ...additionalReferences(additional.value)];
       runButton.disabled = true; container.setAttribute('aria-busy', 'true'); status.textContent = 'Loading verse research…';
-      const response = await BibleRPC.getVerseResearch({ passages,
-        occurrences: mode.value === 'all' ? { mode: 'all' } : { mode: 'sample', limit: Number(limit.value) } });
+      const isSample = mode.value === 'sample';
+      const response = await BibleRPC.getVerseResearch({
+        passages,
+        profile: isSample ? 'analysis' : 'full',
+        occurrences: isSample ? { mode: 'sample', limit: Number(limit.value) } : { mode: 'all' },
+      });
       if (requestId !== generation) return;
       if (!response.data || response.source !== 'live') throw new Error(response.error ?? 'Verse research is unavailable.');
       if (response.data.status !== 'ok') {
@@ -116,7 +137,7 @@ export function createHydratedResearch(container: HTMLElement): HydratedResearch
       const wordCount = packet.verses.reduce((n, v) => n + v.words.length, 0);
       field('summary').textContent = `${references} — ${wordCount} ordered words; ${packet.coverage.lexical_entry_count} shared lexical entries. ` +
         `${packet.coverage.occurrences_complete ? 'All occurrence references included.' : 'Sample references; corpus totals are exact.'} ` +
-        'Semantic annotations have limited coverage. Raw grammatical tags and unresolved expansions remain explicit. ' +
+        'Server-side grammar decoding active. Polysemy preserved. Deduplicated payload. ' +
         (packet.coverage.chronology_evidence_complete ? '' : 'Chronology evidence is incomplete; inspect component statuses and cursors. ') +
         (packet.coverage.component_statuses.some(s => s.geography !== 'ok') ? 'Some geographical components are unavailable; inspect statuses. ' : '');
       field('preview').textContent = json.slice(0, 32000) + (json.length > 32000 ? '\n… Preview shortened. Copy or download the full JSON.' : '');

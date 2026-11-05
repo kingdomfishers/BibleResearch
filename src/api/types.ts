@@ -216,8 +216,10 @@ export interface RelationshipResearchPacket {
 }
 
 // === @section:types:hydrated-words ===
+export type VerseSpanInput = ActivePassage | { book: number; chapter: number; start_verse: number; end_verse: number };
 export interface VerseResearchRequest {
-  passages: ActivePassage[];
+  passages: VerseSpanInput[];
+  profile?: 'analysis' | 'full';
   occurrences?: { mode: 'all' | 'sample'; limit?: number };
   chronology_model_id?: string;
 }
@@ -225,7 +227,8 @@ export interface HydratedResearchWord {
   word_position: number; word_id: number; original_word: string;
   transliteration: string; strongs_nr: string; lexical_entry_key: string;
   grammar: { raw_code: string | null; scheme: string | null;
-    decoded_features: Record<string, string>; unresolved_tags: string[] };
+    decoded_grammar: Record<string, unknown>;
+    decoded_features: Record<string, unknown>; unresolved_tags: string[] };
   translations: { source_english: string | null; source_ref: string | null;
     source_name: string | null; source_commit: string | null;
     corpus_gloss: string | null; available_renderings: string[] };
@@ -257,21 +260,25 @@ export interface HydratedSemanticEvidence {
 }
 export interface VerseResearchPacket {
   schema_version: 1; status: 'ok';
-  verses: { verse_id: number; passage: ActivePassage & { is_heading: boolean };
-    words: HydratedResearchWord[]; chronology: ChronologyResponse; geography: VerseGeographyResponse;
-    semantic_evidence: HydratedSemanticEvidence[];
+  verses: { verse_id: number; verse_ref: string; passage: ActivePassage & { is_heading: boolean };
+    words: HydratedResearchWord[]; chronology?: ChronologyResponse; geography?: VerseGeographyResponse;
+    semantic_evidence?: HydratedSemanticEvidence[];
     coverage: { semantic_scope: string; grammar_decoding: string; semantic_domains: string; token_senses: string } }[];
+  chronology: Record<string, ChronologyResponse>;
+  geography: Record<string, VerseGeographyResponse>;
+  semantic_evidence: Record<string, HydratedSemanticEvidence[]>;
   lexical_entries: Record<string, HydratedLexicalEntry>;
   sources: { release_key: string; dataset: string; commit_sha: string; license: string; attribution: string }[];
   coverage: { corpus: string; requested_passage_count: number; returned_passage_count: number;
     lexical_entry_count: number; occurrence_mode: 'all' | 'sample'; occurrences_complete: boolean;
     chronology_evidence_complete: boolean;
-    component_statuses: { passage: ActivePassage & { is_heading: boolean }; chronology: string; geography: string }[];
+    component_statuses: { verse_ref?: string; passage: ActivePassage & { is_heading: boolean }; chronology: string; geography: string }[];
     max_passages: number; max_packet_bytes: number; semantic_coverage: string;
+    polysemy_homographs_preserved?: boolean; payload_deduplication?: string;
     private_translation_choices_included: false };
 }
 export interface VerseResearchError {
   schema_version: 1; status: 'invalid_request' | 'passage_not_found' | 'packet_limit_exceeded';
-  message?: string; requested_passages?: ActivePassage[]; measured_bytes?: number; max_packet_bytes?: number;
+  message?: string; requested_passages?: VerseSpanInput[]; measured_bytes?: number; max_packet_bytes?: number;
 }
 export type VerseResearchResponse = VerseResearchPacket | VerseResearchError;
