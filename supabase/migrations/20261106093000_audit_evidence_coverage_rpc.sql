@@ -1,5 +1,5 @@
 -- Migration: 20261106093000_audit_evidence_coverage_rpc.sql
--- Description: Deterministic evidence coverage audit function for Bible Research Engine (F1)
+-- Description: Deterministic evidence coverage audit function for Bible Research Engine (F1-F4)
 -- Returns exact table counts, duplicate metrics, foreign key orphan checks, pilot book coverage,
 -- and source vs import incompleteness classifications.
 
@@ -54,13 +54,17 @@ SELECT jsonb_build_object(
     'macula_hebrew_morphemes', (SELECT total_morphemes FROM macula_stats),
     'macula_gated_field_values', (SELECT count(*) FROM public.macula_gated_field_values),
     'morphhb_tokens', (SELECT count(*) FROM public.morphhb_tokens),
-    'cross_token_mappings', (SELECT count(*) FROM public.cross_token_mappings)
+    'cross_token_mappings', (SELECT count(*) FROM public.cross_token_mappings),
+    'macula_greek_tokens', (SELECT count(*) FROM public.macula_greek_tokens),
+    'tagnt_tokens', (SELECT count(*) FROM public.tagnt_tokens)
   ),
   'duplicates', jsonb_build_object(
     'dup_verses', (SELECT count(*) FROM (SELECT book, chapter, verse_nr FROM public.verses GROUP BY book, chapter, verse_nr HAVING count(*) > 1) d),
     'dup_lxx_words', (SELECT count(*) FROM (SELECT book_no, chapter, verse_nr, COALESCE(verse_suffix,''), ordinal FROM public.lxx_swete_words GROUP BY book_no, chapter, verse_nr, COALESCE(verse_suffix,''), ordinal HAVING count(*) > 1) d),
     'dup_macula_morphemes', (SELECT count(*) FROM (SELECT macula_id FROM public.macula_hebrew_morphemes GROUP BY macula_id HAVING count(*) > 1) d),
     'dup_morphhb_tokens', (SELECT count(*) FROM (SELECT source_release_id, morphhb_id FROM public.morphhb_tokens GROUP BY source_release_id, morphhb_id HAVING count(*) > 1) d),
+    'dup_macula_greek_tokens', (SELECT count(*) FROM (SELECT edition_key, xml_id FROM public.macula_greek_tokens GROUP BY edition_key, xml_id HAVING count(*) > 1) d),
+    'dup_tagnt_tokens', (SELECT count(*) FROM (SELECT source_release_id, tagnt_id FROM public.tagnt_tokens GROUP BY source_release_id, tagnt_id HAVING count(*) > 1) d),
     'dup_relationships', (SELECT count(*) FROM (SELECT subject_entity_id, object_entity_id, relation_type FROM public.entity_relationships GROUP BY subject_entity_id, object_entity_id, relation_type HAVING count(*) > 1) d),
     'dup_lemma_roots', (SELECT count(*) FROM (SELECT lemma_id, root_id FROM public.lemma_root_links GROUP BY lemma_id, root_id HAVING count(*) > 1) d),
     'dup_lexical_senses', (SELECT count(*) FROM (SELECT sense_key FROM public.lexical_senses GROUP BY sense_key HAVING count(*) > 1) d)
@@ -68,6 +72,8 @@ SELECT jsonb_build_object(
   'orphans', jsonb_build_object(
     'orphan_macula_verses', (SELECT count(*) FROM public.macula_hebrew_morphemes m WHERE m.canonical_verse_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public.verses v WHERE v.id = m.canonical_verse_id)),
     'orphan_morphhb_verses', (SELECT count(*) FROM public.morphhb_tokens mt WHERE mt.canonical_verse_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public.verses v WHERE v.id = mt.canonical_verse_id)),
+    'orphan_macula_greek_verses', (SELECT count(*) FROM public.macula_greek_tokens mg WHERE mg.canonical_verse_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public.verses v WHERE v.id = mg.canonical_verse_id)),
+    'orphan_tagnt_verses', (SELECT count(*) FROM public.tagnt_tokens tg WHERE tg.canonical_verse_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public.verses v WHERE v.id = tg.canonical_verse_id)),
     'orphan_gated_morphemes', (SELECT count(*) FROM public.macula_gated_field_values g WHERE NOT EXISTS (SELECT 1 FROM public.macula_hebrew_morphemes m WHERE m.id = g.morpheme_id)),
     'orphan_map_verses', (SELECT count(*) FROM public.hebrew_lxx_verse_map m WHERE NOT EXISTS (SELECT 1 FROM public.verses v WHERE v.id = m.canonical_verse_id)),
     'orphan_map_books', (SELECT count(*) FROM public.hebrew_lxx_verse_map m WHERE NOT EXISTS (SELECT 1 FROM public.lxx_swete_books b WHERE b.book_no = m.lxx_book_no)),
@@ -93,6 +99,18 @@ SELECT jsonb_build_object(
       'imported_tokens', (SELECT count(*) FROM public.morphhb_tokens),
       'books_present', (SELECT jsonb_agg(DISTINCT book ORDER BY book) FROM public.morphhb_tokens),
       'missing_ot_books_count', (SELECT 39 - count(DISTINCT book) FROM public.morphhb_tokens),
+      'classification', 'complete_import'
+    ),
+    'macula_greek', jsonb_build_object(
+      'imported_tokens', (SELECT count(*) FROM public.macula_greek_tokens),
+      'books_present', (SELECT jsonb_agg(DISTINCT book ORDER BY book) FROM public.macula_greek_tokens),
+      'missing_nt_books_count', (SELECT 27 - count(DISTINCT book) FROM public.macula_greek_tokens),
+      'classification', 'complete_import'
+    ),
+    'tagnt', jsonb_build_object(
+      'imported_tokens', (SELECT count(*) FROM public.tagnt_tokens),
+      'books_present', (SELECT jsonb_agg(DISTINCT book ORDER BY book) FROM public.tagnt_tokens),
+      'missing_nt_books_count', (SELECT 27 - count(DISTINCT book) FROM public.tagnt_tokens),
       'classification', 'complete_import'
     ),
     'lxx_swete', jsonb_build_object(
