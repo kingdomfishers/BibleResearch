@@ -111,8 +111,8 @@ BEGIN
   SELECT jsonb_build_object(
     'orphan_macula_verses', (SELECT count(*) FROM public.macula_hebrew_morphemes m WHERE NOT EXISTS (SELECT 1 FROM public.verses v WHERE v.id = m.canonical_verse_id)),
     'orphan_gated_morphemes', (SELECT count(*) FROM public.macula_gated_field_values g WHERE NOT EXISTS (SELECT 1 FROM public.macula_hebrew_morphemes m WHERE m.id = g.morpheme_id)),
-    'orphan_map_verses', (SELECT count(*) FROM public.hebrew_lxx_verse_map m WHERE NOT EXISTS (SELECT 1 FROM public.verses v WHERE v.id = m.canonical_verse_id)),
-    'orphan_map_books', (SELECT count(*) FROM public.hebrew_lxx_verse_map m WHERE NOT EXISTS (SELECT 1 FROM public.lxx_swete_books b WHERE b.book_no = m.lxx_book_no)),
+    'orphan_map_verses', (SELECT count(*) FROM public.hebrew_lxx_verse_map m WHERE m.canonical_verse_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public.verses v WHERE v.id = m.canonical_verse_id)),
+    'orphan_map_books', (SELECT count(*) FROM public.hebrew_lxx_verse_map m WHERE m.lxx_book_no IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public.lxx_swete_books b WHERE b.book_no = m.lxx_book_no)),
     'orphan_lxx_books', (SELECT count(*) FROM public.lxx_swete_words w WHERE NOT EXISTS (SELECT 1 FROM public.lxx_swete_books b WHERE b.book_no = w.book_no)),
     'orphan_rel_subject', (SELECT count(*) FROM public.entity_relationships r WHERE NOT EXISTS (SELECT 1 FROM public.canonical_entities e WHERE e.id = r.subject_entity_id)),
     'orphan_rel_object', (SELECT count(*) FROM public.entity_relationships r WHERE NOT EXISTS (SELECT 1 FROM public.canonical_entities e WHERE e.id = r.object_entity_id)),

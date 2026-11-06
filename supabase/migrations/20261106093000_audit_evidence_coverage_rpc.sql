@@ -56,7 +56,8 @@ SELECT jsonb_build_object(
     'morphhb_tokens', (SELECT count(*) FROM public.morphhb_tokens),
     'cross_token_mappings', (SELECT count(*) FROM public.cross_token_mappings),
     'macula_greek_tokens', (SELECT count(*) FROM public.macula_greek_tokens),
-    'tagnt_tokens', (SELECT count(*) FROM public.tagnt_tokens)
+    'tagnt_tokens', (SELECT count(*) FROM public.tagnt_tokens),
+    'hebrew_lxx_word_alignments', (SELECT count(*) FROM public.hebrew_lxx_word_alignments)
   ),
   'duplicates', jsonb_build_object(
     'dup_verses', (SELECT count(*) FROM (SELECT book, chapter, verse_nr FROM public.verses GROUP BY book, chapter, verse_nr HAVING count(*) > 1) d),
@@ -67,7 +68,8 @@ SELECT jsonb_build_object(
     'dup_tagnt_tokens', (SELECT count(*) FROM (SELECT source_release_id, tagnt_id FROM public.tagnt_tokens GROUP BY source_release_id, tagnt_id HAVING count(*) > 1) d),
     'dup_relationships', (SELECT count(*) FROM (SELECT subject_entity_id, object_entity_id, relation_type FROM public.entity_relationships GROUP BY subject_entity_id, object_entity_id, relation_type HAVING count(*) > 1) d),
     'dup_lemma_roots', (SELECT count(*) FROM (SELECT lemma_id, root_id FROM public.lemma_root_links GROUP BY lemma_id, root_id HAVING count(*) > 1) d),
-    'dup_lexical_senses', (SELECT count(*) FROM (SELECT sense_key FROM public.lexical_senses GROUP BY sense_key HAVING count(*) > 1) d)
+    'dup_lexical_senses', (SELECT count(*) FROM (SELECT sense_key FROM public.lexical_senses GROUP BY sense_key HAVING count(*) > 1) d),
+    'dup_alignments', (SELECT count(*) FROM (SELECT alignment_key FROM public.hebrew_lxx_word_alignments GROUP BY alignment_key HAVING count(*) > 1) d)
   ),
   'orphans', jsonb_build_object(
     'orphan_macula_verses', (SELECT count(*) FROM public.macula_hebrew_morphemes m WHERE m.canonical_verse_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public.verses v WHERE v.id = m.canonical_verse_id)),
@@ -75,8 +77,10 @@ SELECT jsonb_build_object(
     'orphan_macula_greek_verses', (SELECT count(*) FROM public.macula_greek_tokens mg WHERE mg.canonical_verse_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public.verses v WHERE v.id = mg.canonical_verse_id)),
     'orphan_tagnt_verses', (SELECT count(*) FROM public.tagnt_tokens tg WHERE tg.canonical_verse_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public.verses v WHERE v.id = tg.canonical_verse_id)),
     'orphan_gated_morphemes', (SELECT count(*) FROM public.macula_gated_field_values g WHERE NOT EXISTS (SELECT 1 FROM public.macula_hebrew_morphemes m WHERE m.id = g.morpheme_id)),
-    'orphan_map_verses', (SELECT count(*) FROM public.hebrew_lxx_verse_map m WHERE NOT EXISTS (SELECT 1 FROM public.verses v WHERE v.id = m.canonical_verse_id)),
-    'orphan_map_books', (SELECT count(*) FROM public.hebrew_lxx_verse_map m WHERE NOT EXISTS (SELECT 1 FROM public.lxx_swete_books b WHERE b.book_no = m.lxx_book_no)),
+    'orphan_map_verses', (SELECT count(*) FROM public.hebrew_lxx_verse_map m WHERE m.canonical_verse_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public.verses v WHERE v.id = m.canonical_verse_id)),
+    'orphan_map_books', (SELECT count(*) FROM public.hebrew_lxx_verse_map m WHERE m.lxx_book_no IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public.lxx_swete_books b WHERE b.book_no = m.lxx_book_no)),
+    'orphan_align_verses', (SELECT count(*) FROM public.hebrew_lxx_word_alignments a WHERE a.canonical_verse_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public.verses v WHERE v.id = a.canonical_verse_id)),
+    'orphan_align_books', (SELECT count(*) FROM public.hebrew_lxx_word_alignments a WHERE a.lxx_book_no IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public.lxx_swete_books b WHERE b.book_no = a.lxx_book_no)),
     'orphan_lxx_books', (SELECT count(*) FROM public.lxx_swete_words w WHERE NOT EXISTS (SELECT 1 FROM public.lxx_swete_books b WHERE b.book_no = w.book_no)),
     'orphan_rel_subject', (SELECT count(*) FROM public.entity_relationships r WHERE NOT EXISTS (SELECT 1 FROM public.canonical_entities e WHERE e.id = r.subject_entity_id)),
     'orphan_rel_object', (SELECT count(*) FROM public.entity_relationships r WHERE NOT EXISTS (SELECT 1 FROM public.canonical_entities e WHERE e.id = r.object_entity_id)),
@@ -119,8 +123,8 @@ SELECT jsonb_build_object(
       'imported_verses', ls.distinct_verses,
       'imported_words', ls.total_words,
       'missing_lxx_text_books_count', (55 - ls.books_with_text),
-      'word_coverage_pct', ROUND(100.0 * ls.total_words / 554086.0, 4),
-      'classification', 'import_incompleteness'
+      'word_coverage_pct', ROUND(100.0 * ls.total_words / 588579.0, 4),
+      'classification', CASE WHEN ls.books_with_text >= 55 THEN 'complete_import' ELSE 'import_incompleteness' END
     ),
     'stepbible', jsonb_build_object(
       'canonical_books', (SELECT count(*) FROM public.books),
