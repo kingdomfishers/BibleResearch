@@ -2,7 +2,7 @@
 // @feature: api
 // @tables: words | verses | verse_translation_sources | word_translation_choices | chronology_models | chronology_runs | chronology_assertions | chronology_evidence | places | place_locations | verse_geography | passage_geography | geography_sources | lexemes | concepts | assertions | assertion_evidence | books | lemmas | word_form_lemmas | lexical_roots | lexical_senses | syntax_nodes | syntax_edges | entity_relationships | lxx_swete_words | hebrew_lxx_verse_map | macula_hebrew_morphemes | morphhb_tokens | cross_token_mappings | tagnt_tokens | macula_greek_tokens
 // @candidates: none
-// @toc: imports | logic:sample-words | logic:sample-verses | logic:request | logic:chronology | logic:geography | logic:translations | logic:hydrated-research | logic:reader | logic:canonical-lookups | logic:gateway
+// @toc: imports | logic:sample-words | logic:sample-verses | logic:request | logic:chronology | logic:geography | logic:translations | logic:hydrated-research | logic:reader | logic:canonical-lookups | logic:corpus-lookups | logic:gateway
 
 // === @section:imports ===
 import { ensureReaderSession, restoreReaderSession, supabase } from './supabase';
@@ -13,7 +13,8 @@ import type { ActivePassage, ChronologyResponse, DataResult, HydratedCoOccurrenc
   LemmaRootRelativesResponse, LemmaEnglishGlossesResponse, PassageTokensSyntaxResponse,
   ConceptPropertiesResponse, EntityRelationshipsResponse, HebrewToGreekAlignmentsResponse,
   GreekToHebrewAlignmentsResponse, HebrewSeptuagintParallelResponse, CrossTestamentGreekResponse,
-  HebrewVerseEvidenceResponse, GreekVerseEvidenceResponse, LexicalSemanticsResponse } from './types';
+  HebrewVerseEvidenceResponse, GreekVerseEvidenceResponse, LexicalSemanticsResponse,
+  SyntaxTreeResponse } from './types';
 import type { ReaderPassage, ReaderOverview, ReaderWord, ReaderTimeline, ReaderSearchResult } from './types';
 
 // === @section:logic:sample-words ===
@@ -298,6 +299,7 @@ const lookupEntityRels = (
     p_origin_mode: opts.originMode ?? null,
     p_limit: opts.limit ?? 50,
   });
+// === @section:logic:corpus-lookups ===
 const lookupHebrewToGreek = (lemmaQuery: string, limit = 25) =>
   readerRPC<HebrewToGreekAlignmentsResponse>('lookup_hebrew_to_greek_alignments_v1', {
     p_lemma_query: lemmaQuery,
@@ -336,6 +338,11 @@ const lookupLexicalSemanticsData = (query: string, matchScope = 'auto') =>
     p_query: query,
     p_match_scope: matchScope,
   });
+const lookupSyntaxTreeData = (verseId: number, editionKey?: string | null) =>
+  readerRPC<SyntaxTreeResponse>('lookup_syntax_tree_v1', {
+    p_verse_id: verseId,
+    p_edition_key: editionKey ?? null,
+  });
 
 // === @section:logic:gateway ===
 export const BibleRPC = {
@@ -354,6 +361,7 @@ export const BibleRPC = {
   lookupHebrewVerseEvidence: lookupHebrewVerseEvidenceData,
   lookupGreekVerseEvidence: lookupGreekVerseEvidenceData,
   lookupLexicalSemantics: lookupLexicalSemanticsData,
+  lookupSyntaxTree: lookupSyntaxTreeData,
   getReaderPassage: readerPassage,
   preloadReaderPassages: readerPassages,
   getReaderOverview: (p: ActivePassage) => readerRPC<ReaderOverview>('get_reader_overview_v1', passageArgs(p)),

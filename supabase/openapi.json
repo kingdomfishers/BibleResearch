@@ -785,6 +785,48 @@
         }
       }
     },
+    "/rpc/lookup_syntax_tree_v1": {
+      "post": {
+        "operationId": "lookupSyntaxTreeV1",
+        "summary": "Hierarchical syntax tree & grammatical relationships lookup (F6)",
+        "description": "Deterministic lookup for source-backed MACULA syntax trees (Hebrew WLC and Greek Nestle 1904). Returns full hierarchical constituent trees (sentences, clauses, phrases, and terminal tokens), grammatical roles, explicit semantic frames, and cross-verse spans without approximating syntax from word order.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "p_verse_id"
+                ],
+                "properties": {
+                  "p_verse_id": {
+                    "type": "integer",
+                    "description": "Canonical verse ID"
+                  },
+                  "p_edition_key": {
+                    "type": "string",
+                    "description": "Optional edition filter: macula-hebrew-wlc or macula-greek-nestle1904"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Hierarchical syntax tree response with sentences, clauses, phrases, grammatical roles, and cross-verse spans",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/rpc/lookup_word_to_lemma_senses_v1": {
       "post": {
         "operationId": "lookupWordToLemmaSensesV1",

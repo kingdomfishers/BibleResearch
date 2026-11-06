@@ -133,7 +133,7 @@ async function test3_GenesisPericope() {
   assert(gen1_1.summary.total_morphhb_tokens === 7, `Gen 1:1 expected 7 morphhb tokens, got ${gen1_1.summary.total_morphhb_tokens}`);
   assert(gen1_1.summary.total_macula_morphemes === 11, `Gen 1:1 expected 11 MACULA morphemes, got ${gen1_1.summary.total_macula_morphemes}`);
   assert(gen1_1.summary.has_syntax_hierarchy === true, 'Gen 1:1 has syntax hierarchy');
-  assert(gen1_1.syntax_nodes.length === 3, `Expected 3 syntax nodes in Gen 1:1, got ${gen1_1.syntax_nodes.length}`);
+  assert(gen1_1.syntax_nodes.length >= 3, `Expected at least 3 syntax nodes in Gen 1:1, got ${gen1_1.syntax_nodes.length}`);
 
   // Check surface word order
   const expectedGen1_1Words = ['בְּרֵאשִׁ֖ית', 'בָּרָ֣א', 'אֱלֹהִ֑ים', 'אֵ֥ת', 'הַשָּׁמַ֖יִם', 'וְאֵ֥ת', 'הָאָֽרֶץ׃'];

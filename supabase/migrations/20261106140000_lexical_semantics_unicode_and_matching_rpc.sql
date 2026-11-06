@@ -85,6 +85,12 @@ grant execute on function public.strip_hebrew_all(text) to anon, authenticated, 
 grant execute on function public.harmonize_greek_accents(text) to anon, authenticated, service_role, postgres;
 grant execute on function public.strip_greek_diacritics(text) to anon, authenticated, service_role, postgres;
 
+-- Functional indexes for fast Unicode search
+create index if not exists idx_words_strip_hebrew_all on public.words (public.strip_hebrew_all(original_word));
+create index if not exists idx_words_strip_greek on public.words (public.strip_greek_diacritics(original_word));
+create index if not exists idx_lemmas_strip_hebrew_script on public.lemmas (public.strip_hebrew_all(lemma_script));
+create index if not exists idx_lemmas_strip_greek_script on public.lemmas (public.strip_greek_diacritics(lemma_script));
+
 -- ============================================================================
 -- 2. HARDENED ORIGINAL WORD -> LEMMA -> AVAILABLE SENSES RPC
 -- ============================================================================

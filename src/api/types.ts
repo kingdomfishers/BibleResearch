@@ -357,3 +357,4 @@ export type * from './septuagint-types';
 export type * from './hebrew-evidence-types';
 export type * from './greek-evidence-types';
 export type * from './lexical-semantics-types';
+export type * from './syntax-types';
