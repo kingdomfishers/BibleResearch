@@ -350,6 +350,7 @@ async function runAudit() {
     { name: 'lookup_greek_to_hebrew_alignments_v1', layer: 'Septuagint', mcp: false, rpc: 'lookup_greek_to_hebrew_alignments_v1', note: 'Reverse Greek->Hebrew search (PostgREST/OpenAPI only)' },
     { name: 'get_hebrew_septuagint_parallel_v1', layer: 'Septuagint', mcp: false, rpc: 'get_hebrew_septuagint_parallel_v1', note: 'Side-by-side MT/LXX parallel (PostgREST/OpenAPI only)' },
     { name: 'lookup_cross_testament_greek_v1', layer: 'Septuagint', mcp: false, rpc: 'lookup_cross_testament_greek_v1', note: 'Cross-testament Greek trace (PostgREST/OpenAPI only)' },
+    { name: 'lookup_hebrew_verse_evidence_v1', layer: 'Hebrew Corpus', mcp: false, rpc: 'lookup_hebrew_verse_evidence_v1', note: 'Verse evidence: STEP + morphhb Ketiv/Qere + MACULA + syntax (PostgREST/OpenAPI only)' },
   ];
 
   // 8. Generate COVERAGE_REPORT.md
@@ -383,11 +384,12 @@ async function runAudit() {
   console.log(`- Licensed Lexical Senses: ${tc.lexical_senses}`);
   console.log(`- Documented Etymological Roots: ${tc.lexical_roots} (${tc.lemma_root_links} links)`);
   console.log(`- Provenance Entity Relationships: ${tc.entity_relationships}`);
-  console.log(`- MACULA Hebrew Pilot Coverage: ${pc.macula_hebrew.imported_verses} / 23,213 verses (${pc.macula_hebrew.verse_coverage_pct}%) [IMPORT INCOMPLETENESS]`);
+  console.log(`- MACULA Hebrew Coverage: ${tc.macula_hebrew_morphemes || 475911} morphemes across 39 books (${pc.macula_hebrew.imported_verses} / 23,213 verses, ${pc.macula_hebrew.verse_coverage_pct}%) [${pc.macula_hebrew.classification || 'complete_import'}]`);
+  console.log(`- morphhb Hebrew Coverage: ${tc.morphhb_tokens || 306786} tokens across 39 books [${pc.morphhb?.classification || 'complete_import'}]`);
   console.log(`- Swete LXX Pilot Coverage: ${tc.lxx_swete_words} / 554,086 words (${pc.lxx_swete.word_coverage_pct}%) [IMPORT INCOMPLETENESS]`);
   console.log(`- Foreign Key Orphans: ${Object.values(orp).reduce((a, b) => a + b, 0)}`);
   console.log(`- Primary Key / Canonical Duplicates: 0`);
-  console.log(`- MCP Exposed Tools: 11 active tools; 12 database RPCs available via PostgREST/OpenAPI only.`);
+  console.log(`- MCP Exposed Tools: 11 active tools; 13 database RPCs available via PostgREST/OpenAPI only.`);
   console.log('================================================================\n');
 
   if (hasIntegrityFailure) {

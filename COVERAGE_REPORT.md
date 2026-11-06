@@ -41,7 +41,7 @@ This audit assesses the Bible Research Engine's database schema, data population
 | Dataset | Scope / License | Expected Books | Imported Books | Missing Books | Expected Verses | Imported Verses | Verse Coverage | Expected Tokens | Imported Tokens | Token Coverage | Classification |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | **STEPBible (TAHOT/TAGNT/TBESH/TBESG)** | CC BY 4.0 | 66 | 66 | 0 | 31203 | 31203 | 100.00% | 443524 | 443524 | 100.00% | `complete_import` |
-| **Clear-Bible MACULA Hebrew** | CC BY 4.0 (gated SDBH) | 39 | 3 | 36 | 23213 | 70 | 0.3016% | 426584 | 1314 | 0.3080% | `import_incompleteness` |
+| **Clear-Bible MACULA Hebrew** | CC BY 4.0 (gated SDBH) | 39 | 39 | 0 | 23213 | 23035 | 99.2332% | 426584 | 475911 | 111.5633% | `import_incompleteness` |
 | **Clear-Bible MACULA Greek** | CC BY 4.0 (gated MARBLE) | 27 | 0 | 27 | 7957 | 0 | 0.00% | 137844 | 0 | 0.00% | `import_incompleteness` |
 | **openscriptures/morphhb** | CC BY 4.0 | 39 | 0 | 39 | 23213 | 0 | 0.00% | 426584 | 0 | 0.00% | `import_incompleteness` |
 | **nathans/lxx-swete (Septuagint)** | CC BY-SA 4.0 | 55 | 55 (metadata) / 3 (text) | 52 | 27872 | 70 | 0.2511% | 554086 | 1422 | 0.2566% | `import_incompleteness` |

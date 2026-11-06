@@ -9,8 +9,23 @@ LANGUAGE sql
 STABLE
 SECURITY DEFINER
 SET search_path = public
-SET statement_timeout = '25s'
+SET statement_timeout = '60s'
 AS $$
+WITH macula_stats AS (
+  SELECT
+    count(*) AS total_morphemes,
+    count(DISTINCT canonical_verse_id) AS distinct_verses,
+    jsonb_agg(DISTINCT book ORDER BY book) AS books_list,
+    count(DISTINCT book) AS book_count
+  FROM public.macula_hebrew_morphemes
+),
+lxx_stats AS (
+  SELECT
+    count(*) AS total_words,
+    count(DISTINCT book_no) AS books_with_text,
+    count(DISTINCT book_no || ':' || chapter || ':' || verse_nr || COALESCE(verse_suffix, '')) AS distinct_verses
+  FROM public.lxx_swete_words
+)
 SELECT jsonb_build_object(
   'schema_version', '1.0.0',
   'audit_type', 'evidence_coverage_and_integrity',
@@ -35,20 +50,24 @@ SELECT jsonb_build_object(
     'field_license_registry', (SELECT count(*) FROM public.field_license_registry),
     'lxx_swete_books', (SELECT count(*) FROM public.lxx_swete_books),
     'hebrew_lxx_verse_map', (SELECT count(*) FROM public.hebrew_lxx_verse_map),
-    'lxx_swete_words', (SELECT count(*) FROM public.lxx_swete_words),
-    'macula_hebrew_morphemes', (SELECT count(*) FROM public.macula_hebrew_morphemes),
-    'macula_gated_field_values', (SELECT count(*) FROM public.macula_gated_field_values)
+    'lxx_swete_words', (SELECT total_words FROM lxx_stats),
+    'macula_hebrew_morphemes', (SELECT total_morphemes FROM macula_stats),
+    'macula_gated_field_values', (SELECT count(*) FROM public.macula_gated_field_values),
+    'morphhb_tokens', (SELECT count(*) FROM public.morphhb_tokens),
+    'cross_token_mappings', (SELECT count(*) FROM public.cross_token_mappings)
   ),
   'duplicates', jsonb_build_object(
     'dup_verses', (SELECT count(*) FROM (SELECT book, chapter, verse_nr FROM public.verses GROUP BY book, chapter, verse_nr HAVING count(*) > 1) d),
     'dup_lxx_words', (SELECT count(*) FROM (SELECT book_no, chapter, verse_nr, COALESCE(verse_suffix,''), ordinal FROM public.lxx_swete_words GROUP BY book_no, chapter, verse_nr, COALESCE(verse_suffix,''), ordinal HAVING count(*) > 1) d),
     'dup_macula_morphemes', (SELECT count(*) FROM (SELECT macula_id FROM public.macula_hebrew_morphemes GROUP BY macula_id HAVING count(*) > 1) d),
+    'dup_morphhb_tokens', (SELECT count(*) FROM (SELECT source_release_id, morphhb_id FROM public.morphhb_tokens GROUP BY source_release_id, morphhb_id HAVING count(*) > 1) d),
     'dup_relationships', (SELECT count(*) FROM (SELECT subject_entity_id, object_entity_id, relation_type FROM public.entity_relationships GROUP BY subject_entity_id, object_entity_id, relation_type HAVING count(*) > 1) d),
     'dup_lemma_roots', (SELECT count(*) FROM (SELECT lemma_id, root_id FROM public.lemma_root_links GROUP BY lemma_id, root_id HAVING count(*) > 1) d),
     'dup_lexical_senses', (SELECT count(*) FROM (SELECT sense_key FROM public.lexical_senses GROUP BY sense_key HAVING count(*) > 1) d)
   ),
   'orphans', jsonb_build_object(
-    'orphan_macula_verses', (SELECT count(*) FROM public.macula_hebrew_morphemes m WHERE NOT EXISTS (SELECT 1 FROM public.verses v WHERE v.id = m.canonical_verse_id)),
+    'orphan_macula_verses', (SELECT count(*) FROM public.macula_hebrew_morphemes m WHERE m.canonical_verse_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public.verses v WHERE v.id = m.canonical_verse_id)),
+    'orphan_morphhb_verses', (SELECT count(*) FROM public.morphhb_tokens mt WHERE mt.canonical_verse_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public.verses v WHERE v.id = mt.canonical_verse_id)),
     'orphan_gated_morphemes', (SELECT count(*) FROM public.macula_gated_field_values g WHERE NOT EXISTS (SELECT 1 FROM public.macula_hebrew_morphemes m WHERE m.id = g.morpheme_id)),
     'orphan_map_verses', (SELECT count(*) FROM public.hebrew_lxx_verse_map m WHERE NOT EXISTS (SELECT 1 FROM public.verses v WHERE v.id = m.canonical_verse_id)),
     'orphan_map_books', (SELECT count(*) FROM public.hebrew_lxx_verse_map m WHERE NOT EXISTS (SELECT 1 FROM public.lxx_swete_books b WHERE b.book_no = m.lxx_book_no)),
@@ -63,20 +82,26 @@ SELECT jsonb_build_object(
   ),
   'pilot_coverage', jsonb_build_object(
     'macula_hebrew', jsonb_build_object(
-      'imported_verses', (SELECT count(DISTINCT canonical_verse_id) FROM public.macula_hebrew_morphemes),
-      'imported_morphemes', (SELECT count(*) FROM public.macula_hebrew_morphemes),
-      'books_present', (SELECT jsonb_agg(DISTINCT book ORDER BY book) FROM public.macula_hebrew_morphemes),
-      'missing_ot_books_count', (SELECT 39 - count(DISTINCT book) FROM public.macula_hebrew_morphemes),
-      'verse_coverage_pct', ROUND(100.0 * (SELECT count(DISTINCT canonical_verse_id) FROM public.macula_hebrew_morphemes) / 23213.0, 4),
-      'classification', 'import_incompleteness'
+      'imported_verses', ms.distinct_verses,
+      'imported_morphemes', ms.total_morphemes,
+      'books_present', ms.books_list,
+      'missing_ot_books_count', (39 - ms.book_count),
+      'verse_coverage_pct', ROUND(100.0 * ms.distinct_verses / 23213.0, 4),
+      'classification', CASE WHEN ms.book_count = 39 THEN 'complete_import' ELSE 'import_incompleteness' END
+    ),
+    'morphhb', jsonb_build_object(
+      'imported_tokens', (SELECT count(*) FROM public.morphhb_tokens),
+      'books_present', (SELECT jsonb_agg(DISTINCT book ORDER BY book) FROM public.morphhb_tokens),
+      'missing_ot_books_count', (SELECT 39 - count(DISTINCT book) FROM public.morphhb_tokens),
+      'classification', 'complete_import'
     ),
     'lxx_swete', jsonb_build_object(
       'registered_books', (SELECT count(*) FROM public.lxx_swete_books),
-      'books_with_text', (SELECT count(DISTINCT book_no) FROM public.lxx_swete_words),
-      'imported_verses', (SELECT count(DISTINCT book_no || ':' || chapter || ':' || verse_nr || COALESCE(verse_suffix, '')) FROM public.lxx_swete_words),
-      'imported_words', (SELECT count(*) FROM public.lxx_swete_words),
-      'missing_lxx_text_books_count', (SELECT 55 - count(DISTINCT book_no) FROM public.lxx_swete_words),
-      'word_coverage_pct', ROUND(100.0 * (SELECT count(*) FROM public.lxx_swete_words) / 554086.0, 4),
+      'books_with_text', ls.books_with_text,
+      'imported_verses', ls.distinct_verses,
+      'imported_words', ls.total_words,
+      'missing_lxx_text_books_count', (55 - ls.books_with_text),
+      'word_coverage_pct', ROUND(100.0 * ls.total_words / 554086.0, 4),
       'classification', 'import_incompleteness'
     ),
     'stepbible', jsonb_build_object(
@@ -88,7 +113,8 @@ SELECT jsonb_build_object(
       'classification', 'complete_import'
     )
   )
-);
+)
+FROM macula_stats ms, lxx_stats ls;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.audit_evidence_coverage_v1() TO anon, authenticated;

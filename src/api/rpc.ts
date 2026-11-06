@@ -1,6 +1,6 @@
 // @file: src/api/rpc.ts
 // @feature: api
-// @tables: words | verses | verse_translation_sources | word_translation_choices | chronology_models | chronology_runs | chronology_assertions | chronology_evidence | places | place_locations | verse_geography | passage_geography | geography_sources | lexemes | concepts | assertions | assertion_evidence | books | lemmas | word_form_lemmas | lexical_roots | lexical_senses | syntax_nodes | syntax_edges | entity_relationships | lxx_swete_words | hebrew_lxx_verse_map | macula_hebrew_morphemes
+// @tables: words | verses | verse_translation_sources | word_translation_choices | chronology_models | chronology_runs | chronology_assertions | chronology_evidence | places | place_locations | verse_geography | passage_geography | geography_sources | lexemes | concepts | assertions | assertion_evidence | books | lemmas | word_form_lemmas | lexical_roots | lexical_senses | syntax_nodes | syntax_edges | entity_relationships | lxx_swete_words | hebrew_lxx_verse_map | macula_hebrew_morphemes | morphhb_tokens | cross_token_mappings
 // @candidates: none
 // @toc: imports | logic:sample-words | logic:sample-verses | logic:request | logic:chronology | logic:geography | logic:translations | logic:hydrated-research | logic:reader | logic:canonical-lookups | logic:gateway
 
@@ -12,7 +12,8 @@ import type { ActivePassage, ChronologyResponse, DataResult, HydratedCoOccurrenc
   BibleBook, BibleBooksResponse, WordToLemmaSensesResponse, LemmaOccurrencesResponse,
   LemmaRootRelativesResponse, LemmaEnglishGlossesResponse, PassageTokensSyntaxResponse,
   ConceptPropertiesResponse, EntityRelationshipsResponse, HebrewToGreekAlignmentsResponse,
-  GreekToHebrewAlignmentsResponse, HebrewSeptuagintParallelResponse, CrossTestamentGreekResponse } from './types';
+  GreekToHebrewAlignmentsResponse, HebrewSeptuagintParallelResponse, CrossTestamentGreekResponse,
+  HebrewVerseEvidenceResponse } from './types';
 import type { ReaderPassage, ReaderOverview, ReaderWord, ReaderTimeline, ReaderSearchResult } from './types';
 
 // === @section:logic:sample-words ===
@@ -318,6 +319,12 @@ const lookupCrossTestamentGreekVocab = (greekQuery: string, limit = 25) =>
     p_greek_query: greekQuery,
     p_limit: limit,
   });
+const lookupHebrewVerseEvidenceData = (book: number, chapter: number, verse: number) =>
+  readerRPC<HebrewVerseEvidenceResponse>('lookup_hebrew_verse_evidence_v1', {
+    p_book: book,
+    p_chapter: chapter,
+    p_verse: verse,
+  });
 
 // === @section:logic:gateway ===
 export const BibleRPC = {
@@ -333,6 +340,7 @@ export const BibleRPC = {
   lookupGreekToHebrewAlignments: lookupGreekToHebrew,
   getHebrewSeptuagintParallel: getHebrewSeptuagintParallelText,
   lookupCrossTestamentGreek: lookupCrossTestamentGreekVocab,
+  lookupHebrewVerseEvidence: lookupHebrewVerseEvidenceData,
   getReaderPassage: readerPassage,
   preloadReaderPassages: readerPassages,
   getReaderOverview: (p: ActivePassage) => readerRPC<ReaderOverview>('get_reader_overview_v1', passageArgs(p)),
