@@ -48,9 +48,3 @@ export const PATTERN_PROMPTS = {
   challenge_pattern: pattern('Challenge a proposed pattern', 'Find counterexamples and alternatives to a supplied pattern claim.',
     'State a falsifiable claim and search for failures, controls, boundary changes and alternative explanations. Report both support and contradictions; missing annotations do not prove absence.'),
 } as const;
-export type PatternName = keyof typeof PATTERN_PROMPTS;
-
-// === @section:logic:prompt ===
-export function patternPrompt(name: PatternName, subject: string): string {
-  return `${WORKFLOW_INSTRUCTIONS}\n${PATTERN_PROMPTS[name].instruction}\nResearch subject: ${JSON.stringify(subject)}`;
-}

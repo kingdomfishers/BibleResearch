@@ -1,8 +1,8 @@
 // @file: supabase/functions/bible-mcp/catalog.ts
 // @feature: api
-// @tables: words | verses | verse_translation_sources | chronology_models | chronology_runs | chronology_assertions | chronology_evidence | places | place_locations | verse_geography | passage_geography | geography_sources | lexemes | concepts | assertions | assertion_evidence
+// @tables: words | verses | verse_translation_sources | chronology_models | chronology_runs | chronology_assertions | chronology_evidence | places | place_locations | verse_geography | passage_geography | geography_sources | lexemes | concepts | assertions | assertion_evidence | lxx_swete_words | hebrew_lxx_word_alignments | syntax_nodes
 // @candidates: none
-// @toc: imports | types | logic:contracts | logic:prompts | logic:register-prompts | logic:database-tools | logic:hydrated-tool | logic:research-tools | logic:server
+// @toc: imports | types | logic:contracts | logic:prompts | logic:register-prompts | logic:database-tools | logic:hydrated-tool | logic:research-tools | logic:evidence-tools | logic:server
 
 // === @section:imports ===
 import { McpServer } from '@modelcontextprotocol/server';
@@ -21,7 +21,13 @@ export type RpcName =
   | 'get_verse_chronology_v1'
   | 'get_verse_geography'
   | 'research_relationships_v1'
-  | 'get_verse_research_v1';
+  | 'get_verse_research_v1'
+  | 'lookup_septuagint_passage_v1'
+  | 'lookup_lexical_semantics_v1'
+  | 'lookup_syntax_tree_v1'
+  | 'compare_hebrew_septuagint_passage_v1'
+  | 'lookup_hebrew_septuagint_alignments_v1'
+  | 'audit_evidence_coverage_v1';
 export interface DatabaseQuery {
   name: RpcName | 'get_word_details';
   args: Record<string, unknown>;
@@ -272,10 +278,114 @@ function registerResearchTools(server: McpServer, read: DatabaseReader): void {
   });
 }
 
+// === @section:logic:evidence-tools ===
+function registerEvidenceTools(server: McpServer, read: DatabaseReader): void {
+  server.registerTool('get_septuagint_passage', {
+    title: 'Read Septuagint Greek passage tokens',
+    description: 'Retrieve authentic Swete Septuagint original Greek tokens, exact word order, Unicode diacritics, and Hebrew correspondence.',
+    inputSchema: z.strictObject({
+      p_book_no: z.number().int().min(1).max(55).describe('Swete Septuagint book number (1-55).'),
+      p_chapter: z.number().int().min(1).max(151).describe('Chapter number in Septuagint.'),
+      p_verse_nr: z.number().int().min(0).max(176).optional().describe('Optional verse number.'),
+      p_chapter_suffix: z.string().trim().max(10).optional().default('').describe('Optional chapter suffix.'),
+      p_verse_suffix: z.string().trim().max(10).optional().default('').describe('Optional verse suffix.'),
+    }),
+    outputSchema: z.record(z.string(), z.unknown()), ...publicRead,
+  }, async args => {
+    try {
+      const res = await read({ name: 'lookup_septuagint_passage_v1', args, limit: 1, offset: 0 });
+      const p = res.rows[0]; if (!p) throw new Error();
+      return { content: textContent(JSON.stringify(p)), structuredContent: p };
+    } catch { return { isError: true, content: textContent('The Septuagint evidence layer is temporarily unavailable.') }; }
+  });
+  server.registerTool('lookup_lexical_semantics', {
+    title: 'Audit and retrieve lexical semantics',
+    description: 'Retrieve lexical semantics: surface form, lemma, root, sense, and gloss with source provenance. Supports Hebrew, Greek, and Strongs.',
+    inputSchema: z.strictObject({
+      p_query: z.string().trim().min(1).max(128).describe('Search term: Strongs ID, Hebrew, or Greek.'),
+      p_match_scope: z.enum(['auto', 'lemma', 'surface']).optional().default('auto'),
+    }),
+    outputSchema: z.record(z.string(), z.unknown()), ...publicRead,
+  }, async args => {
+    try {
+      const res = await read({ name: 'lookup_lexical_semantics_v1', args, limit: 1, offset: 0 });
+      const p = res.rows[0]; if (!p) throw new Error();
+      return { content: textContent(JSON.stringify(p)), structuredContent: p };
+    } catch { return { isError: true, content: textContent('The lexical semantics service is temporarily unavailable.') }; }
+  });
+  server.registerTool('get_syntax_tree', {
+    title: 'Inspect constituent syntax trees & grammar',
+    description: 'Retrieve MACULA constituent syntax trees, phrase/clause hierarchies, grammatical roles, semantic frames, and cross-verse spans.',
+    inputSchema: z.strictObject({
+      p_book: z.number().int().min(1).max(66).optional().describe('Canonical book (1-66).'),
+      p_chapter: z.number().int().min(1).max(150).optional().describe('Chapter number.'),
+      p_verse: z.number().int().min(0).max(176).optional().describe('Verse number.'),
+      p_verse_id: z.number().int().positive().optional().describe('Direct database canonical verse ID.'),
+      p_edition_key: z.string().trim().max(64).optional().describe('Optional edition filter.'),
+    }),
+    outputSchema: z.record(z.string(), z.unknown()), ...publicRead,
+  }, async args => {
+    try {
+      const res = await read({ name: 'lookup_syntax_tree_v1', args, limit: 1, offset: 0 });
+      const p = res.rows[0]; if (!p) throw new Error();
+      return { content: textContent(JSON.stringify(p)), structuredContent: p };
+    } catch { return { isError: true, content: textContent('The syntax tree service is temporarily unavailable.') }; }
+  });
+  server.registerTool('compare_hebrew_septuagint_passage', {
+    title: 'Compare Hebrew and Septuagint passages',
+    description: 'Compare Hebrew MT and Septuagint passages with TVTMS versification correspondence, token status, and 3-tier alignments.',
+    inputSchema: z.strictObject({
+      p_hebrew_book: z.number().int().min(1).max(39).optional().describe('Hebrew canonical book (1-39).'),
+      p_hebrew_chapter: z.number().int().min(1).max(150).optional().describe('Hebrew chapter.'),
+      p_hebrew_verse: z.number().int().min(0).max(176).optional().describe('Hebrew verse.'),
+      p_lxx_book_no: z.number().int().min(1).max(55).optional().describe('Septuagint book (1-55).'),
+      p_lxx_chapter: z.number().int().min(1).max(151).optional().describe('Septuagint chapter.'),
+      p_lxx_verse_nr: z.number().int().min(0).max(176).optional().describe('Septuagint verse.'),
+      p_canonical_verse_id: z.number().int().positive().optional().describe('Direct canonical verse ID.'),
+    }),
+    outputSchema: z.record(z.string(), z.unknown()), ...publicRead,
+  }, async args => {
+    try {
+      const res = await read({ name: 'compare_hebrew_septuagint_passage_v1', args, limit: 1, offset: 0 });
+      const p = res.rows[0]; if (!p) throw new Error();
+      return { content: textContent(JSON.stringify(p)), structuredContent: p };
+    } catch { return { isError: true, content: textContent('The Hebrew-Septuagint comparison service is temporarily unavailable.') }; }
+  });
+  server.registerTool('lookup_hebrew_septuagint_alignments', {
+    title: 'Search Hebrew-Septuagint word alignments',
+    description: 'Search word alignments across 3 tiers: documented textual, candidate, and scholarly interpretation.',
+    inputSchema: z.strictObject({
+      p_query: z.string().trim().min(1).max(128).describe('Search term: Strongs number, Hebrew word, or Greek word.'),
+      p_tier: z.enum(['documented_textual', 'computationally_inferred_candidate', 'scholarly_interpretation']).optional(),
+      p_limit: z.number().int().min(1).max(100).optional().default(50),
+    }),
+    outputSchema: z.record(z.string(), z.unknown()), ...publicRead,
+  }, async args => {
+    try {
+      const res = await read({ name: 'lookup_hebrew_septuagint_alignments_v1', args, limit: 1, offset: 0 });
+      const p = res.rows[0]; if (!p) throw new Error();
+      return { content: textContent(JSON.stringify(p)), structuredContent: p };
+    } catch { return { isError: true, content: textContent('The alignment lookup service is temporarily unavailable.') }; }
+  });
+  server.registerTool('audit_evidence_coverage', {
+    title: 'Audit evidence coverage and dataset integrity',
+    description: 'Retrieve deterministic coverage statistics, checksums, licenses, token counts, and orphan integrity across all datasets.',
+    inputSchema: z.strictObject({}),
+    outputSchema: z.record(z.string(), z.unknown()), ...publicRead,
+  }, async () => {
+    try {
+      const res = await read({ name: 'audit_evidence_coverage_v1', args: {}, limit: 1, offset: 0 });
+      const p = res.rows[0]; if (!p) throw new Error();
+      return { content: textContent(JSON.stringify(p)), structuredContent: p };
+    } catch { return { isError: true, content: textContent('The evidence coverage audit service is temporarily unavailable.') }; }
+  });
+}
+
 // === @section:logic:server ===
 export function createResearchServer(read: DatabaseReader): McpServer {
   const server = new McpServer({ name: 'BibleResearch', version: WORKFLOW_VERSION }, { instructions: SERVER_INSTRUCTIONS });
   registerResearchTools(server, read);
+  registerEvidenceTools(server, read);
   registerHydratedTool(server, read);
   registerPrompts(server);
   return server;
