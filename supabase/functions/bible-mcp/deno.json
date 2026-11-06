@@ -1,3 +1,4 @@
+// @file: supabase/functions/bible-mcp/deno.json
 {
   "imports": {
     "@modelcontextprotocol/server": "npm:@modelcontextprotocol/server@2.4.0",
