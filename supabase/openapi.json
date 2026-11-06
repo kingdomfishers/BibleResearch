@@ -886,6 +886,121 @@
         }
       }
     },
+    "/rpc/compare_hebrew_septuagint_passage_v1": {
+      "post": {
+        "operationId": "compareHebrewSeptuagintPassageV1",
+        "summary": "Rigorous bidirectional Hebrew-Septuagint passage comparison (F8)",
+        "description": "Bidirectional passage comparison between MT Hebrew and Swete Septuagint. Supports TVTMS versification reorderings and omissions, token-level alignment status, and 3-tier alignments (documented, candidate, scholarly) with strict epistemic segregation.",
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "p_hebrew_book": {
+                    "type": ["integer", "null"],
+                    "description": "Hebrew canonical book ID (1..39)"
+                  },
+                  "p_hebrew_chapter": {
+                    "type": ["integer", "null"],
+                    "description": "Hebrew chapter number"
+                  },
+                  "p_hebrew_verse": {
+                    "type": ["integer", "null"],
+                    "description": "Hebrew verse number"
+                  },
+                  "p_canonical_verse_id": {
+                    "type": ["integer", "null"],
+                    "description": "Canonical verse ID"
+                  },
+                  "p_lxx_book_no": {
+                    "type": ["integer", "null"],
+                    "description": "Septuagint Swete book number"
+                  },
+                  "p_lxx_chapter": {
+                    "type": ["integer", "null"],
+                    "description": "Septuagint chapter number"
+                  },
+                  "p_lxx_verse_nr": {
+                    "type": ["integer", "null"],
+                    "description": "Septuagint verse number"
+                  },
+                  "p_lxx_chapter_suffix": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Septuagint chapter suffix"
+                  },
+                  "p_lxx_verse_suffix": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Septuagint verse suffix"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Hebrew-Septuagint passage comparison response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rpc/lookup_hebrew_septuagint_alignments_v1": {
+      "post": {
+        "operationId": "lookupHebrewSeptuagintAlignmentsV1",
+        "summary": "Hebrew-Septuagint word and phrase alignment lookup (F8)",
+        "description": "Search Hebrew-Septuagint word alignments across 3 tiers (documented_textual, computationally_inferred_candidate, scholarly_interpretation) with strict verification status.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["p_query"],
+                "properties": {
+                  "p_query": {
+                    "type": "string",
+                    "description": "Search term: Hebrew text, LXX text, Strong's number, or alignment key"
+                  },
+                  "p_tier": {
+                    "type": ["string", "null"],
+                    "enum": ["documented_textual", "computationally_inferred_candidate", "scholarly_interpretation", null],
+                    "description": "Optional alignment tier filter"
+                  },
+                  "p_limit": {
+                    "type": "integer",
+                    "default": 50,
+                    "description": "Maximum number of alignments to return"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Hebrew-Septuagint alignments response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/rpc/lookup_word_to_lemma_senses_v1": {
       "post": {
         "operationId": "lookupWordToLemmaSensesV1",

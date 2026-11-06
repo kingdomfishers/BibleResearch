@@ -1,6 +1,6 @@
 // @file: src/api/types.ts
 // @feature: api
-// @tables: words | verses | verse_translation_sources | word_translation_choices | chronology_models | chronology_runs | chronology_assertions | chronology_evidence | places | place_locations | verse_geography | passage_geography | geography_sources | lexemes | concepts | assertions | assertion_evidence | books | lemmas | word_form_lemmas | lexical_roots | lexical_senses | syntax_nodes | syntax_edges | entity_relationships | lxx_swete_words | hebrew_lxx_verse_map | morphhb_tokens | macula_hebrew_morphemes | cross_token_mappings | tagnt_tokens | macula_greek_tokens
+// @tables: words | verses | verse_translation_sources | word_translation_choices | chronology_models | chronology_runs | chronology_assertions | chronology_evidence | places | place_locations | verse_geography | passage_geography | geography_sources | lexemes | concepts | assertions | assertion_evidence | books | lemmas | word_form_lemmas | lexical_roots | lexical_senses | syntax_nodes | syntax_edges | entity_relationships | lxx_swete_words | hebrew_lxx_verse_map | morphhb_tokens | macula_hebrew_morphemes | cross_token_mappings | tagnt_tokens | macula_greek_tokens | hebrew_lxx_word_alignments
 // @candidates: none
 // @toc: types | types:chronology-models | types:chronology-packet | types:geography-packet | types:research-packet | types:hydrated-words | types:hydrated-packet | types:reader | types:books | types:canonical-lexical
 
@@ -359,3 +359,4 @@ export type * from './hebrew-evidence-types';
 export type * from './greek-evidence-types';
 export type * from './lexical-semantics-types';
 export type * from './syntax-types';
+export type * from './hebrew-septuagint-comparison-types';

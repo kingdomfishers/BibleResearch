@@ -1,6 +1,6 @@
 // @file: src/api/rpc.ts
 // @feature: api
-// @tables: words | verses | verse_translation_sources | word_translation_choices | chronology_models | chronology_runs | chronology_assertions | chronology_evidence | places | place_locations | verse_geography | passage_geography | geography_sources | lexemes | concepts | assertions | assertion_evidence | books | lemmas | word_form_lemmas | lexical_roots | lexical_senses | syntax_nodes | syntax_edges | entity_relationships | lxx_swete_words | hebrew_lxx_verse_map | macula_hebrew_morphemes | morphhb_tokens | cross_token_mappings | tagnt_tokens | macula_greek_tokens
+// @tables: words | verses | verse_translation_sources | word_translation_choices | chronology_models | chronology_runs | chronology_assertions | chronology_evidence | places | place_locations | verse_geography | passage_geography | geography_sources | lexemes | concepts | assertions | assertion_evidence | books | lemmas | word_form_lemmas | lexical_roots | lexical_senses | syntax_nodes | syntax_edges | entity_relationships | lxx_swete_words | hebrew_lxx_verse_map | macula_hebrew_morphemes | morphhb_tokens | cross_token_mappings | tagnt_tokens | macula_greek_tokens | hebrew_lxx_word_alignments
 // @candidates: none
 // @toc: imports | logic:sample-words | logic:sample-verses | logic:request | logic:chronology | logic:geography | logic:translations | logic:hydrated-research | logic:reader | logic:canonical-lookups | logic:corpus-lookups | logic:gateway
 
@@ -14,7 +14,8 @@ import type { ActivePassage, ChronologyResponse, DataResult, HydratedCoOccurrenc
   ConceptPropertiesResponse, EntityRelationshipsResponse, HebrewToGreekAlignmentsResponse,
   GreekToHebrewAlignmentsResponse, HebrewSeptuagintParallelResponse, CrossTestamentGreekResponse,
   HebrewVerseEvidenceResponse, GreekVerseEvidenceResponse, LexicalSemanticsResponse,
-  SyntaxTreeResponse, SeptuagintPassageResponse } from './types';
+  SyntaxTreeResponse, SeptuagintPassageResponse, HebrewSeptuagintComparisonResponse,
+  HebrewSeptuagintAlignmentsResponse, HebrewSeptuagintCompareArgs } from './types';
 import type { ReaderPassage, ReaderOverview, ReaderWord, ReaderTimeline, ReaderSearchResult } from './types';
 
 // === @section:logic:sample-words ===
@@ -355,6 +356,12 @@ const lookupSeptuagintByCanonicalVerseData = (canonicalVerseId: number) =>
   readerRPC<SeptuagintPassageResponse>('lookup_septuagint_by_canonical_verse_v1', {
     p_canonical_verse_id: canonicalVerseId,
   });
+const compareHebrewSeptuagintPassageData = (args: HebrewSeptuagintCompareArgs) =>
+  readerRPC<HebrewSeptuagintComparisonResponse>('compare_hebrew_septuagint_passage_v1', args);
+const lookupHebrewSeptuagintAlignmentsData = (query: string, tier?: string | null, limit = 50) =>
+  readerRPC<HebrewSeptuagintAlignmentsResponse>('lookup_hebrew_septuagint_alignments_v1', {
+    p_query: query, p_tier: tier ?? null, p_limit: limit,
+  });
 
 // === @section:logic:gateway ===
 export const BibleRPC = {
@@ -376,6 +383,8 @@ export const BibleRPC = {
   lookupSyntaxTree: lookupSyntaxTreeData,
   lookupSeptuagintPassage: lookupSeptuagintPassageData,
   lookupSeptuagintByCanonicalVerse: lookupSeptuagintByCanonicalVerseData,
+  compareHebrewSeptuagintPassage: compareHebrewSeptuagintPassageData,
+  lookupHebrewSeptuagintAlignments: lookupHebrewSeptuagintAlignmentsData,
   getReaderPassage: readerPassage,
   preloadReaderPassages: readerPassages,
   getReaderOverview: (p: ActivePassage) => readerRPC<ReaderOverview>('get_reader_overview_v1', passageArgs(p)),
