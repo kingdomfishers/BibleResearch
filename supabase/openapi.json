@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "BibleResearch API",
-    "description": "Database-native research API for original-language Hebrew/Aramaic Old Testament and Greek New Testament Scriptures, context-aware biblical chronology, and evidence-based biblical geography. All research prompts and context resolvers run directly in PostgreSQL via Supabase PostgREST RPC endpoints, providing ordered interlinear verse tokens, cross-corpus word occurrences, lexical co-occurrence statistics, multi-word proximity relationships, multi-model verse chronology, and 5-tier context-aware verse geography with zero client-side join overhead. Versioned reader translations provide source-inflected English and private per-occurrence overrides. get_verse_research_v1 provides one-call hydrated verse packets for deeper AI pattern research.",
-    "version": "1.3.0"
+    "description": "Database-native research API for original-language Hebrew/Aramaic Old Testament and Greek New Testament Scriptures, canonical lexical/morphological/syntax evidence, context-aware biblical chronology, and evidence-based biblical geography. All research prompts, deterministic lexical lookups, and context resolvers run directly in PostgreSQL via Supabase PostgREST RPC endpoints with zero client-side join overhead or AI sense inference.",
+    "version": "1.5.0"
   },
   "servers": [
     {
@@ -735,6 +735,477 @@
                       "$ref": "#/components/schemas/VerseResearchError"
                     }
                   ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rpc/lookup_word_to_lemma_senses_v1": {
+      "post": {
+        "operationId": "lookupWordToLemmaSensesV1",
+        "summary": "Deterministic lookup: surface word form -> canonical lemma(s) -> available lexical senses",
+        "description": "Decomposes an inflected original-language word form (by word_id or query string) into ordered morpheme-lemma links (prefixes, stem, suffixes) and returns all cataloged lexical senses without AI contextual sense inference.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "p_word_id": {
+                    "type": ["integer", "null"],
+                    "description": "Optional words.id primary key"
+                  },
+                  "p_query": {
+                    "type": ["string", "null"],
+                    "description": "Optional original-script form, Strong's number, or transliteration"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Word-form morpheme decomposition and cataloged lexical senses",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WordToLemmaSensesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rpc/lookup_lemma_occurrences_v1": {
+      "post": {
+        "operationId": "lookupLemmaOccurrencesV1",
+        "summary": "Deterministic lookup: canonical lemma -> all biblical occurrences across inflected forms",
+        "description": "Resolves a canonical lemma (by lemma_key, Strong's code, script, or transliteration), preserves homograph candidates when ambiguous, and returns cursor-paginated corpus occurrences across all inflected surface forms.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["p_lemma_query"],
+                "properties": {
+                  "p_lemma_query": {
+                    "type": "string",
+                    "description": "Canonical lemma_key (e.g. lemma:G3056, lemma:H1254a), Strong's number, script, or transliteration"
+                  },
+                  "p_after_verse_id": {
+                    "type": "integer",
+                    "default": 0,
+                    "description": "Cursor verse_id for deterministic keyset pagination"
+                  },
+                  "p_limit": {
+                    "type": "integer",
+                    "default": 50,
+                    "minimum": 1,
+                    "maximum": 200
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Lemma occurrences packet with homograph candidates and keyset cursor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LemmaOccurrencesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rpc/lookup_lemma_root_relatives_v1": {
+      "post": {
+        "operationId": "lookupLemmaRootRelativesV1",
+        "summary": "Deterministic lookup: canonical lemma -> documented lexical roots and root relatives",
+        "description": "Returns documented lexical roots and co-derived/cognate lemmas from pinned lexicons with explicit implies_synonymy=false invariant and zero root-meaning conflation.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["p_lemma_query"],
+                "properties": {
+                  "p_lemma_query": {
+                    "type": "string",
+                    "description": "Canonical lemma_key, Strong's number, script, or transliteration"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Documented lexical roots and non-synonymous root relatives",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LemmaRootRelativesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rpc/lookup_lemma_english_glosses_v1": {
+      "post": {
+        "operationId": "lookupLemmaEnglishGlossesV1",
+        "summary": "Deterministic lookup: canonical lemma -> lexicon sense glosses vs attested corpus renderings",
+        "description": "Separates cataloged lexicon sense glosses from attested interlinear English renderings aggregated across biblical occurrences, keeping sense definitions distinct from contextual English translations.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["p_lemma_query"],
+                "properties": {
+                  "p_lemma_query": {
+                    "type": "string",
+                    "description": "Canonical lemma_key, Strong's number, script, or transliteration"
+                  },
+                  "p_limit": {
+                    "type": "integer",
+                    "default": 25,
+                    "minimum": 1,
+                    "maximum": 100
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Separated lexicon sense glosses and attested English rendering counts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LemmaEnglishGlossesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rpc/lookup_passage_tokens_syntax_v1": {
+      "post": {
+        "operationId": "lookupPassageTokensSyntaxV1",
+        "summary": "Deterministic lookup: biblical passage -> edition refs, versification mappings, tokens, morphology & syntax",
+        "description": "Returns edition-specific passage identifiers, documented versification mappings (e.g. Hebrew Psalm superscriptions vs English numbering), ordered tokens with sub-word morpheme decompositions, syntax nodes/edges, and semantic annotations.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["p_book", "p_chapter", "p_verse"],
+                "properties": {
+                  "p_book": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 66
+                  },
+                  "p_chapter": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "p_verse": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "p_edition_key": {
+                    "type": ["string", "null"],
+                    "default": null,
+                    "description": "Optional filter on source_editions.edition_key"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Passage tokens, morphemes, versification mappings, syntax graph, and semantic annotations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PassageTokensSyntaxResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rpc/lookup_concept_properties_v1": {
+      "post": {
+        "operationId": "lookupConceptPropertiesV1",
+        "summary": "Deterministic lookup: concept -> documented external properties and hyperlinks",
+        "description": "Returns external factual properties (coordinates, ISO dates, people/place metadata) and external authority links (Wikidata, Pleiades) with explicit epistemic_layer separation.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["p_concept_query"],
+                "properties": {
+                  "p_concept_query": {
+                    "type": "string",
+                    "description": "Concept key, title, alias, or Strong's code"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Concept record(s) with documented external properties and authority links",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConceptPropertiesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rpc/lookup_entity_relationships_v1": {
+      "post": {
+        "operationId": "lookupEntityRelationshipsV1",
+        "summary": "Deterministic lookup: canonical entity -> directly documented or deterministically calculated relationships",
+        "description": "Resolves any canonical entity (lemma, root, sense, word_form, passage, concept, place, event) and returns provenance-complete outgoing and incoming evidence relationships.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["p_entity_query"],
+                "properties": {
+                  "p_entity_query": {
+                    "type": "string",
+                    "description": "Canonical entity_key (e.g. lemma:G3056, root:G3056, passage:PSA.3.0, concept:LAMPSTAND) or display label/alias"
+                  },
+                  "p_relation_type": {
+                    "type": ["string", "null"],
+                    "default": null
+                  },
+                  "p_origin_mode": {
+                    "type": ["string", "null"],
+                    "enum": ["directly_imported", "algorithmically_calculated", null],
+                    "default": null
+                  },
+                  "p_limit": {
+                    "type": "integer",
+                    "default": 50,
+                    "minimum": 1,
+                    "maximum": 200
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Provenance-complete entity relationships",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntityRelationshipsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rpc/lookup_hebrew_to_greek_alignments_v1": {
+      "post": {
+        "operationId": "lookupHebrewToGreekAlignmentsV1",
+        "summary": "Forward lookup: Hebrew lemma to Greek translation equivalents",
+        "description": "Returns explicit source-provided Greek translation equivalents for a Hebrew lemma from MACULA Hebrew, with alignment frequencies, sample verses, and provenance. Gated by field_license_registry.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["p_lemma_query"],
+                "properties": {
+                  "p_lemma_query": {
+                    "type": "string",
+                    "description": "Hebrew lemma, Strong number (e.g. H0430, 430), or entity key (lemma:H0430G)"
+                  },
+                  "p_limit": {
+                    "type": "integer",
+                    "default": 25,
+                    "minimum": 1,
+                    "maximum": 100
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Hebrew-to-Greek translation alignments",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HebrewToGreekAlignmentsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rpc/lookup_greek_to_hebrew_alignments_v1": {
+      "post": {
+        "operationId": "lookupGreekToHebrewAlignmentsV1",
+        "summary": "Reverse lookup: Greek lemma to Hebrew lemmas rendered",
+        "description": "Returns Hebrew lemmas rendered by a given Greek lemma in ancient translation, with occurrence frequencies, sample verses, and provenance.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["p_greek_query"],
+                "properties": {
+                  "p_greek_query": {
+                    "type": "string",
+                    "description": "Greek lemma, Strong number (e.g. G2316, 2316), or entity key (lemma:G2316)"
+                  },
+                  "p_limit": {
+                    "type": "integer",
+                    "default": 25,
+                    "minimum": 1,
+                    "maximum": 100
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Greek-to-Hebrew translation alignments",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GreekToHebrewAlignmentsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rpc/get_hebrew_septuagint_parallel_v1": {
+      "post": {
+        "operationId": "getHebrewSeptuagintParallelV1",
+        "summary": "Side-by-side Masoretic Hebrew and Septuagint Greek parallel text",
+        "description": "Returns parallel Masoretic Hebrew tokens and Swete Septuagint Greek tokens for a verse, handling Psalms versification shifts (e.g. Psalm 3:0 title vs LXX 3:1) and morpheme-level alignment links.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["p_book", "p_chapter", "p_verse"],
+                "properties": {
+                  "p_book": {
+                    "type": "integer",
+                    "description": "Canonical book number (1=Genesis, 19=Psalms, 23=Isaiah)"
+                  },
+                  "p_chapter": {
+                    "type": "integer",
+                    "description": "Chapter number"
+                  },
+                  "p_verse": {
+                    "type": "integer",
+                    "description": "Verse number (0 for Psalm titles)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Parallel MT Hebrew and Swete LXX Greek text",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HebrewSeptuagintParallelResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rpc/lookup_cross_testament_greek_v1": {
+      "post": {
+        "operationId": "lookupCrossTestamentGreekV1",
+        "summary": "Cross-testament Greek vocabulary tracing across LXX and NT",
+        "description": "Traces Greek vocabulary across the Septuagint (Swete) and New Testament Greek, showing frequency distributions and underlying Hebrew renderings.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["p_greek_query"],
+                "properties": {
+                  "p_greek_query": {
+                    "type": "string",
+                    "description": "Greek lemma, Strong number (e.g. G2316), or inflected form"
+                  },
+                  "p_limit": {
+                    "type": "integer",
+                    "default": 25,
+                    "minimum": 1,
+                    "maximum": 100
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Cross-testament Greek occurrences and Hebrew renderings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CrossTestamentGreekResponse"
                 }
               }
             }
@@ -2203,6 +2674,179 @@
           "schema_version",
           "status"
         ]
+      },
+      "WordToLemmaSensesResponse": {
+        "type": "object",
+        "required": ["schema_version", "status"],
+        "properties": {
+          "schema_version": { "const": 1 },
+          "status": { "type": "string", "enum": ["ok", "not_found", "invalid_request"] },
+          "message": { "type": "string" },
+          "modeling_invariants": {
+            "type": "object",
+            "properties": {
+              "word_form_is_not_lemma": { "const": true },
+              "sense_assignment_policy": { "const": "catalog_only_no_ai_inference" }
+            }
+          },
+          "word_forms": { "type": "array", "items": { "type": "object" } }
+        }
+      },
+      "LemmaOccurrencesResponse": {
+        "type": "object",
+        "required": ["schema_version", "status"],
+        "properties": {
+          "schema_version": { "const": 1 },
+          "status": { "type": "string", "enum": ["ok", "not_found", "invalid_request"] },
+          "message": { "type": "string" },
+          "lemma": { "type": "object" },
+          "homograph_or_query_candidates": { "type": "array", "items": { "type": "object" } },
+          "totals": { "type": "object" },
+          "pagination": { "type": "object" },
+          "occurrences": { "type": "array", "items": { "type": "object" } }
+        }
+      },
+      "LemmaRootRelativesResponse": {
+        "type": "object",
+        "required": ["schema_version", "status"],
+        "properties": {
+          "schema_version": { "const": 1 },
+          "status": { "type": "string", "enum": ["ok", "not_found", "invalid_request"] },
+          "message": { "type": "string" },
+          "modeling_invariants": {
+            "type": "object",
+            "properties": {
+              "lemma_is_not_necessarily_root": { "const": true },
+              "root_is_not_a_meaning": { "const": true },
+              "shared_root_implies_synonymy": { "const": false }
+            }
+          },
+          "lemma": { "type": "object" },
+          "documented_roots": { "type": "array", "items": { "type": "object" } },
+          "root_relatives": { "type": "array", "items": { "type": "object" } }
+        }
+      },
+      "LemmaEnglishGlossesResponse": {
+        "type": "object",
+        "required": ["schema_version", "status"],
+        "properties": {
+          "schema_version": { "const": 1 },
+          "status": { "type": "string", "enum": ["ok", "not_found", "invalid_request"] },
+          "message": { "type": "string" },
+          "modeling_invariants": {
+            "type": "object",
+            "properties": {
+              "lexical_sense_is_not_english_translation": { "const": true },
+              "translation_is_not_word_for_word_alignment": { "const": true }
+            }
+          },
+          "lemma": { "type": "object" },
+          "lexicon_sense_glosses": { "type": "array", "items": { "type": "object" } },
+          "corpus_rendering_summary": { "type": "object" },
+          "attested_english_glosses": { "type": "array", "items": { "type": "object" } }
+        }
+      },
+      "PassageTokensSyntaxResponse": {
+        "type": "object",
+        "required": ["schema_version", "status", "passage"],
+        "properties": {
+          "schema_version": { "const": 1 },
+          "status": { "type": "string", "enum": ["ok", "passage_not_found"] },
+          "passage": { "type": "object" },
+          "edition_passages": { "type": "array", "items": { "type": "object" } },
+          "versification_mappings": { "type": "array", "items": { "type": "object" } },
+          "english_editions": { "type": "array", "items": { "type": "object" } },
+          "tokens": { "type": "array", "items": { "type": "object" } },
+          "syntax_nodes": { "type": "array", "items": { "type": "object" } },
+          "syntax_edges": { "type": "array", "items": { "type": "object" } },
+          "semantic_annotations": { "type": "array", "items": { "type": "object" } }
+        }
+      },
+      "ConceptPropertiesResponse": {
+        "type": "object",
+        "required": ["schema_version", "status"],
+        "properties": {
+          "schema_version": { "const": 1 },
+          "status": { "type": "string", "enum": ["ok", "not_found", "invalid_request"] },
+          "message": { "type": "string" },
+          "modeling_invariants": {
+            "type": "object",
+            "properties": {
+              "external_observation_is_not_biblical_interpretation": { "const": true }
+            }
+          },
+          "concepts": { "type": "array", "items": { "type": "object" } }
+        }
+      },
+      "EntityRelationshipsResponse": {
+        "type": "object",
+        "required": ["schema_version", "status"],
+        "properties": {
+          "schema_version": { "const": 1 },
+          "status": { "type": "string", "enum": ["ok", "not_found", "invalid_request"] },
+          "message": { "type": "string" },
+          "entity": { "type": "object" },
+          "returned_count": { "type": "integer" },
+          "relationships": { "type": "array", "items": { "type": "object" } }
+        }
+      },
+      "HebrewToGreekAlignmentsResponse": {
+        "type": "object",
+        "required": ["schema_version", "status"],
+        "properties": {
+          "schema_version": { "const": 1 },
+          "status": { "type": "string", "enum": ["ok", "not_found", "invalid_request", "gated_license_restricted"] },
+          "message": { "type": "string" },
+          "query": { "type": "string" },
+          "hebrew_lemma": { "type": "object" },
+          "license_status": { "type": "string" },
+          "total_alignments": { "type": "integer" },
+          "alignments": { "type": "array", "items": { "type": "object" } },
+          "provenance": { "type": "object" }
+        }
+      },
+      "GreekToHebrewAlignmentsResponse": {
+        "type": "object",
+        "required": ["schema_version", "status"],
+        "properties": {
+          "schema_version": { "const": 1 },
+          "status": { "type": "string", "enum": ["ok", "not_found", "invalid_request", "gated_license_restricted"] },
+          "message": { "type": "string" },
+          "query": { "type": "string" },
+          "greek_lemma": { "type": "object" },
+          "license_status": { "type": "string" },
+          "total_alignments": { "type": "integer" },
+          "alignments": { "type": "array", "items": { "type": "object" } },
+          "provenance": { "type": "object" }
+        }
+      },
+      "HebrewSeptuagintParallelResponse": {
+        "type": "object",
+        "required": ["schema_version", "status"],
+        "properties": {
+          "schema_version": { "const": 1 },
+          "status": { "type": "string", "enum": ["ok", "not_found", "invalid_request"] },
+          "message": { "type": "string" },
+          "canonical_verse": { "type": "object" },
+          "masoretic": { "type": "object" },
+          "septuagint": { "type": "object" },
+          "word_alignments": { "type": "array", "items": { "type": "object" } },
+          "license_info": { "type": "object" }
+        }
+      },
+      "CrossTestamentGreekResponse": {
+        "type": "object",
+        "required": ["schema_version", "status"],
+        "properties": {
+          "schema_version": { "const": 1 },
+          "status": { "type": "string", "enum": ["ok", "not_found", "invalid_request"] },
+          "message": { "type": "string" },
+          "query": { "type": "string" },
+          "greek_lemma": { "type": "object" },
+          "nt_occurrences": { "type": "object" },
+          "lxx_occurrences": { "type": "object" },
+          "hebrew_source_renderings": { "type": "array", "items": { "type": "object" } }
+        }
       }
     }
   }

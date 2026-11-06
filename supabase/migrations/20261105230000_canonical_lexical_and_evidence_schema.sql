@@ -721,7 +721,7 @@ begin
     where schemaname = 'public' and tablename = 'semantic_annotations' and policyname = 'semantic_annotations_public_read'
   ) then
     create policy semantic_annotations_public_read on public.semantic_annotations
-      for select to anon, authenticated
+      for select to anon
       using (origin_mode <> 'user_authored' and review_status = 'reviewed');
   end if;
 
@@ -731,7 +731,10 @@ begin
   ) then
     create policy semantic_annotations_owner_read on public.semantic_annotations
       for select to authenticated
-      using (origin_mode = 'user_authored' and (select auth.uid()) = owner_user_id);
+      using (
+        (origin_mode <> 'user_authored' and review_status = 'reviewed')
+        or (origin_mode = 'user_authored' and (select auth.uid()) = owner_user_id)
+      );
   end if;
 end $$;
 
@@ -746,7 +749,7 @@ begin
     where schemaname = 'public' and tablename = 'entity_relationships' and policyname = 'entity_relationships_public_read'
   ) then
     create policy entity_relationships_public_read on public.entity_relationships
-      for select to anon, authenticated
+      for select to anon
       using (origin_mode <> 'user_authored' and review_status = 'reviewed');
   end if;
 
@@ -756,7 +759,10 @@ begin
   ) then
     create policy entity_relationships_owner_read on public.entity_relationships
       for select to authenticated
-      using (origin_mode = 'user_authored' and (select auth.uid()) = owner_user_id);
+      using (
+        (origin_mode <> 'user_authored' and review_status = 'reviewed')
+        or (origin_mode = 'user_authored' and (select auth.uid()) = owner_user_id)
+      );
   end if;
 end $$;
 

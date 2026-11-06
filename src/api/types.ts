@@ -1,8 +1,8 @@
 // @file: src/api/types.ts
 // @feature: api
-// @tables: words | verses | verse_translation_sources | word_translation_choices | chronology_models | chronology_runs | chronology_assertions | chronology_evidence | places | place_locations | verse_geography | passage_geography | geography_sources | lexemes | concepts | assertions | assertion_evidence | books
+// @tables: words | verses | verse_translation_sources | word_translation_choices | chronology_models | chronology_runs | chronology_assertions | chronology_evidence | places | place_locations | verse_geography | passage_geography | geography_sources | lexemes | concepts | assertions | assertion_evidence | books | lemmas | word_form_lemmas | lexical_roots | lexical_senses | syntax_nodes | syntax_edges | entity_relationships | lxx_swete_words | hebrew_lxx_verse_map
 // @candidates: none
-// @toc: types | types:chronology-models | types:chronology-packet | types:geography-packet | types:research-packet | types:hydrated-words | types:hydrated-packet | types:reader | types:books
+// @toc: types | types:chronology-models | types:chronology-packet | types:geography-packet | types:research-packet | types:hydrated-words | types:hydrated-packet | types:reader | types:books | types:canonical-lexical
 
 // === @section:types ===
 export interface ActivePassage { book: number; chapter: number; verse: number }
@@ -350,3 +350,7 @@ export interface BibleBooksResponse {
   status: 'ok';
   books: BibleBook[];
 }
+
+// === @section:types:canonical-lexical ===
+export type * from './lexical-types';
+export type * from './septuagint-types';

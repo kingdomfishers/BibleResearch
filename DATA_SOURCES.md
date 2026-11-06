@@ -76,3 +76,35 @@ Context-aware biblical geography integrates four pinned open datasets offline in
    - **License:** Public Domain ([CC0](https://www.naturalearthdata.com/about/terms-of-use/)). Optional modern map toggle uses [OpenFreeMap](https://openfreemap.org) (`OpenFreeMap © OpenMapTiles Data from OpenStreetMap`, ODbL 1.0 / CC BY 4.0).
 
 Reproduce offline audit and SQL staging with `node scripts/audit-geography.mjs --download` followed by `node scripts/etl-geography.mjs`.
+
+## MACULA, morphhb and Septuagint source audit (2026-11-06, SEP-01)
+
+Reproduce: clone each repository (`git clone --depth 1`) into `.artifacts/sources/<name>`, then run `node scripts/audit-macula-lxx.mjs`. It writes `.artifacts/sources/audit-report.json` with pinned commits, file SHA-256 digests, per-field coverage, and the field license registry. It never touches the database.
+
+| Source | Pinned commit | Dataset license | Role |
+| :--- | :--- | :--- | :--- |
+| [Clear-Bible/macula-hebrew](https://github.com/Clear-Bible/macula-hebrew) | `47db250bd55d0d8577f2a94fba114ef16c35b23c` | CC BY 4.0 (Biblica), attribution: "MACULA Hebrew Linguistic Datasets, available at https://github.com/Clear-Bible/macula-hebrew/" | 475,911 morpheme rows: syntax class, glosses, senses, frames, participant references, Greek equivalents |
+| [Clear-Bible/macula-greek](https://github.com/Clear-Bible/macula-greek) | `8423afe47b9e8f24b7772e808af45c7159a6fe7e` | CC BY 4.0 (Biblica) | NT trees (Nestle1904: 137,779 rows; SBLGNT: 137,741 rows). STEP already supplies NT text and morphology, so only annotations are candidates |
+| [openscriptures/morphhb](https://github.com/openscriptures/morphhb) | `3d15126fb1ef74867fc1434be1942e837932691f` | CC BY 4.0 over public-domain WLC | Already carried inside macula-hebrew (`sources/OpenScriptures`); no separate import unless a gap is found |
+| [nathans/lxx-swete](https://github.com/nathans/lxx-swete) | `26bad3eb42bba98471d154c954e36a6f30a0279d` | **CC BY-SA 4.0** (text); MIT (build code, not imported) | 55 books, 588,579 word lines in `book.chapter.verse[letter] word` format; plain text with no lemma or morphology |
+
+### Field-level findings
+
+Dataset-level CC BY 4.0 does **not** cover embedded third-party material. Each field is registered with a status:
+
+- **Enabled (CC BY 4.0, source stated):**
+  - Hebrew text and morphology: WLC and OSHB.
+  - Syntax: Groves Center and Clear.
+  - English and Mandarin glosses: Cherith Analytics.
+  - Clear word senses (`sensenumber`), participant references (`subjref`, `participantref`) and Greek-side frames and referents.
+- **Disabled, restricted:** the UBS "Used with permission" fields.
+  - Hebrew SDBH: `sdbh`, `lexdomain`, `coredomain`, `contextualdomain`.
+  - Greek MARBLE and Louw-Nida: `domain`, `ln`.
+- **Disabled, unverified:**
+  - Hebrew `greek` and `greekstrong` (the Hebrew–Greek word equivalents, present on 78.8% and 67.9% of rows). The README says only that they are "drawn from the Septuagint". The underlying alignment source is not documented, and a restricted source such as CATSS cannot be ruled out. They stay disabled until the upstream source is confirmed.
+  - Hebrew `frame` (14.5% of rows). Its A0/A1 argument structure matches SDBH dictionary frames, and whether it is Clear's own work or UBS-derived is not stated.
+  - Greek morphology inherited from Nestle1904. Its separate terms need checking, and it duplicates STEP.
+- Swete text is share-alike. It is stored in dedicated attributed tables and is not merged into the STEP-derived tables.
+- CATSS is not imported. It may be linked as an external reference only.
+- Swete letter suffixes (239 lettered verses, e.g. Joshua 15:59a) are Swete-only subdivisions. They must be preserved, not merged into numbered verses.
+- Swete uses LXX numbering (Psalms has 151 chapters), so Hebrew–Greek verse correspondence needs explicit mappings. 771 lines still fail the simple line pattern (mostly the Odes) and must be handled by the importer.

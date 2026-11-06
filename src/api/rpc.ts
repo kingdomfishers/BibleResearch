@@ -1,15 +1,18 @@
 // @file: src/api/rpc.ts
 // @feature: api
-// @tables: words | verses | verse_translation_sources | word_translation_choices | chronology_models | chronology_runs | chronology_assertions | chronology_evidence | places | place_locations | verse_geography | passage_geography | geography_sources | lexemes | concepts | assertions | assertion_evidence | books
+// @tables: words | verses | verse_translation_sources | word_translation_choices | chronology_models | chronology_runs | chronology_assertions | chronology_evidence | places | place_locations | verse_geography | passage_geography | geography_sources | lexemes | concepts | assertions | assertion_evidence | books | lemmas | word_form_lemmas | lexical_roots | lexical_senses | syntax_nodes | syntax_edges | entity_relationships | lxx_swete_words | hebrew_lxx_verse_map | macula_hebrew_morphemes
 // @candidates: none
-// @toc: imports | logic:sample-words | logic:sample-verses | logic:request | logic:chronology | logic:geography | logic:translations | logic:hydrated-research | logic:reader | logic:gateway
+// @toc: imports | logic:sample-words | logic:sample-verses | logic:request | logic:chronology | logic:geography | logic:translations | logic:hydrated-research | logic:reader | logic:canonical-lookups | logic:gateway
 
 // === @section:imports ===
 import { ensureReaderSession, restoreReaderSession, supabase } from './supabase';
 import type { ActivePassage, ChronologyResponse, DataResult, HydratedCoOccurrence,
   RelationshipResearchPacket, TranslationSaveResult, VerseGeographyResponse, VerseTranslationToken,
   VerseWordToken, WordOccurrence, WordRecord, WordRelationship, VerseResearchRequest, VerseResearchResponse,
-  BibleBook, BibleBooksResponse } from './types';
+  BibleBook, BibleBooksResponse, WordToLemmaSensesResponse, LemmaOccurrencesResponse,
+  LemmaRootRelativesResponse, LemmaEnglishGlossesResponse, PassageTokensSyntaxResponse,
+  ConceptPropertiesResponse, EntityRelationshipsResponse, HebrewToGreekAlignmentsResponse,
+  GreekToHebrewAlignmentsResponse, HebrewSeptuagintParallelResponse, CrossTestamentGreekResponse } from './types';
 import type { ReaderPassage, ReaderOverview, ReaderWord, ReaderTimeline, ReaderSearchResult } from './types';
 
 // === @section:logic:sample-words ===
@@ -256,9 +259,80 @@ async function fetchBibleBooks(): Promise<DataResult<BibleBook[]>> {
   }
 }
 
+// === @section:logic:canonical-lookups ===
+const lookupWordSenses = (params: { wordId?: number | null; query?: string | null }) =>
+  readerRPC<WordToLemmaSensesResponse>('lookup_word_to_lemma_senses_v1', {
+    p_word_id: params.wordId ?? null,
+    p_query: params.query ?? null,
+  });
+const lookupLemmaOccs = (lemmaQuery: string, afterVerseId = 0, limit = 50) =>
+  readerRPC<LemmaOccurrencesResponse>('lookup_lemma_occurrences_v1', {
+    p_lemma_query: lemmaQuery,
+    p_after_verse_id: afterVerseId,
+    p_limit: limit,
+  });
+const lookupRootRelatives = (lemmaQuery: string) =>
+  readerRPC<LemmaRootRelativesResponse>('lookup_lemma_root_relatives_v1', { p_lemma_query: lemmaQuery });
+const lookupEnglishGlosses = (lemmaQuery: string, limit = 25) =>
+  readerRPC<LemmaEnglishGlossesResponse>('lookup_lemma_english_glosses_v1', {
+    p_lemma_query: lemmaQuery,
+    p_limit: limit,
+  });
+const lookupPassageSyntax = (book: number, chapter: number, verse: number, editionKey: string | null = null) =>
+  readerRPC<PassageTokensSyntaxResponse>('lookup_passage_tokens_syntax_v1', {
+    p_book: book,
+    p_chapter: chapter,
+    p_verse: verse,
+    p_edition_key: editionKey,
+  });
+const lookupConceptProps = (conceptQuery: string) =>
+  readerRPC<ConceptPropertiesResponse>('lookup_concept_properties_v1', { p_concept_query: conceptQuery });
+const lookupEntityRels = (
+  entityQuery: string,
+  opts: { relationType?: string | null; originMode?: string | null; limit?: number } = {}
+) =>
+  readerRPC<EntityRelationshipsResponse>('lookup_entity_relationships_v1', {
+    p_entity_query: entityQuery,
+    p_relation_type: opts.relationType ?? null,
+    p_origin_mode: opts.originMode ?? null,
+    p_limit: opts.limit ?? 50,
+  });
+const lookupHebrewToGreek = (lemmaQuery: string, limit = 25) =>
+  readerRPC<HebrewToGreekAlignmentsResponse>('lookup_hebrew_to_greek_alignments_v1', {
+    p_lemma_query: lemmaQuery,
+    p_limit: limit,
+  });
+const lookupGreekToHebrew = (greekQuery: string, limit = 25) =>
+  readerRPC<GreekToHebrewAlignmentsResponse>('lookup_greek_to_hebrew_alignments_v1', {
+    p_greek_query: greekQuery,
+    p_limit: limit,
+  });
+const getHebrewSeptuagintParallelText = (book: number, chapter: number, verse: number) =>
+  readerRPC<HebrewSeptuagintParallelResponse>('get_hebrew_septuagint_parallel_v1', {
+    p_book: book,
+    p_chapter: chapter,
+    p_verse: verse,
+  });
+const lookupCrossTestamentGreekVocab = (greekQuery: string, limit = 25) =>
+  readerRPC<CrossTestamentGreekResponse>('lookup_cross_testament_greek_v1', {
+    p_greek_query: greekQuery,
+    p_limit: limit,
+  });
+
 // === @section:logic:gateway ===
 export const BibleRPC = {
   getBibleBooks: fetchBibleBooks,
+  lookupWordToLemmaSenses: lookupWordSenses,
+  lookupLemmaOccurrences: lookupLemmaOccs,
+  lookupLemmaRootRelatives: lookupRootRelatives,
+  lookupLemmaEnglishGlosses: lookupEnglishGlosses,
+  lookupPassageTokensSyntax: lookupPassageSyntax,
+  lookupConceptProperties: lookupConceptProps,
+  lookupEntityRelationships: lookupEntityRels,
+  lookupHebrewToGreekAlignments: lookupHebrewToGreek,
+  lookupGreekToHebrewAlignments: lookupGreekToHebrew,
+  getHebrewSeptuagintParallel: getHebrewSeptuagintParallelText,
+  lookupCrossTestamentGreek: lookupCrossTestamentGreekVocab,
   getReaderPassage: readerPassage,
   preloadReaderPassages: readerPassages,
   getReaderOverview: (p: ActivePassage) => readerRPC<ReaderOverview>('get_reader_overview_v1', passageArgs(p)),
