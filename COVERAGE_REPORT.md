@@ -179,8 +179,51 @@ node scripts/verify-septuagint-layer.mjs
 # 3. Run Canonical Lexical & Invariant verification suite
 node scripts/verify-canonical-lexical-db.mjs
 
-# 4. Verify OpenAPI 3.1.0 REST contract alignment
+# 4. Run Referential Integrity & Provenance verification suite (F2)
+node scripts/verify-referential-integrity.mjs
+
+# 5. Verify OpenAPI 3.1.0 REST contract alignment
 node scripts/verify-openapi.mjs
 ```
 
 All queries are executed with `STABLE` caller-RLS database guarantees and produce byte-for-byte identical output on unchanged data.
+
+---
+
+## 9. Referential Integrity, Quarantine Architecture & Provenance Hardening (F2)
+
+### A. Gloss-Reference Coupling: Investigation & Resolution
+* **Problem Investigated:** In `lookup_lemma_english_glosses_v1`, sample passage citations paired `min(o.verse_id)` with `min(o.source_ref)` independently. Because string ordering (`1Ch...`, `1Ki...`, `Deu...`) differs from numeric verse order (Genesis), sample passages cited books and verses that contradicted the reported citation.
+* **Reproduction:** Tested on `H430` (Elohim), `G3056` (logos), and `H7225` (reshith) via `scripts/verify-gloss-reference-integrity.mjs`. **29 of 30 sample references exhibited decoupled citations**.
+* **Fix Deployed (`20261106103000_fix_gloss_reference_coupling_rpc.sql`):** Replaced independent aggregates with a deterministic row-level subquery `first_occ` (`DISTINCT ON (o.raw_english) ... ORDER BY o.raw_english, o.verse_id, o.source_ref`).
+* **Before / After Result:**
+  - Before: 29 mismatches / 30 checked (96.7% error rate).
+  - After: **0 mismatches / 45 checked (0.0% error rate, 100% synchronized)**.
+
+### B. Quarantine Architecture (`public.quarantined_evidence_records`)
+* Table deployed via migration `20261106100000_referential_integrity_and_quarantine.sql`.
+* Columns: `id`, `dataset_key`, `source_edition_id`, `source_record_id`, `entity_type`, `raw_payload`, `quarantine_reason`, `quarantine_status`, `quarantined_at`, `resolution_notes`.
+* Security: RLS enabled; `REVOKE ALL` from `anon, authenticated, public`; `GRANT SELECT` only.
+* Policy: Rather than silently dropping invalid foreign keys or inventing ungrounded mappings, problematic records are quarantined with exact source payload and diagnostic reason.
+
+### C. Direct Provenance for Septuagint Words
+* `public.lxx_swete_words` lacked direct foreign keys to `source_releases` and `source_editions`.
+* Added `source_release_id` (FK to `source_releases`) and `source_edition_id` (FK to `source_editions`).
+* Backfilled all 1,422 words from parent `lxx_swete_books` records.
+* Current Status: **1,422 of 1,422 words (100%) carry direct release and edition provenance**.
+
+### D. Enforced Check Constraints & Foreign Key Integrity
+* `chk_lemma_root_links_no_synonymy`: `CHECK (implies_synonymy = false)` enforced.
+* `chk_lemma_root_links_etymology`: strictly validates 10 attested etymology types (`base_root_anchor`, `derived_from`, `aramaic_cognate_of`, `hebrew_cognate_of`, `greek_loan_or_transliteration`, `compound_part_of`, `group_member_of`, `shared_name_base`, `spelling_variant_of`, `form_of`).
+* `chk_lexical_roots_kind`: restricts to `documented_lexical_base`, `semitic_cross_dialect_base`, `greek_etymological_stem`.
+* `chk_lexical_roots_language`, `chk_lemmas_language`, `chk_lexemes_language`: enforces valid ISO 639-3 codes (`hbo`, `arc`, `grc`).
+* `chk_entity_relationships_no_self_ref`: `CHECK (subject_entity_id <> object_entity_id)`.
+* `chk_token_morphemes_role`: restricts to canonical roles (`stem`, `prefix_particle`, `prefix_preposition`, `prefix_conjunction`, `prefix_article`, `pronominal_suffix`).
+* `chk_hebrew_lxx_map_kind`: restricts to `same_reference`, `versification_shift`, `superscription_title_verse`, `fragment_subdivision`.
+
+### E. Legitimate 1-to-Many Variants & Homographs Preserved
+* Homographs: `H1254` (3 entries: `H1254A`, `H1254B`, `H1254C`), `H5869` (8 entries: `H5869A`, `H5869B`, `H5869G`, `H5869H`, `H5869I`, `H5869J`, `H5869K`, `H5869M`), `H0430` (4 entries: `H0430A`, `H0430G`, `H0430H`, `H0430I`).
+* Versification Shifts: 9 Psalm title shifts in `hebrew_lxx_verse_map` (e.g. Psalm 3:0 MT superscription -> LXX Psalmi 3:1 title verse).
+* Dual Etymologies: 5 lemma-root pairs with distinct simultaneous etymological relationships (e.g. `derived_from` + `spelling_variant_of`).
+* Foreign Key Orphans: **0 across all 12 canonical relationships**.
+

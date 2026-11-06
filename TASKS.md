@@ -48,6 +48,14 @@ Auditing the original-language evidence database against upstream datasets (STEP
 
 - [x] **F1-01 Implement Deterministic Evidence Coverage Audit** | Files: scripts/audit-evidence-coverage.mjs, COVERAGE_REPORT.md, supabase/migrations/20261106093000_audit_evidence_coverage_rpc.sql | Verify: [AUTO-TEST] Pinned sources (STEPBible, MACULA Hebrew/Greek, morphhb, Swete LXX), expected vs imported metrics, integrity checks (0 orphans, 0 canonical duplicates), annotation availability matrix, MCP accessibility matrix (11 active, 12 DB-only), 70-verse pilot detection (strictly import_incompleteness), and reproducible zero/nonzero exit status.
 
+## Active Feature: Referential Integrity & Provenance Hardening (F2)
+
+Strengthen PostgreSQL evidence schema, quarantine unresolved imports, fix gloss-reference coupling, and enforce referential integrity constraints across tokens, lemmas, senses, annotations, and cross-source mappings.
+
+- [x] **F2-01 Investigate & Reproduce Gloss-Reference Disconnect** | Files: scripts/verify-gloss-reference-integrity.mjs | Verify: [AUTO-TEST] Reproduce and document the exact gloss-reference mismatch where `min(source_ref)` diverges from `sample_verse_id` in `lookup_lemma_english_glosses_v1`.
+- [x] **F2-02 Quarantine Schema & Referential Constraints Migration** | Files: supabase/migrations/20261106100000_referential_integrity_and_quarantine.sql, supabase/migrations/20261106103000_fix_gloss_reference_coupling_rpc.sql, supabase/migrations/20261106110000_verify_referential_integrity_rpc.sql | Verify: [AUTO-TEST] Deploy `quarantined_evidence_records` table, foreign keys and check constraints on roots/senses/lemmas/morphemes/mappings/relationships; fix `lookup_lemma_english_glosses_v1` to guarantee 100% paired `(verse_id, source_ref, book, chapter, verse)` from the exact same occurrence record.
+- [x] **F2-03 Verification Suite for Referential Integrity & Invariants** | Files: scripts/verify-referential-integrity.mjs, COVERAGE_REPORT.md, PROJECTMAP.md | Verify: [AUTO-TEST] Before/after verification of gloss-reference fix (0 mismatches), rejection of invalid FK and domain check insertions, preservation of legitimate 1-to-many variants and homographs, RLS write denial, zero orphans in validated records, and regression suite pass.
+
 ## Proposed feature: complete UX refresh
 
 Requested 2026-11-05. Design: [UX_STRATEGY.md](UX_STRATEGY.md).

@@ -9,6 +9,7 @@ LANGUAGE sql
 STABLE
 SECURITY DEFINER
 SET search_path = public
+SET statement_timeout = '25s'
 AS $$
 SELECT jsonb_build_object(
   'schema_version', '1.0.0',

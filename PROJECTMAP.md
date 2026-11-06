@@ -50,6 +50,9 @@ Core modules used across 2+ components. Import these directly—never duplicate 
 | `supabase/migrations/20261106060000_septuagint_macula_schema.sql` | Septuagint & MACULA Hebrew schema: field_license_registry, lxx_swete_books, hebrew_lxx_verse_map, lxx_swete_words, macula_hebrew_morphemes, macula_gated_field_values | All 6 additive tables |
 | `supabase/migrations/20261106063000_septuagint_comparison_rpcs.sql` | Deterministic comparison RPCs: forward/reverse alignments, parallel MT/LXX text with Psalm shift, and cross-testament Greek tracing | `lookup_hebrew_to_greek_alignments_v1`, `lookup_greek_to_hebrew_alignments_v1`, `get_hebrew_septuagint_parallel_v1`, `lookup_cross_testament_greek_v1` |
 | `supabase/migrations/20261106093000_audit_evidence_coverage_rpc.sql` | Deterministic evidence coverage audit RPC returning exact table counts, duplicate metrics, foreign key orphan checks, and pilot incompleteness metrics | `audit_evidence_coverage_v1` |
+| `supabase/migrations/20261106100000_referential_integrity_and_quarantine.sql` | Strengthen referential integrity, enforce check constraints on roots/senses/lemmas/morphemes/relationships, direct provenance on LXX words, and deploy `quarantined_evidence_records` table | `quarantined_evidence_records`, `lxx_swete_words` |
+| `supabase/migrations/20261106103000_fix_gloss_reference_coupling_rpc.sql` | Coherent row-level pairing of `(verse_id, source_ref, book, chapter, verse)` in `lookup_lemma_english_glosses_v1` via `first_occ` | `lookup_lemma_english_glosses_v1` replacement |
+| `supabase/migrations/20261106110000_verify_referential_integrity_rpc.sql` | Deterministic referential integrity verification function asserting FK and domain constraint rejection, direct provenance, and orphan counts | `verify_referential_integrity_v1` |
 
 ---
 
@@ -130,6 +133,7 @@ Focused DOM components and application shell (max 450 lines/file, max 80 lines/`
 | **Portable manifest schemas** | `node scripts/verify-research-package-schema.mjs` with optional AJV_MODULE | Validate plugin.json/mcp.json against the published Agent Plugins schemas |
 | **Septuagint & Hebrew-Greek Comparison** | `node scripts/verify-septuagint-layer.mjs` | Gen 1:1 MT<->LXX parallel, Psalm 3:0 title shift -> LXX 3:1, Isaiah 53:7 <-> Acts 8:32 Greek correspondence, bidirectional lookups, and cross-testament tracing |
 | **Evidence Coverage & Integrity Audit (F1)** | `node scripts/audit-evidence-coverage.mjs` | Pinned source digests, expected vs imported metrics, orphan/duplicate queries, annotation availability, MCP tool accessibility, 70-verse pilot detection, and `COVERAGE_REPORT.md` generation |
+| **Referential Integrity & Provenance (F2)** | `node scripts/verify-referential-integrity.mjs` | Verifies before/after gloss-reference coupling fix (0 mismatches), database-native FK and domain check rejection, quarantine table queryability, direct LXX word provenance, variant preservation, zero orphans, and anonymous write denial across 6 tables |
 
 ## Shared research skill and packages
 
