@@ -13,7 +13,7 @@ import type { ActivePassage, ChronologyResponse, DataResult, HydratedCoOccurrenc
   LemmaRootRelativesResponse, LemmaEnglishGlossesResponse, PassageTokensSyntaxResponse,
   ConceptPropertiesResponse, EntityRelationshipsResponse, HebrewToGreekAlignmentsResponse,
   GreekToHebrewAlignmentsResponse, HebrewSeptuagintParallelResponse, CrossTestamentGreekResponse,
-  HebrewVerseEvidenceResponse, GreekVerseEvidenceResponse } from './types';
+  HebrewVerseEvidenceResponse, GreekVerseEvidenceResponse, LexicalSemanticsResponse } from './types';
 import type { ReaderPassage, ReaderOverview, ReaderWord, ReaderTimeline, ReaderSearchResult } from './types';
 
 // === @section:logic:sample-words ===
@@ -331,6 +331,11 @@ const lookupGreekVerseEvidenceData = (book: number, chapter: number, verse: numb
     p_chapter: chapter,
     p_verse: verse,
   });
+const lookupLexicalSemanticsData = (query: string, matchScope = 'auto') =>
+  readerRPC<LexicalSemanticsResponse>('lookup_lexical_semantics_v1', {
+    p_query: query,
+    p_match_scope: matchScope,
+  });
 
 // === @section:logic:gateway ===
 export const BibleRPC = {
@@ -348,6 +353,7 @@ export const BibleRPC = {
   lookupCrossTestamentGreek: lookupCrossTestamentGreekVocab,
   lookupHebrewVerseEvidence: lookupHebrewVerseEvidenceData,
   lookupGreekVerseEvidence: lookupGreekVerseEvidenceData,
+  lookupLexicalSemantics: lookupLexicalSemanticsData,
   getReaderPassage: readerPassage,
   preloadReaderPassages: readerPassages,
   getReaderOverview: (p: ActivePassage) => readerRPC<ReaderOverview>('get_reader_overview_v1', passageArgs(p)),

@@ -742,6 +742,49 @@
         }
       }
     },
+    "/rpc/lookup_lexical_semantics_v1": {
+      "post": {
+        "operationId": "lookupLexicalSemanticsV1",
+        "summary": "Authoritative lexical semantics lookup (F5)",
+        "description": "Multi-tier Unicode-aware lexical semantics resolving canonical lemmas, homographs, documented roots (non-synonymous invariant), documented lexical senses (with definition text, scripture citations, and source attribution), and attested translation glosses with contextual equivalence caveats.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "p_query"
+                ],
+                "properties": {
+                  "p_query": {
+                    "type": "string",
+                    "description": "Search query: Hebrew/Aramaic (with or without niqqud), Greek (monotonic or polytonic), Strong's code, or transliteration"
+                  },
+                  "p_match_scope": {
+                    "type": "string",
+                    "default": "auto",
+                    "description": "Matching scope: auto, lemma, surface, or root"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Structured lexical semantics response with strict separation of lemma, root, sense, and gloss",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/rpc/lookup_word_to_lemma_senses_v1": {
       "post": {
         "operationId": "lookupWordToLemmaSensesV1",

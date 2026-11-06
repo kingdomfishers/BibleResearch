@@ -141,15 +141,17 @@ All orphan queries are executed database-natively using `NOT EXISTS` checks:
 | `lookup_cross_testament_greek_v1` | Septuagint | ❌ NO | `lookup_cross_testament_greek_v1` | Cross-testament Greek trace (PostgREST/OpenAPI only) |
 | `lookup_hebrew_verse_evidence_v1` | Hebrew Corpus | ❌ NO | `lookup_hebrew_verse_evidence_v1` | Verse evidence: STEP + morphhb Ketiv/Qere + MACULA + syntax (PostgREST/OpenAPI only) |
 | `lookup_greek_verse_evidence_v1` | Greek NT Corpus | ❌ NO | `lookup_greek_verse_evidence_v1` | Verse evidence: STEP + TAGNT variants + MACULA Nestle1904 & SBLGNT (PostgREST/OpenAPI only) |
+| `lookup_lexical_semantics_v1` | Lexical Semantics | ❌ NO | `lookup_lexical_semantics_v1` | Multi-tier Unicode lookup with surface/lemma/root/sense/gloss separation (PostgREST/OpenAPI only) |
 
 
 ### MCP Accessibility Findings:
 1. **Fully Covered MCP Domains:** Core verse reading, occurrence lookups, co-occurrence statistics, shared-verse density scoring, word details, multi-model chronology, 5-tier biblical geography, and hydrated research packets (up to 100 verses) are fully accessible via `bible-mcp`.
 2. **Exposed via PostgREST / OpenAPI 3.1.0 but Missing in MCP Catalog:**
    - **Canonical Books:** `get_bible_books_v1`
-   - **7 Canonical Lexical Lookups:** `lookup_word_to_lemma_senses_v1`, `lookup_lemma_occurrences_v1`, `lookup_lemma_root_relatives_v1`, `lookup_lemma_english_glosses_v1`, `lookup_passage_tokens_syntax_v1`, `lookup_concept_properties_v1`, `lookup_entity_relationships_v1`
+   - **8 Canonical Lexical & Semantic Lookups:** `lookup_word_to_lemma_senses_v1`, `lookup_lemma_occurrences_v1`, `lookup_lemma_root_relatives_v1`, `lookup_lemma_english_glosses_v1`, `lookup_passage_tokens_syntax_v1`, `lookup_concept_properties_v1`, `lookup_entity_relationships_v1`, `lookup_lexical_semantics_v1`
+   - **Corpus Verse Evidence:** `lookup_hebrew_verse_evidence_v1`, `lookup_greek_verse_evidence_v1`
    - **4 Septuagint Layer Functions:** `lookup_hebrew_to_greek_alignments_v1`, `lookup_greek_to_hebrew_alignments_v1`, `get_hebrew_septuagint_parallel_v1`, `lookup_cross_testament_greek_v1`
-3. **Recommendation:** Register tools in `supabase/functions/bible-mcp/catalog.ts` for the canonical lookups and Septuagint comparison RPCs to achieve 100% parity between MCP and PostgREST.
+3. **Recommendation:** Register tools in `supabase/functions/bible-mcp/catalog.ts` for the canonical lookups, verse evidence, and Septuagint comparison RPCs to achieve 100% parity between MCP and PostgREST.
 
 ---
 
