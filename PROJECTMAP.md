@@ -49,6 +49,7 @@ Core modules used across 2+ components. Import these directly—never duplicate 
 | `supabase/functions/bible-mcp/workflow-contract.ts` | Delivery defaults, research intent routes and expected tool inventory | `RESEARCH_PROFILES`, `WORKFLOW_ROUTES`, `RESEARCH_TOOL_NAMES` |
 | `supabase/migrations/20261106060000_septuagint_macula_schema.sql` | Septuagint & MACULA Hebrew schema: field_license_registry, lxx_swete_books, hebrew_lxx_verse_map, lxx_swete_words, macula_hebrew_morphemes, macula_gated_field_values | All 6 additive tables |
 | `supabase/migrations/20261106063000_septuagint_comparison_rpcs.sql` | Deterministic comparison RPCs: forward/reverse alignments, parallel MT/LXX text with Psalm shift, and cross-testament Greek tracing | `lookup_hebrew_to_greek_alignments_v1`, `lookup_greek_to_hebrew_alignments_v1`, `get_hebrew_septuagint_parallel_v1`, `lookup_cross_testament_greek_v1` |
+| `supabase/migrations/20261106093000_audit_evidence_coverage_rpc.sql` | Deterministic evidence coverage audit RPC returning exact table counts, duplicate metrics, foreign key orphan checks, and pilot incompleteness metrics | `audit_evidence_coverage_v1` |
 
 ---
 
@@ -128,6 +129,7 @@ Focused DOM components and application shell (max 450 lines/file, max 80 lines/`
 | **Shared skill/package contract** | `node scripts/build-research-plugin.mjs`; `node scripts/verify-research-workflow.mjs` | Canonical skill and generated workflow parity, matching OpenAI/Gemini packages, public-only manifests, profile defaults and 22 behavioral evaluation rubrics |
 | **Portable manifest schemas** | `node scripts/verify-research-package-schema.mjs` with optional AJV_MODULE | Validate plugin.json/mcp.json against the published Agent Plugins schemas |
 | **Septuagint & Hebrew-Greek Comparison** | `node scripts/verify-septuagint-layer.mjs` | Gen 1:1 MT<->LXX parallel, Psalm 3:0 title shift -> LXX 3:1, Isaiah 53:7 <-> Acts 8:32 Greek correspondence, bidirectional lookups, and cross-testament tracing |
+| **Evidence Coverage & Integrity Audit (F1)** | `node scripts/audit-evidence-coverage.mjs` | Pinned source digests, expected vs imported metrics, orphan/duplicate queries, annotation availability, MCP tool accessibility, 70-verse pilot detection, and `COVERAGE_REPORT.md` generation |
 
 ## Shared research skill and packages
 

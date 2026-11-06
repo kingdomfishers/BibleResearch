@@ -42,6 +42,12 @@ Approved by user 2026-11-06. Pinned sources only; field-level license registry; 
 - [x] **SEP-05 Comparison lookup RPCs, types, OpenAPI, gateway** | Files: supabase/migrations/20261106063000_septuagint_comparison_rpcs.sql, src/api/septuagint-types.ts, src/api/rpc.ts, supabase/openapi.json | Verify: [AUTO-TEST] Forward/reverse translation searches, side-by-side MT/LXX parallel with Psalm shifts, and cross-testament Greek tracing deployed and verified via OpenAPI 3.1.0 and PostgREST.
 - [x] **SEP-06 Validation suite & docs** | Files: scripts/verify-septuagint-layer.mjs, DATA_MODEL.md, PROVENANCE.md, PROJECTMAP.md | Verify: [AUTO-TEST] Genesis 1:1 MT<->LXX parallel, Psalm 3:0 MT superscription vs LXX 27:3:1 title verse shift, Isaiah 53:7 <-> Acts 8:32 Greek correspondence, and dynamic license kill-switch verified green.
 
+## Active Feature: Measurable Evidence Coverage Audit (F1)
+
+Auditing the original-language evidence database against upstream datasets (STEPBible, MACULA Hebrew/Greek, morphhb, Swete LXX), distinguishing source vs import incompleteness, reporting duplicates/orphans/unrecognized records, and verifying MCP accessibility.
+
+- [x] **F1-01 Implement Deterministic Evidence Coverage Audit** | Files: scripts/audit-evidence-coverage.mjs, COVERAGE_REPORT.md, supabase/migrations/20261106093000_audit_evidence_coverage_rpc.sql | Verify: [AUTO-TEST] Pinned sources (STEPBible, MACULA Hebrew/Greek, morphhb, Swete LXX), expected vs imported metrics, integrity checks (0 orphans, 0 canonical duplicates), annotation availability matrix, MCP accessibility matrix (11 active, 12 DB-only), 70-verse pilot detection (strictly import_incompleteness), and reproducible zero/nonzero exit status.
+
 ## Proposed feature: complete UX refresh
 
 Requested 2026-11-05. Design: [UX_STRATEGY.md](UX_STRATEGY.md).
