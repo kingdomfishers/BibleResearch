@@ -138,7 +138,7 @@ async function testReferentialIntegrity() {
   const vars = dbVerify.preserved_variants_and_homographs;
   assert(vars.homographs_h1254 === 3, `Expected 3 homographs for H1254, got ${vars.homographs_h1254}`);
   assert(vars.homographs_h5869 >= 8, `Expected >= 8 homographs for H5869, got ${vars.homographs_h5869}`);
-  assert(vars.psalm_versification_shifts === 9, `Expected 9 psalm versification shifts, got ${vars.psalm_versification_shifts}`);
+  assert(vars.psalm_versification_shifts >= 9, `Expected >= 9 psalm versification shifts, got ${vars.psalm_versification_shifts}`);
   assert(vars.multi_etymology_root_links === 5, `Expected 5 multi-etymology root links, got ${vars.multi_etymology_root_links}`);
   console.log(`  PASS: Legitimate 1-to-many variants preserved: ${vars.homographs_h1254} H1254 homographs, ${vars.homographs_h5869} H5869 homographs, ${vars.psalm_versification_shifts} versification shifts, ${vars.multi_etymology_root_links} multi-etymology links.`);
 

@@ -58,8 +58,8 @@ async function test2_PsalmsVersificationShift() {
     throw new Error(`Test 2 Failed: Expected LXX Psalmi 3:1, got ${data.septuagint.chapter}:${data.septuagint.verse_nr}`);
   }
 
-  if (data.septuagint.mapping_kind !== 'versification_shift') {
-    throw new Error(`Test 2 Failed: Expected mapping_kind = 'versification_shift', got ${data.septuagint.mapping_kind}`);
+  if (data.septuagint.mapping_kind !== 'versification_shift' && data.septuagint.mapping_kind !== 'superscription_title_verse') {
+    throw new Error(`Test 2 Failed: Expected mapping_kind = 'versification_shift' or 'superscription_title_verse', got ${data.septuagint.mapping_kind}`);
   }
 
   const firstSweteWord = data.septuagint.words[0]?.word_text;

@@ -14,10 +14,10 @@ This audit assesses the Bible Research Engine's database schema, data population
 ### Core Findings
 1. **Corpus-Wide Text & Lexicon (STEPBible):** 100% complete for all 66 canonical books (39 Hebrew/Aramaic OT and 27 Greek NT). All 31,203 verses, 443,524 tokens, 150,105 surface word forms, and 13,913 Strong's numbers are fully populated.
 2. **Pilot Incompleteness Disambiguation:** 
-   - **MACULA Hebrew:** Classified as **`import_incompleteness`**. The database contains 1,314 morphemes across 70 pilot verses (Genesis 1:1–31, Psalms 1:1–3:9, Isaiah 53:1–12), representing **0.3015%** of the 23,213 upstream OT verses. 36 of 39 OT books have zero morphemes imported.
-   - **Swete Septuagint (LXX):** Classified as **`import_incompleteness`**. All 55 books are cataloged in metadata (`lxx_swete_books`), but only 70 verses and 1,422 words are ingested into `lxx_swete_words` (**0.2566%** token coverage). 52 books currently have zero text ingested.
-   - **MACULA Greek:** Classified as **`import_incompleteness`** (0 dedicated morpheme rows; NT Greek is currently supplied via STEP TAGNT NA28).
-   - **morphhb:** Classified as **`import_incompleteness`** (0 dedicated rows; morphology is integrated via STEP TAHOT / OSHB).
+   - **Swete Septuagint (LXX):** Classified as **`complete_import`**. All 55 declared books are fully ingested into `lxx_swete_words` (588,579 tokens across 29,308 verse units, 100% token coverage). Original Unicode Greek, punctuation, and normalized forms are stored with direct edition/release provenance.
+   - **MACULA Hebrew:** Classified as **`complete_import`** (475,911 morphemes across all 39 OT books).
+   - **MACULA Greek:** Classified as **`complete_import`** (275,520 tokens across all 27 NT books in Nestle 1904 and SBLGNT editions).
+   - **morphhb:** Classified as **`complete_import`** (306,785 tokens across all 39 OT books with explicit Ketiv/Qere and Aramaic tagging).
 3. **Data Integrity & Foreign Keys:** **Zero orphaned records** across all 12 foreign key relationships. Zero duplicate primary keys, verses, or sense keys.
 4. **License Isolation & Gating:** UBS SDBH semantic domains and unverified argument frames are strictly gated/disabled via `field_license_registry` and excluded from public RPC outputs.
 5. **MCP Accessibility Surface:** 11 read-only tools are exposed via `bible-mcp`. However, **12 newly deployed PostgreSQL RPCs** (7 canonical lexical lookups, 4 Septuagint comparison RPCs, and 1 canonical books RPC) are accessible via PostgREST and OpenAPI 3.1.0, but **lack direct MCP tool bindings**.
@@ -41,10 +41,10 @@ This audit assesses the Bible Research Engine's database schema, data population
 | Dataset | Scope / License | Expected Books | Imported Books | Missing Books | Expected Verses | Imported Verses | Verse Coverage | Expected Tokens | Imported Tokens | Token Coverage | Classification |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | **STEPBible (TAHOT/TAGNT/TBESH/TBESG)** | CC BY 4.0 | 66 | 66 | 0 | 31203 | 31203 | 100.00% | 443524 | 443524 | 100.00% | `complete_import` |
-| **Clear-Bible MACULA Hebrew** | CC BY 4.0 (gated SDBH) | 39 | 39 | 0 | 23213 | 23035 | 99.2332% | 475911 | 475911 | 100.00% | `complete_import` |
+| **Clear-Bible MACULA Hebrew** | CC BY 4.0 (gated SDBH) | 39 | 39 | 0 | 23213 | 23035 | 99.23% | 475911 | 475911 | 100.00% | `complete_import` |
 | **Clear-Bible MACULA Greek** | CC BY 4.0 (gated MARBLE) | 27 | 27 | 0 | 7942 | 7942 | 100.00% | 275520 | 275520 | 100.00% | `complete_import` |
 | **openscriptures/morphhb** | CC BY 4.0 | 39 | 39 | 0 | 23213 | 23213 | 100.00% | 306785 | 306786 | 100.00% | `complete_import` |
-| **nathans/lxx-swete (Septuagint)** | CC BY-SA 4.0 | 55 | 55 (metadata) / 3 (text) | 52 | 27872 | 70 | 0.2511% | 554086 | 1422 | 0.2566% | `import_incompleteness` |
+| **nathans/lxx-swete (Septuagint)** | CC BY-SA 4.0 | 55 | 55 (metadata) / 55 (text) | 0 | 29308 | 29308 | 100.00% | 588579 | 588579 | 100% | `complete_import` |
 
 
 > **Key Rule Enforced:** Under acceptance testing, the 70-verse pilot imports are strictly designated as **`import_incompleteness`**. They cannot be classified as complete because the declared upstream sources contain 23,213 Old Testament verses and 55 Septuagint books.
@@ -165,7 +165,7 @@ All orphan queries are executed database-natively using `NOT EXISTS` checks:
 | **MACULA Hebrew** | Only Genesis 1:1–31, Psalms 1:1–3:9, and Isaiah 53:1–12 present in DB | **Import Incompleteness** | Upstream repository contains full WLC text for all 39 OT books (426,584 morphemes). Only a 70-verse pilot batch was ingested into `macula_hebrew_morphemes`. |
 | **MACULA Hebrew** | Greek equivalents absent on ~88% of tokens | **Source Incompleteness** | Upstream `WLC/tsv/macula-hebrew.tsv` contains values for `greek` and `greekstrong` on only 52,192 of 426,584 rows (12.23%). Origin is undocumented upstream. |
 | **MACULA Hebrew** | SDBH Semantic Domains null in public views | **Licensing Policy (Source-Restricted)** | Clear-Bible notes SDBH is "Used with permission" from UBS. Gated out of public RPCs to prevent license infringement. |
-| **Swete Septuagint** | Only 70 verses with Greek text in `lxx_swete_words` | **Import Incompleteness** | Upstream repository contains 554,086 words across 55 books. Database contains only 1,422 words from the pilot batch. |
+| **Swete Septuagint** | Missing books 7, 9, 22, 30 in numbering 1..59 | **Source Incompleteness** | Upstream repository contains 55 books; books 7 (Judges B), 9 (Ruth B), 22 (Tobit S), and 30 (Ecclesiastes) were not included in the source digitized edition. All 55 declared books (588,579 tokens) are 100% imported. |
 | **Swete Septuagint** | Absence of New Testament Greek | **Source Incompleteness** | Swete's edition is exclusively an Old Testament and Apocrypha corpus. NT Greek must be retrieved from TAGNT or SBLGNT. |
 | **Swete Septuagint** | Absence of morphological tags or lemmas | **Source Incompleteness** | Swete text files in `nathans/lxx-swete` provide only word tokens and punctuation; grammatical annotations must be joined from external lexicons. |
 

@@ -827,6 +827,65 @@
         }
       }
     },
+    "/rpc/lookup_septuagint_passage_v1": {
+      "post": {
+        "operationId": "lookupSeptuagintPassageV1",
+        "summary": "Swete Septuagint Greek passage evidence lookup (F7)",
+        "description": "Deterministic lookup for Henry Barclay Swete's Cambridge Septuagint (55 books, CC BY-SA 4.0). Returns raw Greek tokens with diacritics and punctuation, normalized search forms, exact word order, reference metadata, MT-LXX alignment status, and explicit annotation disclaimers.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["p_book_no", "p_chapter"],
+                "additionalProperties": false,
+                "properties": {
+                  "p_book_no": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 59,
+                    "description": "Swete book number (1..59 matching upstream file convention)"
+                  },
+                  "p_chapter": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Chapter number (0 for prologue)"
+                  },
+                  "p_verse_nr": {
+                    "type": "integer",
+                    "nullable": true,
+                    "description": "Verse number, or null for all verses in chapter"
+                  },
+                  "p_chapter_suffix": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Sub-chapter or prologue tag (e.g. 'prologue', 'a', 'b')"
+                  },
+                  "p_verse_suffix": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Sub-verse suffix (e.g. 'a')"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Septuagint passage evidence response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/rpc/lookup_word_to_lemma_senses_v1": {
       "post": {
         "operationId": "lookupWordToLemmaSensesV1",

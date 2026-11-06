@@ -14,7 +14,7 @@ import type { ActivePassage, ChronologyResponse, DataResult, HydratedCoOccurrenc
   ConceptPropertiesResponse, EntityRelationshipsResponse, HebrewToGreekAlignmentsResponse,
   GreekToHebrewAlignmentsResponse, HebrewSeptuagintParallelResponse, CrossTestamentGreekResponse,
   HebrewVerseEvidenceResponse, GreekVerseEvidenceResponse, LexicalSemanticsResponse,
-  SyntaxTreeResponse } from './types';
+  SyntaxTreeResponse, SeptuagintPassageResponse } from './types';
 import type { ReaderPassage, ReaderOverview, ReaderWord, ReaderTimeline, ReaderSearchResult } from './types';
 
 // === @section:logic:sample-words ===
@@ -343,6 +343,18 @@ const lookupSyntaxTreeData = (verseId: number, editionKey?: string | null) =>
     p_verse_id: verseId,
     p_edition_key: editionKey ?? null,
   });
+const lookupSeptuagintPassageData = (
+  bookNo: number, chapter: number, verseNr?: number | null,
+  chapterSuffix = '', verseSuffix = ''
+) =>
+  readerRPC<SeptuagintPassageResponse>('lookup_septuagint_passage_v1', {
+    p_book_no: bookNo, p_chapter: chapter, p_verse_nr: verseNr ?? null,
+    p_chapter_suffix: chapterSuffix, p_verse_suffix: verseSuffix,
+  });
+const lookupSeptuagintByCanonicalVerseData = (canonicalVerseId: number) =>
+  readerRPC<SeptuagintPassageResponse>('lookup_septuagint_by_canonical_verse_v1', {
+    p_canonical_verse_id: canonicalVerseId,
+  });
 
 // === @section:logic:gateway ===
 export const BibleRPC = {
@@ -362,6 +374,8 @@ export const BibleRPC = {
   lookupGreekVerseEvidence: lookupGreekVerseEvidenceData,
   lookupLexicalSemantics: lookupLexicalSemanticsData,
   lookupSyntaxTree: lookupSyntaxTreeData,
+  lookupSeptuagintPassage: lookupSeptuagintPassageData,
+  lookupSeptuagintByCanonicalVerse: lookupSeptuagintByCanonicalVerseData,
   getReaderPassage: readerPassage,
   preloadReaderPassages: readerPassages,
   getReaderOverview: (p: ActivePassage) => readerRPC<ReaderOverview>('get_reader_overview_v1', passageArgs(p)),
