@@ -193,10 +193,20 @@ export interface CrossTestamentGreekResponse {
   };
   nt_occurrences?: {
     total_count: number;
+    total_matching_occurrences?: number;
+    total_verses?: number;
+    returned_count?: number;
+    limit?: number;
     samples: NtGreekOccurrence[];
   };
   lxx_occurrences?: {
     total_count: number;
+    total_matching_occurrences?: number;
+    total_verses?: number;
+    returned_count?: number;
+    limit?: number;
+    is_exhaustive_lemma_count?: boolean;
+    count_scope_notes?: string;
     samples: LxxGreekOccurrence[];
   };
   hebrew_source_renderings?: HebrewRenderingSummary[];

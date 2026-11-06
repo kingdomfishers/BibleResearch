@@ -1,6 +1,6 @@
 {
   "test_run": "F9 — Verify Complete Evidence Access Through PostgreSQL and MCP",
-  "timestamp": "2026-11-06T13:49:39.281Z",
+  "timestamp": "2026-11-06T15:47:45.366Z",
   "mcp_endpoint": "https://ejoperxiwxlcbsqrkrvb.supabase.co/functions/v1/bible-mcp/mcp",
   "total_tests": 17,
   "passed_tests": 17,
@@ -905,8 +905,8 @@
           1
         ],
         "confidence_score": 1,
-        "evidence_summary": "Hebrew compound prefixed noun בְּרֵאשִׁית rendered as preposition + noun Ἐν ἀρχῇ in Septuagint.",
-        "algorithm_or_source": "Clear-Bible/macula-hebrew",
+        "evidence_summary": "Hebrew compound prefixed noun בְּרֵאשִׁית rendered as preposition + noun Ἐν ἀρχῇ in Septuagint. [Editorial reference collation between MT and Swete Septuagint]",
+        "algorithm_or_source": "editorial_reference_collation",
         "verification_status": "verified_source_attestation",
         "translation_technique": "literal"
       }
