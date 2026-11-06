@@ -65,7 +65,7 @@ async function rpc(method, params = {}, extraHeaders = {}) {
 const init = await rpc('initialize', { protocolVersion: '2025-11-25', capabilities: {}, clientInfo: { name: 'verification', version: '1' } });
 assert.equal(init.payload.result.serverInfo.name, 'BibleResearch');
 const tools = (await rpc('tools/list')).payload.result.tools;
-assert.equal(tools.length, 11);
+assert.equal(tools.length, 17);
 assert.ok(tools.every(t => t.annotations.readOnlyHint && !t.annotations.destructiveHint));
 const prompts = (await rpc('prompts/list')).payload.result.prompts;
 assert.equal(prompts.length, 17);
@@ -134,7 +134,7 @@ assert.equal(preflight.headers.get('access-control-allow-origin'), '*');
 const health = await app(new Request('https://example/bible-mcp/health'));
 const healthJson = await health.json();
 assert.equal(healthJson.read_only, true);
-assert.equal(healthJson.tools, 11);
+assert.equal(healthJson.tools, 17);
 assert.equal(healthJson.prompts, 17);
 let attempts = 0;
 const retryReader = createDatabaseReader({ url: 'https://example.supabase.co', publicKey: 'sb_publishable_test' },
@@ -148,5 +148,5 @@ const failingReader = createDatabaseReader({ url: 'https://example.supabase.co',
   async () => { attempts++; return new Response('Unavailable', { status: 503 }); });
 await assert.rejects(() => failingReader({ name: 'prompt_verse_words', args: {}, limit: 1, offset: 0 }));
 assert.equal(attempts, 2, 'Persistent failures must not loop');
-console.log('PASS: eleven read-only tools; seventeen native/compatibility prompts; general workflow; analysis/full presets and explicit overrides; decimal chronology run IDs; pagination; invalid inputs; credential isolation; CORS; health.');
+console.log('PASS: seventeen read-only tools; seventeen native/compatibility prompts; general workflow; analysis/full presets and explicit overrides; decimal chronology run IDs; pagination; invalid inputs; credential isolation; CORS; health.');
 console.log('PASS: transient upstream failures retry once; persistent failures terminate after two attempts.');

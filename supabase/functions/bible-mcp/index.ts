@@ -23,8 +23,26 @@ const allowedRpcs = new Set([
   'get_verse_geography',
   'research_relationships_v1',
   'get_verse_research_v1',
+  'lookup_septuagint_passage_v1',
+  'lookup_lexical_semantics_v1',
+  'lookup_syntax_tree_v1',
+  'compare_hebrew_septuagint_passage_v1',
+  'lookup_hebrew_septuagint_alignments_v1',
+  'audit_evidence_coverage_v1',
 ]);
-const singlePacketRpcs = new Set(['resolve_word_id', 'get_verse_chronology_v1', 'get_verse_geography', 'research_relationships_v1', 'get_verse_research_v1']);
+const singlePacketRpcs = new Set([
+  'resolve_word_id',
+  'get_verse_chronology_v1',
+  'get_verse_geography',
+  'research_relationships_v1',
+  'get_verse_research_v1',
+  'lookup_septuagint_passage_v1',
+  'lookup_lexical_semantics_v1',
+  'lookup_syntax_tree_v1',
+  'compare_hebrew_septuagint_passage_v1',
+  'lookup_hebrew_septuagint_alignments_v1',
+  'audit_evidence_coverage_v1',
+]);
 const wordColumns = 'id,strongs_nr,original_word,transliteration,grammar_code,biblical_def,physical_def,english_translations';
 const cors = {
   'Access-Control-Allow-Origin': '*',

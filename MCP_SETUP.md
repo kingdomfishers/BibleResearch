@@ -1,7 +1,7 @@
 # BibleResearch MCP — deployed on Supabase
 
 The server is deployed as the `bible-mcp` Supabase Edge Function in project `ejoperxiwxlcbsqrkrvb`.
-Deployment version 7 is active (server v1.4.0, 11 read-only tools, 17 prompts). You can connect now; no local server, additional host, or API-key entry is needed.
+Deployment version 8 is active (server v1.4.0, 17 read-only tools, 17 prompts). You can connect now; no local server, additional host, or API-key entry is needed.
 
 **Server URL — paste this into both assistants:**
 
@@ -74,9 +74,9 @@ reduced structured JSON by 81% (242,204 versus 1,274,531 bytes) while preserving
 verse data, totals, ranked connections and lexical candidates. This is a measured
 case, not a universal payload or answer-quality guarantee.
 
-After refreshing existing ChatGPT/Gemini MCP connections, verify 11 tools and
-17 prompts, including `get_verse_research` and `study_bible`. A client still
-showing seven tools has not loaded the complete catalog. Restart/new-chat may
+After refreshing existing ChatGPT/Gemini MCP connections, verify 17 tools and
+17 prompts, including `get_verse_research`, `lookup_lexical_semantics`, `get_syntax_tree`,
+`compare_hebrew_septuagint_passage`, `get_septuagint_passage`, and `study_bible`. Restart/new-chat may
 be required after host-side schema refresh. This session's tool list cannot be
 replaced by server deployment alone.
 

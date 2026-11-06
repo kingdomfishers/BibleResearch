@@ -20,7 +20,7 @@ This audit assesses the Bible Research Engine's database schema, data population
    - **morphhb:** Classified as **`complete_import`** (306,785 tokens across all 39 OT books with explicit Ketiv/Qere and Aramaic tagging).
 3. **Data Integrity & Foreign Keys:** **Zero orphaned records** across all 12 foreign key relationships. Zero duplicate primary keys, verses, or sense keys.
 4. **License Isolation & Gating:** UBS SDBH semantic domains and unverified argument frames are strictly gated/disabled via `field_license_registry` and excluded from public RPC outputs.
-5. **MCP Accessibility Surface:** 11 read-only tools are exposed via `bible-mcp`. However, **12 newly deployed PostgreSQL RPCs** (7 canonical lexical lookups, 4 Septuagint comparison RPCs, and 1 canonical books RPC) are accessible via PostgREST and OpenAPI 3.1.0, but **lack direct MCP tool bindings**.
+5. **MCP Accessibility Surface:** 17 read-only tools are exposed via `bible-mcp` on Supabase Edge Functions, achieving complete evidence parity across core verse reading, lexical semantics, constituent syntax trees, Septuagint Greek tokens, TVTMS Hebrew-Septuagint comparison, and evidence coverage audits. Remaining internal RPCs (such as validation checkers and granular batch lookups) are available via PostgREST/OpenAPI for administrative or custom client integrations.
 
 ---
 
@@ -130,6 +130,12 @@ All orphan queries are executed database-natively using `NOT EXISTS` checks:
 | `research_relationships` | Relationships | **YES** | `research_relationships_v1` | One-lookup evidence graph |
 | `get_verse_research` | Hydration | **YES** | `get_verse_research_v1` | One-call deduplicated JSON evidence packet |
 | `get_research_prompt` | Workflow Router | **YES** | `static catalog` | Workflow instructions for 17 prompts |
+| `get_septuagint_passage` | Septuagint Evidence | **YES** | `lookup_septuagint_passage_v1` | Swete Septuagint Greek passage tokens, word order, and correspondence |
+| `lookup_lexical_semantics` | Lexical Semantics | **YES** | `lookup_lexical_semantics_v1` | Multi-tier Unicode lookup: surface form, lemma, root, sense, and gloss |
+| `get_syntax_tree` | Syntax Trees | **YES** | `lookup_syntax_tree_v1` | MACULA constituent trees, phrase/clause hierarchies, grammatical roles, and cross-verse spans |
+| `compare_hebrew_septuagint_passage` | Hebrew-LXX Comparison | **YES** | `compare_hebrew_septuagint_passage_v1` | Bidirectional Hebrew-Septuagint comparison with TVTMS shifts and 3-tier alignments |
+| `lookup_hebrew_septuagint_alignments` | Hebrew-LXX Comparison | **YES** | `lookup_hebrew_septuagint_alignments_v1` | Hebrew-Septuagint word alignments across 3 tiers (documented, candidate, scholarly) |
+| `audit_evidence_coverage` | Coverage Audit | **YES** | `audit_evidence_coverage_v1` | Deterministic evidence coverage statistics, checksums, licenses, and orphan counts |
 | `get_bible_books_v1` | Canon | ❌ NO | `get_bible_books_v1` | 66 canonical books metadata (PostgREST only) |
 | `lookup_word_to_lemma_senses_v1` | Canonical Lexical | ❌ NO | `lookup_word_to_lemma_senses_v1` | Word -> Lemma -> Senses (PostgREST/OpenAPI only) |
 | `lookup_lemma_occurrences_v1` | Canonical Lexical | ❌ NO | `lookup_lemma_occurrences_v1` | Lemma -> Keyset occurrences (PostgREST/OpenAPI only) |
@@ -144,22 +150,17 @@ All orphan queries are executed database-natively using `NOT EXISTS` checks:
 | `lookup_cross_testament_greek_v1` | Septuagint | ❌ NO | `lookup_cross_testament_greek_v1` | Cross-testament Greek trace (PostgREST/OpenAPI only) |
 | `lookup_hebrew_verse_evidence_v1` | Hebrew Corpus | ❌ NO | `lookup_hebrew_verse_evidence_v1` | Verse evidence: STEP + morphhb Ketiv/Qere + MACULA + syntax (PostgREST/OpenAPI only) |
 | `lookup_greek_verse_evidence_v1` | Greek NT Corpus | ❌ NO | `lookup_greek_verse_evidence_v1` | Verse evidence: STEP + TAGNT variants + MACULA Nestle1904 & SBLGNT (PostgREST/OpenAPI only) |
-| `lookup_lexical_semantics_v1` | Lexical Semantics | ❌ NO | `lookup_lexical_semantics_v1` | Multi-tier Unicode lookup with surface/lemma/root/sense/gloss separation (PostgREST/OpenAPI only) |
-| `lookup_syntax_tree_v1` | Syntax Trees | ❌ NO | `lookup_syntax_tree_v1` | Hierarchical syntax trees, grammatical roles, semantic frames, and cross-verse spans (PostgREST/OpenAPI only) |
 | `validate_syntax_tree_integrity_v1` | Syntax Trees | ❌ NO | `validate_syntax_tree_integrity_v1` | Structural syntax validator asserting acyclicity and 0 orphans (PostgREST/OpenAPI only) |
-| `lookup_septuagint_passage_v1` | Septuagint Evidence | ❌ NO | `lookup_septuagint_passage_v1` | Swete Septuagint Greek passage evidence (PostgREST/OpenAPI only) |
-| `compare_hebrew_septuagint_passage_v1` | Hebrew-LXX Comparison | ❌ NO | `compare_hebrew_septuagint_passage_v1` | Bidirectional Hebrew-Septuagint comparison with TVTMS shifts and 3-tier alignments (PostgREST/OpenAPI only) |
-| `lookup_hebrew_septuagint_alignments_v1` | Hebrew-LXX Comparison | ❌ NO | `lookup_hebrew_septuagint_alignments_v1` | Hebrew-Septuagint word alignments across 3 tiers (PostgREST/OpenAPI only) |
 
 
 ### MCP Accessibility Findings:
-1. **Fully Covered MCP Domains:** Core verse reading, occurrence lookups, co-occurrence statistics, shared-verse density scoring, word details, multi-model chronology, 5-tier biblical geography, and hydrated research packets (up to 100 verses) are fully accessible via `bible-mcp`.
-2. **Exposed via PostgREST / OpenAPI 3.1.0 but Missing in MCP Catalog:**
-   - **Canonical Books:** `get_bible_books_v1`
-   - **8 Canonical Lexical & Semantic Lookups:** `lookup_word_to_lemma_senses_v1`, `lookup_lemma_occurrences_v1`, `lookup_lemma_root_relatives_v1`, `lookup_lemma_english_glosses_v1`, `lookup_passage_tokens_syntax_v1`, `lookup_concept_properties_v1`, `lookup_entity_relationships_v1`, `lookup_lexical_semantics_v1`
-   - **Corpus Verse Evidence & Syntax Trees:** `lookup_hebrew_verse_evidence_v1`, `lookup_greek_verse_evidence_v1`, `lookup_syntax_tree_v1`, `validate_syntax_tree_integrity_v1`
-   - **4 Septuagint Layer Functions:** `lookup_hebrew_to_greek_alignments_v1`, `lookup_greek_to_hebrew_alignments_v1`, `get_hebrew_septuagint_parallel_v1`, `lookup_cross_testament_greek_v1`
-3. **Recommendation:** Register tools in `supabase/functions/bible-mcp/catalog.ts` for the canonical lookups, verse evidence, and Septuagint comparison RPCs to achieve 100% parity between MCP and PostgREST.
+1. **Fully Covered MCP Domains:** Core verse reading, occurrence lookups, co-occurrence statistics, shared-verse density scoring, word details, multi-model chronology, 5-tier biblical geography, hydrated research packets, Septuagint Greek reading, multi-tier lexical semantics, MACULA constituent syntax trees, TVTMS Hebrew-Septuagint comparison, 3-tier word alignments, and evidence coverage audits are fully accessible via `bible-mcp`.
+2. **PostgreSQL RPCs with Direct MCP Tool Bindings:** All 17 tools are bound to dedicated, caller-RLS PostgreSQL functions with zero logic duplication in TypeScript or the edge function layer.
+3. **Exposed via PostgREST / OpenAPI 3.1.0 Only (Specialized / Internal):**
+   - **Canonical Books Reference:** `get_bible_books_v1`
+   - **Granular Lexical Sub-Lookups:** `lookup_word_to_lemma_senses_v1`, `lookup_lemma_occurrences_v1`, `lookup_lemma_root_relatives_v1`, `lookup_lemma_english_glosses_v1`, `lookup_passage_tokens_syntax_v1`, `lookup_concept_properties_v1`, `lookup_entity_relationships_v1`
+   - **Corpus Verse Evidence & Validation:** `lookup_hebrew_verse_evidence_v1`, `lookup_greek_verse_evidence_v1`, `validate_syntax_tree_integrity_v1`
+   - **Legacy Septuagint Helpers:** `lookup_hebrew_to_greek_alignments_v1`, `lookup_greek_to_hebrew_alignments_v1`, `get_hebrew_septuagint_parallel_v1`, `lookup_cross_testament_greek_v1`
 
 ---
 

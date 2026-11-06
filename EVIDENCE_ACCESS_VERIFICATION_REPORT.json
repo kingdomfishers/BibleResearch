@@ -1,0 +1,979 @@
+{
+  "test_run": "F9 — Verify Complete Evidence Access Through PostgreSQL and MCP",
+  "timestamp": "2026-11-06T13:49:39.281Z",
+  "mcp_endpoint": "https://ejoperxiwxlcbsqrkrvb.supabase.co/functions/v1/bible-mcp/mcp",
+  "total_tests": 17,
+  "passed_tests": 17,
+  "failed_tests": 0,
+  "status": "ALL_TESTS_PASSED",
+  "results": [
+    {
+      "id": "DISC-01",
+      "category": "Discovery",
+      "name": "Anonymous health endpoint reports 17 tools and 17 prompts",
+      "passed": true,
+      "error": null
+    },
+    {
+      "id": "DISC-02",
+      "category": "Discovery",
+      "name": "Exact catalog of 17 read-only tools discoverable with schemas",
+      "passed": true,
+      "error": null
+    },
+    {
+      "id": "PARITY-HEB",
+      "category": "Parity",
+      "name": "Hebrew OT Genesis 1:1 MCP vs DB returns identical 7 tokens",
+      "passed": true,
+      "error": null
+    },
+    {
+      "id": "PARITY-GRK",
+      "category": "Parity",
+      "name": "Greek NT John 1:1 MCP vs DB returns identical 17 tokens with G3056",
+      "passed": true,
+      "error": null
+    },
+    {
+      "id": "PARITY-LXX",
+      "category": "Parity",
+      "name": "Septuagint Genesis 1:1 MCP vs DB returns identical 10 Greek tokens",
+      "passed": true,
+      "error": null
+    },
+    {
+      "id": "LEX-RUACH",
+      "category": "Lexical",
+      "name": "Hebrew רוח MCP vs DB preserves 4 distinct homographs, roots & senses",
+      "passed": true,
+      "error": null
+    },
+    {
+      "id": "LEX-LOGOS",
+      "category": "Lexical",
+      "name": "Greek λόγος MCP vs DB resolves to G3056 with documented senses & glosses",
+      "passed": true,
+      "error": null
+    },
+    {
+      "id": "SYNTAX-GEN",
+      "category": "Syntax",
+      "name": "Genesis 1:1 MCP vs DB returns identical constituent trees and grammatical roles",
+      "passed": true,
+      "error": null
+    },
+    {
+      "id": "SYNTAX-JHN",
+      "category": "Syntax",
+      "name": "John 1:1 MCP vs DB returns identical Greek clause tree with role edges",
+      "passed": true,
+      "error": null
+    },
+    {
+      "id": "COMP-GEN",
+      "category": "Comparison",
+      "name": "Genesis 1:1 MCP vs DB returns identical 3-tier alignments & 1:many correspondence",
+      "passed": true,
+      "error": null
+    },
+    {
+      "id": "COMP-JER",
+      "category": "Comparison",
+      "name": "Jeremiah 25:15 MT correctly maps to LXX 32:1 with reordered status",
+      "passed": true,
+      "error": null
+    },
+    {
+      "id": "COMP-ALIGN",
+      "category": "Comparison",
+      "name": "Word alignment lookup tool returns matching alignments across MCP and DB",
+      "passed": true,
+      "error": null
+    },
+    {
+      "id": "AUDIT-COV",
+      "category": "Coverage",
+      "name": "Audit coverage reports 31,203 verses, 588,579 LXX words, 0 orphans, 0 duplicates",
+      "passed": true,
+      "error": null
+    },
+    {
+      "id": "ANTI-SYNTAX",
+      "category": "Anti-Hallucination",
+      "name": "Unannotated syntax reports unannotated_in_source with explicit reason (no guessing)",
+      "passed": true,
+      "error": null
+    },
+    {
+      "id": "ANTI-MINUS",
+      "category": "Anti-Hallucination",
+      "name": "Jeremiah 10:6 absent in Septuagint reports unmatched_hebrew_minus_in_lxx",
+      "passed": true,
+      "error": null
+    },
+    {
+      "id": "ANTI-DISTINCT",
+      "category": "Anti-Hallucination",
+      "name": "Non-existent passage distinguishes passage_not_found from unannotated",
+      "passed": true,
+      "error": null
+    },
+    {
+      "id": "RLS-WRITE",
+      "category": "Security",
+      "name": "Anonymous write to canonical evidence tables strictly denied (HTTP 401/403/RLS)",
+      "passed": true,
+      "error": null
+    }
+  ],
+  "sample_responses": {
+    "DISC-01": {
+      "name": "BibleResearch",
+      "version": "1.4.0",
+      "status": "ok",
+      "transport": "streamable-http",
+      "authentication": "none",
+      "read_only": true,
+      "tools": 17,
+      "prompts": 17
+    },
+    "PARITY-HEB": {
+      "tokens": [
+        {
+          "pos": 1,
+          "word": "בְּרֵאשִׁ֖ית",
+          "strongs": "H7225"
+        },
+        {
+          "pos": 2,
+          "word": "בָּרָ֣א",
+          "strongs": "H1254"
+        },
+        {
+          "pos": 3,
+          "word": "אֱלֹהִ֑ים",
+          "strongs": "H430"
+        },
+        {
+          "pos": 4,
+          "word": "אֵ֥ת",
+          "strongs": "H853"
+        },
+        {
+          "pos": 5,
+          "word": "הַשָּׁמַ֖יִם",
+          "strongs": "H8064"
+        },
+        {
+          "pos": 6,
+          "word": "וְאֵ֥ת",
+          "strongs": "H853"
+        },
+        {
+          "pos": 7,
+          "word": "הָאָֽרֶץ׃",
+          "strongs": "H776"
+        }
+      ]
+    },
+    "PARITY-GRK": {
+      "tokens_count": 17,
+      "sample_token": {
+        "word_position": 2,
+        "word_id": 3458,
+        "original_word": "ἀρχῇ",
+        "transliteration": "archēa",
+        "strongs_nr": "G746",
+        "grammar_code": "N-DSF",
+        "primary_english": "beginning",
+        "millennium": null
+      }
+    },
+    "PARITY-LXX": {
+      "book": "Genesis",
+      "tokens": [
+        {
+          "ord": 1,
+          "text": "ΕΝ",
+          "norm": "εν"
+        },
+        {
+          "ord": 2,
+          "text": "ΑΡΧΗ",
+          "norm": "αρχη"
+        },
+        {
+          "ord": 3,
+          "text": "ἐποίησεν",
+          "norm": "εποιησεν"
+        },
+        {
+          "ord": 4,
+          "text": "ὁ",
+          "norm": "ο"
+        },
+        {
+          "ord": 5,
+          "text": "θεὸς",
+          "norm": "θεος"
+        },
+        {
+          "ord": 6,
+          "text": "τὸν",
+          "norm": "τον"
+        },
+        {
+          "ord": 7,
+          "text": "οὐρανὸν",
+          "norm": "ουρανον"
+        },
+        {
+          "ord": 8,
+          "text": "καὶ",
+          "norm": "και"
+        },
+        {
+          "ord": 9,
+          "text": "τὴν",
+          "norm": "την"
+        },
+        {
+          "ord": 10,
+          "text": "γῆν.",
+          "norm": "γην"
+        }
+      ],
+      "summary": {
+        "total_tokens": 10,
+        "hebrew_reference": {
+          "book": 1,
+          "chapter": 1,
+          "verse_nr": 1
+        },
+        "epistemic_disclaimer": "The Swete digital edition provides authentic surface tokens and punctuation without morphological tags or lemmas. External lexicons or parsers must not be presented as source-attested facts.",
+        "versification_mapping": {
+          "origin_mode": "algorithmically_calculated",
+          "mapping_kind": "same_reference",
+          "rule_citation": "Standard direct chapter and verse alignment between MT and LXX 1:1.1.",
+          "derivation_method": "mt_lxx_versification_alignment"
+        },
+        "has_hebrew_counterpart": true,
+        "hebrew_canonical_verse_id": 1,
+        "linguistic_annotation_status": "unannotated_in_source"
+      }
+    },
+    "LEX-RUACH": {
+      "query": "רוח",
+      "lemmas": [
+        {
+          "lemma": "רוּחַ",
+          "strongs": "H7307",
+          "transliteration": "ru.ach"
+        },
+        {
+          "lemma": "רָוַח",
+          "strongs": "H7304",
+          "transliteration": "ra.vach"
+        },
+        {
+          "lemma": "רֶ֫וַח",
+          "strongs": "H7305",
+          "transliteration": "re.vach"
+        },
+        {
+          "lemma": "רוּחַ",
+          "strongs": "H7308",
+          "transliteration": "ru.ach"
+        }
+      ],
+      "roots_count": 2,
+      "senses_count": 7
+    },
+    "LEX-LOGOS": {
+      "base_strongs": "G3056",
+      "glosses_sample": [
+        {
+          "caveat": "Attested rendering from translation sources; contextual equivalence only, does not constitute a dictionary definition.",
+          "token_count": 144,
+          "verse_count": 143,
+          "attested_gloss": "word",
+          "sample_passage": {
+            "book": 40,
+            "verse": 19,
+            "chapter": 13,
+            "verse_id": 23675,
+            "book_name": "Matthew",
+            "source_ref": "Mat.13.19#04=NKO"
+          },
+          "source_attribution": "TAGNT Mat-Jhn (be4191f)"
+        },
+        {
+          "caveat": "Attested rendering from translation sources; contextual equivalence only, does not constitute a dictionary definition.",
+          "token_count": 48,
+          "verse_count": 46,
+          "attested_gloss": "words",
+          "sample_passage": {
+            "book": 40,
+            "verse": 24,
+            "chapter": 7,
+            "verse_id": 23457,
+            "book_name": "Matthew",
+            "source_ref": "Mat.7.24#07=NKO"
+          },
+          "source_attribution": "TAGNT Mat-Jhn (be4191f)"
+        },
+        {
+          "caveat": "Attested rendering from translation sources; contextual equivalence only, does not constitute a dictionary definition.",
+          "token_count": 12,
+          "verse_count": 12,
+          "attested_gloss": "word,",
+          "sample_passage": {
+            "book": 40,
+            "verse": 22,
+            "chapter": 13,
+            "verse_id": 23678,
+            "book_name": "Matthew",
+            "source_ref": "Mat.13.22#26=NKO"
+          },
+          "source_attribution": "TAGNT Mat-Jhn (be4191f)"
+        }
+      ],
+      "senses_sample": [
+        {
+          "sense_key": "sense:G3056:primary",
+          "sense_code": "primary",
+          "usage_note": null,
+          "sense_order": 1,
+          "short_gloss": "word",
+          "scripture_refs": [],
+          "definition_text": "λόγος , -ου, ὁ (λέγω) [in LXX chiefly for דָּבָר, also for מִלָּה ,אֵמֶר, etc. ;] __I. Of that by which the inward thought is expressed, Lat. oratio, sermo, vox, verbum. __1. a word , not in the grammatical sense of a mere name (ἔπος, ὄνομα, ῥῆμα), but a word as embodying a conception or idea: Mat.8:8 , Luk.7:7 , 1Co.14:9, 19 Heb.12:19 , al. __2. a saying, statement, declaration : Mat.19:22 (T om.), Mrk.5:36 7:29 , Luk.1:29 , Jhn.2:22 6:60 , Act.7:29 , al.; with genitive attrib., Act.13:15 , Rom",
+          "source_record_id": "TBESG:G3056",
+          "source_attribution": "STEPBible TBESG / Abbott-Smith / Middle Liddell (CC BY 4.0)",
+          "source_edition_key": "step-tbesg"
+        },
+        {
+          "sense_key": "sense:G3056:as:1:3",
+          "sense_code": "AS.1",
+          "usage_note": null,
+          "sense_order": 2,
+          "short_gloss": "a word , not in the grammatical sense of a mere name (ἔπος, ὄνομα, ῥῆμα), but a word as embodying a conception or idea",
+          "scripture_refs": [
+            "Mat.8:8",
+            "Luk.7:7",
+            "Heb.12:19"
+          ],
+          "definition_text": "a word , not in the grammatical sense of a mere name (ἔπος, ὄνομα, ῥῆμα), but a word as embodying a conception or idea: Mat.8:8 , Luk.7:7 , 1Co.14:9, 19 Heb.12:19 , al.",
+          "source_record_id": "TBESG:G3056#1",
+          "source_attribution": "Abbott-Smith Manual Greek Lexicon of the NT via STEP TBESG (CC BY 4.0)",
+          "source_edition_key": "step-tbesg"
+        }
+      ]
+    },
+    "SYNTAX-GEN": {
+      "trees_count": 1,
+      "edges_count": 18,
+      "sample_tree": {
+        "nodes": [
+          {
+            "id": 4271,
+            "depth": 0,
+            "cl_type": null,
+            "is_head": false,
+            "node_key": "macula:wlc:1:1:GEN_1:1:1",
+            "verse_id": 1,
+            "node_type": "sentence",
+            "rule_label": null,
+            "class_label": null,
+            "is_terminal": false,
+            "end_verse_id": 1,
+            "surface_word": null,
+            "word_grammar": null,
+            "word_strongs": null,
+            "sibling_order": 0,
+            "is_cross_verse": false,
+            "parent_node_id": null,
+            "semantic_frame": null,
+            "syntactic_role": "sentence",
+            "terminal_xml_id": null,
+            "terminal_word_id": null,
+            "end_word_position": 7,
+            "start_word_position": 1,
+            "word_transliteration": null
+          },
+          {
+            "id": 4272,
+            "depth": 1,
+            "cl_type": null,
+            "is_head": true,
+            "node_key": "macula:wlc:1:1:GEN_1:1:2",
+            "verse_id": 1,
+            "node_type": "clause",
+            "rule_label": "PP-V-S-O",
+            "class_label": "cl",
+            "is_terminal": false,
+            "end_verse_id": 1,
+            "surface_word": null,
+            "word_grammar": null,
+            "word_strongs": null,
+            "sibling_order": 0,
+            "is_cross_verse": false,
+            "parent_node_id": 4271,
+            "semantic_frame": null,
+            "syntactic_role": null,
+            "terminal_xml_id": null,
+            "terminal_word_id": null,
+            "end_word_position": 7,
+            "start_word_position": 1,
+            "word_transliteration": null
+          },
+          {
+            "id": 4273,
+            "depth": 2,
+            "cl_type": null,
+            "is_head": true,
+            "node_key": "macula:wlc:1:1:GEN_1:1:3",
+            "verse_id": 1,
+            "node_type": "phrase",
+            "rule_label": "PrepNp",
+            "class_label": "pp",
+            "is_terminal": false,
+            "end_verse_id": 1,
+            "surface_word": null,
+            "word_grammar": null,
+            "word_strongs": null,
+            "sibling_order": 0,
+            "is_cross_verse": false,
+            "parent_node_id": 4272,
+            "semantic_frame": null,
+            "syntactic_role": "pp",
+            "terminal_xml_id": null,
+            "terminal_word_id": null,
+            "end_word_position": 1,
+            "start_word_position": 1,
+            "word_transliteration": null
+          },
+          {
+            "id": 4276,
+            "depth": 2,
+            "cl_type": null,
+            "is_head": false,
+            "node_key": "macula:wlc:1:1:GEN_1:1:6",
+            "verse_id": 1,
+            "node_type": "terminal",
+            "rule_label": null,
+            "class_label": "verb",
+            "is_terminal": true,
+            "end_verse_id": 1,
+            "surface_word": "בָּרָ֣א",
+            "word_grammar": "HVqp3ms",
+            "word_strongs": "H1254",
+            "sibling_order": 1,
+            "is_cross_verse": false,
+            "parent_node_id": 4272,
+            "semantic_frame": "A0:010010010031; A1:010010010052;010010010072;",
+            "syntactic_role": "v",
+            "terminal_xml_id": "o010010010021",
+            "terminal_word_id": 46861,
+            "end_word_position": 2,
+            "start_word_position": 2,
+            "word_transliteration": "ba.Ra'"
+          },
+          {
+            "id": 4277,
+            "depth": 2,
+            "cl_type": null,
+            "is_head": false,
+            "node_key": "macula:wlc:1:1:GEN_1:1:7",
+            "verse_id": 1,
+            "node_type": "terminal",
+            "rule_label": null,
+            "class_label": "noun",
+            "is_terminal": true,
+            "end_verse_id": 1,
+            "surface_word": "אֱלֹהִ֑ים",
+            "word_grammar": "HNcmpa",
+            "word_strongs": "H430",
+            "sibling_order": 2,
+            "is_cross_verse": false,
+            "parent_node_id": 4272,
+            "semantic_frame": null,
+            "syntactic_role": "s",
+            "terminal_xml_id": "o010010010031",
+            "terminal_word_id": 33495,
+            "end_word_position": 3,
+            "start_word_position": 3,
+            "word_transliteration": "'E.lo.Him"
+          },
+          {
+            "id": 4278,
+            "depth": 2,
+            "cl_type": null,
+            "is_head": true,
+            "node_key": "macula:wlc:1:1:GEN_1:1:8",
+            "verse_id": 1,
+            "node_type": "phrase",
+            "rule_label": "NpaNp",
+            "class_label": "np",
+            "is_terminal": false,
+            "end_verse_id": 1,
+            "surface_word": null,
+            "word_grammar": null,
+            "word_strongs": null,
+            "sibling_order": 3,
+            "is_cross_verse": false,
+            "parent_node_id": 4272,
+            "semantic_frame": null,
+            "syntactic_role": "o",
+            "terminal_xml_id": null,
+            "terminal_word_id": null,
+            "end_word_position": 7,
+            "start_word_position": 4,
+            "word_transliteration": null
+          },
+          {
+            "id": 4274,
+            "depth": 3,
+            "cl_type": null,
+            "is_head": false,
+            "node_key": "macula:wlc:1:1:GEN_1:1:4",
+            "verse_id": 1,
+            "node_type": "terminal",
+            "rule_label": null,
+            "class_label": "prep",
+            "is_terminal": true,
+            "end_verse_id": 1,
+            "surface_word": "בְּרֵאשִׁ֖ית",
+            "word_grammar": "HR/Ncfsa",
+            "word_strongs": "H7225",
+            "sibling_order": 0,
+            "is_cross_verse": false,
+            "parent_node_id": 4273,
+            "semantic_frame": null,
+            "syntactic_role": null,
+            "terminal_xml_id": "o010010010011",
+            "terminal_word_id": 129386,
+            "end_word_position": 1,
+            "start_word_position": 1,
+            "word_transliteration": "be.re.Shit"
+          },
+          {
+            "id": 4279,
+            "depth": 3,
+            "cl_type": null,
+            "is_head": true,
+            "node_key": "macula:wlc:1:1:GEN_1:1:9",
+            "verse_id": 1,
+            "node_type": "phrase",
+            "rule_label": "OmpNP",
+            "class_label": "np",
+            "is_terminal": false,
+            "end_verse_id": 1,
+            "surface_word": null,
+            "word_grammar": null,
+            "word_strongs": null,
+            "sibling_order": 0,
+            "is_cross_verse": false,
+            "parent_node_id": 4278,
+            "semantic_frame": null,
+            "syntactic_role": null,
+            "terminal_xml_id": null,
+            "terminal_word_id": null,
+            "end_word_position": 5,
+            "start_word_position": 4,
+            "word_transliteration": null
+          },
+          {
+            "id": 4275,
+            "depth": 3,
+            "cl_type": null,
+            "is_head": false,
+            "node_key": "macula:wlc:1:1:GEN_1:1:5",
+            "verse_id": 1,
+            "node_type": "terminal",
+            "rule_label": null,
+            "class_label": "noun",
+            "is_terminal": true,
+            "end_verse_id": 1,
+            "surface_word": "בְּרֵאשִׁ֖ית",
+            "word_grammar": "HR/Ncfsa",
+            "word_strongs": "H7225",
+            "sibling_order": 1,
+            "is_cross_verse": false,
+            "parent_node_id": 4273,
+            "semantic_frame": null,
+            "syntactic_role": null,
+            "terminal_xml_id": "o010010010012",
+            "terminal_word_id": 129386,
+            "end_word_position": 1,
+            "start_word_position": 1,
+            "word_transliteration": "be.re.Shit"
+          },
+          {
+            "id": 4284,
+            "depth": 3,
+            "cl_type": null,
+            "is_head": false,
+            "node_key": "macula:wlc:1:1:GEN_1:1:14",
+            "verse_id": 1,
+            "node_type": "terminal",
+            "rule_label": null,
+            "class_label": "cj",
+            "is_terminal": true,
+            "end_verse_id": 1,
+            "surface_word": "וְאֵ֥ת",
+            "word_grammar": "HC/To",
+            "word_strongs": "H853",
+            "sibling_order": 1,
+            "is_cross_verse": false,
+            "parent_node_id": 4278,
+            "semantic_frame": null,
+            "syntactic_role": null,
+            "terminal_xml_id": "o010010010061",
+            "terminal_word_id": 39795,
+            "end_word_position": 6,
+            "start_word_position": 6,
+            "word_transliteration": "ve.'Et"
+          },
+          {
+            "id": 4285,
+            "depth": 3,
+            "cl_type": null,
+            "is_head": false,
+            "node_key": "macula:wlc:1:1:GEN_1:1:15",
+            "verse_id": 1,
+            "node_type": "phrase",
+            "rule_label": "OmpNP",
+            "class_label": "np",
+            "is_terminal": false,
+            "end_verse_id": 1,
+            "surface_word": null,
+            "word_grammar": null,
+            "word_strongs": null,
+            "sibling_order": 2,
+            "is_cross_verse": false,
+            "parent_node_id": 4278,
+            "semantic_frame": null,
+            "syntactic_role": null,
+            "terminal_xml_id": null,
+            "terminal_word_id": null,
+            "end_word_position": 7,
+            "start_word_position": 6,
+            "word_transliteration": null
+          },
+          {
+            "id": 4280,
+            "depth": 4,
+            "cl_type": null,
+            "is_head": false,
+            "node_key": "macula:wlc:1:1:GEN_1:1:10",
+            "verse_id": 1,
+            "node_type": "terminal",
+            "rule_label": null,
+            "class_label": "om",
+            "is_terminal": true,
+            "end_verse_id": 1,
+            "surface_word": "אֵ֥ת",
+            "word_grammar": "HTo",
+            "word_strongs": "H853",
+            "sibling_order": 0,
+            "is_cross_verse": false,
+            "parent_node_id": 4279,
+            "semantic_frame": null,
+            "syntactic_role": null,
+            "terminal_xml_id": "o010010010041",
+            "terminal_word_id": 39556,
+            "end_word_position": 4,
+            "start_word_position": 4,
+            "word_transliteration": "'et"
+          },
+          {
+            "id": 4286,
+            "depth": 4,
+            "cl_type": null,
+            "is_head": false,
+            "node_key": "macula:wlc:1:1:GEN_1:1:16",
+            "verse_id": 1,
+            "node_type": "terminal",
+            "rule_label": null,
+            "class_label": "om",
+            "is_terminal": true,
+            "end_verse_id": 1,
+            "surface_word": "וְאֵ֥ת",
+            "word_grammar": "HC/To",
+            "word_strongs": "H853",
+            "sibling_order": 0,
+            "is_cross_verse": false,
+            "parent_node_id": 4285,
+            "semantic_frame": null,
+            "syntactic_role": null,
+            "terminal_xml_id": "o010010010062",
+            "terminal_word_id": 39795,
+            "end_word_position": 6,
+            "start_word_position": 6,
+            "word_transliteration": "ve.'Et"
+          },
+          {
+            "id": 4281,
+            "depth": 4,
+            "cl_type": null,
+            "is_head": true,
+            "node_key": "macula:wlc:1:1:GEN_1:1:11",
+            "verse_id": 1,
+            "node_type": "phrase",
+            "rule_label": "DetNP",
+            "class_label": "np",
+            "is_terminal": false,
+            "end_verse_id": 1,
+            "surface_word": null,
+            "word_grammar": null,
+            "word_strongs": null,
+            "sibling_order": 1,
+            "is_cross_verse": false,
+            "parent_node_id": 4279,
+            "semantic_frame": null,
+            "syntactic_role": null,
+            "terminal_xml_id": null,
+            "terminal_word_id": null,
+            "end_word_position": 5,
+            "start_word_position": 5,
+            "word_transliteration": null
+          },
+          {
+            "id": 4287,
+            "depth": 4,
+            "cl_type": null,
+            "is_head": true,
+            "node_key": "macula:wlc:1:1:GEN_1:1:17",
+            "verse_id": 1,
+            "node_type": "phrase",
+            "rule_label": "DetNP",
+            "class_label": "np",
+            "is_terminal": false,
+            "end_verse_id": 1,
+            "surface_word": null,
+            "word_grammar": null,
+            "word_strongs": null,
+            "sibling_order": 1,
+            "is_cross_verse": false,
+            "parent_node_id": 4285,
+            "semantic_frame": null,
+            "syntactic_role": null,
+            "terminal_xml_id": null,
+            "terminal_word_id": null,
+            "end_word_position": 7,
+            "start_word_position": 7,
+            "word_transliteration": null
+          },
+          {
+            "id": 4282,
+            "depth": 5,
+            "cl_type": null,
+            "is_head": false,
+            "node_key": "macula:wlc:1:1:GEN_1:1:12",
+            "verse_id": 1,
+            "node_type": "terminal",
+            "rule_label": null,
+            "class_label": "art",
+            "is_terminal": true,
+            "end_verse_id": 1,
+            "surface_word": "הַשָּׁמַ֖יִם",
+            "word_grammar": "HTd/Ncmpa",
+            "word_strongs": "H8064",
+            "sibling_order": 0,
+            "is_cross_verse": false,
+            "parent_node_id": 4281,
+            "semantic_frame": null,
+            "syntactic_role": null,
+            "terminal_xml_id": "o010010010051",
+            "terminal_word_id": 141628,
+            "end_word_position": 5,
+            "start_word_position": 5,
+            "word_transliteration": "ha.sha.Ma.yim"
+          },
+          {
+            "id": 4288,
+            "depth": 5,
+            "cl_type": null,
+            "is_head": false,
+            "node_key": "macula:wlc:1:1:GEN_1:1:18",
+            "verse_id": 1,
+            "node_type": "terminal",
+            "rule_label": null,
+            "class_label": "art",
+            "is_terminal": true,
+            "end_verse_id": 1,
+            "surface_word": "הָאָֽרֶץ׃",
+            "word_grammar": "HTd/Ncfsa",
+            "word_strongs": "H776",
+            "sibling_order": 0,
+            "is_cross_verse": false,
+            "parent_node_id": 4287,
+            "semantic_frame": null,
+            "syntactic_role": null,
+            "terminal_xml_id": "o010010010071",
+            "terminal_word_id": 38401,
+            "end_word_position": 7,
+            "start_word_position": 7,
+            "word_transliteration": "ha.'A.retz"
+          },
+          {
+            "id": 4283,
+            "depth": 5,
+            "cl_type": null,
+            "is_head": false,
+            "node_key": "macula:wlc:1:1:GEN_1:1:13",
+            "verse_id": 1,
+            "node_type": "terminal",
+            "rule_label": null,
+            "class_label": "noun",
+            "is_terminal": true,
+            "end_verse_id": 1,
+            "surface_word": "הַשָּׁמַ֖יִם",
+            "word_grammar": "HTd/Ncmpa",
+            "word_strongs": "H8064",
+            "sibling_order": 1,
+            "is_cross_verse": false,
+            "parent_node_id": 4281,
+            "semantic_frame": null,
+            "syntactic_role": null,
+            "terminal_xml_id": "o010010010052",
+            "terminal_word_id": 141628,
+            "end_word_position": 5,
+            "start_word_position": 5,
+            "word_transliteration": "ha.sha.Ma.yim"
+          },
+          {
+            "id": 4289,
+            "depth": 5,
+            "cl_type": null,
+            "is_head": false,
+            "node_key": "macula:wlc:1:1:GEN_1:1:19",
+            "verse_id": 1,
+            "node_type": "terminal",
+            "rule_label": null,
+            "class_label": "noun",
+            "is_terminal": true,
+            "end_verse_id": 1,
+            "surface_word": "הָאָֽרֶץ׃",
+            "word_grammar": "HTd/Ncfsa",
+            "word_strongs": "H776",
+            "sibling_order": 1,
+            "is_cross_verse": false,
+            "parent_node_id": 4287,
+            "semantic_frame": null,
+            "syntactic_role": null,
+            "terminal_xml_id": "o010010010072",
+            "terminal_word_id": 38401,
+            "end_word_position": 7,
+            "start_word_position": 7,
+            "word_transliteration": "ha.'A.retz"
+          }
+        ],
+        "tree_id": "macula:wlc:1:1:GEN_1:1",
+        "edition_key": "macula-hebrew-wlc",
+        "nodes_count": 19,
+        "end_verse_id": 1,
+        "root_node_id": 4271,
+        "edition_title": "MACULA Hebrew treebank over WLC/OSHB",
+        "is_cross_verse": false,
+        "start_verse_id": 1,
+        "cross_verse_span": null
+      }
+    },
+    "COMP-GEN": {
+      "correspondence_status": "matched",
+      "documented_alignments_count": 5,
+      "sample_alignment": {
+        "lxx_text": "ΕΝ ΑΡΧΗ",
+        "cardinality": "one_to_many",
+        "hebrew_text": "בְּרֵאשִׁית",
+        "lxx_strongs": [
+          "G1722",
+          "G0746"
+        ],
+        "lxx_ordinals": [
+          1,
+          2
+        ],
+        "alignment_key": "align:doc:gen1_1_w1_lxx1_2",
+        "alignment_tier": "documented_textual",
+        "hebrew_strongs": [
+          "H7225"
+        ],
+        "hebrew_ordinals": [
+          1
+        ],
+        "confidence_score": 1,
+        "evidence_summary": "Hebrew compound prefixed noun בְּרֵאשִׁית rendered as preposition + noun Ἐν ἀρχῇ in Septuagint.",
+        "algorithm_or_source": "Clear-Bible/macula-hebrew",
+        "verification_status": "verified_source_attestation",
+        "translation_technique": "literal"
+      }
+    },
+    "COMP-JER": {
+      "correspondence_status": "reordered",
+      "hebrew": "Jeremiah 25:15",
+      "lxx": "Jeremias 32:1"
+    },
+    "AUDIT-COV": {
+      "verses": 31203,
+      "tokens": 443524,
+      "swete_lxx": 588579,
+      "orphans": {
+        "orphan_lrl_roots": 0,
+        "orphan_lxx_books": 0,
+        "orphan_map_books": 0,
+        "orphan_wfl_words": 0,
+        "orphan_lrl_lemmas": 0,
+        "orphan_map_verses": 0,
+        "orphan_rel_object": 0,
+        "orphan_wfl_lemmas": 0,
+        "orphan_align_books": 0,
+        "orphan_rel_subject": 0,
+        "orphan_align_verses": 0,
+        "orphan_tagnt_verses": 0,
+        "orphan_macula_verses": 0,
+        "orphan_senses_lemmas": 0,
+        "orphan_morphhb_verses": 0,
+        "orphan_gated_morphemes": 0,
+        "orphan_macula_greek_verses": 0
+      }
+    },
+    "ANTI-SYNTAX": {
+      "has_syntax": false,
+      "status": "unannotated_in_source",
+      "reason": "No syntax tree bank annotations exist in declared sources for this verse. Syntax is not algorithmically guessed."
+    },
+    "ANTI-MINUS": {
+      "status": "unmatched_hebrew_minus_in_lxx",
+      "has_lxx": false
+    },
+    "ANTI-DISTINCT": {
+      "book": 1,
+      "error": "verse_not_found",
+      "chapter": 99,
+      "verse_nr": 1,
+      "has_syntax": false,
+      "syntax_status": "passage_not_found",
+      "missing_syntax_reason": "The requested passage does not exist in the canonical 66-book Bible index."
+    }
+  },
+  "unresolved_limitations": [
+    {
+      "area": "Septuagint Linguistic Annotations",
+      "status": "intentionally_unannotated",
+      "details": "Swete digital edition provides authentic Greek surface text, punctuation, and token order, but does not provide morphological tags or lemma links. External morphological guesswork is strictly disallowed to prevent hallucination."
+    },
+    {
+      "area": "MACULA Syntax Tree Bank Coverage",
+      "status": "source_scope_bounded",
+      "details": "Syntax constituent trees are available for MACULA-annotated passages (e.g. Genesis 1-3, Psalm 23, Isaiah 53 in OT; all 27 books in NT). Unannotated OT passages transparently report syntax_status: \"unannotated_in_source\"."
+    },
+    {
+      "area": "Hebrew-Septuagint Word Alignments",
+      "status": "strict_3_tier_segregation",
+      "details": "Alignments are strictly partitioned into documented_textual (verified), computationally_inferred_candidate (confidence < 1.0), and scholarly_interpretation. Database check constraint chk_candidate_never_masquerade prevents candidate masquerading."
+    }
+  ]
+}

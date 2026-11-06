@@ -40,10 +40,10 @@ assert.equal(health.status, 200);
 const status = await health.json();
 assert.equal(status.read_only, true);
 assert.equal(status.authentication, 'none');
-assert.equal(status.tools, 11);
+assert.equal(status.tools, 17);
 assert.equal(status.prompts, 17);
 assert.equal(status.version, WORKFLOW_VERSION);
-pass('anonymous health endpoint (11 tools, 17 prompts)');
+pass('anonymous health endpoint (17 tools, 17 prompts)');
 
 for (const protocolVersion of ['2025-03-26', '2025-06-18', '2025-11-25']) {
   const init = await result('initialize', { protocolVersion, capabilities: {},
@@ -54,11 +54,17 @@ for (const protocolVersion of ['2025-03-26', '2025-06-18', '2025-11-25']) {
 pass('MCP initialization with three compatible client protocol versions');
 const listed = await result('tools/list');
 const expected = [
+  'audit_evidence_coverage',
+  'compare_hebrew_septuagint_passage',
   'get_research_prompt',
+  'get_septuagint_passage',
+  'get_syntax_tree',
   'get_verse_chronology_v1',
   'get_verse_geography',
   'get_verse_research',
   'get_word_details',
+  'lookup_hebrew_septuagint_alignments',
+  'lookup_lexical_semantics',
   'prompt_verse_words',
   'prompt_word_cooccurrences',
   'prompt_word_occurrences',
@@ -72,7 +78,7 @@ for (const t of listed.tools) {
   assert.equal(t.annotations.destructiveHint, false);
   assert.equal(t.inputSchema.type, 'object');
 }
-pass('exact allowlist of eleven read-only tools with input schemas');
+pass('exact allowlist of seventeen read-only tools with input schemas');
 if (process.argv.includes('--catalog-only')) {
   const workflow = await tool('get_research_prompt', { subject: 'Explain John 1:1' });
   assert.equal(workflow.name, 'study_bible');

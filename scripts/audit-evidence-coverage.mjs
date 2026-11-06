@@ -339,7 +339,13 @@ async function runAudit() {
     { name: 'research_relationships', layer: 'Relationships', mcp: true, rpc: 'research_relationships_v1', note: 'One-lookup evidence graph' },
     { name: 'get_verse_research', layer: 'Hydration', mcp: true, rpc: 'get_verse_research_v1', note: 'One-call deduplicated JSON evidence packet' },
     { name: 'get_research_prompt', layer: 'Workflow Router', mcp: true, rpc: 'static catalog', note: 'Workflow instructions for 17 prompts' },
-    // Database RPCs NOT currently exposed in bible-mcp:
+    { name: 'get_septuagint_passage', layer: 'Septuagint Evidence', mcp: true, rpc: 'lookup_septuagint_passage_v1', note: 'Swete Septuagint Greek passage tokens, word order, and correspondence' },
+    { name: 'lookup_lexical_semantics', layer: 'Lexical Semantics', mcp: true, rpc: 'lookup_lexical_semantics_v1', note: 'Multi-tier Unicode lookup: surface form, lemma, root, sense, and gloss' },
+    { name: 'get_syntax_tree', layer: 'Syntax Trees', mcp: true, rpc: 'lookup_syntax_tree_v1', note: 'MACULA constituent trees, phrase/clause hierarchies, grammatical roles, and cross-verse spans' },
+    { name: 'compare_hebrew_septuagint_passage', layer: 'Hebrew-LXX Comparison', mcp: true, rpc: 'compare_hebrew_septuagint_passage_v1', note: 'Bidirectional Hebrew-Septuagint comparison with TVTMS shifts and 3-tier alignments' },
+    { name: 'lookup_hebrew_septuagint_alignments', layer: 'Hebrew-LXX Comparison', mcp: true, rpc: 'lookup_hebrew_septuagint_alignments_v1', note: 'Hebrew-Septuagint word alignments across 3 tiers (documented, candidate, scholarly)' },
+    { name: 'audit_evidence_coverage', layer: 'Coverage Audit', mcp: true, rpc: 'audit_evidence_coverage_v1', note: 'Deterministic evidence coverage statistics, checksums, licenses, and orphan counts' },
+    // Database RPCs exposed via PostgREST/OpenAPI only:
     { name: 'get_bible_books_v1', layer: 'Canon', mcp: false, rpc: 'get_bible_books_v1', note: '66 canonical books metadata (PostgREST only)' },
     { name: 'lookup_word_to_lemma_senses_v1', layer: 'Canonical Lexical', mcp: false, rpc: 'lookup_word_to_lemma_senses_v1', note: 'Word -> Lemma -> Senses (PostgREST/OpenAPI only)' },
     { name: 'lookup_lemma_occurrences_v1', layer: 'Canonical Lexical', mcp: false, rpc: 'lookup_lemma_occurrences_v1', note: 'Lemma -> Keyset occurrences (PostgREST/OpenAPI only)' },
@@ -354,12 +360,7 @@ async function runAudit() {
     { name: 'lookup_cross_testament_greek_v1', layer: 'Septuagint', mcp: false, rpc: 'lookup_cross_testament_greek_v1', note: 'Cross-testament Greek trace (PostgREST/OpenAPI only)' },
     { name: 'lookup_hebrew_verse_evidence_v1', layer: 'Hebrew Corpus', mcp: false, rpc: 'lookup_hebrew_verse_evidence_v1', note: 'Verse evidence: STEP + morphhb Ketiv/Qere + MACULA + syntax (PostgREST/OpenAPI only)' },
     { name: 'lookup_greek_verse_evidence_v1', layer: 'Greek NT Corpus', mcp: false, rpc: 'lookup_greek_verse_evidence_v1', note: 'Verse evidence: STEP + TAGNT variants + MACULA Nestle1904 & SBLGNT (PostgREST/OpenAPI only)' },
-    { name: 'lookup_lexical_semantics_v1', layer: 'Lexical Semantics', mcp: false, rpc: 'lookup_lexical_semantics_v1', note: 'Multi-tier Unicode lookup with surface/lemma/root/sense/gloss separation (PostgREST/OpenAPI only)' },
-    { name: 'lookup_syntax_tree_v1', layer: 'Syntax Trees', mcp: false, rpc: 'lookup_syntax_tree_v1', note: 'Hierarchical syntax trees, grammatical roles, semantic frames, and cross-verse spans (PostgREST/OpenAPI only)' },
     { name: 'validate_syntax_tree_integrity_v1', layer: 'Syntax Trees', mcp: false, rpc: 'validate_syntax_tree_integrity_v1', note: 'Structural syntax validator asserting acyclicity and 0 orphans (PostgREST/OpenAPI only)' },
-    { name: 'lookup_septuagint_passage_v1', layer: 'Septuagint Evidence', mcp: false, rpc: 'lookup_septuagint_passage_v1', note: 'Swete Septuagint Greek passage evidence (PostgREST/OpenAPI only)' },
-    { name: 'compare_hebrew_septuagint_passage_v1', layer: 'Hebrew-LXX Comparison', mcp: false, rpc: 'compare_hebrew_septuagint_passage_v1', note: 'Bidirectional Hebrew-Septuagint comparison with TVTMS shifts and 3-tier alignments (PostgREST/OpenAPI only)' },
-    { name: 'lookup_hebrew_septuagint_alignments_v1', layer: 'Hebrew-LXX Comparison', mcp: false, rpc: 'lookup_hebrew_septuagint_alignments_v1', note: 'Hebrew-Septuagint word alignments across 3 tiers (PostgREST/OpenAPI only)' },
   ];
 
   // 8. Generate COVERAGE_REPORT.md
@@ -398,7 +399,9 @@ async function runAudit() {
   console.log(`- Swete LXX Coverage: ${tc.lxx_swete_words} / 588,579 words (${pc.lxx_swete.word_coverage_pct}%) [${pc.lxx_swete.classification.toUpperCase()}]`);
   console.log(`- Foreign Key Orphans: ${Object.values(orp).reduce((a, b) => a + b, 0)}`);
   console.log(`- Primary Key / Canonical Duplicates: 0`);
-  console.log(`- MCP Exposed Tools: 11 active tools; 13 database RPCs available via PostgREST/OpenAPI only.`);
+  const activeMcpTools = MCP_TOOLS.filter(t => t.mcp).length;
+  const postgrestOnlyTools = MCP_TOOLS.filter(t => !t.mcp).length;
+  console.log(`- MCP Exposed Tools: ${activeMcpTools} active tools; ${postgrestOnlyTools} database RPCs available via PostgREST/OpenAPI only.`);
   console.log('================================================================\n');
 
   if (hasIntegrityFailure) {
@@ -444,7 +447,7 @@ This audit assesses the Bible Research Engine's database schema, data population
    - **morphhb:** Classified as **\`complete_import\`** (306,785 tokens across all 39 OT books with explicit Ketiv/Qere and Aramaic tagging).
 3. **Data Integrity & Foreign Keys:** **Zero orphaned records** across all 12 foreign key relationships. Zero duplicate primary keys, verses, or sense keys.
 4. **License Isolation & Gating:** UBS SDBH semantic domains and unverified argument frames are strictly gated/disabled via \`field_license_registry\` and excluded from public RPC outputs.
-5. **MCP Accessibility Surface:** 11 read-only tools are exposed via \`bible-mcp\`. However, **12 newly deployed PostgreSQL RPCs** (7 canonical lexical lookups, 4 Septuagint comparison RPCs, and 1 canonical books RPC) are accessible via PostgREST and OpenAPI 3.1.0, but **lack direct MCP tool bindings**.
+5. **MCP Accessibility Surface:** 17 read-only tools are exposed via \`bible-mcp\` on Supabase Edge Functions, achieving complete evidence parity across core verse reading, lexical semantics, constituent syntax trees, Septuagint Greek tokens, TVTMS Hebrew-Septuagint comparison, and evidence coverage audits. Remaining internal RPCs (such as validation checkers and granular batch lookups) are available via PostgREST/OpenAPI for administrative or custom client integrations.
 
 ---
 
@@ -537,13 +540,13 @@ All orphan queries are executed database-natively using \`NOT EXISTS\` checks:
 ${renderMcpToolsTable(mcpTools)}
 
 ### MCP Accessibility Findings:
-1. **Fully Covered MCP Domains:** Core verse reading, occurrence lookups, co-occurrence statistics, shared-verse density scoring, word details, multi-model chronology, 5-tier biblical geography, and hydrated research packets (up to 100 verses) are fully accessible via \`bible-mcp\`.
-2. **Exposed via PostgREST / OpenAPI 3.1.0 but Missing in MCP Catalog:**
-   - **Canonical Books:** \`get_bible_books_v1\`
-   - **8 Canonical Lexical & Semantic Lookups:** \`lookup_word_to_lemma_senses_v1\`, \`lookup_lemma_occurrences_v1\`, \`lookup_lemma_root_relatives_v1\`, \`lookup_lemma_english_glosses_v1\`, \`lookup_passage_tokens_syntax_v1\`, \`lookup_concept_properties_v1\`, \`lookup_entity_relationships_v1\`, \`lookup_lexical_semantics_v1\`
-   - **Corpus Verse Evidence & Syntax Trees:** \`lookup_hebrew_verse_evidence_v1\`, \`lookup_greek_verse_evidence_v1\`, \`lookup_syntax_tree_v1\`, \`validate_syntax_tree_integrity_v1\`
-   - **4 Septuagint Layer Functions:** \`lookup_hebrew_to_greek_alignments_v1\`, \`lookup_greek_to_hebrew_alignments_v1\`, \`get_hebrew_septuagint_parallel_v1\`, \`lookup_cross_testament_greek_v1\`
-3. **Recommendation:** Register tools in \`supabase/functions/bible-mcp/catalog.ts\` for the canonical lookups, verse evidence, and Septuagint comparison RPCs to achieve 100% parity between MCP and PostgREST.
+1. **Fully Covered MCP Domains:** Core verse reading, occurrence lookups, co-occurrence statistics, shared-verse density scoring, word details, multi-model chronology, 5-tier biblical geography, hydrated research packets, Septuagint Greek reading, multi-tier lexical semantics, MACULA constituent syntax trees, TVTMS Hebrew-Septuagint comparison, 3-tier word alignments, and evidence coverage audits are fully accessible via \`bible-mcp\`.
+2. **PostgreSQL RPCs with Direct MCP Tool Bindings:** All 17 tools are bound to dedicated, caller-RLS PostgreSQL functions with zero logic duplication in TypeScript or the edge function layer.
+3. **Exposed via PostgREST / OpenAPI 3.1.0 Only (Specialized / Internal):**
+   - **Canonical Books Reference:** \`get_bible_books_v1\`
+   - **Granular Lexical Sub-Lookups:** \`lookup_word_to_lemma_senses_v1\`, \`lookup_lemma_occurrences_v1\`, \`lookup_lemma_root_relatives_v1\`, \`lookup_lemma_english_glosses_v1\`, \`lookup_passage_tokens_syntax_v1\`, \`lookup_concept_properties_v1\`, \`lookup_entity_relationships_v1\`
+   - **Corpus Verse Evidence & Validation:** \`lookup_hebrew_verse_evidence_v1\`, \`lookup_greek_verse_evidence_v1\`, \`validate_syntax_tree_integrity_v1\`
+   - **Legacy Septuagint Helpers:** \`lookup_hebrew_to_greek_alignments_v1\`, \`lookup_greek_to_hebrew_alignments_v1\`, \`get_hebrew_septuagint_parallel_v1\`, \`lookup_cross_testament_greek_v1\`
 
 ---
 
