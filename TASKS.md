@@ -206,7 +206,7 @@ Status: Phase A in progress (NOTE-09 done). Next task: **NOTE-10**.
 - [x] **NOTE-16 OpenAPI exposure — Gate G2** | Files: supabase/openapi.json, scripts/verify-openapi.mjs | Verify: [AUTO-TEST] G2.
 
 **Phase C — UI**
-- [ ] **NOTE-17 Notes state and safe markdown** | Files: src/ui/notes-state.ts, src/ui/note-markdown.ts | Verify: [AUTO-TEST] TP-XSS-1.
+- [x] **NOTE-17 Notes state and safe markdown** | Files: src/ui/notes-state.ts, src/ui/note-markdown.ts | Verify: [AUTO-TEST] TP-XSS-1.
 - [ ] **NOTE-18 NoteCard with provenance visuals** | Files: src/ui/components/NoteCard.ts, src/ui/styles-notes.css | Verify: [USER-CHECK] TP-A11Y-1, TP-BIDI-1.
 - [ ] **NOTE-19 Note blocks renderer** | Files: src/ui/components/NoteBlocks.ts, src/ui/styles-notes.css | Verify: [USER-CHECK] TP-XSS-1.
 - [ ] **NOTE-20 NotesPanel (tiers and filters)** | Files: src/ui/components/NotesPanel.ts, src/ui/styles-notes.css | Verify: [USER-CHECK] TP-RACE-1.
