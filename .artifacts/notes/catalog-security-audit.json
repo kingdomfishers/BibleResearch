@@ -199,12 +199,48 @@
       "pub_exec": false
     },
     {
+      "proname": "delete_note_v1",
+      "args": "p_note_id uuid, p_expected_version integer",
+      "is_secdef": true,
+      "config": ["search_path=\"\"", "statement_timeout=10s"],
+      "anon_exec": true,
+      "auth_exec": true,
+      "pub_exec": false
+    },
+    {
       "proname": "note_resolve_agent_author_v1",
       "args": "p_agent jsonb",
       "is_secdef": true,
       "config": ["search_path=\"\"", "statement_timeout=10s"],
       "anon_exec": false,
       "auth_exec": false,
+      "pub_exec": false
+    },
+    {
+      "proname": "note_json_v1",
+      "args": "p_note_id uuid",
+      "is_secdef": true,
+      "config": ["search_path=\"\"", "statement_timeout=8s"],
+      "anon_exec": false,
+      "auth_exec": false,
+      "pub_exec": false
+    },
+    {
+      "proname": "save_note_v1",
+      "args": "p_note jsonb",
+      "is_secdef": true,
+      "config": ["search_path=\"\"", "statement_timeout=10s"],
+      "anon_exec": true,
+      "auth_exec": true,
+      "pub_exec": false
+    },
+    {
+      "proname": "set_note_review_v1",
+      "args": "p_note_id uuid, p_review_status text",
+      "is_secdef": true,
+      "config": ["search_path=\"\"", "statement_timeout=10s"],
+      "anon_exec": true,
+      "auth_exec": true,
       "pub_exec": false
     }
   ]

@@ -121,3 +121,17 @@ Sources: `node scripts/audit-notes-prereqs.mjs` (public checks) and `node script
 | Existing search | `search_reader_words_v1` returns word candidates only: `adam` -> 2, `H120` -> 1, `dam` -> 6, but `אדם` -> **0**, `λόγος` -> **0**, `Gen 1:1` -> **0** | Original-script search and references are not covered; NOTE-11 builds them (reusing `strip_hebrew_all` / `strip_greek_diacritics` / `harmonize_greek_accents`) and may wrap the existing function for transliteration/Strong's. UX06b overlap stays tracked |
 | MCP | Health OK (v1.4.0, 17 tools, 17 prompts, auth `none`); an unrecognized `Authorization: Bearer` header is accepted and ignored (HTTP 200, same 17 tools); CORS already allows `Authorization` | NOTE-30 must treat missing/invalid keys as read-only (never an error) so existing clients are unaffected |
 | MCP client header support | **UNKNOWN** for ChatGPT connectors / Gemini CLI | Header-incapable clients stay read-only (D3); revisit OAuth later |
+
+### 5.2 Accepted Database Advisor Warnings & Security Baseline (NOTE-08, 2026-11-07)
+
+Sources: Supabase Security and Performance Advisors (`get_advisors`) inspected after applying `20261107015944_notes_write_rpc.sql`.
+
+| Category | Warning Title | Finding Detail | Accepted Justification |
+| :--- | :--- | :--- | :--- |
+| Security | Public Can Execute SECURITY DEFINER Function | `public.save_note_v1(p_note jsonb)` callable by `anon` | **Single-User Mode Design (§N.3 / S1):** Human writes are accessible to anonymous frontend calls without login. Protected by `search_path=''`, `statement_timeout='10s'`, `note_settings` kill switches, payload validation, and hourly rate limits. |
+| Security | Public Can Execute SECURITY DEFINER Function | `public.delete_note_v1(p_note_id uuid, p_expected_version int)` callable by `anon` | **Single-User Mode Design (§N.3 / S1):** Soft-delete function accessible to anonymous frontend calls without login. Protected by `search_path=''`, `statement_timeout='10s'`, and `note_settings` kill switch. |
+| Security | Public Can Execute SECURITY DEFINER Function | `public.set_note_review_v1(p_note_id uuid, p_review_status text)` callable by `anon` | **Single-User Mode Design (§N.3 / S1):** Review status state machine accessible to anonymous frontend calls without login. Protected by enum validation, `search_path=''`, and `statement_timeout='10s'`. |
+| Security | Signed-In Users Can Execute SECURITY DEFINER Function | `save_note_v1`, `delete_note_v1`, `set_note_review_v1` callable by `authenticated` | Identical to above; single-user mode treats authenticated and anon symmetrically until multi-user authentication is introduced. |
+| Security | RLS Enabled No Policy | `public.note_revisions` | **Intentional Complete Privacy:** `note_revisions` contains internal audit history and full Note JSON snapshots. It has zero public RLS policies, making it 100% inaccessible to both `anon` and `authenticated` PostgREST clients. Only `SECURITY DEFINER` write RPCs and database owner have access. |
+| Security | Anonymous Access Policies | `Allow public select on visible note*` on `note_blocks`, `note_connections`, `note_block_types`, `note_connection_types` | Expected standard advisory for public read-only tables and published notes. |
+

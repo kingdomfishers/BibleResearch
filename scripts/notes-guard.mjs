@@ -124,19 +124,33 @@ async function getVerseResearchGen1_1(retries = 2) {
   }
 }
 
-async function getMcpHealth() {
-  const res = await fetch(`${MCP_URL}/health`, { signal: AbortSignal.timeout(10000) });
-  if (!res.ok) {
-    throw new Error(`MCP /health failed: HTTP ${res.status}`);
+async function getMcpHealth(retries = 3) {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const res = await fetch(`${MCP_URL}/health`, { signal: AbortSignal.timeout(10000) });
+      if (!res.ok) {
+        if (attempt < retries) {
+          await new Promise(r => setTimeout(r, 1500));
+          continue;
+        }
+        throw new Error(`MCP /health failed: HTTP ${res.status}`);
+      }
+      const data = await res.json();
+      return {
+        name: data.name,
+        version: data.version,
+        status: data.status,
+        tools: data.tools,
+        prompts: data.prompts,
+      };
+    } catch (err) {
+      if (attempt < retries) {
+        await new Promise(r => setTimeout(r, 1500));
+        continue;
+      }
+      throw err;
+    }
   }
-  const data = await res.json();
-  return {
-    name: data.name,
-    version: data.version,
-    status: data.status,
-    tools: data.tools,
-    prompts: data.prompts,
-  };
 }
 
 async function captureSnapshot() {

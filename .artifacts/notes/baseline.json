@@ -1,0 +1,29 @@
+{
+  "captured_at": "2026-11-07T01:01:30.236Z",
+  "row_counts": {
+    "verses": 31203,
+    "words": 150105,
+    "entity_relationships": 15642,
+    "semantic_annotations": 911,
+    "canonical_entities": 82485,
+    "lemmas": 22171,
+    "word_form_lemmas": 270447,
+    "books": 66,
+    "concepts": 1349,
+    "places": 1344,
+    "chronology_events": 450
+  },
+  "verse_research_gen_1_1": {
+    "hash": "f2a0a5d28d81ed4fea1487b736ed4a8362aba8c61adcb3d2360f341f215bcd46",
+    "status": "ok",
+    "verses_count": 1,
+    "words_count": 7
+  },
+  "mcp_health": {
+    "name": "BibleResearch",
+    "version": "1.4.0",
+    "status": "ok",
+    "tools": 19,
+    "prompts": 18
+  }
+}
