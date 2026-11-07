@@ -122,9 +122,9 @@ Sources: `node scripts/audit-notes-prereqs.mjs` (public checks) and `node script
 | MCP | Health OK (v1.4.0, 17 tools, 17 prompts, auth `none`); an unrecognized `Authorization: Bearer` header is accepted and ignored (HTTP 200, same 17 tools); CORS already allows `Authorization` | NOTE-30 must treat missing/invalid keys as read-only (never an error) so existing clients are unaffected |
 | MCP client header support | **UNKNOWN** for ChatGPT connectors / Gemini CLI | Header-incapable clients stay read-only (D3); revisit OAuth later |
 
-### 5.2 Accepted Database Advisor Warnings & Security Baseline (NOTE-08, 2026-11-07)
+### 5.2 Accepted Database Advisor Warnings & Security Baseline (NOTE-08 & NOTE-13, 2026-11-07)
 
-Sources: Supabase Security and Performance Advisors (`get_advisors`) inspected after applying `20261107015944_notes_write_rpc.sql`.
+Sources: Supabase Security and Performance Advisors (`get_advisors`) inspected after applying `20261107015944_notes_write_rpc.sql` and after Gate G1 completion.
 
 | Category | Warning Title | Finding Detail | Accepted Justification |
 | :--- | :--- | :--- | :--- |
@@ -134,6 +134,7 @@ Sources: Supabase Security and Performance Advisors (`get_advisors`) inspected a
 | Security | Signed-In Users Can Execute SECURITY DEFINER Function | `save_note_v1`, `delete_note_v1`, `set_note_review_v1` callable by `authenticated` | Identical to above; single-user mode treats authenticated and anon symmetrically until multi-user authentication is introduced. |
 | Security | RLS Enabled No Policy | `public.note_revisions` | **Intentional Complete Privacy:** `note_revisions` contains internal audit history and full Note JSON snapshots. It has zero public RLS policies, making it 100% inaccessible to both `anon` and `authenticated` PostgREST clients. Only `SECURITY DEFINER` write RPCs and database owner have access. |
 | Security | Anonymous Access Policies | `Allow public select on visible note*` on `note_blocks`, `note_connections`, `note_block_types`, `note_connection_types` | Expected standard advisory for public read-only tables and published notes. |
+| Performance | Unindexed foreign keys | `note_anchors.concept_id`, `place_id`, `event_id`, `end_verse_id`, `book_aliases.book_id` | Low-cardinality/sparsely populated columns with targeted partial indexes (`idx_note_anchors_verse_id`, `idx_note_anchors_word_id`, `idx_note_anchors_lemma_id`). Full table scan on small seed tables (`book_aliases` with 375 rows) is faster than index scan. |
 
 ### 5.3 Notes Read RPC Performance & Benchmark (TP-PERF-2, NOTE-10)
 
@@ -143,5 +144,19 @@ Executed on live PostgreSQL 17 database (`ejoperxiwxlcbsqrkrvb`) with 20,000 syn
 - **Word Lookup (high-frequency word):** ~39–52 ms live HTTP round-trip.
 - **Index Plan Assertions:** 0 sequential scans on `note_anchors` and `notes` (Index Scans / Bitmap Index Scans using partial indexes).
 - **Optimization Strategy:** Pre-computed primary note ID array `v_primary_note_ids` eliminates correlated subquery iteration across token sets; `SET jit = 'off'` eliminates 150–250 ms of cold query JIT compilation overhead.
+
+### 5.4 Gate G1 Database Acceptance & Safety Suite Summary (NOTE-13)
+
+Validated on live PostgreSQL 17 database (`ejoperxiwxlcbsqrkrvb`) on 2026-11-07 via `scripts/verify-notes-db.mjs`:
+- **Subscripts:** 10/10 suites PASSED (372 total assertions across NOTE-03 through NOTE-12).
+- **Deferred Assertions:** 19/19 PASSED:
+  - Injection note stored and retrieved byte-identical without execution or stripping (`[TEST] Injection Payload <script>alert(1)</script>`).
+  - AI note visibility via anonymous `get_note_v1` and `get_notes_for_passage_v1` with `author.kind='ai'`, `ai_provider`, and `ai_model` recorded.
+  - Author kind filtering (`p_author_kind = 'ai'` vs `'human'`) verified with zero cross-bleed.
+  - Soft deletion hides notes from all public endpoints.
+- **TP-GUARD-1:** `node scripts/notes-guard.mjs --compare` PASSED (all 11 canonical table counts, Gen 1:1 hash, and MCP `/health` match baseline).
+- **TP-CLEAN-1:** 0 active unremoved test notes in `public.notes`.
+- **Gate G1 Status:** **APPROVED**. Database layer complete and ready for Phase B (Contracts & Gateway).
+
 
 
