@@ -1,6 +1,6 @@
 # ARCHITECTURE.md — System Blueprint & Operational Contracts
 
-Updated: 2026-11-01. Companion docs: [CHRONOLOGY_ARCHITECTURE.md](CHRONOLOGY_ARCHITECTURE.md), [CHRONOLOGY_API.md](CHRONOLOGY_API.md), [RELATIONSHIP_ARCHITECTURE.md](RELATIONSHIP_ARCHITECTURE.md), [RESEARCH_API.md](RESEARCH_API.md), [RELATIONSHIP_SCORING.md](RELATIONSHIP_SCORING.md), [DATA_SOURCES.md](DATA_SOURCES.md), [ROLLOUT.md](ROLLOUT.md).
+Updated: 2026-11-07 (MACULA licensing boundary); original operational contract 2026-11-01. Companion docs: [CHRONOLOGY_ARCHITECTURE.md](CHRONOLOGY_ARCHITECTURE.md), [CHRONOLOGY_API.md](CHRONOLOGY_API.md), [RELATIONSHIP_ARCHITECTURE.md](RELATIONSHIP_ARCHITECTURE.md), [RESEARCH_API.md](RESEARCH_API.md), [RELATIONSHIP_SCORING.md](RELATIONSHIP_SCORING.md), [DATA_SOURCES.md](DATA_SOURCES.md), [ROLLOUT.md](ROLLOUT.md).
 
 ## 1. System Overview & Core Principles
 
@@ -71,6 +71,81 @@ source candidate, subject to a pinned payload/coverage audit. This extension
 requires additive database evidence storage and a versioned read-only RPC;
 architecture approval is pending under the pre-code protocol. Do not claim
 full LXX token alignment or merge cross-language lexical identities.
+
+## MACULA licensing and private research boundary (2026-11-07)
+
+**Intent:** BibleResearch is currently for the owner's research. This is NOT proof
+that its deployed code or data are private, nor does internal use automatically
+override third-party copyright or license terms.
+
+**Observed deployment exposure on 2026-11-07:**
+- GitHub repository `kingdomfishers/BibleResearch` is **public**.
+- The deployed `bible-mcp` Supabase Edge Function has JWT verification
+  disabled; its implementation declares unauthenticated MCP access and
+  uses Supabase's publishable/anon credentials.
+- The `public.macula_gated_field_values` RLS policy admits rows for
+  `anon`/`authenticated` whenever `public.field_is_enabled` returns true.
+  That function treats both `enabled` and `enabled_origin_unverified`
+  as enabled; the last category is **not** private-only.
+- The `public.entity_relationships` reviewed-evidence and
+  `public.hebrew_lxx_word_alignments` tables currently have public read
+  policies. Changing the gate alone will not necessarily suppress derived
+  equivalents or cached alignments. Review every dependent RPC/view/API.
+- Do not describe these endpoints/data as private until authentication,
+  role isolation and public-API leakage checks have been implemented and
+  verified. Supabase service/secret keys must never enter the browser.
+
+**Source records and current field decisions:**
+- MACULA Hebrew (`macula-hebrew-47db250`, pinned upstream commit
+  `47db250bd55d0d8577f2a94fba114ef16c35b23c`): `greek` (1,084
+  stored values) and `greekstrong` (1,010) are currently
+  `enabled_origin_unverified`. MACULA's dataset-level CC BY 4.0 license
+  mentions Greek equivalents, but the upstream derivation of these exact
+  fields has not been confirmed. Possible third-party alignment rights,
+  including CATSS, must be checked before wider redistribution.
+- MACULA Hebrew `frame` (200 stored values) remains
+  `disabled_unverified`: the recorded origin is inconclusive, potentially
+  overlapping separately licensed semantic-frame data. Retain source bytes
+  for internal source auditing only; do not set this field to publicly enabled
+  merely because the project is intended to be private.
+- The 383 `source_provided_lexical_equivalent` relationships recorded
+  against source release 7 require dependency/provenance review. Lexical
+  equivalents are not necessarily token-to-token Hebrew–Greek alignments.
+- UBS SDBH-derived Hebrew semantic-domain fields and Greek UBS MARBLE /
+  Louw–Nida fields remain `disabled_restricted`; dataset-level MACULA
+  licensing does not supersede separate third-party permissions.
+- Swete LXX is separately attributed under CC BY-SA 4.0; maintain applicable
+  ShareAlike requirements for distributions/adaptations of that material.
+
+**Internal-use rule:** Preserve these fields and provenance in the database for
+trusted research and rights auditing. Data hidden from `anon` by RLS can
+already be inspected by a privileged database administrator; that is not a
+license to expose it through public RPCs or an unauthenticated MCP endpoint.
+Any new owner-only UI/API requires real authorization (not merely anonymous
+Supabase Auth) plus tests showing these fields and **all derived data** are
+absent from public/anonymous responses. Do not silently promote uncertain
+source relationships to verified biblical facts.
+
+**Before public distribution or release:**
+1. Obtain and archive written field-specific provenance/rights clarification
+   from the upstream maintainers for `greek`, `greekstrong`, and `frame`;
+   identify any independently restricted inputs and permissions.
+2. Audit the current GitHub visibility, public web deployments, Supabase RLS,
+   table grants, views, SQL RPCs and no-JWT MCP/Edge functions. Restrict
+   anything described as internal-only, including materialized or derived
+   Hebrew–Greek relationships and cached outputs.
+3. Apply the final rights decisions to `field_license_registry`, reimport
+   from pinned permissible sources when necessary, and run negative exposure
+   tests as both `anon` and `authenticated` (including anonymous sign-ins).
+4. Publish accurate source attribution, versions, license links and the
+   applicable CC BY 4.0 / CC BY-SA 4.0 notices; preserve field-level
+   provenance and provide a separate data/license export policy.
+5. Re-run representative original-language, cross-language, evidence
+   provenance, authorization and regression tests before changing exposure.
+
+**Status:** Documentation of the provisional internal-research intention;
+**NOT** a clearance to publish, and **NOT** a change to database permissions
+or the deployed application security controls.
 
 ## Word Gematria (Hebrew & Greek Standard)
 
