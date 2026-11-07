@@ -202,6 +202,7 @@ assert.equal(suggestions.candidate_connections[0].evidence_status, 'unverified_c
 
 const hydratedV2 = await tool('get_verse_research', {
   version: 2,
+  profile: 'analysis',
   p_request: { passages: [{ book: 1, chapter: 1, verse: 1 }] }
 });
 assert.equal(hydratedV2.status, 'ok');
@@ -228,8 +229,8 @@ const generalWorkflow = await tool('get_research_prompt', { subject: 'Investigat
 assert.equal(generalWorkflow.name, 'study_bible');
 assert.equal(generalWorkflow.workflow.version, WORKFLOW_VERSION);
 assert.deepEqual([...generalWorkflow.workflow.expected_tools].sort(), listed.tools.map(t => t.name).sort());
-assert.ok(generalWorkflow.workflow.routes.motif.starting_tools.includes('research_relationships'));
-assert.ok(generalWorkflow.workflow.routes.formation.starting_tools.includes('inspect_word_formation'));
+assert.ok(generalWorkflow.workflow.routes.relationships.starting_tools.includes('research_relationships'));
+assert.ok(generalWorkflow.workflow.routes.word_formation.starting_tools.includes('inspect_word_formation'));
 pass('eighteen native prompts match retrieval; general workflow routing and ten pattern templates are available');
 
 const missing = await tool('prompt_word_occurrences', { p_word_query: 'H999999' });
