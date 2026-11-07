@@ -41,6 +41,15 @@ const requiredPaths = [
   '/rpc/get_word_formation_v1',
   '/rpc/suggest_orthographic_candidates_v1',
   '/rpc/get_verse_research_v2',
+  '/rpc/get_notes_for_passage_v1',
+  '/rpc/get_notes_for_word_v1',
+  '/rpc/get_note_v1',
+  '/rpc/list_notes_v1',
+  '/rpc/list_note_connection_types_v1',
+  '/rpc/search_note_targets_v1',
+  '/rpc/save_note_v1',
+  '/rpc/delete_note_v1',
+  '/rpc/set_note_review_v1',
 ];
 
 for (const path of requiredPaths) {
@@ -68,23 +77,39 @@ const apiKey = process.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_P7Pol8YPSsY
 
 console.log('\nTesting live PostgREST endpoints against spec...');
 
-async function testPostgrest(path, body) {
+async function testPostgrest(path, body, retries = 1) {
   const url = `${serverUrl}${path}`;
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'apikey': apiKey,
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(body),
-  });
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'apikey': apiKey,
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Failed to call ${path}: HTTP ${response.status} - ${errorText}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        if (attempt < retries) {
+          console.log(`  RETRY: ${path} failed with HTTP ${response.status}, retrying once...`);
+          await new Promise((r) => setTimeout(r, 1000));
+          continue;
+        }
+        throw new Error(`Failed to call ${path}: HTTP ${response.status} - ${errorText}`);
+      }
+      return response.json();
+    } catch (err) {
+      if (attempt < retries) {
+        console.log(`  RETRY: ${path} error (${err.message}), retrying once...`);
+        await new Promise((r) => setTimeout(r, 1000));
+        continue;
+      }
+      throw err;
+    }
   }
-  return response.json();
 }
 
 const hydrated = await testPostgrest('/rpc/get_verse_research_v1', {
@@ -270,6 +295,31 @@ if (!verseV2 || verseV2.schema_version !== 2 || verseV2.status !== 'ok' || !vers
   throw new Error(`get_verse_research_v2 unexpected: ${JSON.stringify(verseV2)}`);
 }
 console.log(`  PASS: get_verse_research_v2 returned v2 packet with hoisted lexical_formations for Gen 1:1`);
+
+// 23. Test get_notes_for_passage_v1
+const passageNotes = await testPostgrest('/rpc/get_notes_for_passage_v1', {
+  p_book: 1,
+  p_chapter: 1,
+  p_verse_start: 1,
+});
+if (!passageNotes || passageNotes.status !== 'ok' || !passageNotes.totals || !Array.isArray(passageNotes.primary)) {
+  throw new Error(`get_notes_for_passage_v1 unexpected: ${JSON.stringify(passageNotes)}`);
+}
+console.log(`  PASS: get_notes_for_passage_v1 returned status:ok with ${passageNotes.totals.total} notes for Genesis 1:1`);
+
+// 24. Test list_note_connection_types_v1
+const connTypes = await testPostgrest('/rpc/list_note_connection_types_v1', {});
+if (!connTypes || connTypes.status !== 'ok' || !Array.isArray(connTypes.connection_types) || connTypes.connection_types.length !== 16) {
+  throw new Error(`list_note_connection_types_v1 unexpected: ${JSON.stringify(connTypes)}`);
+}
+console.log(`  PASS: list_note_connection_types_v1 returned ${connTypes.connection_types.length} canonical connection types`);
+
+// 25. Test search_note_targets_v1
+const targetSearch = await testPostgrest('/rpc/search_note_targets_v1', { p_query: 'Adam' });
+if (!targetSearch || targetSearch.status !== 'ok' || !Array.isArray(targetSearch.groups)) {
+  throw new Error(`search_note_targets_v1 unexpected: ${JSON.stringify(targetSearch)}`);
+}
+console.log(`  PASS: search_note_targets_v1 returned ${targetSearch.groups.length} candidate groups for "Adam"`);
 
 console.log('\nAll OpenAPI 3.1.0 and PostgREST endpoint checks PASSED!');
 

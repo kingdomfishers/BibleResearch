@@ -1690,6 +1690,489 @@
           }
         }
       }
+    },
+    "/rpc/get_notes_for_passage_v1": {
+      "post": {
+        "operationId": "getNotesForPassageV1",
+        "summary": "Retrieve notes and connections anchored to a passage",
+        "description": "Returns human and AI notes anchored to a verse or verse range, including direct verse anchors, sub-verse word occurrences, and connections to other biblical entities.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "p_book": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 66,
+                    "description": "Book number (1-66)"
+                  },
+                  "p_chapter": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "Chapter number"
+                  },
+                  "p_verse_start": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Starting verse"
+                  },
+                  "p_verse_end": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "description": "Optional ending verse for range"
+                  },
+                  "p_author_kind": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "enum": [
+                      "all",
+                      "human",
+                      "ai"
+                    ],
+                    "description": "Filter by author kind"
+                  },
+                  "p_note_kind": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "Filter by note genre/kind"
+                  },
+                  "p_limit": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "default": 50,
+                    "description": "Maximum notes to return"
+                  }
+                },
+                "required": [
+                  "p_book",
+                  "p_chapter",
+                  "p_verse_start"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Passage notes packet with counts and full notes array",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PassageNotesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rpc/get_notes_for_word_v1": {
+      "post": {
+        "operationId": "getNotesForWordV1",
+        "summary": "Retrieve notes anchored to a specific word occurrence, form, or lemma",
+        "description": "Returns notes grouped by anchor specificity: occurrence-level (exact token in verse), word-form-level (surface Hebrew/Greek spelling), and lemma-level (Strong number / dictionary entry).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "p_word_id": {
+                    "type": "integer",
+                    "description": "Canonical database word ID"
+                  },
+                  "p_verse_id": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "description": "Optional context verse ID"
+                  },
+                  "p_word_position": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "description": "Optional 1-based token position"
+                  },
+                  "p_limit": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "default": 50,
+                    "description": "Max notes per group"
+                  }
+                },
+                "required": [
+                  "p_word_id"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Word notes grouped by occurrence, form, and lemma",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WordNotesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rpc/get_note_v1": {
+      "post": {
+        "operationId": "getNoteV1",
+        "summary": "Retrieve a single note with its complete graph of anchors, connections, and blocks",
+        "description": "Fetches full note details by note UUID, including all attached anchors, bidirectional connections, structured content blocks, and author provenance.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "p_note_id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "Target note UUID"
+                  }
+                },
+                "required": [
+                  "p_note_id"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Complete note detail record or not_found status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NoteDetailResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rpc/list_notes_v1": {
+      "post": {
+        "operationId": "listNotesV1",
+        "summary": "Paginate and filter notes by author, note kind, connection type, or keyword query",
+        "description": "Returns a paginated list of notes matching optional filter criteria, ordered by recent modification with cursor-based pagination.",
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "p_author_kind": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "enum": [
+                      "all",
+                      "human",
+                      "ai"
+                    ],
+                    "description": "Filter by author kind"
+                  },
+                  "p_note_kind": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "Filter by note genre/kind"
+                  },
+                  "p_connection_type": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "Filter by presence of connection type"
+                  },
+                  "p_query": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "Optional text search query"
+                  },
+                  "p_limit": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "default": 25,
+                    "description": "Page size"
+                  },
+                  "p_cursor": {
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "description": "Pagination cursor from previous page"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Paginated list of notes and cursor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NoteListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rpc/list_note_connection_types_v1": {
+      "post": {
+        "operationId": "listNoteConnectionTypesV1",
+        "summary": "List available note connection types and their ontological categories",
+        "description": "Returns the 16 canonical relationship types across theological, historical, literary, and lexical domains with symmetric metadata and default confidence scores.",
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Array of canonical note connection types",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectionTypesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rpc/search_note_targets_v1": {
+      "post": {
+        "operationId": "searchNoteTargetsV1",
+        "summary": "Search potential biblical targets for note anchors and connections",
+        "description": "Performs unified prefix/fuzzy search across verses, words, lemmas, concepts, places, and events to discover candidate anchor and connection endpoints.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "p_query": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100,
+                    "description": "Search query"
+                  },
+                  "p_kinds": {
+                    "type": [
+                      "array",
+                      "null"
+                    ],
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Optional filter of candidate kinds"
+                  },
+                  "p_limit": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "default": 20,
+                    "description": "Maximum candidate count"
+                  }
+                },
+                "required": [
+                  "p_query"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Target search candidates with scores and anchor shapes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TargetSearchResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rpc/save_note_v1": {
+      "post": {
+        "operationId": "saveNoteV1",
+        "summary": "Create or update a note with anchors, connections, and blocks",
+        "description": "Single-user mode: unauthenticated; can be disabled via note_settings. Creates a new note or atomically updates an existing note, syncing all anchors, connections, and blocks while recording a snapshot in note_revisions.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "p_note": {
+                    "$ref": "#/components/schemas/NoteSavePayload"
+                  }
+                },
+                "required": [
+                  "p_note"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved note result or validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NoteSaveResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rpc/delete_note_v1": {
+      "post": {
+        "operationId": "deleteNoteV1",
+        "summary": "Soft or hard delete a note",
+        "description": "Single-user mode: unauthenticated; can be disabled via note_settings. Removes a note and all its cascade-dependent anchors, connections, and blocks with optional optimistic concurrency version check.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "p_note_id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "Note UUID to delete"
+                  },
+                  "p_expected_version": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "description": "Optional version check for optimistic locking"
+                  }
+                },
+                "required": [
+                  "p_note_id"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Deletion confirmation or error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NoteDeleteResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rpc/set_note_review_v1": {
+      "post": {
+        "operationId": "setNoteReviewV1",
+        "summary": "Set review status for an AI-generated note",
+        "description": "Single-user mode: unauthenticated; can be disabled via note_settings. Allows human reviewer to confirm or dispute an AI-generated note with optional rationale.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "p_note_id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "Target note UUID"
+                  },
+                  "p_review_status": {
+                    "type": "string",
+                    "enum": [
+                      "unreviewed",
+                      "confirmed",
+                      "disputed"
+                    ],
+                    "description": "Target review state"
+                  }
+                },
+                "required": [
+                  "p_note_id",
+                  "p_review_status"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Review status change confirmation or error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NoteReviewResult"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -3822,6 +4305,935 @@
             "type": "object"
           }
         }
+      },
+      "NoteAuthor": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Author UUID"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "human",
+              "ai"
+            ],
+            "description": "Author category"
+          },
+          "display_name": {
+            "type": "string",
+            "description": "Display name or model moniker"
+          },
+          "provider": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "AI provider name if applicable"
+          },
+          "model": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "AI model identifier if applicable"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "display_name"
+        ]
+      },
+      "NoteAnchor": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Anchor UUID"
+          },
+          "note_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Parent note UUID"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "verse",
+              "verse_range",
+              "word_occurrence",
+              "word_form",
+              "lemma",
+              "concept",
+              "place",
+              "event",
+              "note",
+              "external"
+            ],
+            "description": "Anchor ontological kind"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "primary",
+              "secondary"
+            ],
+            "description": "Primary target vs secondary reference"
+          },
+          "book": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Book number (1-66)"
+          },
+          "chapter": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Chapter number"
+          },
+          "verse": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Verse number (0 for psalm headings)"
+          },
+          "verse_end": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Ending verse for verse_range"
+          },
+          "word_id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Database word id for word occurrence"
+          },
+          "word_position": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "1-based token position in verse"
+          },
+          "word_text": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Hebrew/Greek surface text"
+          },
+          "word_form": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Normalized surface form"
+          },
+          "lemma_strong": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Strong number or lemma identifier"
+          },
+          "target_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Concept, place, event, or note target id"
+          },
+          "external_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "External URL target"
+          },
+          "label": {
+            "type": "string",
+            "description": "Human-readable anchor badge label"
+          },
+          "snippet": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Contextual citation snippet"
+          }
+        },
+        "required": [
+          "id",
+          "note_id",
+          "kind",
+          "role",
+          "label"
+        ]
+      },
+      "NoteConnection": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Connection UUID"
+          },
+          "note_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Parent note UUID"
+          },
+          "source_anchor_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Source anchor UUID"
+          },
+          "target_anchor_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Target anchor UUID"
+          },
+          "connection_type": {
+            "type": "string",
+            "description": "Canonical connection type name"
+          },
+          "category": {
+            "type": "string",
+            "description": "Ontological category"
+          },
+          "confidence": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "Relationship confidence score 0.0-1.0"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Rationale or theological commentary"
+          },
+          "source_anchor": {
+            "$ref": "#/components/schemas/NoteAnchor"
+          },
+          "target_anchor": {
+            "$ref": "#/components/schemas/NoteAnchor"
+          }
+        },
+        "required": [
+          "id",
+          "note_id",
+          "source_anchor_id",
+          "target_anchor_id",
+          "connection_type",
+          "category"
+        ]
+      },
+      "NoteBlock": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Block UUID"
+          },
+          "note_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Parent note UUID"
+          },
+          "ordinal": {
+            "type": "integer",
+            "description": "0-based display order"
+          },
+          "block_type": {
+            "type": "string",
+            "enum": [
+              "markdown",
+              "link",
+              "image"
+            ],
+            "description": "Structured block type"
+          },
+          "content_text": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Text, markdown, or URL"
+          },
+          "content_json": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Structured attributes"
+          }
+        },
+        "required": [
+          "id",
+          "note_id",
+          "ordinal",
+          "block_type"
+        ]
+      },
+      "Note": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Canonical note UUID"
+          },
+          "author_kind": {
+            "type": "string",
+            "enum": [
+              "human",
+              "ai"
+            ],
+            "description": "Author provenance category"
+          },
+          "author_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Author UUID"
+          },
+          "author": {
+            "$ref": "#/components/schemas/NoteAuthor"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "user_note",
+              "translation_note",
+              "cross_reference",
+              "commentary",
+              "lexical_study",
+              "theological"
+            ],
+            "description": "Note genre / category"
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional note title"
+          },
+          "body": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Markdown note body"
+          },
+          "review_status": {
+            "type": "string",
+            "enum": [
+              "unreviewed",
+              "confirmed",
+              "disputed"
+            ],
+            "description": "Human review state"
+          },
+          "review_rationale": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Human review rationale"
+          },
+          "version": {
+            "type": "integer",
+            "description": "Optimistic concurrency version counter"
+          },
+          "anchors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NoteAnchor"
+            }
+          },
+          "connections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NoteConnection"
+            }
+          },
+          "blocks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NoteBlock"
+            }
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "author_kind",
+          "author_id",
+          "kind",
+          "review_status",
+          "anchors",
+          "connections",
+          "blocks",
+          "created_at",
+          "updated_at"
+        ]
+      },
+      "NoteWriteError": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Machine-readable error code"
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable error explanation"
+          },
+          "details": {
+            "type": [
+              "object",
+              "string",
+              "null"
+            ],
+            "description": "Additional diagnostic details"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ]
+      },
+      "NoteSavePayload": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Optional existing note UUID for edits"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "user_note",
+              "translation_note",
+              "cross_reference",
+              "commentary",
+              "lexical_study",
+              "theological"
+            ]
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Note title"
+          },
+          "body": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Markdown note content"
+          },
+          "version": {
+            "type": "integer",
+            "description": "Expected concurrency version for edits"
+          },
+          "anchors": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            },
+            "description": "Anchor definitions to persist"
+          },
+          "connections": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            },
+            "description": "Connection definitions between note anchors"
+          },
+          "blocks": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            },
+            "description": "Structured content blocks"
+          }
+        },
+        "required": [
+          "kind",
+          "anchors"
+        ]
+      },
+      "PassageNotesResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "error"
+            ]
+          },
+          "epistemic_layer": {
+            "type": "string"
+          },
+          "passage": {
+            "type": "object",
+            "properties": {
+              "book": {
+                "type": "integer"
+              },
+              "chapter": {
+                "type": "integer"
+              },
+              "verse_start": {
+                "type": "integer"
+              },
+              "verse_end": {
+                "type": "integer"
+              },
+              "verse_ids": {
+                "type": "array",
+                "items": {
+                  "type": "integer"
+                }
+              }
+            },
+            "required": [
+              "book",
+              "chapter",
+              "verse_start",
+              "verse_end"
+            ]
+          },
+          "totals": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "integer"
+              },
+              "human": {
+                "type": "integer"
+              },
+              "ai": {
+                "type": "integer"
+              },
+              "primary": {
+                "type": "integer"
+              },
+              "secondary": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "total",
+              "human",
+              "ai",
+              "primary",
+              "secondary"
+            ]
+          },
+          "primary": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Note"
+            }
+          },
+          "secondary": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "truncated": {
+            "type": "object",
+            "properties": {
+              "primary": {
+                "type": "boolean"
+              },
+              "secondary": {
+                "type": "boolean"
+              }
+            }
+          },
+          "token_note_counts": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        },
+        "required": [
+          "status",
+          "passage",
+          "totals",
+          "primary",
+          "secondary"
+        ]
+      },
+      "WordNotesResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "error"
+            ]
+          },
+          "epistemic_layer": {
+            "type": "string"
+          },
+          "word_id": {
+            "type": "integer"
+          },
+          "verse_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "word_position": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "lemmas": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "totals": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "integer"
+              },
+              "occurrence": {
+                "type": "integer"
+              },
+              "form": {
+                "type": "integer"
+              },
+              "lemma": {
+                "type": "integer"
+              },
+              "human": {
+                "type": "integer"
+              },
+              "ai": {
+                "type": "integer"
+              }
+            }
+          },
+          "groups": {
+            "type": "object",
+            "properties": {
+              "occurrence": {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                }
+              },
+              "form": {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                }
+              },
+              "lemma": {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "required": [
+          "status",
+          "totals",
+          "groups"
+        ]
+      },
+      "NoteDetailResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "not_found",
+              "error"
+            ]
+          },
+          "schema_version": {
+            "type": "integer"
+          },
+          "note": {
+            "$ref": "#/components/schemas/Note"
+          },
+          "revisions_count": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "status",
+          "schema_version"
+        ]
+      },
+      "NoteListResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "error"
+            ]
+          },
+          "epistemic_layer": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Note"
+            }
+          },
+          "page": {
+            "type": "object",
+            "properties": {
+              "limit": {
+                "type": "integer"
+              },
+              "next_cursor": {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              },
+              "has_more": {
+                "type": "boolean"
+              }
+            }
+          },
+          "total": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "status",
+          "notes",
+          "page"
+        ]
+      },
+      "ConnectionTypesResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "error"
+            ]
+          },
+          "epistemic_layer": {
+            "type": "string"
+          },
+          "connection_types": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "category": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "default_confidence": {
+                  "type": "number"
+                },
+                "is_symmetric": {
+                  "type": "boolean"
+                },
+                "inverse_name": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "category",
+                "description",
+                "default_confidence",
+                "is_symmetric"
+              ]
+            }
+          },
+          "note_kinds": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "block_types": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "settings": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "status",
+          "connection_types"
+        ]
+      },
+      "TargetSearchResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "error"
+            ]
+          },
+          "query": {
+            "type": "string"
+          },
+          "interpretation": {
+            "type": "object"
+          },
+          "groups": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "candidates": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  }
+                }
+              },
+              "required": [
+                "kind",
+                "label",
+                "candidates"
+              ]
+            }
+          },
+          "truncated": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "status",
+          "query",
+          "groups"
+        ]
+      },
+      "NoteSaveResult": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "created": {
+            "type": "boolean"
+          },
+          "note": {
+            "$ref": "#/components/schemas/Note"
+          },
+          "error": {
+            "$ref": "#/components/schemas/NoteWriteError"
+          }
+        },
+        "required": [
+          "ok"
+        ]
+      },
+      "NoteDeleteResult": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string"
+          },
+          "error": {
+            "$ref": "#/components/schemas/NoteWriteError"
+          }
+        },
+        "required": [
+          "ok"
+        ]
+      },
+      "NoteReviewResult": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "review_status": {
+            "type": "string",
+            "enum": [
+              "unreviewed",
+              "confirmed",
+              "disputed"
+            ]
+          },
+          "error": {
+            "$ref": "#/components/schemas/NoteWriteError"
+          }
+        },
+        "required": [
+          "ok"
+        ]
       }
     }
   }
