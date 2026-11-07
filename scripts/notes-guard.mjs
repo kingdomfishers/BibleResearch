@@ -52,6 +52,7 @@ async function getTableCount(table, retries = 2) {
           Authorization: `Bearer ${KEY}`,
           Prefer: 'count=exact',
         },
+        signal: AbortSignal.timeout(15000),
       });
       if (res.status === 401 || res.status === 404) {
         return 'unreadable';
@@ -95,6 +96,7 @@ async function getVerseResearchGen1_1(retries = 2) {
         body: JSON.stringify({
           p_request: { passages: [{ book: 1, chapter: 1, verse: 1 }] },
         }),
+        signal: AbortSignal.timeout(30000),
       });
       if (!res.ok) {
         if (attempt < retries && res.status >= 500) {
@@ -123,7 +125,7 @@ async function getVerseResearchGen1_1(retries = 2) {
 }
 
 async function getMcpHealth() {
-  const res = await fetch(`${MCP_URL}/health`);
+  const res = await fetch(`${MCP_URL}/health`, { signal: AbortSignal.timeout(10000) });
   if (!res.ok) {
     throw new Error(`MCP /health failed: HTTP ${res.status}`);
   }
