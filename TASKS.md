@@ -32,7 +32,7 @@ Goal: database-native original-language Scripture reader, multi-model chronology
 
 Implementation guide written for **Gemini 3.8 Flash (High)**. Everything needed to execute is in this section; read it top to bottom once, then work **one task at a time** using only that task's prompt (§N.7). Find a prompt with: `Select-String -Path TASKS.md -Pattern "#### NOTE-07 "` and read from that line to the next `#### NOTE-` heading (use `read_file` with StartLine/EndLine; the file is large, never read it whole).
 
-Status: Phase A in progress (NOTE-04 done). Next task: **NOTE-05**.
+Status: Phase A in progress (NOTE-05 done). Next task: **NOTE-06**.
 
 ### N.0 Requirements (traceability)
 
@@ -189,7 +189,7 @@ Status: Phase A in progress (NOTE-04 done). Next task: **NOTE-05**.
 **Phase A — Database (additive migrations)**
 - [x] **NOTE-03 Settings, authors, kinds, internal helpers** | Files: supabase/migrations/20261107005704_notes_foundation.sql, scripts/verify-notes-foundation.mjs | Verify: [AUTO-TEST] TP-SEC-1/2.
 - [x] **NOTE-04 Notes, revisions, anchors + index/perf spike** | Files: supabase/migrations/20261107011000_notes_core.sql, scripts/verify-notes-core.mjs | Verify: [AUTO-TEST] TP-SEC-1, TP-INT-1, TP-PERF-1, TP-GUARD-1.
-- [ ] **NOTE-05 Connection vocabulary and connections** | Files: supabase/migrations/20261107012000_notes_connections.sql, scripts/verify-notes-connections.mjs | Verify: [AUTO-TEST] TP-SEC-1, TP-INT-1.
+- [x] **NOTE-05 Connection vocabulary and connections** | Files: supabase/migrations/20261107012000_notes_connections.sql, scripts/verify-notes-connections.mjs | Verify: [AUTO-TEST] TP-SEC-1, TP-INT-1.
 - [ ] **NOTE-06 Block registry and blocks** | Files: supabase/migrations/20261107013000_notes_blocks.sql, scripts/verify-notes-blocks.mjs | Verify: [AUTO-TEST] TP-SEC-1, TP-XSS-1 (URL rules).
 - [ ] **NOTE-07 Security gate for the data layer** | Files: scripts/verify-notes-security.mjs, scripts/verify-security-hardening.mjs | Verify: [AUTO-TEST] TP-SEC-1/2 over REST and catalog; advisors.
 - [ ] **NOTE-08 Human write RPCs** | Files: supabase/migrations/20261107015000_notes_write_rpc.sql, scripts/verify-notes-write.mjs | Verify: [AUTO-TEST] TP-SEC-3/4, TP-INT-1/2/3.
