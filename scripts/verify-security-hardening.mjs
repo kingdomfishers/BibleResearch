@@ -46,6 +46,22 @@ async function postgrestAnon(endpoint, method = 'GET', body = null) {
   return { status: res.status, ok: res.ok, body: await res.text() };
 }
 
+// §N.4 Notes Feature Allow-list: Explicitly allowed anon-callable RPCs for single-user notes.
+// NOTE-08 functions (save_note_v1, delete_note_v1, set_note_review_v1) and read/search RPCs
+// are permitted to be executed by anon. Functions not yet created are tolerated.
+export const NOTES_RPC_ALLOW_LIST = [
+  'save_note_v1',
+  'delete_note_v1',
+  'set_note_review_v1',
+  'get_notes_for_passage_v1',
+  'get_notes_for_word_v1',
+  'get_note_v1',
+  'list_notes_v1',
+  'list_note_connection_types_v1',
+  'search_note_targets_v1',
+  'note_validate_block_v1',
+];
+
 async function runTests() {
   console.log('=== Verifying Phase 1: Security Hardening & Privilege Isolation ===\n');
   let passed = 0;
@@ -153,6 +169,23 @@ async function runTests() {
     resAudit.ok && JSON.parse(resAudit.body).table_counts !== undefined,
     `Status: ${resAudit.status}`
   );
+
+  // 4. Notes single-user RPC allow-list & helper isolation (§N.4)
+  console.log('\n4. Testing Notes RPC isolation and allow-list (§N.4)...');
+  const isolatedHelpers = [
+    'note_settings_v1',
+    'note_assert_writes_enabled_v1',
+    'note_resolve_human_author_v1',
+    'note_resolve_agent_author_v1',
+  ];
+  for (const h of isolatedHelpers) {
+    const res = await rpcAnon(h);
+    assert(
+      `Internal helper ${h} denied to anonymous caller`,
+      !res.ok || res.status === 401 || res.status === 403 || res.status === 404,
+      `Status: ${res.status}`
+    );
+  }
 
   console.log(`\nResults: ${passed} passed, ${failed} failed`);
   if (failed > 0) process.exit(1);
