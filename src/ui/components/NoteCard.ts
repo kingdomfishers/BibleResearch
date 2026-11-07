@@ -14,6 +14,7 @@ import type {
 } from '../../api/types';
 import { parseMarkdown, renderMarkdown } from '../note-markdown';
 import { buildNoteHash } from '../notes-state';
+import { renderBlocks as defaultRenderBlocks } from './NoteBlocks';
 
 export interface NoteCardHandlers {
   onAnchor?: (anchor: NoteAnchor) => void;
@@ -306,8 +307,12 @@ export function createNoteCard(note: Note, handlers: NoteCardHandlers = {}): HTM
 
   const blocksContainer = document.createElement('div');
   blocksContainer.className = 'note-card__blocks';
-  if (handlers.renderBlocks && note.blocks && note.blocks.length > 0) {
-    handlers.renderBlocks(note.blocks, blocksContainer);
+  if (note.blocks && note.blocks.length > 0) {
+    if (handlers.renderBlocks) {
+      handlers.renderBlocks(note.blocks, blocksContainer);
+    } else {
+      defaultRenderBlocks(note.blocks, undefined, blocksContainer);
+    }
   }
   card.appendChild(blocksContainer);
 
