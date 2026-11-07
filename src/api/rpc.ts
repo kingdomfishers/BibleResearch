@@ -1,11 +1,12 @@
 // @file: src/api/rpc.ts
 // @feature: api
-// @tables: words | verses | verse_translation_sources | word_translation_choices | chronology_models | chronology_runs | chronology_assertions | chronology_evidence | places | place_locations | verse_geography | passage_geography | geography_sources | lexemes | concepts | assertions | assertion_evidence | books | lemmas | word_form_lemmas | lexical_roots | lexical_senses | syntax_nodes | syntax_edges | entity_relationships | lxx_swete_words | hebrew_lxx_verse_map | macula_hebrew_morphemes | morphhb_tokens | cross_token_mappings | tagnt_tokens | macula_greek_tokens | hebrew_lxx_word_alignments | lexical_formations | lemma_components | lexical_connections
+// @tables: words | verses | verse_translation_sources | word_translation_choices | chronology_models | chronology_runs | chronology_assertions | chronology_evidence | places | place_locations | verse_geography | passage_geography | geography_sources | lexemes | concepts | assertions | assertion_evidence | books | lemmas | word_form_lemmas | lexical_roots | lexical_senses | syntax_nodes | syntax_edges | entity_relationships | lxx_swete_words | hebrew_lxx_verse_map | macula_hebrew_morphemes | morphhb_tokens | cross_token_mappings | tagnt_tokens | macula_greek_tokens | hebrew_lxx_word_alignments | lexical_formations | lemma_components | lexical_connections | notes | note_anchors | note_connections | note_blocks | note_authors
 // @candidates: none
 // @toc: imports | logic:sample-words | logic:sample-verses | logic:request | logic:chronology | logic:geography | logic:translations | logic:hydrated-research | logic:reader | logic:canonical-lookups | logic:corpus-lookups | logic:gateway
 
 // === @section:imports ===
 import { ensureReaderSession, restoreReaderSession, supabase } from './supabase';
+import { NotesRPC } from './notes-rpc';
 import type { ActivePassage, ChronologyResponse, DataResult, HydratedCoOccurrence,
   RelationshipResearchPacket, TranslationSaveResult, VerseGeographyResponse, VerseTranslationToken,
   VerseWordToken, WordOccurrence, WordRecord, WordRelationship, VerseResearchRequest, VerseResearchResponse,
@@ -421,6 +422,7 @@ export const BibleRPC = {
   getVerseGeography: verseGeography,
   researchRelationships,
   getWordPopupDetails: wordDetails,
+  notes: NotesRPC,
   async resolveWordId(query: string): Promise<number | null> {
     if (!supabase) return null;
     try {

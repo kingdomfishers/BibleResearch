@@ -14,6 +14,7 @@ import type {
   NoteKind,
   NoteKindRecord,
   NoteMatch,
+  NoteReviewStatus,
   NoteVisibility,
 } from './notes-types';
 
@@ -237,4 +238,12 @@ export interface NoteWriteError {
 
 export type NoteWriteResult =
   | { ok: true; created?: boolean; duplicate?: boolean; note: Note }
+  | { ok: false; error: NoteWriteError };
+
+export type NoteDeleteResult =
+  | { ok: true; status: 'removed' }
+  | { ok: false; error: NoteWriteError };
+
+export type NoteReviewResult =
+  | { ok: true; id: string; review_status: NoteReviewStatus }
   | { ok: false; error: NoteWriteError };
