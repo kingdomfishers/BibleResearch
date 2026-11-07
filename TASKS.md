@@ -21,7 +21,7 @@ Goal: database-native original-language Scripture reader, multi-model chronology
 - [x] **FORM-01 Expose Typed Word Formation & Orthographic Candidate APIs** | Files: src/api/formation-types.ts, src/api/formation-rpc.ts, src/api/types.ts, src/api/rpc.ts | Verify: [AUTO-TEST] Validate both RPCs via BibleRPC with input validation and zero check:size / check:types regressions.
 - [x] **FORM-02 Hydrated Verse Research v2 with Set-Based Lexical Formation** | Files: supabase/migrations/20261107010500_hydrated_verse_research_v2.sql, src/api/types.ts, src/api/rpc.ts | Verify: [AUTO-TEST] Set-based SQL hydration preserving word order, homographs, components, roots, relatives, and separating token morphology from lexical composition.
 - [x] **FORM-03 Public MCP Tools & Workflow Integration** | Files: supabase/functions/bible-mcp/catalog.ts, supabase/functions/bible-mcp/index.ts, supabase/functions/bible-mcp/workflow-contract.ts, skills/bible-research/SKILL.md, skills/bible-research/references/tool-contracts.md | Verify: [AUTO-TEST] Register inspect_word_formation, suggest_word_connections, prompt trace_word_formation, update workflow instructions distinguishing the 5 epistemic tiers.
-- [ ] **FORM-04 Verification Suite, OpenAPI 3.1.0 & Architecture Sync** | Files: scripts/verify-word-formation.mjs, supabase/openapi.json, RESEARCH_API.md, ARCHITECTURE.md, PROJECTMAP.md | Verify: [AUTO-TEST] Test Hebrew, Aramaic, Greek, homographs, large ranges, OpenAPI 3.1.0 schema, and regression pack.
+- [x] **FORM-04 Verification Suite, OpenAPI 3.1.0 & Architecture Sync** | Files: scripts/verify-word-formation.mjs, supabase/openapi.json, RESEARCH_API.md, ARCHITECTURE.md, PROJECTMAP.md | Verify: [AUTO-TEST] Test Hebrew, Aramaic, Greek, homographs, large ranges, OpenAPI 3.1.0 schema, and regression pack.
 - [-] **FORM-05 Interactive Word Formation & Etymology UI Exploration** | Files: src/ui/components/WordFormation.ts, src/ui/components/WordInspector.ts, src/ui/components/WordModal.ts, src/ui/components/HydratedResearch.ts, src/ui/styles-workspace.css | Verify: [AUTO-TEST] H7501 components, H120 wordplay/candidates, unknown etymology, component navigation, and check:size / check:types all pass.
 
 ## Feature: Unified Homographs Across Verses (HOMO)
@@ -33,7 +33,7 @@ Goal: database-native original-language Scripture reader, multi-model chronology
 
 Implementation guide written for **Gemini 3.8 Flash (High)**. Everything needed to execute is in this section; read it top to bottom once, then work **one task at a time** using only that task's prompt (§N.7). Find a prompt with: `Select-String -Path TASKS.md -Pattern "#### NOTE-07 "` and read from that line to the next `#### NOTE-` heading (use `read_file` with StartLine/EndLine; the file is large, never read it whole).
 
-Status: Phase A in progress (NOTE-08 done). Next task: **NOTE-09**.
+Status: Phase A in progress (NOTE-09 done). Next task: **NOTE-10**.
 
 ### N.0 Requirements (traceability)
 
@@ -194,8 +194,8 @@ Status: Phase A in progress (NOTE-08 done). Next task: **NOTE-09**.
 - [x] **NOTE-06 Block registry and blocks** | Files: supabase/migrations/20261107013958_notes_blocks.sql, scripts/verify-notes-blocks.mjs | Verify: [AUTO-TEST] TP-SEC-1, TP-XSS-1 (URL rules).
 - [x] **NOTE-07 Security gate for the data layer** | Files: scripts/verify-notes-security.mjs, scripts/verify-security-hardening.mjs | Verify: [AUTO-TEST] TP-SEC-1/2 over REST and catalog; advisors.
 - [x] **NOTE-08 Human write RPCs** | Files: supabase/migrations/20261107015000_notes_write_rpc.sql, scripts/verify-notes-write.mjs | Verify: [AUTO-TEST] TP-SEC-3/4, TP-INT-1/2/3.
-- [-] **NOTE-09 AI write RPCs** | Files: supabase/migrations/20261107016000_notes_agent_rpc.sql, scripts/verify-notes-agent.mjs | Verify: [AUTO-TEST] TP-SEC-2/3, TP-INT-2.
-- [ ] **NOTE-10 Note read RPCs** | Files: supabase/migrations/20261107017000_notes_read_rpc.sql, scripts/verify-notes-read.mjs | Verify: [AUTO-TEST] TP-PERF-2.
+- [x] **NOTE-09 AI write RPCs** | Files: supabase/migrations/20261107022121_notes_agent_rpc.sql, scripts/verify-notes-agent.mjs | Verify: [AUTO-TEST] TP-SEC-2/3, TP-INT-2.
+- [-] **NOTE-10 Note read RPCs** | Files: supabase/migrations/20261107017000_notes_read_rpc.sql, scripts/verify-notes-read.mjs | Verify: [AUTO-TEST] TP-PERF-2.
 - [ ] **NOTE-11 Book aliases and reference parser** | Files: supabase/migrations/20261107018000_book_aliases.sql, scripts/verify-book-refs.mjs | Verify: [AUTO-TEST].
 - [ ] **NOTE-12 Target search RPC** | Files: supabase/migrations/20261107019000_notes_target_search.sql, scripts/verify-notes-search.mjs | Verify: [AUTO-TEST].
 - [ ] **NOTE-13 Database acceptance suite — Gate G1** | Files: scripts/verify-notes-db.mjs, scripts/fixtures/notes-cases.json | Verify: [AUTO-TEST] G1, TP-CLEAN-1.

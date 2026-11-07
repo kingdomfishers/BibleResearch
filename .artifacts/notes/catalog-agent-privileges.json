@@ -1,0 +1,10 @@
+{
+  "anon_save": false,
+  "auth_save": false,
+  "public_save": false,
+  "service_save": true,
+  "anon_del": false,
+  "auth_del": false,
+  "public_del": false,
+  "service_del": true
+}

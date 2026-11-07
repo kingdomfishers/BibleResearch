@@ -1,0 +1,12 @@
+{
+  "step1_ai_created": true,
+  "step2_duplicate_suppressed": true,
+  "step3_agent_isolation_update": true,
+  "step4_agent_isolation_delete": true,
+  "step5_agent_self_update": true,
+  "step6_version_conflict": true,
+  "step7_rate_limit": true,
+  "step8_kill_switch": true,
+  "step9_soft_delete": true,
+  "step10_revisions_tracked": true
+}
