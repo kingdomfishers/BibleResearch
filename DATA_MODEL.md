@@ -135,3 +135,13 @@ Sources: Supabase Security and Performance Advisors (`get_advisors`) inspected a
 | Security | RLS Enabled No Policy | `public.note_revisions` | **Intentional Complete Privacy:** `note_revisions` contains internal audit history and full Note JSON snapshots. It has zero public RLS policies, making it 100% inaccessible to both `anon` and `authenticated` PostgREST clients. Only `SECURITY DEFINER` write RPCs and database owner have access. |
 | Security | Anonymous Access Policies | `Allow public select on visible note*` on `note_blocks`, `note_connections`, `note_block_types`, `note_connection_types` | Expected standard advisory for public read-only tables and published notes. |
 
+### 5.3 Notes Read RPC Performance & Benchmark (TP-PERF-2, NOTE-10)
+
+Executed on live PostgreSQL 17 database (`ejoperxiwxlcbsqrkrvb`) with 20,000 synthetic notes, 40,000 anchors, and 20,000 connections under a rollback transaction (`DO $$ ... $$`):
+- **Passage Read (1 verse):** ~12 ms (EXPLAIN ANALYZE), ~54–61 ms live HTTP round-trip (p95 cap < 300 ms).
+- **Passage Read (31–50 verses):** ~137–250 ms with 20,000 synthetic notes; ~13 ms in live database (~122–173 ms live HTTP round-trip).
+- **Word Lookup (high-frequency word):** ~39–52 ms live HTTP round-trip.
+- **Index Plan Assertions:** 0 sequential scans on `note_anchors` and `notes` (Index Scans / Bitmap Index Scans using partial indexes).
+- **Optimization Strategy:** Pre-computed primary note ID array `v_primary_note_ids` eliminates correlated subquery iteration across token sets; `SET jit = 'off'` eliminates 150–250 ms of cold query JIT compilation overhead.
+
+
