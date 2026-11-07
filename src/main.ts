@@ -8,6 +8,7 @@
 import './ui/styles.css';
 import './ui/styles-mobile.css';
 import './ui/styles-workspace.css';
+import './ui/styles-notes.css';
 import { BibleRPC } from './api/rpc';
 import type { ActivePassage } from './api/types';
 import { appState } from './ui/state';

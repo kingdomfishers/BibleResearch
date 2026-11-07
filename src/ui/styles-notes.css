@@ -1,0 +1,309 @@
+/* Styles for Notes & Connections Layer */
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.note-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+/* Provenance: Human */
+.note-card--human {
+  border: 1px solid var(--border);
+  border-inline-start: 4px solid var(--gold);
+  background-color: var(--panel);
+}
+
+/* Provenance: AI */
+.note-card--ai {
+  border: 1px dashed var(--border);
+  border-inline-start: 4px dashed var(--green);
+  background-color: color-mix(in srgb, var(--accent) 30%, var(--panel));
+}
+
+.note-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.note-card__provenance {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.note-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.note-card--human .note-icon {
+  color: var(--gold);
+}
+
+.note-card--ai .note-icon {
+  color: var(--green);
+}
+
+.note-card__review-pill {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-weight: 500;
+}
+
+.note-card__review-pill--unreviewed {
+  background-color: var(--soft);
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+
+.note-card__review-pill--confirmed {
+  background-color: color-mix(in srgb, var(--green) 20%, transparent);
+  color: var(--green);
+  border: 1px solid var(--green);
+}
+
+.note-card__review-pill--disputed {
+  background-color: color-mix(in srgb, #e06c75 20%, transparent);
+  color: #e06c75;
+  border: 1px solid #e06c75;
+}
+
+.note-card__meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.note-card__kind-tag {
+  font-size: 11px;
+  text-transform: capitalize;
+  background-color: var(--soft);
+  padding: 2px 8px;
+  border-radius: 4px;
+  color: var(--text);
+}
+
+.note-card__time {
+  font-size: 11px;
+}
+
+.note-card__title {
+  margin: 0;
+  font-family: Georgia, serif;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.35;
+}
+
+.note-card__body {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+.note-card__body p {
+  margin: 0 0 8px;
+}
+
+.note-card__body p:last-child {
+  margin-bottom: 0;
+}
+
+.note-card__body a {
+  color: var(--gold);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.note-card__anchors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.note-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background-color: var(--soft);
+  color: var(--text);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.note-chip:hover {
+  border-color: var(--gold);
+}
+
+.note-chip--primary {
+  border-color: var(--gold);
+  font-weight: 500;
+}
+
+.note-card__connections {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.note-connection-chip {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 4px;
+  background-color: var(--soft);
+  border: 1px solid var(--border);
+  font-size: 12px;
+  direction: ltr;
+}
+
+.note-connection-chip__endpoint {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--gold);
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.note-connection-chip__endpoint:hover {
+  text-decoration: underline;
+}
+
+.note-connection-chip__arrow {
+  color: var(--muted);
+  font-weight: bold;
+}
+
+.note-connection-chip__label {
+  color: var(--text);
+}
+
+.note-connection-chip__category {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background-color: var(--panel);
+  color: var(--muted);
+}
+
+.note-card__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 6px;
+  padding-top: 10px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+}
+
+.note-card__review-actions,
+.note-card__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.note-btn {
+  padding: 5px 10px;
+  min-height: 32px;
+  font-size: 12px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background-color: var(--panel);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.note-btn:hover {
+  background-color: var(--soft);
+}
+
+.note-btn--confirm {
+  border-color: var(--green);
+  color: var(--green);
+}
+
+.note-btn--dispute {
+  border-color: #e06c75;
+  color: #e06c75;
+}
+
+.note-btn--delete {
+  color: var(--muted);
+}
+
+.note-btn--delete:hover {
+  color: #e06c75;
+  border-color: #e06c75;
+}
+
+.note-card__open-link {
+  font-size: 12px;
+  color: var(--gold);
+  text-decoration: none;
+}
+
+.note-card__open-link:hover {
+  text-decoration: underline;
+}
+
+/* Forced Colors (High Contrast) Mode */
+@media (forced-colors: active) {
+  .note-card--human {
+    border-style: solid;
+    border-inline-start-style: solid;
+    border-inline-start-width: 4px;
+  }
+
+  .note-card--ai {
+    border-style: dashed;
+    border-inline-start-style: dashed;
+    border-inline-start-width: 4px;
+  }
+
+  .note-btn,
+  .note-chip,
+  .note-connection-chip {
+    border: 1px solid ButtonText;
+  }
+}

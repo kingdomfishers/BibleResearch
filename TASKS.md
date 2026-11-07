@@ -207,7 +207,7 @@ Status: Phase A in progress (NOTE-09 done). Next task: **NOTE-10**.
 
 **Phase C — UI**
 - [x] **NOTE-17 Notes state and safe markdown** | Files: src/ui/notes-state.ts, src/ui/note-markdown.ts | Verify: [AUTO-TEST] TP-XSS-1.
-- [ ] **NOTE-18 NoteCard with provenance visuals** | Files: src/ui/components/NoteCard.ts, src/ui/styles-notes.css | Verify: [USER-CHECK] TP-A11Y-1, TP-BIDI-1.
+- [-] **NOTE-18 NoteCard with provenance visuals** | Files: src/ui/components/NoteCard.ts, src/ui/styles-notes.css | Verify: [USER-CHECK] TP-A11Y-1, TP-BIDI-1.
 - [ ] **NOTE-19 Note blocks renderer** | Files: src/ui/components/NoteBlocks.ts, src/ui/styles-notes.css | Verify: [USER-CHECK] TP-XSS-1.
 - [ ] **NOTE-20 NotesPanel (tiers and filters)** | Files: src/ui/components/NotesPanel.ts, src/ui/styles-notes.css | Verify: [USER-CHECK] TP-RACE-1.
 - [ ] **NOTE-21 Reader integration (verse notes and token badges)** | Files: src/ui/components/VerseReader.ts, src/main.ts | Verify: [USER-CHECK] TP-RACE-1.
