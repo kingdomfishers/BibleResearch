@@ -76,3 +76,48 @@ Enables original-language comparison between the Hebrew Masoretic Text (MT), the
 3. `public.get_hebrew_septuagint_parallel_v1(p_book, p_chapter, p_verse)` — Side-by-side MT Hebrew and Swete LXX Greek parallel text, handling versification shifts and displaying morpheme-level alignments with explicit licensing disclosures.
 4. `public.lookup_cross_testament_greek_v1(p_greek_query, p_limit)` — Cross-testament vocabulary tracing across LXX Swete and NT Greek, with underlying Hebrew source renderings (e.g. Isaiah 53:7 $\leftrightarrow$ Acts 8:32).
 
+
+
+---
+
+## 5. Notes & Connections Layer (planned 2026-11-07; migrations `20261107010000`-`20261107019000`)
+
+All tables are additive, RLS-enabled, FK-indexed, with direct `INSERT`/`UPDATE`/`DELETE` revoked from `anon`/`authenticated`. Notes carry `epistemic_layer = 'user_note'` and are isolated from every evidence table above. Single-user mode (`S1`–`S11`) requires no login yet; `note_settings` provides kill switches, caps, and hourly rate limits. See [ARCHITECTURE.md](ARCHITECTURE.md) §4 and `TASKS.md` §N.3.
+
+| Table | Key columns / rules |
+| :--- | :--- |
+| `public.note_settings` | single-row (`id = true`); `single_user_mode`, `human_writes_enabled`, `ai_writes_enabled`, `default_visibility`, size/count caps, `human_writes_per_hour`, `ai_writes_per_hour` |
+| `public.note_authors` | `id uuid`, `author_kind` (`human`/`ai`), `display_name`, `ai_provider`, `ai_model`, `ai_client`, `user_id -> auth.users` (unused in single-user mode; hidden from public SELECT); seeded owner `"You"` (`00000000-0000-0000-0000-00000000a001`) |
+| `public.note_kinds` | vocabulary: `observation`, `linguistic`, `interpretation`, `question`, `cross_reference`, `research_lead`, `citation` |
+| `public.notes` | `id uuid`, `(author_id, author_kind)` composite FK to `note_authors`, `note_kind`, `title`, `body_md`, `language`, `visibility`, `status` (`removed` = soft delete), `review_status` (+`reviewed_at`), `confidence`, `created_via`, `source_context jsonb`, `supersedes_note_id`, `version`, `client_request_id` (idempotency), `content_hash`, generated `tsv`, timestamps |
+| `public.note_revisions` | `(note_id, version)` action, `editor_author_id`, `editor_kind`, `snapshot jsonb`, `created_at` (no public SELECT; drives hourly rate limits) |
+| `public.note_anchors` | `anchor_kind` (`verse`, `verse_range`, `word_occurrence`, `word_form`, `lemma`, `concept`, `place`, `event`, `note`, `external`) + per-kind column CHECK, occurrence integrity trigger (`verses.word_ids[word_position] = word_id`), `role`, `label` snapshot, `ordinal`, `block_id`, `element_ref`; unique de-dup; partial indexes |
+| `public.note_connection_types` | 16 seeded types (`contained_in`, `same_root`, `wordplay`, `same_letters`, `sounds_like`, `quotes`, `alludes_to`, `parallels`, `contrasts_with`, `explains`, `related`, `typifies`, `contemporary_with`, `located_at`, `same_gematria`, `other`) |
+| `public.note_connections` | `(from_anchor_id, note_id)` and `(to_anchor_id, note_id)` composite FKs forcing same note, `from_anchor_id <> to_anchor_id`, nullable `connection_type`, `custom_label`, `direction`, `explanation` |
+| `public.note_block_types` | registry: `block_type`, `renderer_status` (`available`: `markdown`/`link`/`image`; `planned`: `map`/`timeline`/`model_3d`/`archaeological_find`/`table`/`chart`), `is_enabled`, `required_keys`, `url_keys` (HTTPS-only), `max_bytes` |
+| `public.note_blocks` | `ordinal`, `block_type`, `content jsonb`, `schema_version`, required non-empty `text_alternative`; validated by `note_validate_block_v1` trigger |
+| `public.book_aliases` | normalized lowercase abbreviation/alias -> `books.id` for `parse_bible_ref_v1` |
+
+### Notes RPCs (all `*_v1`)
+
+Reads (`SECURITY INVOKER`, `search_path = ''`, bounded, keyset-paginated, callable by `anon, authenticated`): `get_notes_for_passage_v1`, `get_notes_for_word_v1`, `get_note_v1`, `list_notes_v1`, `list_note_connection_types_v1`, `parse_bible_ref_v1`, `search_note_targets_v1`.
+Human writes (`SECURITY DEFINER`, `search_path = ''`, callable by `anon, authenticated` in single-user mode, gated by `note_settings.human_writes_enabled` and rate limits): `save_note_v1`, `delete_note_v1`, `set_note_review_v1`.
+AI writes (`SECURITY DEFINER`, `search_path = ''`, callable **only** by `service_role`, gated by `note_settings.ai_writes_enabled` and per-agent rate limits): `agent_save_note_v1`, `agent_delete_note_v1`.
+Existing RPC contracts are unchanged; MCP `get_verse_research` gains an additive, capped `notes` section.
+
+
+### 5.1 Prerequisite audit findings (NOTE-02, 2026-11-07)
+
+Sources: `node scripts/audit-notes-prereqs.mjs` (public checks) and `node scripts/audit-notes-prereqs.mjs --print-sql` executed via Supabase MCP (database checks). Unknowns are recorded, not assumed.
+
+| Area | Finding | Plan impact |
+| :--- | :--- | :--- |
+| Verse ordering | `verses.id` 1..31,203, contiguous, 0 violations vs `(book, chapter, verse_nr)` order | `verse_range` is a plain `id BETWEEN start AND end` btree test; **no GiST/range index needed** |
+| Extensions | Installed: `http`, `pg_stat_statements`, `pgcrypto`, `plpgsql`, `supabase_vault`, `uuid-ossp`. Available, not installed: `pg_trgm`, `pg_jsonschema`, `unaccent`, `btree_gist`, `pg_cron`, `vector` | NOTE-11 adds `pg_trgm` (in `extensions` schema) if plans justify it; NOTE-06 may use `pg_jsonschema` for block validation, else per-type SQL check functions. `pgcrypto` already covers SHA-256 key hashing (`digest`) |
+| Existing note objects | No `note*` tables in `public` | Clean additive start; no naming conflicts |
+| Storage | Buckets: `content-images`, `pdf` only | NOTE-06 creates `note-assets`; existing buckets untouched |
+| Auth | Email provider on; Google off; anonymous on; **signups are open** (`disable_signup=false`); 2 non-anonymous users exist, 0 anonymous | Note writes must be gated by `note_authors.can_write`, never by `authenticated` alone. Magic-link email delivery/redirect URLs are UNKNOWN and must be verified before NOTE-15 (default SMTP is rate-limited) |
+| Reference parsing | `books` has `name`, `usfm`, `theographic_code` only: no abbreviations/aliases | NOTE-11 must add a seeded `book_aliases` table (Gen, Gn, 1 Cor, Jn, Song of Songs, ...) |
+| Existing search | `search_reader_words_v1` returns word candidates only: `adam` -> 2, `H120` -> 1, `dam` -> 6, but `אדם` -> **0**, `λόγος` -> **0**, `Gen 1:1` -> **0** | Original-script search and references are not covered; NOTE-11 builds them (reusing `strip_hebrew_all` / `strip_greek_diacritics` / `harmonize_greek_accents`) and may wrap the existing function for transliteration/Strong's. UX06b overlap stays tracked |
+| MCP | Health OK (v1.4.0, 17 tools, 17 prompts, auth `none`); an unrecognized `Authorization: Bearer` header is accepted and ignored (HTTP 200, same 17 tools); CORS already allows `Authorization` | NOTE-30 must treat missing/invalid keys as read-only (never an error) so existing clients are unaffected |
+| MCP client header support | **UNKNOWN** for ChatGPT connectors / Gemini CLI | Header-incapable clients stay read-only (D3); revisit OAuth later |
