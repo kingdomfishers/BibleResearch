@@ -21,4 +21,7 @@ export function heading(eyebrow: string, title: string) {
   const h = el('div', 'study-section-heading');
   h.append(el('p', 'eyebrow', eyebrow), el('h2', '', title)); return h;
 }
-export const yearLabel = (year: number) => year <= 0 ? `${1 - year} BC` : `AD ${year}`;
+export const yearLabel = (year: number) => {
+  const bcAd = year <= 0 ? `${1 - year} BC` : `AD ${year}`;
+  return `${bcAd} (Year ${year + 3970})`;
+};

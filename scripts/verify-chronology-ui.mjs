@@ -12,17 +12,22 @@ const makePage=async()=>{
   const page=await browser.newPage({viewport:{width:1440,height:1100}});
   page.on('pageerror',error=>errors.push(error.message)); return page;
 };
+const ensureOpen=async p=>{
+  const d=p.locator('#chronology-disclosure');
+  if(await d.count()>0 && !(await d.evaluate(el=>el.open))) await p.locator('#chronology-disclosure > summary').click();
+};
 const waitDate=async(page,text)=>{
+  await ensureOpen(page);
   await page.waitForFunction(expected=>document.querySelector('.chronology-panel')?.getAttribute('aria-busy')==='false'
     && document.querySelector('.chronology-date')?.textContent===expected,text);
 };
 try {
   const page=await makePage();
   await page.goto(`${base}/#1-2-7`);
-  await waitDate(page,'around 4004 BC');
+  await waitDate(page,'around 4004 BC (Year -33)');
   await page.getByRole('combobox',{name:'Chronology model',exact:true}).selectOption('adam-resurrection-30-v1');
-  await waitDate(page,'around 3971 BC');
-  assert.match(await page.locator('.millennium strong').innerText(),/3971 BC/);
+  await waitDate(page,'around 3971 BC (Year 0)');
+  assert.match(await page.locator('.millennium strong').innerText(),/3971 BC \(Year 0\)/);
   assert.match(await page.locator('.millennium strong').getAttribute('title'),/Millennium 1/);
   assert.match(await page.locator('.chronology-panel').innerText(),/4,000 elapsed years/);
   assert.match(await page.locator('.chronology-panel').innerText(),/No reviewed archaeological date evidence/);
@@ -31,20 +36,20 @@ try {
   assert.ok(links.every(a=>a.href.startsWith('https://') && a.rel.includes('noopener') && a.target==='_blank'));
   await page.screenshot({path:`${dir}/desktop.png`,fullPage:true});
   await page.getByRole('combobox',{name:'Chronology model',exact:true}).selectOption('adam-resurrection-33-v1');
-  await waitDate(page,'around 3968 BC');
-  await page.reload(); await waitDate(page,'around 3968 BC');
+  await waitDate(page,'around 3968 BC (Year 3)');
+  await page.reload(); await waitDate(page,'around 3968 BC (Year 3)');
   await page.goto(`${base}/#44-2-1`);
   await page.getByRole('combobox',{name:'Chronology model',exact:true}).selectOption('theographic-verse-v1');
-  await waitDate(page,'around AD 33');
-  assert.match(await page.locator('[data-comparison]').innerText(),/around AD 30/);
+  await waitDate(page,'around AD 33 (Year 4003)');
+  assert.match(await page.locator('[data-comparison]').innerText(),/around AD 30 \(Year 4000\)/);
   await page.goto(`${base}/#12-18-13`);
   await page.getByRole('combobox',{name:'Chronology model',exact:true}).selectOption('archaeology-pilot-v1');
-  await waitDate(page,'around 701 BC');
+  await waitDate(page,'around 701 BC (Year 3270)');
   await page.getByText('Supporting · Sennacherib\'s campaign: Jerusalem Prism',{exact:true}).click();
-  assert.match(await page.locator('.chronology-evidence').innerText(),/691 BC \/ 701 BC/);
+  assert.match(await page.locator('.chronology-evidence').innerText(),/691 BC \(Year 3280\) \/ 701 BC \(Year 3270\)/);
   await page.screenshot({path:`${dir}/archaeology.png`,fullPage:true});
   await page.getByRole('combobox',{name:'Chronology model',exact:true}).selectOption('theographic-verse-v1');
-  await waitDate(page,'around 713 BC');
+  await waitDate(page,'around 713 BC (Year 3258)');
   assert.match(await page.locator('.chronology-evidence').innerText(),/Challenging/);
   await page.goto(`${base}/#43-1-1`); await waitDate(page,'No setting date established');
   assert.equal(await page.locator('.chronology-assertion').count(),0);
@@ -53,7 +58,7 @@ try {
   assert.equal(await page.locator('[name=verse]').inputValue(),'0');
   assert.match(await page.locator('.chronology-status').innerText(),/Psalm heading/);
   await page.setViewportSize({width:375,height:812});
-  await page.goto(`${base}/#1-2-7`); await waitDate(page,'around 4004 BC');
+  await page.goto(`${base}/#1-2-7`); await waitDate(page,'around 4004 BC (Year -33)');
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'Mobile page must not overflow');
   await page.screenshot({path:`${dir}/mobile.png`,fullPage:true});
   await page.getByRole('combobox',{name:'Chronology model',exact:true}).focus();
@@ -66,17 +71,18 @@ try {
     if(args.p_model_id==='adam-resurrection-30-v1') await new Promise(resolve=>setTimeout(resolve,350));
     await route.fulfill({json:data});
   });
-  await race.goto(`${base}/#1-2-7`); await waitDate(race,'around 4004 BC');
+  await race.goto(`${base}/#1-2-7`); await waitDate(race,'around 4004 BC (Year -33)');
   await race.getByRole('combobox',{name:'Chronology model',exact:true}).selectOption('adam-resurrection-30-v1');
   await race.getByRole('combobox',{name:'Chronology model',exact:true}).selectOption('adam-resurrection-33-v1');
-  await waitDate(race,'around 3968 BC');
-  await race.waitForTimeout(450); assert.equal(await race.locator('.chronology-date').innerText(),'around 3968 BC');
+  await waitDate(race,'around 3968 BC (Year 3)');
+  await race.waitForTimeout(450); assert.equal(await race.locator('.chronology-date').innerText(),'around 3968 BC (Year 3)');
   await race.getByRole('combobox',{name:'Chronology model',exact:true}).selectOption('adam-resurrection-30-v1');
-  await race.evaluate(()=>{location.hash='#66-1-1';}); await waitDate(race,'around AD 96');
-  await race.waitForTimeout(450); assert.equal(await race.locator('.chronology-date').innerText(),'around AD 96');
+  await race.evaluate(()=>{location.hash='#66-1-1';}); await waitDate(race,'around AD 96 (Year 4066)');
+  await race.waitForTimeout(450); assert.equal(await race.locator('.chronology-date').innerText(),'around AD 96 (Year 4066)');
   const failure=await makePage();
   await failure.route('**/rpc/get_verse_chronology_v1',route=>route.abort());
   await failure.goto(`${base}/#1-1-1`);
+  await ensureOpen(failure);
   await failure.getByRole('button',{name:'Retry chronology'}).waitFor();
   await failure.waitForFunction(()=>document.querySelectorAll('.word-token').length>0);
   assert.equal(await failure.locator('.millennium strong').innerText(),'Not mapped');

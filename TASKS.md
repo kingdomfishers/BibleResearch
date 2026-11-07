@@ -11,11 +11,16 @@ Goal: database-native original-language Scripture reader, multi-model chronology
 - TypeScript edits require `npm.cmd run check:types` and `npm.cmd run check:size`.
 - Joins, word order, co-occurrence, context resolution, and traversal/scoring stay in PostgreSQL.
 
+## Feature: Dual Chronology Date Display (BC date and years after creation)
+- [x] **CHRON-01 Update chronology_year_label RPC and frontend yearLabel for dual date display** | Files: supabase/migrations/20261107005245_chronology_creation_year_label.sql, src/ui/study-dom.ts | Verify: [AUTO-TEST] SQL RPC returns `<BC/AD> (Year <creation_year>)` where creation_year = year + 3970; frontend yearLabel matches.
+- [x] **CHRON-02 Synchronize verification scripts and test suites** | Files: scripts/verify-chronology-rpc.mjs, scripts/verify-chronology-ui.mjs | Verify: [AUTO-TEST] `node scripts/verify-chronology-rpc.mjs` and UI tests pass with dual date labels.
+- [-] **CHRON-03 Verify app build, types, size, and UI rendering** | Files: ARCHITECTURE.md, CHRONOLOGY_API.md | Verify: [USER-CHECK] Passage timeline, Chronology panel, and Navigation badge all show dual date display.
+
 ## Feature: Notes & Connections Layer (NOTE) — APPROVED 2026-11-07, SINGLE-USER MODE
 
 Implementation guide written for **Gemini 3.8 Flash (High)**. Everything needed to execute is in this section; read it top to bottom once, then work **one task at a time** using only that task's prompt (§N.7). Find a prompt with: `Select-String -Path TASKS.md -Pattern "#### NOTE-07 "` and read from that line to the next `#### NOTE-` heading (use `read_file` with StartLine/EndLine; the file is large, never read it whole).
 
-Status: Phase 0 done (NOTE-00…02a). Next task: **NOTE-03**.
+Status: Phase A in progress (NOTE-03 done). Next task: **NOTE-04**.
 
 ### N.0 Requirements (traceability)
 
@@ -170,7 +175,7 @@ Status: Phase 0 done (NOTE-00…02a). Next task: **NOTE-03**.
 - [x] **NOTE-02a Baseline snapshot and regression guard** | Files: scripts/notes-guard.mjs, .artifacts/notes/regression-baseline.md | Verify: [AUTO-TEST] G0.
 
 **Phase A — Database (additive migrations)**
-- [ ] **NOTE-03 Settings, authors, kinds, internal helpers** | Files: supabase/migrations/20261107010000_notes_foundation.sql, scripts/verify-notes-foundation.mjs | Verify: [AUTO-TEST] TP-SEC-1/2.
+- [x] **NOTE-03 Settings, authors, kinds, internal helpers** | Files: supabase/migrations/20261107005704_notes_foundation.sql, scripts/verify-notes-foundation.mjs | Verify: [AUTO-TEST] TP-SEC-1/2.
 - [ ] **NOTE-04 Notes, revisions, anchors + index/perf spike** | Files: supabase/migrations/20261107011000_notes_core.sql, scripts/verify-notes-core.mjs | Verify: [AUTO-TEST] TP-SEC-1, TP-INT-1, TP-PERF-1, TP-GUARD-1.
 - [ ] **NOTE-05 Connection vocabulary and connections** | Files: supabase/migrations/20261107012000_notes_connections.sql, scripts/verify-notes-connections.mjs | Verify: [AUTO-TEST] TP-SEC-1, TP-INT-1.
 - [ ] **NOTE-06 Block registry and blocks** | Files: supabase/migrations/20261107013000_notes_blocks.sql, scripts/verify-notes-blocks.mjs | Verify: [AUTO-TEST] TP-SEC-1, TP-XSS-1 (URL rules).

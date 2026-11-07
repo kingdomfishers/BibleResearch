@@ -41,57 +41,85 @@ function canonicalJson(val) {
   return '{' + keys.map(k => JSON.stringify(k) + ':' + canonicalJson(val[k])).join(',') + '}';
 }
 
-async function getTableCount(table) {
-  const url = `${SUPABASE_URL}/rest/v1/${table}?limit=0`;
-  const res = await fetch(url, {
-    method: 'HEAD',
-    headers: {
-      apikey: KEY,
-      Authorization: `Bearer ${KEY}`,
-      Prefer: 'count=exact',
-    },
-  });
-  if (res.status === 401 || res.status === 404) {
-    return 'unreadable';
-  }
-  const cr = res.headers.get('content-range');
-  if (cr) {
-    const m = cr.match(/\/(\d+|\*)$/);
-    if (m && m[1] !== '*') {
-      return parseInt(m[1], 10);
+async function getTableCount(table, retries = 2) {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const url = `${SUPABASE_URL}/rest/v1/${table}?limit=0`;
+      const res = await fetch(url, {
+        method: 'HEAD',
+        headers: {
+          apikey: KEY,
+          Authorization: `Bearer ${KEY}`,
+          Prefer: 'count=exact',
+        },
+      });
+      if (res.status === 401 || res.status === 404) {
+        return 'unreadable';
+      }
+      const cr = res.headers.get('content-range');
+      if (cr) {
+        const m = cr.match(/\/(\d+|\*)$/);
+        if (m && m[1] !== '*') {
+          return parseInt(m[1], 10);
+        }
+      }
+      if (!res.ok && res.status !== 206) {
+        if (attempt < retries && (res.status >= 500 || res.status === 429)) {
+          await new Promise(r => setTimeout(r, 500));
+          continue;
+        }
+        return 'unreadable';
+      }
+      return null;
+    } catch (err) {
+      if (attempt < retries) {
+        await new Promise(r => setTimeout(r, 500));
+        continue;
+      }
+      return 'unreadable';
     }
   }
-  if (!res.ok && res.status !== 206) {
-    return 'unreadable';
-  }
-  return null;
 }
 
-async function getVerseResearchGen1_1() {
-  const url = `${SUPABASE_URL}/rest/v1/rpc/get_verse_research_v1`;
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: {
-      apikey: KEY,
-      Authorization: `Bearer ${KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      p_request: { passages: [{ book: 1, chapter: 1, verse: 1 }] },
-    }),
-  });
-  if (!res.ok) {
-    throw new Error(`get_verse_research_v1 failed: HTTP ${res.status}`);
+async function getVerseResearchGen1_1(retries = 2) {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const url = `${SUPABASE_URL}/rest/v1/rpc/get_verse_research_v1`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          apikey: KEY,
+          Authorization: `Bearer ${KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          p_request: { passages: [{ book: 1, chapter: 1, verse: 1 }] },
+        }),
+      });
+      if (!res.ok) {
+        if (attempt < retries && res.status >= 500) {
+          await new Promise(r => setTimeout(r, 1000));
+          continue;
+        }
+        throw new Error(`get_verse_research_v1 failed: HTTP ${res.status}`);
+      }
+      const data = await res.json();
+      const cjson = canonicalJson(data);
+      const hash = crypto.createHash('sha256').update(cjson).digest('hex');
+      return {
+        hash,
+        status: data.status,
+        verses_count: data.verses?.length ?? 0,
+        words_count: data.verses?.[0]?.words?.length ?? 0,
+      };
+    } catch (err) {
+      if (attempt < retries) {
+        await new Promise(r => setTimeout(r, 1000));
+        continue;
+      }
+      throw err;
+    }
   }
-  const data = await res.json();
-  const cjson = canonicalJson(data);
-  const hash = crypto.createHash('sha256').update(cjson).digest('hex');
-  return {
-    hash,
-    status: data.status,
-    verses_count: data.verses?.length ?? 0,
-    words_count: data.verses?.[0]?.words?.length ?? 0,
-  };
 }
 
 async function getMcpHealth() {

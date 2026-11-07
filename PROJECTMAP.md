@@ -36,6 +36,7 @@ Core modules used across 2+ components. Import these directly—never duplicate 
 | `supabase/migrations/20261101013923_chronology_foundation.sql` | Additive chronology sources, models, events, assertions, and evidence schema | `chronology_sources`, `chronology_models`, `chronology_events`, `chronology_assertions`, `chronology_evidence` |
 | `supabase/migrations/20261101014127_chronology_publication.sql` | Immutable chronology runs, passage assignments, and revision history | `chronology_runs`, `chronology_passage_assignments`, `chronology_revisions` |
 | `supabase/migrations/20261101014636_chronology_rpc.sql` | Bounded chronology RPC with model comparison & evidence pagination | `get_verse_chronology_v1` |
+| `supabase/migrations/20261107005245_chronology_creation_year_label.sql` | Dual date display: BC/AD date and years after creation (Adam 0, Jesus death and resurrection 4000) | `chronology_year_label` |
 | `supabase/migrations/20261101023751_geography_schema.sql` | Normalized biblical geography tables, indexes, and `SELECT`-only RLS | `geography_sources`, `places`, `place_locations`, `passage_geography`, `verse_geography` |
 | `supabase/migrations/20261101023954_geography_rpc.sql` | Deterministic 5-tier context-aware geography RPC + camelCase alias | `get_verse_geography`, `"getVerseGeography"` |
 | `supabase/migrations/20261101183000_geography_composition_and_era.sql` | Epistolary/prophetic provenance (`composition_location`, `audience_location`), chronological era context, and period-synchronized ancient place names (`era_gazetteer`) | `get_verse_geography`, `passage_geography`, `places` |
@@ -159,6 +160,7 @@ Focused DOM components and application shell (max 450 lines/file, max 80 lines/`
 | **Rigorous Hebrew–Septuagint Comparison (F8)** | `node scripts/verify-hebrew-septuagint-comparison.mjs` | Verifies Psalm versification shifts (Ps 3:0->3:1), Jeremiah major reorderings/omissions (Jer 25:15->32:1, Jer 46->26, Jer 50->27, Jer 10:6-8/10 missing, Jer 33:14-26 missing), Gen 1:2 both passages without fake word equivalences, explicit unmatched status, bidirectional 1:many alignments, candidate segregation (`chk_candidate_never_masquerade`), alignment lookup, and reproducibility |
 | **Evidence Access & MCP Parity (F9)** | `node scripts/verify-evidence-access.mjs` | Verifies end-to-end evidence access and complete parity between 17 read-only MCP tools on `bible-mcp` and direct PostgreSQL PostgREST RPCs across Hebrew, Greek NT, Septuagint, lexical semantics, constituent syntax trees, Hebrew-Septuagint comparisons, evidence coverage audits, anti-hallucination reporting, and RLS anonymous write denial |
 | **Notes Guard & Regression Baseline (NOTE-02a)** | `node scripts/notes-guard.mjs [--snapshot \| --compare \| --static]` | Captures/compares exact row counts, Gen 1:1 research hash, MCP /health, and enforces static DOM/import/secret gates |
+| **Notes Foundation Security Suite (NOTE-03)** | `node scripts/verify-notes-foundation.mjs` | Verifies TP-SEC-1/2 write/RPC denials, column-level security on note_authors, and settings/kinds reading |
 
 ## Shared research skill and packages
 

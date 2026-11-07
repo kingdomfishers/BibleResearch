@@ -1,0 +1,59 @@
+{
+  "version": "1.0.0",
+  "generated_at": "2026-11-07T01:07:53.727Z",
+  "upstream_sources": {
+    "hebrewStrong": {
+      "path": ".artifacts\\sources\\HebrewLexicon\\HebrewStrong.xml",
+      "repo": "openscriptures/HebrewLexicon",
+      "commit": "21c9add13bc727d3a951361778e97e3ff7afd1ce",
+      "license": "CC BY 4.0 (OpenScriptures additions); Public Domain (Strong Hebrew)",
+      "sha256": "a628f4f89f8bdaf2483fd3faf1abc8653cc6717758dfc9f24beb7571d9bdd0c4",
+      "bytes": 2749042
+    },
+    "lexicalIndex": {
+      "path": ".artifacts\\sources\\HebrewLexicon\\LexicalIndex.xml",
+      "repo": "openscriptures/HebrewLexicon",
+      "commit": "21c9add13bc727d3a951361778e97e3ff7afd1ce",
+      "license": "CC BY 4.0 (OpenScriptures); Public Domain (BDB & Strong)",
+      "sha256": "cb395069d7050694319ca2c5d82d8e0e8bc36c6de8fce8de7e15a86fba6a013f",
+      "bytes": 1831069
+    },
+    "augIndex": {
+      "path": ".artifacts\\sources\\HebrewLexicon\\AugIndex.xml",
+      "repo": "openscriptures/HebrewLexicon",
+      "commit": "21c9add13bc727d3a951361778e97e3ff7afd1ce",
+      "license": "CC BY 4.0 (OpenScriptures)",
+      "sha256": "7396762a5e91ad33648b149f49fd1a2ffec364a8c4df959e5dae77945e3d0bcb",
+      "bytes": 223277
+    },
+    "tbesh": {
+      "path": ".artifacts\\stepbible\\TBESH.txt",
+      "repo": "STEPBible/STEPBible-Data",
+      "commit": "be4191f0082aeedddb0eff0c02c966292b2bd641",
+      "license": "CC BY 4.0 (Meaning col 7 strictly excluded)",
+      "sha256": "464dccadd95fd8620dd05fa0d7a4caba58ec3c4d5db3ebf38e43d046ca25b591",
+      "bytes": 3288045
+    },
+    "tbesg": {
+      "path": ".artifacts\\stepbible\\TBESG.txt",
+      "repo": "STEPBible/STEPBible-Data",
+      "commit": "be4191f0082aeedddb0eff0c02c966292b2bd641",
+      "license": "CC BY 4.0 (Abbott-Smith CC BY 4.0 derivations & glosses)",
+      "sha256": "312f723d7b8ef263bbdfb0451c9b8057125804dfff390b6f8544cff2a84b57f4",
+      "bytes": 4736912
+    }
+  },
+  "field_level_license_rules": {
+    "tbesh_col7_meaning": "STRICTLY_EXCLUDED (Online Bible restricted field)",
+    "tbesg_col7_abbott_smith": "ENABLED (CC BY 4.0)",
+    "openscriptures_strong": "ENABLED (CC BY 4.0 additions / Public Domain)",
+    "openscriptures_lexical_index": "ENABLED (CC BY 4.0 additions / Public Domain)"
+  },
+  "metrics": {
+    "total_hebrew_compounds": 537,
+    "total_greek_compounds": 203,
+    "total_formations": 743,
+    "total_quarantined": 365,
+    "sql_chunks_count": 19
+  }
+}

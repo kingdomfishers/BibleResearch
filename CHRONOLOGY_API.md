@@ -49,7 +49,7 @@ Updated: 2026-11-01. Architecture: [CHRONOLOGY_ARCHITECTURE.md](CHRONOLOGY_ARCHI
 
 ## 4. Epistemic Guardrails
 
-1. **Astronomical vs. Display Years:** Internal `earliest_year` and `latest_year` use astronomical numbering (`0 = 1 BC`, `-3970 = 3971 BC`); `date_label` and `summary.label` render human-readable `BC`/`AD` labels.
+1. **Astronomical vs. Display Years:** Internal `earliest_year` and `latest_year` use astronomical numbering (`0 = 1 BC`, `-3970 = 3971 BC`); `date_label`, `summary.label`, and timeline displays render dual human-readable `BC`/`AD` dates and years after creation based on the AD 30 resurrection anchor (Adam = 3971 BC / Year 0, Jesus death and resurrection = AD 30 / Year 4000), e.g., `"around 1011 BC (Year 2960)"`.
 2. **Object vs. Event Dates:** Archaeological evidence separates `object_year` (e.g., `691 BC` prism inscription) from `event_year` (e.g., `701 BC` campaign).
 3. **Unresolved Passages:** Passages without a supported setting date return `assignment_status: "unresolved"` and `summary.label: "No setting date established"`.
 4. **Packet Cap:** Responses are bounded to `<= 20` assertions, `<= 20` evidence items per cursor page, and `<= 50 KiB` total JSON payload.
