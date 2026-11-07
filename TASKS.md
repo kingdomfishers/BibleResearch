@@ -201,7 +201,7 @@ Status: Phase A in progress (NOTE-09 done). Next task: **NOTE-10**.
 - [x] **NOTE-13 Database acceptance suite — Gate G1** | Files: scripts/verify-notes-db.mjs, scripts/fixtures/notes-cases.json | Verify: [AUTO-TEST] G1, TP-CLEAN-1.
 
 **Phase B — Contracts and gateway**
-- [ ] **NOTE-14 Canonical note types** | Files: src/api/notes-types.ts, src/api/types.ts | Verify: [AUTO-TEST].
+- [x] **NOTE-14 Canonical note types** | Files: src/api/notes-types.ts, src/api/types.ts | Verify: [AUTO-TEST].
 - [ ] **NOTE-15 Notes gateway** | Files: src/api/notes-rpc.ts, src/api/rpc.ts | Verify: [AUTO-TEST].
 - [ ] **NOTE-16 OpenAPI exposure — Gate G2** | Files: supabase/openapi.json, scripts/verify-openapi.mjs | Verify: [AUTO-TEST] G2.
 
