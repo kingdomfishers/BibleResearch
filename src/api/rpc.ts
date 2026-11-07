@@ -1,6 +1,6 @@
 // @file: src/api/rpc.ts
 // @feature: api
-// @tables: words | verses | verse_translation_sources | word_translation_choices | chronology_models | chronology_runs | chronology_assertions | chronology_evidence | places | place_locations | verse_geography | passage_geography | geography_sources | lexemes | concepts | assertions | assertion_evidence | books | lemmas | word_form_lemmas | lexical_roots | lexical_senses | syntax_nodes | syntax_edges | entity_relationships | lxx_swete_words | hebrew_lxx_verse_map | macula_hebrew_morphemes | morphhb_tokens | cross_token_mappings | tagnt_tokens | macula_greek_tokens | hebrew_lxx_word_alignments
+// @tables: words | verses | verse_translation_sources | word_translation_choices | chronology_models | chronology_runs | chronology_assertions | chronology_evidence | places | place_locations | verse_geography | passage_geography | geography_sources | lexemes | concepts | assertions | assertion_evidence | books | lemmas | word_form_lemmas | lexical_roots | lexical_senses | syntax_nodes | syntax_edges | entity_relationships | lxx_swete_words | hebrew_lxx_verse_map | macula_hebrew_morphemes | morphhb_tokens | cross_token_mappings | tagnt_tokens | macula_greek_tokens | hebrew_lxx_word_alignments | lexical_formations | lemma_components | lexical_connections
 // @candidates: none
 // @toc: imports | logic:sample-words | logic:sample-verses | logic:request | logic:chronology | logic:geography | logic:translations | logic:hydrated-research | logic:reader | logic:canonical-lookups | logic:corpus-lookups | logic:gateway
 
@@ -15,7 +15,8 @@ import type { ActivePassage, ChronologyResponse, DataResult, HydratedCoOccurrenc
   GreekToHebrewAlignmentsResponse, HebrewSeptuagintParallelResponse, CrossTestamentGreekResponse,
   HebrewVerseEvidenceResponse, GreekVerseEvidenceResponse, LexicalSemanticsResponse,
   SyntaxTreeResponse, SeptuagintPassageResponse, HebrewSeptuagintComparisonResponse,
-  HebrewSeptuagintAlignmentsResponse, HebrewSeptuagintCompareArgs } from './types';
+  HebrewSeptuagintAlignmentsResponse, HebrewSeptuagintCompareArgs,
+  WordFormationResponse, OrthographicCandidatesResponse, VerseResearchV2Response } from './types';
 import type { ReaderPassage, ReaderOverview, ReaderWord, ReaderTimeline, ReaderSearchResult } from './types';
 
 // === @section:logic:sample-words ===
@@ -207,6 +208,17 @@ async function verseResearch(request: VerseResearchRequest): Promise<DataResult<
     return result(data as VerseResearchResponse, 'live');
   } catch { return result(null, 'unavailable', 'Verse research could not be loaded. Try again.'); }
 }
+async function verseResearchV2(request: Record<string, unknown>): Promise<DataResult<VerseResearchV2Response | null>> {
+  if (!supabase) return result(null, 'unavailable', 'Research database is not configured.');
+  try {
+    const { data, error } = await supabase.rpc('get_verse_research_v2', { p_request: request })
+      .abortSignal(AbortSignal.timeout(15000));
+    if (error || !data || data.schema_version !== 2) {
+      return result(null, 'unavailable', 'Verse research v2 could not be loaded. Try again.');
+    }
+    return result(data as VerseResearchV2Response, 'live');
+  } catch { return result(null, 'unavailable', 'Verse research v2 could not be loaded. Try again.'); }
+}
 
 // === @section:logic:reader ===
 async function readerRPC<T>(name: string, args: Record<string, unknown>): Promise<DataResult<T | null>> {
@@ -264,86 +276,41 @@ async function fetchBibleBooks(): Promise<DataResult<BibleBook[]>> {
 
 // === @section:logic:canonical-lookups ===
 const lookupWordSenses = (params: { wordId?: number | null; query?: string | null }) =>
-  readerRPC<WordToLemmaSensesResponse>('lookup_word_to_lemma_senses_v1', {
-    p_word_id: params.wordId ?? null,
-    p_query: params.query ?? null,
-  });
+  readerRPC<WordToLemmaSensesResponse>('lookup_word_to_lemma_senses_v1', { p_word_id: params.wordId ?? null, p_query: params.query ?? null });
 const lookupLemmaOccs = (lemmaQuery: string, afterVerseId = 0, limit = 50) =>
-  readerRPC<LemmaOccurrencesResponse>('lookup_lemma_occurrences_v1', {
-    p_lemma_query: lemmaQuery,
-    p_after_verse_id: afterVerseId,
-    p_limit: limit,
-  });
+  readerRPC<LemmaOccurrencesResponse>('lookup_lemma_occurrences_v1', { p_lemma_query: lemmaQuery, p_after_verse_id: afterVerseId, p_limit: limit });
 const lookupRootRelatives = (lemmaQuery: string) =>
   readerRPC<LemmaRootRelativesResponse>('lookup_lemma_root_relatives_v1', { p_lemma_query: lemmaQuery });
 const lookupEnglishGlosses = (lemmaQuery: string, limit = 25) =>
-  readerRPC<LemmaEnglishGlossesResponse>('lookup_lemma_english_glosses_v1', {
-    p_lemma_query: lemmaQuery,
-    p_limit: limit,
-  });
+  readerRPC<LemmaEnglishGlossesResponse>('lookup_lemma_english_glosses_v1', { p_lemma_query: lemmaQuery, p_limit: limit });
 const lookupPassageSyntax = (book: number, chapter: number, verse: number, editionKey: string | null = null) =>
-  readerRPC<PassageTokensSyntaxResponse>('lookup_passage_tokens_syntax_v1', {
-    p_book: book,
-    p_chapter: chapter,
-    p_verse: verse,
-    p_edition_key: editionKey,
-  });
+  readerRPC<PassageTokensSyntaxResponse>('lookup_passage_tokens_syntax_v1', { p_book: book, p_chapter: chapter, p_verse: verse, p_edition_key: editionKey });
 const lookupConceptProps = (conceptQuery: string) =>
   readerRPC<ConceptPropertiesResponse>('lookup_concept_properties_v1', { p_concept_query: conceptQuery });
 const lookupEntityRels = (
-  entityQuery: string,
-  opts: { relationType?: string | null; originMode?: string | null; limit?: number } = {}
+  entityQuery: string, opts: { relationType?: string | null; originMode?: string | null; limit?: number } = {}
 ) =>
   readerRPC<EntityRelationshipsResponse>('lookup_entity_relationships_v1', {
-    p_entity_query: entityQuery,
-    p_relation_type: opts.relationType ?? null,
-    p_origin_mode: opts.originMode ?? null,
-    p_limit: opts.limit ?? 50,
+    p_entity_query: entityQuery, p_relation_type: opts.relationType ?? null,
+    p_origin_mode: opts.originMode ?? null, p_limit: opts.limit ?? 50,
   });
 // === @section:logic:corpus-lookups ===
 const lookupHebrewToGreek = (lemmaQuery: string, limit = 25) =>
-  readerRPC<HebrewToGreekAlignmentsResponse>('lookup_hebrew_to_greek_alignments_v1', {
-    p_lemma_query: lemmaQuery,
-    p_limit: limit,
-  });
+  readerRPC<HebrewToGreekAlignmentsResponse>('lookup_hebrew_to_greek_alignments_v1', { p_lemma_query: lemmaQuery, p_limit: limit });
 const lookupGreekToHebrew = (greekQuery: string, limit = 25) =>
-  readerRPC<GreekToHebrewAlignmentsResponse>('lookup_greek_to_hebrew_alignments_v1', {
-    p_greek_query: greekQuery,
-    p_limit: limit,
-  });
+  readerRPC<GreekToHebrewAlignmentsResponse>('lookup_greek_to_hebrew_alignments_v1', { p_greek_query: greekQuery, p_limit: limit });
 const getHebrewSeptuagintParallelText = (book: number, chapter: number, verse: number) =>
-  readerRPC<HebrewSeptuagintParallelResponse>('get_hebrew_septuagint_parallel_v1', {
-    p_book: book,
-    p_chapter: chapter,
-    p_verse: verse,
-  });
+  readerRPC<HebrewSeptuagintParallelResponse>('get_hebrew_septuagint_parallel_v1', { p_book: book, p_chapter: chapter, p_verse: verse });
 const lookupCrossTestamentGreekVocab = (greekQuery: string, limit = 25) =>
-  readerRPC<CrossTestamentGreekResponse>('lookup_cross_testament_greek_v1', {
-    p_greek_query: greekQuery,
-    p_limit: limit,
-  });
+  readerRPC<CrossTestamentGreekResponse>('lookup_cross_testament_greek_v1', { p_greek_query: greekQuery, p_limit: limit });
 const lookupHebrewVerseEvidenceData = (book: number, chapter: number, verse: number) =>
-  readerRPC<HebrewVerseEvidenceResponse>('lookup_hebrew_verse_evidence_v1', {
-    p_book: book,
-    p_chapter: chapter,
-    p_verse: verse,
-  });
+  readerRPC<HebrewVerseEvidenceResponse>('lookup_hebrew_verse_evidence_v1', { p_book: book, p_chapter: chapter, p_verse: verse });
 const lookupGreekVerseEvidenceData = (book: number, chapter: number, verse: number) =>
-  readerRPC<GreekVerseEvidenceResponse>('lookup_greek_verse_evidence_v1', {
-    p_book: book,
-    p_chapter: chapter,
-    p_verse: verse,
-  });
+  readerRPC<GreekVerseEvidenceResponse>('lookup_greek_verse_evidence_v1', { p_book: book, p_chapter: chapter, p_verse: verse });
 const lookupLexicalSemanticsData = (query: string, matchScope = 'auto') =>
-  readerRPC<LexicalSemanticsResponse>('lookup_lexical_semantics_v1', {
-    p_query: query,
-    p_match_scope: matchScope,
-  });
+  readerRPC<LexicalSemanticsResponse>('lookup_lexical_semantics_v1', { p_query: query, p_match_scope: matchScope });
 const lookupSyntaxTreeData = (verseId: number, editionKey?: string | null) =>
-  readerRPC<SyntaxTreeResponse>('lookup_syntax_tree_v1', {
-    p_verse_id: verseId,
-    p_edition_key: editionKey ?? null,
-  });
+  readerRPC<SyntaxTreeResponse>('lookup_syntax_tree_v1', { p_verse_id: verseId, p_edition_key: editionKey ?? null });
 const lookupSeptuagintPassageData = (
   bookNo: number, chapter: number, verseNr?: number | null,
   chapterSuffix = '', verseSuffix = ''
@@ -353,15 +320,37 @@ const lookupSeptuagintPassageData = (
     p_chapter_suffix: chapterSuffix, p_verse_suffix: verseSuffix,
   });
 const lookupSeptuagintByCanonicalVerseData = (canonicalVerseId: number) =>
-  readerRPC<SeptuagintPassageResponse>('lookup_septuagint_by_canonical_verse_v1', {
-    p_canonical_verse_id: canonicalVerseId,
-  });
+  readerRPC<SeptuagintPassageResponse>('lookup_septuagint_by_canonical_verse_v1', { p_canonical_verse_id: canonicalVerseId });
 const compareHebrewSeptuagintPassageData = (args: HebrewSeptuagintCompareArgs) =>
   readerRPC<HebrewSeptuagintComparisonResponse>('compare_hebrew_septuagint_passage_v1', args);
 const lookupHebrewSeptuagintAlignmentsData = (query: string, tier?: string | null, limit = 50) =>
   readerRPC<HebrewSeptuagintAlignmentsResponse>('lookup_hebrew_septuagint_alignments_v1', {
     p_query: query, p_tier: tier ?? null, p_limit: limit,
   });
+const lookupWordFormationData = (query?: string | null, wordId?: number | null) => {
+  const q = query ? query.trim() : null;
+  const wid = typeof wordId === 'number' && wordId > 0 ? Math.floor(wordId) : null;
+  if (!q && !wid) {
+    return Promise.resolve(result<WordFormationResponse | null>({
+      schema_version: 1, status: 'invalid_request',
+      message: 'Provide p_query (1-128 characters), or a valid p_word_id.',
+    }, 'live'));
+  }
+  return readerRPC<WordFormationResponse>('get_word_formation_v1', { p_query: q, p_word_id: wid });
+};
+const suggestOrthographicCandidatesData = (query: string, limit = 20, minChars = 2) => {
+  const q = query ? query.trim() : '';
+  const lim = Math.max(1, Math.min(50, Math.floor(limit)));
+  const minC = Math.max(2, Math.min(5, Math.floor(minChars)));
+  if (!q || q.length > 128) {
+    return Promise.resolve(result<OrthographicCandidatesResponse | null>({
+      schema_version: 1, status: 'invalid_request', message: 'p_query must be 1-128 characters',
+    }, 'live'));
+  }
+  return readerRPC<OrthographicCandidatesResponse>('suggest_orthographic_candidates_v1', {
+    p_query: q, p_limit: lim, p_min_chars: minC,
+  });
+};
 
 // === @section:logic:gateway ===
 export const BibleRPC = {
@@ -385,6 +374,8 @@ export const BibleRPC = {
   lookupSeptuagintByCanonicalVerse: lookupSeptuagintByCanonicalVerseData,
   compareHebrewSeptuagintPassage: compareHebrewSeptuagintPassageData,
   lookupHebrewSeptuagintAlignments: lookupHebrewSeptuagintAlignmentsData,
+  lookupWordFormation: lookupWordFormationData,
+  suggestOrthographicCandidates: suggestOrthographicCandidatesData,
   getReaderPassage: readerPassage,
   preloadReaderPassages: readerPassages,
   getReaderOverview: (p: ActivePassage) => readerRPC<ReaderOverview>('get_reader_overview_v1', passageArgs(p)),
@@ -392,6 +383,7 @@ export const BibleRPC = {
   getReaderTimeline: (p: ActivePassage, modelId = 'theographic-verse-v1') => readerRPC<ReaderTimeline>('get_reader_timeline_v1', { ...passageArgs(p), p_model_id: modelId }),
   searchReaderWords: (query: string) => readerRPC<ReaderSearchResult[]>('search_reader_words_v1', { p_query: query }),
   getVerseResearch: verseResearch,
+  getVerseResearchV2: verseResearchV2,
   getSampleTranslations: sampleTranslations,
   getVerseTranslations: verseTranslations,
   saveTranslation,

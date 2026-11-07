@@ -108,3 +108,26 @@ Dataset-level CC BY 4.0 does **not** cover embedded third-party material. Each f
 - CATSS is not imported. It may be linked as an external reference only.
 - Swete letter suffixes (239 lettered verses, e.g. Joshua 15:59a) are Swete-only subdivisions. They must be preserved, not merged into numbered verses.
 - Swete uses LXX numbering (Psalms has 151 chapters), so Hebrew–Greek verse correspondence needs explicit mappings. 771 lines still fail the simple line pattern (mostly the Odes) and must be handled by the importer.
+
+## Lexical formation, compound names and derivation provenance (2026-11-07)
+
+Deterministic, reproducible import pipeline in `scripts/import-lexical-formations.mjs` ingests attested lexical compounds, components, and quarantine evidence into Supabase. Manifest with SHA-256 digests and record counts is saved under `data/provenance/lexical-formation-manifest.json` and `.artifacts/lexical-formation/manifest.json`.
+
+| Source | Pinned commit / version | Dataset license | Role & Coverage |
+| :--- | :--- | :--- | :--- |
+| [openscriptures/HebrewLexicon](https://github.com/openscriptures/HebrewLexicon) | `21c9add13bc727d3a951361778e97e3ff7afd1ce` | Public Domain | `HebrewStrong.xml`: 540 Hebrew compounds extracted (309 theophoric names, e.g., H7501 = H7495 + H410; 231 general compound words/names). 162 mappings quarantined for ambiguous host homographs. |
+| [STEPBible/STEPBible-Data](https://github.com/STEPBible/STEPBible-Data) | `be4191f0082aeedddb0eff0c02c966292b2bd641` | CC BY 4.0 | `TBESG.txt` (Abbott-Smith lexicon with STEP additions): 203 Greek compounds extracted. 203 mappings quarantined for inflected/unmatched component references. |
+
+### Field-level license enforcement
+- **Strictly excluded:** Online Bible `Meaning` (column 7 of `TBESH.txt`), which carries proprietary commercial restrictions.
+- **Strictly included:** Formations, components, roles, and glosses licensed under CC BY 4.0 or Public Domain.
+
+### Epistemic rules & quarantine integrity
+- **Never infer a root merely from consonantal similarity:** Consonantal matching alone is strictly classified as `unverified_candidate` (`relation_type = 'consonantal_substring'`, `etymological_inference = false`).
+- **Homograph preservation:** Homographs (e.g., `lemma:H0120G` vs `H0120H`, `lemma:H1254a`/`b`/`c`) are never forcibly merged. Ambiguous host or component mappings are quarantined into `public.quarantined_evidence_records` with `quarantine_status = 'unresolved'`.
+- **Database state (verified):**
+  - `public.lexical_formations`: 744 rows
+  - `public.lemma_components`: 1,558 rows
+  - `public.quarantined_evidence_records`: 383 rows (365 unresolved from formation ETL)
+  - `public.lexical_connections`: 2 rows (Genesis 2:5-7 literary wordplay, אדם/דם consonantal overlap)
+

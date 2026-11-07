@@ -40,10 +40,10 @@ assert.equal(health.status, 200);
 const status = await health.json();
 assert.equal(status.read_only, true);
 assert.equal(status.authentication, 'none');
-assert.equal(status.tools, 17);
-assert.equal(status.prompts, 17);
+assert.equal(status.tools, 19);
+assert.equal(status.prompts, 18);
 assert.equal(status.version, WORKFLOW_VERSION);
-pass('anonymous health endpoint (17 tools, 17 prompts)');
+pass('anonymous health endpoint (19 tools, 18 prompts)');
 
 for (const protocolVersion of ['2025-03-26', '2025-06-18', '2025-11-25']) {
   const init = await result('initialize', { protocolVersion, capabilities: {},
@@ -63,6 +63,7 @@ const expected = [
   'get_verse_geography',
   'get_verse_research',
   'get_word_details',
+  'inspect_word_formation',
   'lookup_hebrew_septuagint_alignments',
   'lookup_lexical_semantics',
   'prompt_verse_words',
@@ -71,6 +72,7 @@ const expected = [
   'prompt_word_relationships',
   'research_relationships',
   'resolve_word_id',
+  'suggest_word_connections',
 ];
 assert.deepEqual(listed.tools.map(t => t.name).sort(), expected.sort());
 for (const t of listed.tools) {
@@ -78,13 +80,13 @@ for (const t of listed.tools) {
   assert.equal(t.annotations.destructiveHint, false);
   assert.equal(t.inputSchema.type, 'object');
 }
-pass('exact allowlist of seventeen read-only tools with input schemas');
+pass('exact allowlist of nineteen read-only tools with input schemas');
 if (process.argv.includes('--catalog-only')) {
   const workflow = await tool('get_research_prompt', { subject: 'Explain John 1:1' });
   assert.equal(workflow.name, 'study_bible');
   assert.equal(workflow.workflow.version, WORKFLOW_VERSION);
   assert.deepEqual([...workflow.workflow.expected_tools].sort(), listed.tools.map(t => t.name).sort());
-  assert.equal((await result('prompts/list')).prompts.length, 17);
+  assert.equal((await result('prompts/list')).prompts.length, 18);
   pass('workflow discovery metadata matches every live tool and exposes the general router');
   process.exit(0);
 }
@@ -187,10 +189,30 @@ assert.equal(relGraph.rows[0].status, 'ok');
 assert.equal(relGraph.rows[0].evidence_paths.length, 3);
 pass('chronology, geography, and relationship evidence-graph tools return live packets');
 
+const formation = await tool('inspect_word_formation', { p_query: 'H7501' });
+assert.equal(formation.status, 'ok');
+assert.ok(formation.matched_lemmas.some(l => l.base_strongs === 'H7501'));
+assert.ok(formation.lexical_formations.some(f => f.formation_type === 'theophoric_name'));
+assert.equal(formation.lexical_formations[0].components.length, 2);
+
+const suggestions = await tool('suggest_word_connections', { p_query: 'H0120G' });
+assert.equal(suggestions.status, 'ok');
+assert.ok(suggestions.candidate_connections.length > 0);
+assert.equal(suggestions.candidate_connections[0].evidence_status, 'unverified_candidate');
+
+const hydratedV2 = await tool('get_verse_research', {
+  version: 2,
+  p_request: { passages: [{ book: 1, chapter: 1, verse: 1 }] }
+});
+assert.equal(hydratedV2.status, 'ok');
+assert.ok(hydratedV2.lexical_formations);
+assert.ok(hydratedV2.lexical_formations['lemma:H0430G']);
+pass('lexical formation inspection, orthographic candidates, and hydrated v2 research return live packets');
+
 const prompts = (await result('prompts/list')).prompts;
 assert.deepEqual(
   prompts.map(p => p.name).sort(),
-  ['compare_words', 'study_bible', 'study_chronology', 'study_geography', 'study_relationships', 'study_verse', 'study_word', ...Object.keys(PATTERN_PROMPTS)].sort(),
+  ['compare_words', 'study_bible', 'study_chronology', 'study_geography', 'study_relationships', 'study_verse', 'study_word', 'trace_word_formation', ...Object.keys(PATTERN_PROMPTS)].sort(),
 );
 for (const prompt of prompts) {
   const native = await result('prompts/get', { name: prompt.name, arguments: { subject: 'John 4:7' } });
@@ -207,7 +229,8 @@ assert.equal(generalWorkflow.name, 'study_bible');
 assert.equal(generalWorkflow.workflow.version, WORKFLOW_VERSION);
 assert.deepEqual([...generalWorkflow.workflow.expected_tools].sort(), listed.tools.map(t => t.name).sort());
 assert.ok(generalWorkflow.workflow.routes.motif.starting_tools.includes('research_relationships'));
-pass('seventeen native prompts match retrieval; general workflow routing and ten pattern templates are available');
+assert.ok(generalWorkflow.workflow.routes.formation.starting_tools.includes('inspect_word_formation'));
+pass('eighteen native prompts match retrieval; general workflow routing and ten pattern templates are available');
 
 const missing = await tool('prompt_word_occurrences', { p_word_query: 'H999999' });
 assert.deepEqual(missing.rows, []);

@@ -37,7 +37,16 @@ is hoisted to top-level dictionaries keyed by verse reference string (`"{book}:{
 reducing packet size by ~60–70%. Each word includes structured server-decoded grammar
 (`decoded_grammar`) with part of speech, stem, aspect, gender, number, and state.
 Each word's `lexical_entry_key` refers to `lexical_entries`, where all polysemous
-candidate lexemes are preserved without collapsing homographs or multi-valent roots.
+candidate lexemes and homographs are preserved. Never treat homographs as separate concepts:
+treat them as a unified study object and show their different meanings across different verses.
+Setting `version: 2` on `get_verse_research` activates set-based lexical formation hydration:
+it returns `lexical_formations` deduplicated by `disambiguated_lemma_key` (including components,
+documented roots, root relatives, and literary connections) and separates token morphology
+from lexical composition.
+
+Word formation tools:
+- `inspect_word_formation(p_query, p_word_id?)`: Returns verified lexical formations, constituent components, documented roots, root relatives, and literary connections.
+- `suggest_word_connections(p_query, p_limit?, p_min_chars?)`: Returns exploratory consonantal candidate words. Never cite these as proven etymologies or shared roots.
 
 Legacy database tools return `source`, `rows`, and `page`. Word IDs are real
 positive database IDs, not Strong's numeric suffixes. `get_verse_chronology_v1`

@@ -1,6 +1,6 @@
 // @file: src/ui/components/WordModal.ts
 // @feature: word-modal
-// @tables: words | verses
+// @tables: words | verses | lexical_formations | lemma_components | lexical_connections
 // @candidates: ui:cooccurrences
 // @toc: imports | ui:details | ui:cooccurrences | ui:occurrences | ui:relationships | ui:main | logic:open
 
@@ -8,6 +8,7 @@
 import { BibleRPC } from '../../api/rpc';
 import type { ActivePassage, HydratedCoOccurrence, WordOccurrence, WordRecord, WordRelationship } from '../../api/types';
 import { formatVerseRef } from '../utils';
+import { renderCategorizedConnections, renderWordFormation } from './WordFormation';
 
 // === @section:ui:details ===
 function renderDetails(container: HTMLElement, word: WordRecord, sample: boolean) {
@@ -120,10 +121,12 @@ export function createWordModal(onSelectPassage?: (p: ActivePassage) => void) {
   const element = document.createElement('dialog'); element.className = 'word-modal';
   element.setAttribute('aria-labelledby', 'word-modal-title');
   element.innerHTML = `<button type="button" class="modal-close" aria-label="Close word inspector">×</button>
-    <div class="modal-content"></div><section class="modal-occurrences"></section>
-    <section class="modal-related"></section><section class="modal-relationships" style="display:none;"></section>`;
+    <div class="modal-content"></div><section class="modal-formation"></section><section class="modal-occurrences"></section>
+    <section class="modal-categorized"></section><section class="modal-related"></section><section class="modal-relationships" style="display:none;"></section>`;
   const content = element.querySelector<HTMLElement>('.modal-content')!;
+  const formationSection = element.querySelector<HTMLElement>('.modal-formation')!;
   const occurrencesSection = element.querySelector<HTMLElement>('.modal-occurrences')!;
+  const categorizedSection = element.querySelector<HTMLElement>('.modal-categorized')!;
   const related = element.querySelector<HTMLElement>('.modal-related')!;
   const relationshipsSection = element.querySelector<HTMLElement>('.modal-relationships')!;
   const close = element.querySelector<HTMLButtonElement>('.modal-close')!;
@@ -147,10 +150,12 @@ export function createWordModal(onSelectPassage?: (p: ActivePassage) => void) {
     }
     element.setAttribute('aria-busy', 'true');
     content.innerHTML = '<h2 id="word-modal-title">Opening word…</h2>';
-    occurrencesSection.replaceChildren(); related.replaceChildren();
+    formationSection.replaceChildren(); occurrencesSection.replaceChildren();
+    categorizedSection.replaceChildren(); related.replaceChildren();
     relationshipsSection.style.display = 'none'; relationshipsSection.replaceChildren(); close.focus();
-    const [details, cooccurrences, occurrences] = await Promise.all([
+    const [details, cooccurrences, occurrences, formationRes, candsRes] = await Promise.all([
       BibleRPC.getWordDetails(wordId), BibleRPC.getWordCoOccurrences(wordId), BibleRPC.getWordOccurrences(wordId),
+      BibleRPC.lookupWordFormation(null, wordId), BibleRPC.suggestOrthographicCandidates(String(wordId), 8, 2),
     ]);
     if (request !== current || !element.open) return;
     element.setAttribute('aria-busy', 'false');
@@ -159,7 +164,9 @@ export function createWordModal(onSelectPassage?: (p: ActivePassage) => void) {
       return;
     }
     renderDetails(content, details.data, details.source === 'sample');
+    renderWordFormation(formationSection, formationRes.data, id => { void openWordModal(id); });
     renderOccurrences(occurrencesSection, occurrences.data, navigateAndClose);
+    renderCategorizedConnections(categorizedSection, formationRes.data, candsRes.data?.candidate_connections ?? [], id => { void openWordModal(id); });
     renderCoOccurrenceTags(related, cooccurrences.data, id => { void openWordModal(id); }, async partner => {
       relationshipsSection.style.display = 'block';
       relationshipsSection.innerHTML = '<p class="translation-note">Calculating Prompt 4 relationship score…</p>';

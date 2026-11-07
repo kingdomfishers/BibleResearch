@@ -38,6 +38,9 @@ const requiredPaths = [
   '/rpc/lookup_greek_to_hebrew_alignments_v1',
   '/rpc/get_hebrew_septuagint_parallel_v1',
   '/rpc/lookup_cross_testament_greek_v1',
+  '/rpc/get_word_formation_v1',
+  '/rpc/suggest_orthographic_candidates_v1',
+  '/rpc/get_verse_research_v2',
 ];
 
 for (const path of requiredPaths) {
@@ -233,7 +236,7 @@ if (!parallelGen || parallelGen.schema_version !== 1 || parallelGen.status !== '
   throw new Error(`get_hebrew_septuagint_parallel_v1 Gen 1:1 unexpected: ${JSON.stringify(parallelGen)}`);
 }
 const parallelPsa = await testPostgrest('/rpc/get_hebrew_septuagint_parallel_v1', { p_book: 19, p_chapter: 3, p_verse: 0 });
-if (!parallelPsa || parallelPsa.septuagint.chapter !== 3 || parallelPsa.septuagint.verse_nr !== 1 || parallelPsa.septuagint.mapping_kind !== 'versification_shift') {
+if (!parallelPsa || parallelPsa.septuagint.chapter !== 3 || parallelPsa.septuagint.verse_nr !== 1 || !['superscription_title_verse', 'versification_shift'].includes(parallelPsa.septuagint.mapping_kind)) {
   throw new Error(`get_hebrew_septuagint_parallel_v1 Psa 3:0 shift unexpected: ${JSON.stringify(parallelPsa)}`);
 }
 console.log(`  PASS: get_hebrew_septuagint_parallel_v1 verified Genesis 1:1 parallel and Psalm 3:0 title shift -> LXX 3:1`);
@@ -244,6 +247,29 @@ if (!crossTestament || crossTestament.schema_version !== 1 || crossTestament.sta
   throw new Error(`lookup_cross_testament_greek_v1 unexpected: ${JSON.stringify(crossTestament)}`);
 }
 console.log(`  PASS: lookup_cross_testament_greek_v1 returned ${crossTestament.nt_occurrences.total_count} NT and ${crossTestament.lxx_occurrences.total_count} LXX occurrences for G2316`);
+
+// 20. Test get_word_formation_v1
+const wordFormation = await testPostgrest('/rpc/get_word_formation_v1', { p_query: 'H7501', p_word_id: null });
+if (!wordFormation || wordFormation.schema_version !== 1 || wordFormation.status !== 'ok' || !Array.isArray(wordFormation.lexical_formations) || wordFormation.lexical_formations.length === 0) {
+  throw new Error(`get_word_formation_v1 unexpected: ${JSON.stringify(wordFormation)}`);
+}
+console.log(`  PASS: get_word_formation_v1 returned ${wordFormation.lexical_formations.length} formations for H7501 (${wordFormation.lexical_formations[0].formation_type})`);
+
+// 21. Test suggest_orthographic_candidates_v1
+const orthCandidates = await testPostgrest('/rpc/suggest_orthographic_candidates_v1', { p_query: 'H0120G', p_limit: 10, p_min_chars: 2 });
+if (!orthCandidates || orthCandidates.schema_version !== 1 || orthCandidates.status !== 'ok' || !Array.isArray(orthCandidates.candidate_connections) || orthCandidates.candidate_connections.length === 0) {
+  throw new Error(`suggest_orthographic_candidates_v1 unexpected: ${JSON.stringify(orthCandidates)}`);
+}
+console.log(`  PASS: suggest_orthographic_candidates_v1 returned ${orthCandidates.candidate_connections.length} unverified orthographic candidates for H0120G`);
+
+// 22. Test get_verse_research_v2
+const verseV2 = await testPostgrest('/rpc/get_verse_research_v2', {
+  p_request: { passages: [{ book: 1, chapter: 1, verse: 1 }] }
+});
+if (!verseV2 || verseV2.schema_version !== 2 || verseV2.status !== 'ok' || !verseV2.lexical_formations || !verseV2.lexical_formations['lemma:H0430G']) {
+  throw new Error(`get_verse_research_v2 unexpected: ${JSON.stringify(verseV2)}`);
+}
+console.log(`  PASS: get_verse_research_v2 returned v2 packet with hoisted lexical_formations for Gen 1:1`);
 
 console.log('\nAll OpenAPI 3.1.0 and PostgREST endpoint checks PASSED!');
 

@@ -24,6 +24,7 @@ export const WORKFLOW_ROUTES = {
   syntax: { prompt: 'study_verse', starting_tools: ['get_syntax_tree'], purpose: 'Hierarchical syntax trees and constituent grammar' },
   comparison: { prompt: 'compare_words', starting_tools: ['compare_hebrew_septuagint_passage'], purpose: 'Hebrew and Septuagint parallel with 3-tier alignments' },
   audit: { prompt: 'study_bible', starting_tools: ['audit_evidence_coverage'], purpose: 'Corpus coverage and evidence integrity audit' },
+  formation: { prompt: 'trace_word_formation', starting_tools: ['inspect_word_formation', 'suggest_word_connections'], purpose: 'Trace compounds, roots, wordplay, and orthographic candidates' },
 } as const;
 
 // === @section:logic:tools ===
@@ -35,4 +36,5 @@ export const RESEARCH_TOOL_NAMES = [
   'get_septuagint_passage', 'lookup_lexical_semantics', 'get_syntax_tree',
   'compare_hebrew_septuagint_passage', 'lookup_hebrew_septuagint_alignments',
   'audit_evidence_coverage',
+  'inspect_word_formation', 'suggest_word_connections',
 ] as const;

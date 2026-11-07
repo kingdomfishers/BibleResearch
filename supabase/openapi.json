@@ -838,7 +838,10 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["p_book_no", "p_chapter"],
+                "required": [
+                  "p_book_no",
+                  "p_chapter"
+                ],
                 "additionalProperties": false,
                 "properties": {
                   "p_book_no": {
@@ -899,31 +902,52 @@
                 "type": "object",
                 "properties": {
                   "p_hebrew_book": {
-                    "type": ["integer", "null"],
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
                     "description": "Hebrew canonical book ID (1..39)"
                   },
                   "p_hebrew_chapter": {
-                    "type": ["integer", "null"],
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
                     "description": "Hebrew chapter number"
                   },
                   "p_hebrew_verse": {
-                    "type": ["integer", "null"],
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
                     "description": "Hebrew verse number"
                   },
                   "p_canonical_verse_id": {
-                    "type": ["integer", "null"],
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
                     "description": "Canonical verse ID"
                   },
                   "p_lxx_book_no": {
-                    "type": ["integer", "null"],
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
                     "description": "Septuagint Swete book number"
                   },
                   "p_lxx_chapter": {
-                    "type": ["integer", "null"],
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
                     "description": "Septuagint chapter number"
                   },
                   "p_lxx_verse_nr": {
-                    "type": ["integer", "null"],
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
                     "description": "Septuagint verse number"
                   },
                   "p_lxx_chapter_suffix": {
@@ -966,15 +990,25 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["p_query"],
+                "required": [
+                  "p_query"
+                ],
                 "properties": {
                   "p_query": {
                     "type": "string",
                     "description": "Search term: Hebrew text, LXX text, Strong's number, or alignment key"
                   },
                   "p_tier": {
-                    "type": ["string", "null"],
-                    "enum": ["documented_textual", "computationally_inferred_candidate", "scholarly_interpretation", null],
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "enum": [
+                      "documented_textual",
+                      "computationally_inferred_candidate",
+                      "scholarly_interpretation",
+                      null
+                    ],
                     "description": "Optional alignment tier filter"
                   },
                   "p_limit": {
@@ -1014,11 +1048,17 @@
                 "type": "object",
                 "properties": {
                   "p_word_id": {
-                    "type": ["integer", "null"],
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
                     "description": "Optional words.id primary key"
                   },
                   "p_query": {
-                    "type": ["string", "null"],
+                    "type": [
+                      "string",
+                      "null"
+                    ],
                     "description": "Optional original-script form, Strong's number, or transliteration"
                   }
                 }
@@ -1051,7 +1091,9 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["p_lemma_query"],
+                "required": [
+                  "p_lemma_query"
+                ],
                 "properties": {
                   "p_lemma_query": {
                     "type": "string",
@@ -1098,7 +1140,9 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["p_lemma_query"],
+                "required": [
+                  "p_lemma_query"
+                ],
                 "properties": {
                   "p_lemma_query": {
                     "type": "string",
@@ -1134,7 +1178,9 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["p_lemma_query"],
+                "required": [
+                  "p_lemma_query"
+                ],
                 "properties": {
                   "p_lemma_query": {
                     "type": "string",
@@ -1176,7 +1222,11 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["p_book", "p_chapter", "p_verse"],
+                "required": [
+                  "p_book",
+                  "p_chapter",
+                  "p_verse"
+                ],
                 "properties": {
                   "p_book": {
                     "type": "integer",
@@ -1192,7 +1242,10 @@
                     "minimum": 0
                   },
                   "p_edition_key": {
-                    "type": ["string", "null"],
+                    "type": [
+                      "string",
+                      "null"
+                    ],
                     "default": null,
                     "description": "Optional filter on source_editions.edition_key"
                   }
@@ -1226,7 +1279,9 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["p_concept_query"],
+                "required": [
+                  "p_concept_query"
+                ],
                 "properties": {
                   "p_concept_query": {
                     "type": "string",
@@ -1262,19 +1317,31 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["p_entity_query"],
+                "required": [
+                  "p_entity_query"
+                ],
                 "properties": {
                   "p_entity_query": {
                     "type": "string",
                     "description": "Canonical entity_key (e.g. lemma:G3056, root:G3056, passage:PSA.3.0, concept:LAMPSTAND) or display label/alias"
                   },
                   "p_relation_type": {
-                    "type": ["string", "null"],
+                    "type": [
+                      "string",
+                      "null"
+                    ],
                     "default": null
                   },
                   "p_origin_mode": {
-                    "type": ["string", "null"],
-                    "enum": ["directly_imported", "algorithmically_calculated", null],
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "enum": [
+                      "directly_imported",
+                      "algorithmically_calculated",
+                      null
+                    ],
                     "default": null
                   },
                   "p_limit": {
@@ -1313,7 +1380,9 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["p_lemma_query"],
+                "required": [
+                  "p_lemma_query"
+                ],
                 "properties": {
                   "p_lemma_query": {
                     "type": "string",
@@ -1355,7 +1424,9 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["p_greek_query"],
+                "required": [
+                  "p_greek_query"
+                ],
                 "properties": {
                   "p_greek_query": {
                     "type": "string",
@@ -1397,7 +1468,11 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["p_book", "p_chapter", "p_verse"],
+                "required": [
+                  "p_book",
+                  "p_chapter",
+                  "p_verse"
+                ],
                 "properties": {
                   "p_book": {
                     "type": "integer",
@@ -1441,7 +1516,9 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["p_greek_query"],
+                "required": [
+                  "p_greek_query"
+                ],
                 "properties": {
                   "p_greek_query": {
                     "type": "string",
@@ -1465,6 +1542,148 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CrossTestamentGreekResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rpc/get_word_formation_v1": {
+      "post": {
+        "operationId": "getWordFormationV1",
+        "summary": "Retrieve documented lexical formations, morpheme components, and roots",
+        "description": "Inspects verified compounds, theophoric names, roots, root relatives, and literary connections for a query or word ID. Distinguishes documented etymology from morphology and literary wordplay.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "p_query": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "Strongs ID, lemma key, script, or transliteration."
+                  },
+                  "p_word_id": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "description": "Optional specific database word ID."
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Word formation response packet",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WordFormationResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rpc/suggest_orthographic_candidates_v1": {
+      "post": {
+        "operationId": "suggestOrthographicCandidatesV1",
+        "summary": "Explore unverified consonantal orthographic candidate words",
+        "description": "Returns exploratory consonantal substring candidates based on shared consonantal skeletons or n-grams. Warning: these are unverified spelling matches, never proven historical etymologies or shared roots.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "p_query": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "Query string or Strongs ID to find consonantal overlap for."
+                  },
+                  "p_limit": {
+                    "type": "integer",
+                    "default": 20,
+                    "minimum": 1,
+                    "maximum": 50
+                  },
+                  "p_min_chars": {
+                    "type": "integer",
+                    "default": 2,
+                    "minimum": 2,
+                    "maximum": 5
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Orthographic candidates response packet",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrthographicCandidatesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rpc/get_verse_research_v2": {
+      "post": {
+        "operationId": "getVerseResearchV2",
+        "summary": "Hydrate verses with set-based lexical formations, components, and roots in one call",
+        "description": "Additive v2 contract extending verse research with set-based lexical formation, constituent morphemes, documented roots, relatives, and literary connections deduplicated by disambiguated lemma key. Preserves word order, server-decoded grammar, homographs, and epistemic boundaries.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "p_request": {
+                    "$ref": "#/components/schemas/VerseResearchRequest"
+                  }
+                },
+                "required": [
+                  "p_request"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Hydrated v2 packet with hoisted lexical_formations or explicit validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/VerseResearchV2Packet"
+                    },
+                    {
+                      "$ref": "#/components/schemas/VerseResearchError"
+                    }
+                  ]
                 }
               }
             }
@@ -2936,175 +3155,672 @@
       },
       "WordToLemmaSensesResponse": {
         "type": "object",
-        "required": ["schema_version", "status"],
+        "required": [
+          "schema_version",
+          "status"
+        ],
         "properties": {
-          "schema_version": { "const": 1 },
-          "status": { "type": "string", "enum": ["ok", "not_found", "invalid_request"] },
-          "message": { "type": "string" },
+          "schema_version": {
+            "const": 1
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "not_found",
+              "invalid_request"
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
           "modeling_invariants": {
             "type": "object",
             "properties": {
-              "word_form_is_not_lemma": { "const": true },
-              "sense_assignment_policy": { "const": "catalog_only_no_ai_inference" }
+              "word_form_is_not_lemma": {
+                "const": true
+              },
+              "sense_assignment_policy": {
+                "const": "catalog_only_no_ai_inference"
+              }
             }
           },
-          "word_forms": { "type": "array", "items": { "type": "object" } }
+          "word_forms": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
         }
       },
       "LemmaOccurrencesResponse": {
         "type": "object",
-        "required": ["schema_version", "status"],
+        "required": [
+          "schema_version",
+          "status"
+        ],
         "properties": {
-          "schema_version": { "const": 1 },
-          "status": { "type": "string", "enum": ["ok", "not_found", "invalid_request"] },
-          "message": { "type": "string" },
-          "lemma": { "type": "object" },
-          "homograph_or_query_candidates": { "type": "array", "items": { "type": "object" } },
-          "totals": { "type": "object" },
-          "pagination": { "type": "object" },
-          "occurrences": { "type": "array", "items": { "type": "object" } }
+          "schema_version": {
+            "const": 1
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "not_found",
+              "invalid_request"
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "lemma": {
+            "type": "object"
+          },
+          "homograph_or_query_candidates": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "totals": {
+            "type": "object"
+          },
+          "pagination": {
+            "type": "object"
+          },
+          "occurrences": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
         }
       },
       "LemmaRootRelativesResponse": {
         "type": "object",
-        "required": ["schema_version", "status"],
+        "required": [
+          "schema_version",
+          "status"
+        ],
         "properties": {
-          "schema_version": { "const": 1 },
-          "status": { "type": "string", "enum": ["ok", "not_found", "invalid_request"] },
-          "message": { "type": "string" },
+          "schema_version": {
+            "const": 1
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "not_found",
+              "invalid_request"
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
           "modeling_invariants": {
             "type": "object",
             "properties": {
-              "lemma_is_not_necessarily_root": { "const": true },
-              "root_is_not_a_meaning": { "const": true },
-              "shared_root_implies_synonymy": { "const": false }
+              "lemma_is_not_necessarily_root": {
+                "const": true
+              },
+              "root_is_not_a_meaning": {
+                "const": true
+              },
+              "shared_root_implies_synonymy": {
+                "const": false
+              }
             }
           },
-          "lemma": { "type": "object" },
-          "documented_roots": { "type": "array", "items": { "type": "object" } },
-          "root_relatives": { "type": "array", "items": { "type": "object" } }
+          "lemma": {
+            "type": "object"
+          },
+          "documented_roots": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "root_relatives": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
         }
       },
       "LemmaEnglishGlossesResponse": {
         "type": "object",
-        "required": ["schema_version", "status"],
+        "required": [
+          "schema_version",
+          "status"
+        ],
         "properties": {
-          "schema_version": { "const": 1 },
-          "status": { "type": "string", "enum": ["ok", "not_found", "invalid_request"] },
-          "message": { "type": "string" },
+          "schema_version": {
+            "const": 1
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "not_found",
+              "invalid_request"
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
           "modeling_invariants": {
             "type": "object",
             "properties": {
-              "lexical_sense_is_not_english_translation": { "const": true },
-              "translation_is_not_word_for_word_alignment": { "const": true }
+              "lexical_sense_is_not_english_translation": {
+                "const": true
+              },
+              "translation_is_not_word_for_word_alignment": {
+                "const": true
+              }
             }
           },
-          "lemma": { "type": "object" },
-          "lexicon_sense_glosses": { "type": "array", "items": { "type": "object" } },
-          "corpus_rendering_summary": { "type": "object" },
-          "attested_english_glosses": { "type": "array", "items": { "type": "object" } }
+          "lemma": {
+            "type": "object"
+          },
+          "lexicon_sense_glosses": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "corpus_rendering_summary": {
+            "type": "object"
+          },
+          "attested_english_glosses": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
         }
       },
       "PassageTokensSyntaxResponse": {
         "type": "object",
-        "required": ["schema_version", "status", "passage"],
+        "required": [
+          "schema_version",
+          "status",
+          "passage"
+        ],
         "properties": {
-          "schema_version": { "const": 1 },
-          "status": { "type": "string", "enum": ["ok", "passage_not_found"] },
-          "passage": { "type": "object" },
-          "edition_passages": { "type": "array", "items": { "type": "object" } },
-          "versification_mappings": { "type": "array", "items": { "type": "object" } },
-          "english_editions": { "type": "array", "items": { "type": "object" } },
-          "tokens": { "type": "array", "items": { "type": "object" } },
-          "syntax_nodes": { "type": "array", "items": { "type": "object" } },
-          "syntax_edges": { "type": "array", "items": { "type": "object" } },
-          "semantic_annotations": { "type": "array", "items": { "type": "object" } }
+          "schema_version": {
+            "const": 1
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "passage_not_found"
+            ]
+          },
+          "passage": {
+            "type": "object"
+          },
+          "edition_passages": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "versification_mappings": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "english_editions": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "tokens": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "syntax_nodes": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "syntax_edges": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "semantic_annotations": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
         }
       },
       "ConceptPropertiesResponse": {
         "type": "object",
-        "required": ["schema_version", "status"],
+        "required": [
+          "schema_version",
+          "status"
+        ],
         "properties": {
-          "schema_version": { "const": 1 },
-          "status": { "type": "string", "enum": ["ok", "not_found", "invalid_request"] },
-          "message": { "type": "string" },
+          "schema_version": {
+            "const": 1
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "not_found",
+              "invalid_request"
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
           "modeling_invariants": {
             "type": "object",
             "properties": {
-              "external_observation_is_not_biblical_interpretation": { "const": true }
+              "external_observation_is_not_biblical_interpretation": {
+                "const": true
+              }
             }
           },
-          "concepts": { "type": "array", "items": { "type": "object" } }
+          "concepts": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
         }
       },
       "EntityRelationshipsResponse": {
         "type": "object",
-        "required": ["schema_version", "status"],
+        "required": [
+          "schema_version",
+          "status"
+        ],
         "properties": {
-          "schema_version": { "const": 1 },
-          "status": { "type": "string", "enum": ["ok", "not_found", "invalid_request"] },
-          "message": { "type": "string" },
-          "entity": { "type": "object" },
-          "returned_count": { "type": "integer" },
-          "relationships": { "type": "array", "items": { "type": "object" } }
+          "schema_version": {
+            "const": 1
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "not_found",
+              "invalid_request"
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "entity": {
+            "type": "object"
+          },
+          "returned_count": {
+            "type": "integer"
+          },
+          "relationships": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
         }
       },
       "HebrewToGreekAlignmentsResponse": {
         "type": "object",
-        "required": ["schema_version", "status"],
+        "required": [
+          "schema_version",
+          "status"
+        ],
         "properties": {
-          "schema_version": { "const": 1 },
-          "status": { "type": "string", "enum": ["ok", "not_found", "invalid_request", "gated_license_restricted"] },
-          "message": { "type": "string" },
-          "query": { "type": "string" },
-          "hebrew_lemma": { "type": "object" },
-          "license_status": { "type": "string" },
-          "total_alignments": { "type": "integer" },
-          "alignments": { "type": "array", "items": { "type": "object" } },
-          "provenance": { "type": "object" }
+          "schema_version": {
+            "const": 1
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "not_found",
+              "invalid_request",
+              "gated_license_restricted"
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "query": {
+            "type": "string"
+          },
+          "hebrew_lemma": {
+            "type": "object"
+          },
+          "license_status": {
+            "type": "string"
+          },
+          "total_alignments": {
+            "type": "integer"
+          },
+          "alignments": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "provenance": {
+            "type": "object"
+          }
         }
       },
       "GreekToHebrewAlignmentsResponse": {
         "type": "object",
-        "required": ["schema_version", "status"],
+        "required": [
+          "schema_version",
+          "status"
+        ],
         "properties": {
-          "schema_version": { "const": 1 },
-          "status": { "type": "string", "enum": ["ok", "not_found", "invalid_request", "gated_license_restricted"] },
-          "message": { "type": "string" },
-          "query": { "type": "string" },
-          "greek_lemma": { "type": "object" },
-          "license_status": { "type": "string" },
-          "total_alignments": { "type": "integer" },
-          "alignments": { "type": "array", "items": { "type": "object" } },
-          "provenance": { "type": "object" }
+          "schema_version": {
+            "const": 1
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "not_found",
+              "invalid_request",
+              "gated_license_restricted"
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "query": {
+            "type": "string"
+          },
+          "greek_lemma": {
+            "type": "object"
+          },
+          "license_status": {
+            "type": "string"
+          },
+          "total_alignments": {
+            "type": "integer"
+          },
+          "alignments": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "provenance": {
+            "type": "object"
+          }
         }
       },
       "HebrewSeptuagintParallelResponse": {
         "type": "object",
-        "required": ["schema_version", "status"],
+        "required": [
+          "schema_version",
+          "status"
+        ],
         "properties": {
-          "schema_version": { "const": 1 },
-          "status": { "type": "string", "enum": ["ok", "not_found", "invalid_request"] },
-          "message": { "type": "string" },
-          "canonical_verse": { "type": "object" },
-          "masoretic": { "type": "object" },
-          "septuagint": { "type": "object" },
-          "word_alignments": { "type": "array", "items": { "type": "object" } },
-          "license_info": { "type": "object" }
+          "schema_version": {
+            "const": 1
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "not_found",
+              "invalid_request"
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "canonical_verse": {
+            "type": "object"
+          },
+          "masoretic": {
+            "type": "object"
+          },
+          "septuagint": {
+            "type": "object"
+          },
+          "word_alignments": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "license_info": {
+            "type": "object"
+          }
         }
       },
       "CrossTestamentGreekResponse": {
         "type": "object",
-        "required": ["schema_version", "status"],
+        "required": [
+          "schema_version",
+          "status"
+        ],
         "properties": {
-          "schema_version": { "const": 1 },
-          "status": { "type": "string", "enum": ["ok", "not_found", "invalid_request"] },
-          "message": { "type": "string" },
-          "query": { "type": "string" },
-          "greek_lemma": { "type": "object" },
-          "nt_occurrences": { "type": "object" },
-          "lxx_occurrences": { "type": "object" },
-          "hebrew_source_renderings": { "type": "array", "items": { "type": "object" } }
+          "schema_version": {
+            "const": 1
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "not_found",
+              "invalid_request"
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "query": {
+            "type": "string"
+          },
+          "greek_lemma": {
+            "type": "object"
+          },
+          "nt_occurrences": {
+            "type": "object"
+          },
+          "lxx_occurrences": {
+            "type": "object"
+          },
+          "hebrew_source_renderings": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        }
+      },
+      "WordFormationResponse": {
+        "type": "object",
+        "required": [
+          "schema_version",
+          "status"
+        ],
+        "properties": {
+          "schema_version": {
+            "const": 1
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "not_found",
+              "word_id_not_found",
+              "invalid_request"
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "query": {
+            "type": "string"
+          },
+          "requested_word_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "identity_scope": {
+            "type": "string"
+          },
+          "needs_disambiguation": {
+            "type": "boolean"
+          },
+          "matched_lemmas": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "lexical_formations": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "documented_roots": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "root_relatives": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "other_connections": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "word_form_component_candidates": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "coverage": {
+            "type": "object"
+          }
+        }
+      },
+      "OrthographicCandidatesResponse": {
+        "type": "object",
+        "required": [
+          "schema_version",
+          "status"
+        ],
+        "properties": {
+          "schema_version": {
+            "const": 1
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "not_found",
+              "invalid_request"
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "query": {
+            "type": "string"
+          },
+          "method": {
+            "type": "string"
+          },
+          "language_scope": {
+            "type": "string"
+          },
+          "returned_count": {
+            "type": "integer"
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "candidate_connections": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "limitations": {
+            "type": "string"
+          }
+        }
+      },
+      "VerseResearchV2Packet": {
+        "type": "object",
+        "required": [
+          "schema_version",
+          "status",
+          "verses",
+          "coverage"
+        ],
+        "properties": {
+          "schema_version": {
+            "const": 2
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "invalid_request",
+              "passage_not_found",
+              "packet_limit_exceeded"
+            ]
+          },
+          "verses": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "chronology": {
+            "type": "object"
+          },
+          "geography": {
+            "type": "object"
+          },
+          "semantic_evidence": {
+            "type": "object"
+          },
+          "lexical_entries": {
+            "type": "object"
+          },
+          "lexical_formations": {
+            "type": "object",
+            "description": "Hoisted lexical formations and roots keyed by disambiguated lemma key."
+          },
+          "coverage": {
+            "type": "object"
+          }
         }
       }
     }

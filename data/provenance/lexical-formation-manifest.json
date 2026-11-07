@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generated_at": "2026-11-07T01:07:53.727Z",
+  "generated_at": "2026-11-07T01:14:44.044Z",
   "upstream_sources": {
     "hebrewStrong": {
       "path": ".artifacts\\sources\\HebrewLexicon\\HebrewStrong.xml",
@@ -54,6 +54,6 @@
     "total_greek_compounds": 203,
     "total_formations": 743,
     "total_quarantined": 365,
-    "sql_chunks_count": 19
+    "sql_chunks_count": 33
   }
 }

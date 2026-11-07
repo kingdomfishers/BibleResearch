@@ -318,7 +318,7 @@ for (const line of tbesgRaw.split(/\r?\n/)) {
       source_record_id: dstrong,
       entity_type: 'lexical_formation',
       quarantine_reason: 'host_lemma_not_found',
-      quarantine_status: 'quarantined',
+      quarantine_status: 'unresolved',
       raw_payload: { estrong, dstrong, tokens },
     });
     greekQuarantinedCount++;
@@ -364,7 +364,7 @@ for (const line of tbesgRaw.split(/\r?\n/)) {
       source_record_id: dstrong,
       entity_type: 'lemma_components',
       quarantine_reason: 'unmatched_greek_components',
-      quarantine_status: 'quarantined',
+      quarantine_status: 'unresolved',
       raw_payload: { estrong, dstrong, tokens },
     });
     greekQuarantinedCount++;
@@ -383,7 +383,7 @@ await fs.mkdir(OUT_DIR, { recursive: true });
 await fs.mkdir(PROVENANCE_DIR, { recursive: true });
 
 // Formations and components SQL chunks (using temporary staging / CTEs with ON CONFLICT)
-const CHUNK_SIZE = 50;
+const CHUNK_SIZE = 30;
 const sqlFiles = [];
 
 for (let i = 0; i < formations.length; i += CHUNK_SIZE) {
@@ -419,7 +419,7 @@ on conflict (formation_id, component_order) do nothing;`;
 }
 
 // Quarantine SQL chunks
-const qChunkSize = 100;
+const qChunkSize = 50;
 for (let i = 0; i < quarantined.length; i += qChunkSize) {
   const chunk = quarantined.slice(i, i + qChunkSize);
   const chunkIndex = Math.floor(i / qChunkSize) + 1;
@@ -429,7 +429,13 @@ for (let i = 0; i < quarantined.length; i += qChunkSize) {
     const qInsert = `
 insert into public.quarantined_evidence_records
  (dataset_key, source_record_id, entity_type, raw_payload, quarantine_reason, quarantine_status, quarantined_at)
-values (${sqlLit(q.dataset_key)}, ${sqlLit(q.source_record_id)}, ${sqlLit(q.entity_type)}, ${sqlJsonLit(q.raw_payload)}, ${sqlLit(q.quarantine_reason)}, ${sqlLit(q.quarantine_status)}, now());`;
+select ${sqlLit(q.dataset_key)}, ${sqlLit(q.source_record_id)}, ${sqlLit(q.entity_type)}, ${sqlJsonLit(q.raw_payload)}, ${sqlLit(q.quarantine_reason)}, ${sqlLit(q.quarantine_status)}, now()
+where not exists (
+  select 1 from public.quarantined_evidence_records
+  where dataset_key = ${sqlLit(q.dataset_key)}
+    and source_record_id = ${sqlLit(q.source_record_id)}
+    and entity_type = ${sqlLit(q.entity_type)}
+);`;
     lines.push(qInsert);
   }
 
@@ -468,4 +474,78 @@ const manifestPath = path.join(PROVENANCE_DIR, 'lexical-formation-manifest.json'
 await fs.writeFile(manifestPath, JSON.stringify(manifest, null, 2), 'utf8');
 await fs.writeFile(path.join(OUT_DIR, 'manifest.json'), JSON.stringify(manifest, null, 2), 'utf8');
 console.log(`7. Saved provenance manifest to ${manifestPath}`);
-console.log('   ETL preparation complete.');
+
+// ============================================================================
+// 7. ONLINE BATCH INGESTION (IF NOT --dry-run)
+// ============================================================================
+const dryRun = process.argv.includes('--dry-run');
+if (!dryRun) {
+  console.log('8. Ingesting formations and quarantined records into live database via RPC...');
+  const { createClient } = await import('@supabase/supabase-js');
+  const supabase = createClient(SUPABASE_URL, ANON_KEY);
+
+  // Ingest formations in batches of 50
+  let totalFormationsInserted = 0;
+  let totalComponentsInserted = 0;
+  const INGEST_BATCH = 50;
+
+  for (let i = 0; i < formations.length; i += INGEST_BATCH) {
+    const chunk = formations.slice(i, i + INGEST_BATCH).map(f => ({
+      lemma_id: f.hostLemma.id,
+      analysis_key: f.analysisKey,
+      formation_type: f.formationType,
+      whole_word_gloss: f.wholeWordGloss,
+      evidence_status: f.evidenceStatus,
+      evidence_note: f.evidenceNote,
+      source_title: f.sourceTitle,
+      source_url: f.sourceUrl,
+      source_record_id: f.sourceRecordId,
+      origin_mode: 'sourced',
+      components: f.components.map(c => ({
+        order: c.order,
+        lemma_id: c.lemma.id,
+        lexeme_id: c.lemma.primary_lexeme_id || null,
+        surface_text: c.surface,
+        role: c.role,
+        semantic_contribution: c.semanticContribution,
+        note: null,
+      })),
+    }));
+
+    let res;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      res = await supabase.rpc('ingest_lexical_formations_batch_v1', {
+        p_formations: chunk,
+      });
+      if (!res.error) break;
+      if (attempt < 3) await new Promise(r => setTimeout(r, 1000 * attempt));
+    }
+    if (res.error) {
+      console.error(`Error in formation batch ${i}:`, res.error);
+      throw res.error;
+    }
+    totalFormationsInserted += res.data.formations_inserted;
+    totalComponentsInserted += res.data.components_inserted;
+    process.stdout.write(`   Formations: ${Math.min(i + INGEST_BATCH, formations.length)} / ${formations.length} processed...\r`);
+  }
+  console.log(`\n   Ingested formations: ${totalFormationsInserted} new, ${totalComponentsInserted} components.`);
+
+  // Ingest quarantined records in batches of 100
+  let totalQuarantinedInserted = 0;
+  for (let i = 0; i < quarantined.length; i += 100) {
+    const chunk = quarantined.slice(i, i + 100);
+    const { data, error } = await supabase.rpc('ingest_quarantined_records_batch_v1', {
+      p_records: chunk,
+    });
+    if (error) {
+      console.error(`Error in quarantine batch ${i}:`, error);
+      throw error;
+    }
+    totalQuarantinedInserted += data.quarantined_inserted;
+  }
+  console.log(`   Ingested quarantined records: ${totalQuarantinedInserted} new records.`);
+} else {
+  console.log('8. Skipping live database ingestion (--dry-run).');
+}
+
+console.log('ETL execution complete.');

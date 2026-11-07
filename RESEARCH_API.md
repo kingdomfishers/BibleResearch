@@ -180,7 +180,40 @@ represent completed provider runs.
 
 Verification: `node scripts/verify-hydrated-research.mjs`,
 `node scripts/verify-openapi.mjs --hydration-only`,
-`node scripts/verify-bible-mcp.mjs`, and
+`node scripts/verify-bible-mcp.mjs`,
+`node scripts/verify-word-formation.mjs`, and
 `node scripts/verify-hydrated-ui.mjs` (with PLAYWRIGHT_MODULE/BROWSER_EXECUTABLE).
 `node scripts/verify-hydrated-schema.mjs` checks the full exported packet using
 Ajv 8 JSON Schema 2020-12; AJV_MODULE can select an existing installation.
+
+## 7. Lexical Formation & Hydrated Verse Research v2 (v1.6.0)
+
+### 7.1 Word Formation RPC (`get_word_formation_v1`)
+- **PostgREST Endpoint:** `POST /rest/v1/rpc/get_word_formation_v1`
+- **MCP Tool:** `inspect_word_formation(p_query, p_word_id?)`
+- **Frontend Gateway:** `BibleRPC.lookupWordFormation(query, wordId?)`
+
+Returns verified lexical compound formations, theophoric names, constituent morpheme components with senses, documented historical roots, root relatives, literary wordplay, and orthographic overlap connections.
+
+### 7.2 Orthographic Candidates RPC (`suggest_orthographic_candidates_v1`)
+- **PostgREST Endpoint:** `POST /rest/v1/rpc/suggest_orthographic_candidates_v1`
+- **MCP Tool:** `suggest_word_connections(p_query, p_limit?, p_min_chars?)`
+- **Frontend Gateway:** `BibleRPC.suggestOrthographicCandidates(query, limit?, minChars?)`
+
+Returns exploratory, unverified consonantal substring candidates (`evidence_status: 'unverified_candidate'`, `etymological_inference: false`). Candidates are never promoted to documented etymologies or shared roots.
+
+### 7.3 Hydrated Verse Research v2 (`get_verse_research_v2`)
+- **PostgREST Endpoint:** `POST /rest/v1/rpc/get_verse_research_v2`
+- **MCP Tool:** `get_verse_research` with `version: 2`
+- **Frontend Gateway:** `BibleRPC.getVerseResearchV2(request)`
+
+Extends v1 verse research with set-based SQL hydration of lexical formations, morpheme components, and documented roots. Repetitive formation entries are deduplicated by disambiguated lemma key (e.g., `lemma:H7501`, `lemma:H0120G`) and hoisted into the top-level `lexical_formations` dictionary, preserving payload boundaries and performance limits.
+
+### 7.4 Five Epistemic Tiers
+All research interfaces strictly enforce:
+1. **Documented etymology:** Historical root links with source attribution (`evidence_status: 'documented'`). Roots do not imply synonymy.
+2. **Grammatical morphology:** Token-level morphemes, inflectional prefixes, and verbal stems in `verses[].words[].morphology`.
+3. **Lexical composition:** Compound words and theophoric names with sourced constituent components in `lexical_formations[].formations`.
+4. **Literary wordplay:** Intentional soundplay and paronomasia (e.g. Adam and adamah in Gen 2:7) in `lexical_formations[].literary_connections`.
+5. **Unverified orthographic candidates:** Exploratory spelling overlap (`suggest_word_connections`). Resemblance alone provides zero evidence of etymology.
+Missing evidence remains explicitly missing.

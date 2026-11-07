@@ -113,6 +113,7 @@ Focused DOM components and application shell (max 450 lines/file, max 80 lines/`
 | `src/ui/components/TranslationChoice.ts` | `verse-reader` | Native English dropdown with private save/reset and failure feedback | `createTranslationChoice`, `translationLabel` |
 | `src/ui/components/WordModal.ts` | `word-modal` | Native `<dialog>` popup displaying Strong's nr, grammar, gematria badge, definitions, occurrences, and relationships | `createWordModal` |
 | `src/ui/components/WordInspector.ts` | `word-modal` | Side drawer inspector rendering word details, unified homographs with meanings in different verses, and cached connections | `createWordInspector` |
+| `src/ui/components/WordFormation.ts` | `word-modal` | Renders prominent Word Formation & Etymology cards, clickable decomposition components, and four distinct relationship tiers | `renderWordFormation`, `renderCategorizedConnections` |
 | `src/ui/components/VerseMap.ts` | `verse-reader` | Collapsible `<details open>` context-aware geography map panel with chronological era banner, composition/audience provenance cards, disputed site switcher, and symbolic/unknown guard | `createVerseMap` |
 | `src/ui/components/VerseMapCanvas.ts` | `verse-reader` | Lazy-loaded MapLibre GL JS canvas (`setWorkerUrl('/geo/maplibre-gl-worker.mjs')`) with `Historical + Modern`, `Ancient Atlas` (DARE/Pelagios + Natural Earth CC0), and `Modern OpenStreetMap` modes plus era-synchronized ancient DOM markers | `createVerseMapCanvas`, `BasemapMode` |
 | `src/ui/components/ChronologyPanel.ts` | `verse-reader` | Multi-model chronology panel with assertions, archaeological/textual evidence, and model switcher | `createChronologyPanel` |
@@ -181,6 +182,7 @@ Focused DOM components and application shell (max 450 lines/file, max 80 lines/`
 | **Word Formation Typed API Suite** | `node scripts/verify-formation-api.mjs` | Verifies typed access, boundary limits, and input validation for `get_word_formation_v1` and `suggest_orthographic_candidates_v1` |
 | **Hydrated Verse Research v2 Suite** | `node scripts/verify-hydrated-v2.mjs` | Verifies set-based SQL hydration across 7 test suites (Hebrew, Greek NT, Aramaic, homographs, large ranges, and epistemic boundaries) |
 | **Word Formation Cross-Corpus Suite** | `node scripts/verify-word-formation.mjs` | Comprehensive 8-suite test verifying compounds, theophoric names, literary wordplay, roots, Aramaic, Greek, multi-verse ranges, and missing etymology preservation |
+| **Word Formation & Etymology UI Suite** | `node scripts/verify-word-formation-ui.mjs` | Automated 38-check verification and Playwright acceptance suite: H7501 components, H120 wordplay vs candidates, unknown etymology, back-navigation, Hydrated v2 parity, and mobile responsive behavior |
 
 ## Shared research skill and packages
 

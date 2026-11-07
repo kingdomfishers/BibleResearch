@@ -19,6 +19,7 @@ the investigation. Do not turn a simple lookup into a long research project.
 | Meaning or usage of a word | Resolve a real ID, inspect `get_word_details`, then request occurrences or connections as needed. English concept names belong in `research_relationships`, not `resolve_word_id`. |
 | Compare words | Resolve each ID, then `prompt_word_relationships`; its score is shared-verse density, not semantic similarity. |
 | Motif, allusion or proposed connection | `research_relationships` for reviewed candidates; hydrate cited passages and actively check counterexamples. No graph match means missing annotation, not proof that no relationship exists. |
+| Word formation, etymology, roots or wordplay | Call `inspect_word_formation`; for exploratory consonantal matching call `suggest_word_connections`. |
 | Dating or geographical setting | Call `get_verse_chronology_v1` or `get_verse_geography` directly; hydrate words only if needed. |
 
 For a substantial pattern investigation, select the relevant existing template
@@ -59,12 +60,15 @@ counterexample or competing explanation. Separate observed text, licensed
 lexical descriptions, measured statistics, reviewed annotations and the model's
 interpretation. Cite canonical references and word positions for token claims.
 
-Never filter out homographs or shared consonantal roots. Polysemy and multi-valence in
-Hebrew (such as עַיִן / 'ayin meaning both "eye/sight" and "spring/fountain") are viewed
-as deliberate theological and linguistic design (paronomasia/conceptual stacking). When
-a base Strong's number maps to multiple semantic domains, retain all candidate lexemes in
-`lexical_entries` and explicitly explore why the text uses the same word across different
-contexts instead of flattening it to a single sense.
+Never treat homographs as separate concepts. Homographs sharing the same orthographic surface or consonantal form (such as עַיִן / 'ayin meaning both "eye/sight" and "spring/fountain", or בָּרָא / bara meaning "to create", "to cut down / clear", and "to fatten") are of central research interest. Never partition them into separate, isolated conceptual silos. Treat the homograph as a single unified focus and explicitly display, trace, and contrast its different meanings across different verses (e.g. comparing how בָּרָא functions in Genesis 1:1, Joshua 17:15, and 1 Samuel 2:29). Explore deliberate theological and linguistic design, paronomasia (wordplay/punning), and thematic shifts across verses instead of flattening the word or fragmenting it into disconnected concepts. When a base Strong's number maps to multiple semantic domains, retain all candidate lexemes in `lexical_entries` and explicitly explore why the biblical text employs the exact same word across different passages.
+
+When etymology, names, roots, compounds, or literary wordplay are relevant, automatically examine available word-formation evidence using `inspect_word_formation` (and `suggest_word_connections` when exploring consonantal candidates). The AI must strictly distinguish the five epistemic tiers:
+1. Documented etymology: historical root links and attested derivations with evidence_status='documented'.
+2. Grammatical morphology: token-level morphemes, inflectional prefixes, verbal stems, and pronominal affixes.
+3. Lexical composition: compound words and theophoric names with sourced constituent components and semantic contributions.
+4. Literary wordplay: deliberate paronomasia and phonetic association (e.g. 'adam H120 and 'adamah H127 in Gen 2:7).
+5. Unverified orthographic candidates: exploratory consonantal overlap based on consonant skeleton or n-grams.
+Never interpret spelling similarity as proven etymology. Roots do not imply synonymy. Missing evidence must remain explicitly missing; never promote unverified candidates or speculate missing etymologies into historical facts.
 
 Check coverage and component statuses. Base Strong's groups combine inflections and can
 span distinct lexemes; review all candidate lexemes before interpreting. Hebrew and Greek

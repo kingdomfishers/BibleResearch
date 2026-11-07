@@ -41,8 +41,12 @@ function renderPacketView(container: HTMLElement, pkt: RelationshipResearchPacke
     const lexBox = document.createElement('div');
     lexBox.className = 'spec-card';
     lexBox.style.marginBottom = '12px';
-    lexBox.innerHTML = `<div class="spec-row"><strong>Resolved Lexemes (${lexemes.length}${pkt.resolution.needs_disambiguation ? ' · Disambiguated Homographs' : ''}):</strong></div>` +
-      lexemes.map(l => `<div class="spec-row"><code>${l.extended_strongs}</code> (${l.original_lemma} · <em>${l.transliteration}</em>) — <strong>${l.primary_gloss}</strong>${l.homograph_note ? ` · <span style="color:var(--muted)">${l.homograph_note}</span>` : ''}</div>`).join('');
+    const isHomograph = pkt.resolution.needs_disambiguation || lexemes.some(l => l.homograph_note);
+    const title = isHomograph
+      ? `Unified Word · Meanings in Different Verses (${lexemes.length}):`
+      : `Resolved Lexemes (${lexemes.length}):`;
+    lexBox.innerHTML = `<div class="spec-row"><strong>${title}</strong>${isHomograph ? ' <span style="color:var(--muted);font-size:0.88em;">(Homographs are unified as one concept, showing distinct meanings across passages)</span>' : ''}</div>` +
+      lexemes.map(l => `<div class="spec-row"><code>${l.extended_strongs}</code> (${l.original_lemma} · <em>${l.transliteration}</em>) — <strong>${l.primary_gloss}</strong>${l.homograph_note ? ` · <span style="color:var(--gold,#d4af37)">📖 ${l.homograph_note}</span>` : ''}</div>`).join('');
     container.append(lexBox);
   }
   for (const path of pkt.evidence_paths) container.append(renderAssertionCard(path, onSelectPassage));
@@ -64,12 +68,12 @@ export function renderRelationshipExplorerView(container: HTMLElement, props: Re
       <div class="quick-samples"><span>Benchmarks:</span>
         <button type="button" data-s="well" data-t="marriage">Well + Marriage (Gen 24, 29, Exod 2 + Controls)</button>
         <button type="button" data-s="menorah" data-t="seven spirits of God">Menorah + Seven Spirits (Exod 25, Zech 4, Rev 4:5/5:6 + Rev 1:20)</button>
-        <button type="button" data-s="H1254" data-t="">H1254 Homographs (bara I/II/III)</button>
+        <button type="button" data-s="H1254" data-t="">H1254 Unified Homographs (bara · create / cut down / fatten)</button>
       </div></form>
     <div class="prompt-results" id="p7-results"><p class="hint-text">Select a benchmark or enter a subject/target to inspect multi-layer evidence in one call.</p></div>`;
   const run = async (subj: string, targ: string) => {
     const res = container.querySelector<HTMLElement>('#p7-results')!;
-    res.innerHTML = '<p class="hint-text">Resolving concepts, homographs, and reviewed evidence paths in PostgreSQL…</p>';
+    res.innerHTML = '<p class="hint-text">Resolving unified homographs, concepts, and reviewed evidence paths in PostgreSQL…</p>';
     const out = await BibleRPC.researchRelationships(subj, targ || undefined);
     if (!out.data || out.data.status !== 'ok') {
       res.innerHTML = `<p class="hint-text">${out.error ?? out.data?.message ?? 'Research packet unavailable.'}</p>`;

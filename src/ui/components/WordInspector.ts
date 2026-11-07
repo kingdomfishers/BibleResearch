@@ -1,6 +1,6 @@
 // @file: src/ui/components/WordInspector.ts
 // @feature: word-modal
-// @tables: words | reader_rendering_groups | verse_translation_sources | assertions
+// @tables: words | reader_rendering_groups | verse_translation_sources | assertions | lexical_formations | lemma_components | lexical_connections
 // @candidates: none
 // @toc: imports | types | ui:main | ui:summary | ui:occurrences | ui:connections | logic:inspect | logic:page
 
@@ -9,7 +9,9 @@ import { BibleRPC } from '../../api/rpc';
 import type { ActivePassage, ReaderOverview, ReaderWord, WordRecord } from '../../api/types';
 import { action, el, heading, status } from '../study-dom';
 import { formatVerseRef } from '../utils';
+import { appState } from '../state';
 import type { ContextPreview } from './ContextPreview';
+import { renderCategorizedConnections, renderWordFormation } from './WordFormation';
 
 // === @section:types ===
 interface Selection { id: number; position?: number; english?: string; rendering?: string; suggested?: boolean }
@@ -21,6 +23,8 @@ export function createWordInspector(preview: ContextPreview, navigate: (p: Activ
   let currentData: ReaderWord | null = null;
   const history: Selection[] = [];
   const summary = el('div', 'inspector-summary'), occurrences = el('section', 'inspector-occurrences');
+  const formation = el('section', 'inspector-formation');
+  const categorized = el('section', 'inspector-categorized');
   const connections = el('section', 'inspector-connections');
   let opener: HTMLElement | null = null;
   const close = () => { element.dataset.open = 'false'; opener?.focus(); };
@@ -28,7 +32,10 @@ export function createWordInspector(preview: ContextPreview, navigate: (p: Activ
   const back = action('← Previous word', () => {
     const previous = history.pop(); if (previous) void inspect(previous, false);
   }, 'text-action'); back.hidden = true;
-  element.append(closeButton, back, summary, occurrences, connections);
+  const returnPassage = action('', () => {
+    const p = appState.getPassage(); navigate(p);
+  }, 'text-action return-passage-btn'); returnPassage.hidden = true;
+  element.append(closeButton, back, returnPassage, summary, formation, occurrences, categorized, connections);
   summary.append(heading('WORD & CONNECTIONS', 'Follow a word'), status('Choose an original word to explore its meanings and connections.'));
   element.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
 
@@ -45,10 +52,23 @@ export function createWordInspector(preview: ContextPreview, navigate: (p: Activ
     if (grammar) summary.append(el('p', 'word-grammar', Object.entries(grammar)
       .filter(([, value]) => typeof value === 'string').map(([, value]) => value).join(' · ')));
     if (data.lexemes.length > 1) {
-      const ambiguity = el('div', 'lexeme-possibilities');
-      ambiguity.append(el('strong', '', 'Possible lexical entries'), status('This group includes distinct entries. A contextual sense has not been assigned.'));
-      for (const lexeme of data.lexemes) ambiguity.append(el('p', '', `${lexeme.extended_strongs} · ${lexeme.primary_gloss}`));
-      summary.append(ambiguity);
+      const meanings = el('div', 'lexeme-possibilities');
+      meanings.append(el('strong', '', 'Unified Word · Meanings in Different Verses'),
+        status('Homographs are unified as a single focus word: explore its different meanings and nuances across Scripture.'));
+      for (const lexeme of data.lexemes) {
+        const row = el('div', 'homograph-meaning-row');
+        row.append(el('p', '', `${lexeme.extended_strongs} — ${lexeme.primary_gloss}`));
+        if (lexeme.homograph_note) {
+          row.append(el('p', 'study-muted', `📖 Meaning in verses: ${lexeme.homograph_note}`));
+        }
+        meanings.append(row);
+      }
+      summary.append(meanings);
+    } else if (data.lexemes.length === 1 && data.lexemes[0].homograph_note) {
+      const single = el('div', 'lexeme-possibilities');
+      single.append(el('strong', '', 'Meaning in Verses'),
+        el('p', 'study-muted', `📖 ${data.lexemes[0].homograph_note}`));
+      summary.append(single);
     }
     const details = el('details', 'study-disclosure'); details.append(el('summary', '', 'Identifiers and source'));
     details.append(el('p', 'strongs', `Strong’s ${word.strongs_nr}`), el('p', '', word.grammar_code ?? 'Grammar unavailable'),
@@ -121,22 +141,41 @@ export function createWordInspector(preview: ContextPreview, navigate: (p: Activ
     const request = ++generation;
     if (selection && remember && selection.id !== next.id) history.push(selection);
     selection = next; currentData = null; back.hidden = !history.length;
+    const currentPassage = appState.getPassage();
+    returnPassage.textContent = `↩ Return to reading (${formatVerseRef(currentPassage)})`;
+    returnPassage.hidden = !history.length;
     if (!next.suggested) {
       opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
       element.dataset.open = 'true';
     }
-    summary.replaceChildren(heading('WORD & CONNECTIONS', 'Opening word…')); occurrences.replaceChildren(); connections.replaceChildren();
+    summary.replaceChildren(heading('WORD & CONNECTIONS', 'Opening word…'));
+    formation.replaceChildren(status('Loading word formation & etymology…'));
+    occurrences.replaceChildren(); categorized.replaceChildren(); connections.replaceChildren();
     element.setAttribute('aria-busy', 'true');
     const result = await BibleRPC.getReaderWord(next.id, 0, next.rendering ?? null);
     if (request !== generation) return;
     element.setAttribute('aria-busy', 'false');
     if (!result.data?.word) {
       summary.replaceChildren(heading('WORD & CONNECTIONS', 'Word unavailable'), status(result.error ?? 'No live word evidence is available.'),
-        action('Retry', () => { void inspect(next, false); })); return;
+        action('Retry', () => { void inspect(next, false); }));
+      formation.replaceChildren();
+      return;
     }
     currentData = result.data;
     renderSummary(result.data.word, result.data, next); renderOccurrences(result.data);
-    void renderConnections(next.id, result.data.word.strongs_nr, request);
+    const strongs = result.data.word.strongs_nr;
+    const [formationRes, candsRes] = await Promise.all([
+      BibleRPC.lookupWordFormation(strongs, next.id),
+      BibleRPC.suggestOrthographicCandidates(strongs, 8, 2),
+    ]);
+    if (request !== generation) return;
+    renderWordFormation(formation, formationRes.data, (targetId, opts) => {
+      void inspect({ id: targetId, ...opts });
+    });
+    renderCategorizedConnections(categorized, formationRes.data, candsRes.data?.candidate_connections ?? [], (targetId, opts) => {
+      void inspect({ id: targetId, ...opts });
+    });
+    void renderConnections(next.id, strongs, request);
   }
 
   // === @section:logic:page ===
@@ -152,6 +191,7 @@ export function createWordInspector(preview: ContextPreview, navigate: (p: Activ
   return { element, inspect: (id: number, options: Omit<Selection, 'id'> = {}) => inspect({ id, ...options }),
     setOverview: (value: ReaderOverview | null) => { overview = value; },
     reset: () => { generation++; selection = null; history.length = 0; element.dataset.open = 'false';
+      returnPassage.hidden = true;
       summary.replaceChildren(heading('WORD & CONNECTIONS', 'Follow a word'), status('Choose a word to explore.'));
-      occurrences.replaceChildren(); connections.replaceChildren(); }, close };
+      formation.replaceChildren(); occurrences.replaceChildren(); categorized.replaceChildren(); connections.replaceChildren(); }, close };
 }
