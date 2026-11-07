@@ -11,6 +11,12 @@ Goal: database-native original-language Scripture reader, multi-model chronology
 - TypeScript edits require `npm.cmd run check:types` and `npm.cmd run check:size`.
 - Joins, word order, co-occurrence, context resolution, and traversal/scoring stay in PostgreSQL.
 
+## Feature: Hybrid Cloudflare + Supabase Storage Migration (CORP)
+- [-] **CORP-01 System Audit, Complete Static Corpus + 983-File Macula Exporter & Local Verifiers** | Files: STATIC_CORPUS_MIGRATION.md, scripts/export-static-corpus.py, scripts/verify-static-corpus.py, scripts/test-static-corpus.py, scripts/build-static-corpus.mjs | Verify: [AUTO-TEST] Export all immutable evidence tables, complete all 983 Macula syntax files (WLC, Nestle1904, SBLGNT), build precomputed chapter/LXX/lexical/syntax shards, verify SHA-256 digests and license exclusions.
+- [ ] **CORP-02 Deploy Isolated `bibleresearch-corpus` Cloudflare Worker & Remote Verification** | Files: wrangler.corpus.jsonc, src/corpus-worker/index.ts, scripts/verify-static-corpus-remote.mjs, .github/workflows/publish-static-corpus.yml | Verify: [AUTO-TEST] Deploy `bibleresearch-corpus` Worker, verify `/manifest.json`, shard decompression, and `/v1/rpc/*` retrieval endpoints over production HTTPS.
+- [ ] **CORP-03 Hybrid Application, MCP & PostgREST Integration** | Files: src/api/corpus-client.ts, src/api/rpc.ts, supabase/functions/bible-mcp/index.ts, supabase/functions/bible-mcp/catalog.ts, supabase/migrations/20261107203000_hybrid_corpus_gateway.sql | Verify: [AUTO-TEST] Route static corpus reads to `bibleresearch-corpus`, compose dynamic Supabase state (translations, chronology, geography, notes, reviewed assertions), pass all verification suites.
+- [ ] **CORP-04 Stage G Database Space Reclamation (Requires Explicit User Approval Checkpoint)** | Files: scripts/reclaim-supabase-storage.sql, scripts/restore-supabase-storage.mjs, ARCHITECTURE.md, PROJECTMAP.md | Verify: [USER-CHECK] Present verified backup & equivalence report; wait for explicit user approval before dropping redundant PostgreSQL tables to bring DB below 400 MB.
+
 ## Feature: Dual Chronology Date Display (BC date and years after creation)
 - [x] **CHRON-01 Update chronology_year_label RPC and frontend yearLabel for dual date display** | Files: supabase/migrations/20261107005245_chronology_creation_year_label.sql, src/ui/study-dom.ts | Verify: [AUTO-TEST] SQL RPC returns `<BC/AD> (Year <creation_year>)` where creation_year = year + 3970; frontend yearLabel matches.
 - [x] **CHRON-02 Synchronize verification scripts and test suites** | Files: scripts/verify-chronology-rpc.mjs, scripts/verify-chronology-ui.mjs | Verify: [AUTO-TEST] `node scripts/verify-chronology-rpc.mjs` and UI tests pass with dual date labels.
@@ -209,8 +215,8 @@ Status: Phase A in progress (NOTE-09 done). Next task: **NOTE-10**.
 - [x] **NOTE-17 Notes state and safe markdown** | Files: src/ui/notes-state.ts, src/ui/note-markdown.ts | Verify: [AUTO-TEST] TP-XSS-1.
 - [x] **NOTE-18 NoteCard with provenance visuals** | Files: src/ui/components/NoteCard.ts, src/ui/styles-notes.css | Verify: [USER-CHECK] TP-A11Y-1, TP-BIDI-1.
 - [x] **NOTE-19 Note blocks renderer** | Files: src/ui/components/NoteBlocks.ts, src/ui/styles-notes.css | Verify: [USER-CHECK] TP-XSS-1.
-- [-] **NOTE-20 NotesPanel (tiers and filters)** | Files: src/ui/components/NotesPanel.ts, src/ui/styles-notes.css | Verify: [USER-CHECK] TP-RACE-1.
-- [ ] **NOTE-21 Reader integration (verse notes and token badges)** | Files: src/ui/components/VerseReader.ts, src/main.ts | Verify: [USER-CHECK] TP-RACE-1.
+- [x] **NOTE-20 NotesPanel (tiers and filters)** | Files: src/ui/components/NotesPanel.ts, src/ui/styles-notes.css | Verify: [USER-CHECK] TP-RACE-1.
+- [-] **NOTE-21 Reader integration (verse notes and token badges)** | Files: src/ui/components/VerseReader.ts, src/main.ts | Verify: [USER-CHECK] TP-RACE-1.
 - [ ] **NOTE-22 Word inspector integration** | Files: src/ui/components/WordNotes.ts, src/ui/components/WordInspector.ts | Verify: [USER-CHECK] TP-RACE-1.
 - [ ] **NOTE-23 Target picker (search + token picker)** | Files: src/ui/components/TargetPicker.ts, src/ui/styles-notes.css | Verify: [USER-CHECK].
 - [ ] **NOTE-24 Connection builder** | Files: src/ui/components/ConnectionBuilder.ts, src/ui/styles-notes.css | Verify: [USER-CHECK] TP-BIDI-1.
