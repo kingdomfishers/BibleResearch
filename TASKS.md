@@ -196,7 +196,7 @@ Status: Phase A in progress (NOTE-09 done). Next task: **NOTE-10**.
 - [x] **NOTE-08 Human write RPCs** | Files: supabase/migrations/20261107015000_notes_write_rpc.sql, scripts/verify-notes-write.mjs | Verify: [AUTO-TEST] TP-SEC-3/4, TP-INT-1/2/3.
 - [x] **NOTE-09 AI write RPCs** | Files: supabase/migrations/20261107022121_notes_agent_rpc.sql, scripts/verify-notes-agent.mjs | Verify: [AUTO-TEST] TP-SEC-2/3, TP-INT-2.
 - [x] **NOTE-10 Note read RPCs** | Files: supabase/migrations/20261107124005_notes_read_rpc.sql, scripts/verify-notes-read.mjs | Verify: [AUTO-TEST] TP-PERF-2.
-- [ ] **NOTE-11 Book aliases and reference parser** | Files: supabase/migrations/20261107018000_book_aliases.sql, scripts/verify-book-refs.mjs | Verify: [AUTO-TEST].
+- [x] **NOTE-11 Book aliases and reference parser** | Files: supabase/migrations/20261107130000_book_aliases.sql, scripts/verify-book-refs.mjs | Verify: [AUTO-TEST].
 - [ ] **NOTE-12 Target search RPC** | Files: supabase/migrations/20261107019000_notes_target_search.sql, scripts/verify-notes-search.mjs | Verify: [AUTO-TEST].
 - [ ] **NOTE-13 Database acceptance suite — Gate G1** | Files: scripts/verify-notes-db.mjs, scripts/fixtures/notes-cases.json | Verify: [AUTO-TEST] G1, TP-CLEAN-1.
 
