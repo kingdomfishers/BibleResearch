@@ -16,11 +16,23 @@ Goal: database-native original-language Scripture reader, multi-model chronology
 - [x] **CHRON-02 Synchronize verification scripts and test suites** | Files: scripts/verify-chronology-rpc.mjs, scripts/verify-chronology-ui.mjs | Verify: [AUTO-TEST] `node scripts/verify-chronology-rpc.mjs` and UI tests pass with dual date labels.
 - [-] **CHRON-03 Verify app build, types, size, and UI rendering** | Files: ARCHITECTURE.md, CHRONOLOGY_API.md | Verify: [USER-CHECK] Passage timeline, Chronology panel, and Navigation badge all show dual date display.
 
+## Feature: Lexical Formation Integration (FORM)
+- [x] **FORM-00 Lexical Formation Data Infrastructure & Candidate Discovery** | Files: supabase/migrations/20261107004527_*, 20261107004622_*, 20261107004742_*, 20261107004845_*, 20261107011235_*, 20261107011923_*, scripts/import-lexical-formations.mjs, scripts/generate-orthographic-candidates.mjs, scripts/verify-lexical-formation.mjs | Verify: [AUTO-TEST] 37/37 automated checks pass in `node scripts/verify-lexical-formation.mjs` (H7501 theophoric formation, H120/H127/H1818 distinction, homographs, Hebrew/Greek final letter normalization, quarantine, and idempotency).
+- [x] **FORM-01 Expose Typed Word Formation & Orthographic Candidate APIs** | Files: src/api/formation-types.ts, src/api/formation-rpc.ts, src/api/types.ts, src/api/rpc.ts | Verify: [AUTO-TEST] Validate both RPCs via BibleRPC with input validation and zero check:size / check:types regressions.
+- [-] **FORM-02 Hydrated Verse Research v2 with Set-Based Lexical Formation** | Files: supabase/migrations/20261107010500_hydrated_verse_research_v2.sql, src/api/types.ts, src/api/rpc.ts | Verify: [AUTO-TEST] Set-based SQL hydration preserving word order, homographs, components, roots, relatives, and separating token morphology from lexical composition.
+- [ ] **FORM-03 Public MCP Tools & Workflow Integration** | Files: supabase/functions/bible-mcp/catalog.ts, supabase/functions/bible-mcp/index.ts, supabase/functions/bible-mcp/workflow-contract.ts, skills/bible-research/SKILL.md, skills/bible-research/references/tool-contracts.md | Verify: [AUTO-TEST] Register inspect_word_formation, suggest_word_connections, prompt trace_word_formation, update workflow instructions distinguishing the 5 epistemic tiers.
+- [ ] **FORM-04 Verification Suite, OpenAPI 3.1.0 & Architecture Sync** | Files: scripts/verify-word-formation.mjs, supabase/openapi.json, RESEARCH_API.md, ARCHITECTURE.md, PROJECTMAP.md | Verify: [AUTO-TEST] Test Hebrew, Aramaic, Greek, homographs, large ranges, OpenAPI 3.1.0 schema, and regression pack.
+
+## Feature: Unified Homographs Across Verses (HOMO)
+- [x] **HOMO-01 Spec Sync & Architectural Contract** | Files: ARCHITECTURE.md, TASKS.md | Verify: [AUTO-TEST] Core architectural law added, defining homographs as unified concepts with verse-contextual distribution; TASKS.md synced.
+- [x] **HOMO-02 AI Prompts & Workflow Contracts** | Files: skills/bible-research/SKILL.md, skills/bible-research/references/tool-contracts.md, supabase/functions/bible-mcp/catalog.ts, supabase/functions/bible-mcp/pattern-prompts.ts, supabase/functions/bible-mcp/research-workflow.ts | Verify: [AUTO-TEST] AI prompt instructions, pattern templates, and server instructions updated across the project to never separate homographs and always show their different meanings across verses; plugin rebuilt.
+- [-] **HOMO-03 UI Experience for Unified Homographs** | Files: src/ui/components/WordInspector.ts, src/ui/components/RelationshipExplorer.ts, src/ui/components/WordModal.ts | Verify: [USER-CHECK] WordInspector and RelationshipExplorer display unified homograph meanings in different verses with verse citations; check:size and check:types pass.
+
 ## Feature: Notes & Connections Layer (NOTE) — APPROVED 2026-11-07, SINGLE-USER MODE
 
 Implementation guide written for **Gemini 3.8 Flash (High)**. Everything needed to execute is in this section; read it top to bottom once, then work **one task at a time** using only that task's prompt (§N.7). Find a prompt with: `Select-String -Path TASKS.md -Pattern "#### NOTE-07 "` and read from that line to the next `#### NOTE-` heading (use `read_file` with StartLine/EndLine; the file is large, never read it whole).
 
-Status: Phase A in progress (NOTE-03 done). Next task: **NOTE-04**.
+Status: Phase A in progress (NOTE-04 done). Next task: **NOTE-05**.
 
 ### N.0 Requirements (traceability)
 
@@ -176,7 +188,7 @@ Status: Phase A in progress (NOTE-03 done). Next task: **NOTE-04**.
 
 **Phase A — Database (additive migrations)**
 - [x] **NOTE-03 Settings, authors, kinds, internal helpers** | Files: supabase/migrations/20261107005704_notes_foundation.sql, scripts/verify-notes-foundation.mjs | Verify: [AUTO-TEST] TP-SEC-1/2.
-- [ ] **NOTE-04 Notes, revisions, anchors + index/perf spike** | Files: supabase/migrations/20261107011000_notes_core.sql, scripts/verify-notes-core.mjs | Verify: [AUTO-TEST] TP-SEC-1, TP-INT-1, TP-PERF-1, TP-GUARD-1.
+- [x] **NOTE-04 Notes, revisions, anchors + index/perf spike** | Files: supabase/migrations/20261107011000_notes_core.sql, scripts/verify-notes-core.mjs | Verify: [AUTO-TEST] TP-SEC-1, TP-INT-1, TP-PERF-1, TP-GUARD-1.
 - [ ] **NOTE-05 Connection vocabulary and connections** | Files: supabase/migrations/20261107012000_notes_connections.sql, scripts/verify-notes-connections.mjs | Verify: [AUTO-TEST] TP-SEC-1, TP-INT-1.
 - [ ] **NOTE-06 Block registry and blocks** | Files: supabase/migrations/20261107013000_notes_blocks.sql, scripts/verify-notes-blocks.mjs | Verify: [AUTO-TEST] TP-SEC-1, TP-XSS-1 (URL rules).
 - [ ] **NOTE-07 Security gate for the data layer** | Files: scripts/verify-notes-security.mjs, scripts/verify-security-hardening.mjs | Verify: [AUTO-TEST] TP-SEC-1/2 over REST and catalog; advisors.

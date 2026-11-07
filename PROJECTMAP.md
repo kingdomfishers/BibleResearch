@@ -71,6 +71,12 @@ Core modules used across 2+ components. Import these directly—never duplicate 
 | `supabase/migrations/20261106163000_septuagint_evidence_rpc.sql` | Deterministic lookup RPC for Septuagint passages, returning raw Greek tokens, normalized search forms, MT-LXX parallel alignments, deuterocanonical status, and explicit epistemic disclaimers | `lookup_septuagint_passage_v1`, `lookup_septuagint_by_canonical_verse_v1` |
 | `supabase/migrations/20261106170000_hebrew_septuagint_rigorous_comparison_schema.sql` | Additive schema for 3-tier word alignments (`public.hebrew_lxx_word_alignments`), TVTMS versification reorderings and omissions in `public.hebrew_lxx_verse_map`, and database-native candidate masquerade prevention constraint | `public.hebrew_lxx_word_alignments`, `public.hebrew_lxx_verse_map`, `ingest_hebrew_lxx_word_alignments_batch_v1` |
 | `supabase/migrations/20261106173000_hebrew_septuagint_comparison_rpc.sql` | Deterministic bidirectional passage comparison RPC and 3-tier alignment search with strict epistemic segregation and token-level status | `compare_hebrew_septuagint_passage_v1`, `lookup_hebrew_septuagint_alignments_v1` |
+| `supabase/migrations/20261107004527_lexical_formation_evidence_foundation.sql` | Additive lexical formation, components, and connections schema with RLS and quarantine integration | `public.lexical_formations`, `public.lemma_components`, `public.lexical_connections` |
+| `supabase/migrations/20261107004622_word_formation_research_rpc_v1.sql` | Sourced compound elements, documented roots, and connection packet lookup RPC | `public.get_word_formation_v1` |
+| `supabase/migrations/20261107004742_word_formation_orthographic_candidates_rpc_v1.sql` | Exploratory orthographic candidate suggestion RPC preserving epistemic candidate boundary | `public.suggest_orthographic_candidates_v1` |
+| `supabase/migrations/20261107004845_hebrew_final_letter_orthographic_normalization.sql` | Final letter normalization (ךםןףץ -> כמנפצ) in candidate generation | `public.suggest_orthographic_candidates_v1` |
+| `supabase/migrations/20261107011235_lexical_formation_batch_and_candidates.sql` | Batch ETL ingestion RPCs, multi-query candidate discovery, and Greek final sigma normalization | `ingest_lexical_formations_batch_v1`, `ingest_quarantined_records_batch_v1`, `batch_suggest_orthographic_candidates_v1` |
+| `supabase/migrations/20261107011923_word_formation_query_normalization_and_fixes.sql` | Normalized query lookup in `get_word_formation_v1`, `word_formation_research_rpc_v1` alias, and resilient lemma resolution | `public.get_word_formation_v1`, `public.word_formation_research_rpc_v1`, `public.ingest_lexical_formations_batch_v1` |
 
 ---
 
@@ -161,6 +167,10 @@ Focused DOM components and application shell (max 450 lines/file, max 80 lines/`
 | **Evidence Access & MCP Parity (F9)** | `node scripts/verify-evidence-access.mjs` | Verifies end-to-end evidence access and complete parity between 17 read-only MCP tools on `bible-mcp` and direct PostgreSQL PostgREST RPCs across Hebrew, Greek NT, Septuagint, lexical semantics, constituent syntax trees, Hebrew-Septuagint comparisons, evidence coverage audits, anti-hallucination reporting, and RLS anonymous write denial |
 | **Notes Guard & Regression Baseline (NOTE-02a)** | `node scripts/notes-guard.mjs [--snapshot \| --compare \| --static]` | Captures/compares exact row counts, Gen 1:1 research hash, MCP /health, and enforces static DOM/import/secret gates |
 | **Notes Foundation Security Suite (NOTE-03)** | `node scripts/verify-notes-foundation.mjs` | Verifies TP-SEC-1/2 write/RPC denials, column-level security on note_authors, and settings/kinds reading |
+| **Notes Core & Anchors Verification (NOTE-04)** | `node scripts/verify-notes-core.mjs` | Verifies TP-SEC-1 table write/revision denials, TP-INT-1 10-kind anchor constraints and occurrence integrity trigger, and TP-PERF-1 partial index scans on 40,000 synthetic anchors |
+| **Lexical Formation Ingestion ETL** | `node scripts/import-lexical-formations.mjs` | Deterministic offline/online ETL for OpenScriptures HebrewStrong and STEP TBESG compounds with field-level license exclusion and strict quarantine |
+| **Orthographic Candidate Discovery** | `node scripts/generate-orthographic-candidates.mjs [queries]` | Batch consonantal candidate discovery pipeline cross-referencing documented roots, formations, and literary connections |
+| **Lexical Formation Verification Suite** | `node scripts/verify-lexical-formation.mjs` | Comprehensive 37-assertion test suite verifying formations (H7501), wordplay vs candidates (H120, H127, H1818), homographs, Hebrew/Greek final letter normalization, quarantine, and idempotency |
 
 ## Shared research skill and packages
 
