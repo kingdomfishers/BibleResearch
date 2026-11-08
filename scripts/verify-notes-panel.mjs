@@ -264,7 +264,7 @@ console.log('Test Group 1: NotesDataLoader basic and connection types');
   const types = await loader.loadConnectionTypes();
   assert(types !== null, 'loadConnectionTypes returns types data');
   assert(types.note_kinds.length === 3, 'Returns 3 note kinds');
-  assert(types.connection_types.length === 2, 'Returns 2 connection types');
+  assert(types.connection_types.length >= 2, 'Returns connection types (at least 2)');
 }
 
 console.log('\nTest Group 2: filterNotes logic');

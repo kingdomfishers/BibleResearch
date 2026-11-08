@@ -1,7 +1,7 @@
 // @file: src/ui/components/NoteCard.ts
 // @feature: notes
 // @tables: none
-// @candidates: none
+// @candidates: connection-chip
 // @toc: imports | ui:icons | ui:provenance | ui:anchors | ui:connections | ui:footer | ui:main
 
 // === @section:imports ===
@@ -54,6 +54,7 @@ export function createSparkleIcon(): SVGElement {
 
 export function directionGlyph(direction?: string): string {
   if (direction === 'directed') return '→';
+  if (direction === 'reverse') return '←';
   if (direction === 'bidirectional') return '↔';
   return '—';
 }
@@ -153,65 +154,64 @@ export function createAnchorChips(
 }
 
 // === @section:ui:connections ===
+export interface ConnectionChipInput {
+  from_anchor_id?: string; to_anchor_id?: string;
+  from_label?: string | null; to_label?: string | null;
+  direction?: string; type_label?: string | null;
+  connection_type?: string | null; category?: string | null;
+}
+
+export function createConnectionChip(
+  conn: ConnectionChipInput,
+  sourceAnchor?: { label?: string | null } | null,
+  targetAnchor?: { label?: string | null } | null,
+  onAnchor?: (a: NoteAnchor) => void
+): HTMLElement {
+  const chip = document.createElement('div');
+  chip.className = 'note-connection-chip'; chip.setAttribute('dir', 'ltr');
+
+  const makeBtn = (anchor?: { label?: string | null } | null, fallback?: string | null) => {
+    const btn = document.createElement('button'); btn.type = 'button';
+    btn.className = 'note-connection-chip__endpoint';
+    const bdi = document.createElement('bdi'); bdi.textContent = anchor?.label || fallback || 'Anchor';
+    btn.appendChild(bdi);
+    if (anchor && onAnchor) {
+      btn.addEventListener('click', (e) => { e.stopPropagation(); onAnchor(anchor as NoteAnchor); });
+    }
+    return btn;
+  };
+
+  chip.appendChild(makeBtn(sourceAnchor, conn.from_label || conn.from_anchor_id || 'Source'));
+
+  const arrow = document.createElement('span');
+  arrow.className = 'note-connection-chip__arrow'; arrow.setAttribute('aria-hidden', 'true');
+  arrow.textContent = directionGlyph(conn.direction);
+  chip.appendChild(arrow);
+
+  chip.appendChild(makeBtn(targetAnchor, conn.to_label || conn.to_anchor_id || 'Target'));
+
+  const label = document.createElement('span');
+  label.className = 'note-connection-chip__label';
+  label.textContent = conn.type_label || conn.connection_type || 'related';
+  chip.appendChild(label);
+
+  if (conn.category) {
+    const cat = document.createElement('span'); cat.className = 'note-connection-chip__category';
+    cat.textContent = conn.category; chip.appendChild(cat);
+  }
+  return chip;
+}
+
 export function createConnectionChips(
   connections: NoteConnection[],
   anchors: NoteAnchor[],
   onAnchor?: (a: NoteAnchor) => void
 ): HTMLElement {
-  const list = document.createElement('div');
-  list.className = 'note-card__connections';
-
+  const list = document.createElement('div'); list.className = 'note-card__connections';
   const anchorMap = new Map<string, NoteAnchor>();
   anchors.forEach((a) => { if (a.id) anchorMap.set(a.id, a); });
-
   for (const conn of connections) {
-    const chip = document.createElement('div');
-    chip.className = 'note-connection-chip';
-    chip.setAttribute('dir', 'ltr');
-
-    const sourceAnchor = anchorMap.get(conn.from_anchor_id);
-    const targetAnchor = anchorMap.get(conn.to_anchor_id);
-
-    const sourceBtn = document.createElement('button');
-    sourceBtn.type = 'button';
-    sourceBtn.className = 'note-connection-chip__endpoint';
-    const srcBdi = document.createElement('bdi');
-    srcBdi.textContent = sourceAnchor?.label || conn.from_anchor_id || 'Source';
-    sourceBtn.appendChild(srcBdi);
-    if (sourceAnchor && onAnchor) {
-      sourceBtn.addEventListener('click', (e) => { e.stopPropagation(); onAnchor(sourceAnchor); });
-    }
-    chip.appendChild(sourceBtn);
-
-    const arrow = document.createElement('span');
-    arrow.className = 'note-connection-chip__arrow';
-    arrow.setAttribute('aria-hidden', 'true');
-    arrow.textContent = directionGlyph(conn.direction);
-    chip.appendChild(arrow);
-
-    const targetBtn = document.createElement('button');
-    targetBtn.type = 'button';
-    targetBtn.className = 'note-connection-chip__endpoint';
-    const tgtBdi = document.createElement('bdi');
-    tgtBdi.textContent = targetAnchor?.label || conn.to_anchor_id || 'Target';
-    targetBtn.appendChild(tgtBdi);
-    if (targetAnchor && onAnchor) {
-      targetBtn.addEventListener('click', (e) => { e.stopPropagation(); onAnchor(targetAnchor); });
-    }
-    chip.appendChild(targetBtn);
-
-    const label = document.createElement('span');
-    label.className = 'note-connection-chip__label';
-    label.textContent = conn.type_label || conn.connection_type || 'related';
-    chip.appendChild(label);
-
-    if (conn.category) {
-      const cat = document.createElement('span');
-      cat.className = 'note-connection-chip__category';
-      cat.textContent = conn.category;
-      chip.appendChild(cat);
-    }
-    list.appendChild(chip);
+    list.appendChild(createConnectionChip(conn, anchorMap.get(conn.from_anchor_id), anchorMap.get(conn.to_anchor_id), onAnchor));
   }
   return list;
 }

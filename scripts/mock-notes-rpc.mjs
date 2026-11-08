@@ -7,8 +7,11 @@ if (!globalThis.__mockRpcState) {
         { note_kind: 'exegetical', label: 'Exegetical' },
       ],
       connection_types: [
-        { type_key: 'cross_reference', label: 'Cross Reference' },
-        { type_key: 'thematic', label: 'Thematic' },
+        { connection_type: 'contained_in', type_key: 'contained_in', label: 'is contained in', inverse_label: 'contains', category: 'linguistic', default_direction: 'directed', is_symmetric: false },
+        { connection_type: 'wordplay', type_key: 'wordplay', label: 'plays on', inverse_label: 'is played on by', category: 'linguistic', default_direction: 'directed', is_symmetric: false },
+        { connection_type: 'parallels', type_key: 'parallels', label: 'parallels', inverse_label: 'parallels', category: 'textual', default_direction: 'bidirectional', is_symmetric: true },
+        { connection_type: 'cross_reference', type_key: 'cross_reference', label: 'Cross Reference', inverse_label: 'Cross Reference', category: 'textual', default_direction: 'bidirectional', is_symmetric: true },
+        { connection_type: 'thematic', type_key: 'thematic', label: 'Thematic', inverse_label: 'Thematic', category: 'thematic', default_direction: 'undirected', is_symmetric: true },
       ],
     },
     getForPassageHandler: null,

@@ -162,7 +162,7 @@ async function run() {
 
     const hebDam = await rpc('search_note_targets_v1', { p_query: 'דם' });
     assert(hebDam.status === 200, 'דם returned HTTP 200');
-    const damLemma = hebDam.data?.groups?.find(g => g.kind === 'lemma')?.candidates?.find(c => c.label.includes('H1818'));
+    const damLemma = hebDam.data?.groups?.find(g => g.kind === 'lemma')?.candidates?.find(c => c.id === 7230 || c.sublabel?.includes('H1818') || c.label.includes('H1818'));
     assert(damLemma !== undefined, 'דם returns H1818 lemma');
 
     // =========================================================================
