@@ -13,6 +13,8 @@ if (!globalThis.__mockRpcState) {
     },
     getForPassageHandler: null,
     getForWordHandler: null,
+    searchTargetsHandler: null,
+    getVerseWordsHandler: null,
     abortedRequests: [],
   };
 }
@@ -20,12 +22,116 @@ if (!globalThis.__mockRpcState) {
 export const mockRpcState = globalThis.__mockRpcState;
 
 export const BibleRPC = {
+  getVerseWords: async (book, chapter, verse) => {
+    if (mockRpcState.getVerseWordsHandler) {
+      return mockRpcState.getVerseWordsHandler(book, chapter, verse);
+    }
+    if (book === 1 && chapter === 9 && verse === 6) {
+      return {
+        data: [
+          { word_position: 1, word_id: 8210, original_word: 'שֹׁפֵךְ', transliteration: 'shofekh', strongs_nr: 'H8210', grammar_code: 'V-Qal-Ptc', primary_english: 'sheds' },
+          { word_position: 2, word_id: 1818, original_word: 'דַּם', transliteration: 'dam', strongs_nr: 'H1818', grammar_code: 'N-msc', primary_english: 'blood' },
+          { word_position: 3, word_id: 120, original_word: 'הָאָדָם', transliteration: 'ha·\'a·dam', strongs_nr: 'H120', grammar_code: 'Art|N-ms', primary_english: 'of man' },
+          { word_position: 4, word_id: 120, original_word: 'בָּאָדָם', transliteration: 'ba·\'a·dam', strongs_nr: 'H120', grammar_code: 'Prep-b|Art|N-ms', primary_english: 'by man' },
+          { word_position: 5, word_id: 1818, original_word: 'דָּמוֹ', transliteration: 'damo', strongs_nr: 'H1818', grammar_code: 'N-msc|3ms', primary_english: 'his blood' },
+          { word_position: 6, word_id: 8210, original_word: 'יִשָּׁפֵךְ', transliteration: 'yishafekh', strongs_nr: 'H8210', grammar_code: 'V-Nif-Impf-3ms', primary_english: 'shall be shed' },
+        ],
+        error: null,
+        source: 'database',
+      };
+    }
+    return { data: [], error: null, source: 'database' };
+  },
   notes: {
     connectionTypes: async () => ({
       data: mockRpcState.connectionTypesResponse,
       error: null,
       source: 'database',
     }),
+    searchTargets: async (query, kinds, signal) => {
+      if (signal) {
+        signal.addEventListener('abort', () => {
+          mockRpcState.abortedRequests.push({ query, type: 'searchTargets' });
+        });
+      }
+      if (mockRpcState.searchTargetsHandler) {
+        return mockRpcState.searchTargetsHandler(query, kinds, signal);
+      }
+      const q = String(query).trim().toLowerCase();
+      const groups = [];
+
+      if (q.includes('gen 9:6') || q.includes('genesis 9:6')) {
+        groups.push({
+          kind: 'passage',
+          label: 'Passages (Verses & Ranges)',
+          candidates: [{
+            kind: 'verse',
+            id: 212,
+            label: 'Genesis 9:6',
+            sublabel: 'Verse target (id: 212)',
+            match_type: 'exact',
+            anchor: { kind: 'verse', verse_id: 212, label: 'Genesis 9:6' },
+          }],
+        });
+      }
+      if (q === 'h120' || q.includes('120') || q.includes('אדם')) {
+        groups.push({
+          kind: 'lemma',
+          label: 'Lemmas (Lexical roots & headwords)',
+          candidates: [{
+            kind: 'lemma',
+            id: 120,
+            label: 'אָדָם (adam)',
+            sublabel: 'man, mankind [H120]',
+            language: 'he',
+            match_type: 'exact',
+            anchor: { kind: 'lemma', lemma_id: 120, label: 'אָדָם (adam)' },
+          }],
+        });
+        if (q.includes('אדם')) {
+          groups.push({
+            kind: 'word_form',
+            label: 'Word Forms (Inflected surface tokens)',
+            candidates: [{
+              kind: 'word_form',
+              id: 1050,
+              label: 'הָֽאָדָ֔ם (ha·\'a·Dam)',
+              sublabel: 'the man [H120]',
+              language: 'he',
+              match_type: 'exact',
+              anchor: { kind: 'word_form', word_id: 1050, label: 'הָֽאָדָ֔ם (ha·\'a·Dam)' },
+            }],
+          });
+        }
+      }
+      if (q === 'logos' || q.includes('logo')) {
+        groups.push({
+          kind: 'lemma',
+          label: 'Lemmas (Lexical roots & headwords)',
+          candidates: [{
+            kind: 'lemma',
+            id: 3056,
+            label: 'λόγος (logos)',
+            sublabel: 'word, message [G3056]',
+            language: 'grc',
+            match_type: 'exact',
+            anchor: { kind: 'lemma', lemma_id: 3056, label: 'λόγος (logos)' },
+          }],
+        });
+      }
+
+      return {
+        data: {
+          status: 'ok',
+          query,
+          interpretation: { type: 'text' },
+          groups,
+          truncated: false,
+        },
+        error: null,
+        source: 'database',
+      };
+    },
     getForPassage: async (passage, opts) => {
       if (opts?.signal) {
         opts.signal.addEventListener('abort', () => {
