@@ -1,0 +1,63 @@
+name: Publish Static Corpus to Cloudflare Workers
+
+on:
+  workflow_dispatch:
+    inputs:
+      verify_remote:
+        description: "Run remote verification suite after deploy"
+        required: false
+        default: "true"
+        type: string
+
+jobs:
+  publish-corpus:
+    name: Build, Verify & Deploy bibleresearch-corpus
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Clone pinned upstream Macula repositories
+        run: |
+          mkdir -p .artifacts/sources
+          git clone --no-checkout https://github.com/Clear-Bible/macula-hebrew.git .artifacts/sources/macula-hebrew
+          git -C .artifacts/sources/macula-hebrew checkout 47db250c8fa2cef65f8bf9dca5befa0cd9fc0112
+          git clone --no-checkout https://github.com/Clear-Bible/macula-greek.git .artifacts/sources/macula-greek
+          git -C .artifacts/sources/macula-greek checkout 8423afed4de1b1fb3dc57de9e5fafb72abffbe29
+
+      - name: Build static corpus & 983-file Macula syntax trees
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: python3 scripts/export-static-corpus.py
+
+      - name: Run local corpus verification & unit tests
+        run: |
+          python3 scripts/verify-static-corpus.py
+          python3 scripts/test-static-corpus.py -v
+
+      - name: Deploy bibleresearch-corpus Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler deploy --config wrangler.corpus.jsonc
+
+      - name: Verify live bibleresearch-corpus Worker
+        if: ${{ inputs.verify_remote != 'false' }}
+        env:
+          VITE_CORPUS_BASE_URL: ${{ vars.VITE_CORPUS_BASE_URL }}
+        run: node scripts/verify-static-corpus-remote.mjs --all

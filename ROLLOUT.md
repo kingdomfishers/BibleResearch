@@ -32,3 +32,7 @@ npm.cmd run build
 - **Chronology Model Run Rollback:** Re-point `chronology_models.active_run_id` to the prior immutable `chronology_runs.id` snapshot; previous cursors remain valid.
 - **Relationship Assertions Rollback:** Set `assertions.review_status = 'candidate'` or `'rejected'` on any newly promoted assertion key; RLS immediately hides non-`reviewed` rows from `anon` and `authenticated` callers.
 - **Edge Function Rollback:** Redeploy `bible-mcp` via `supabase_mcp` `deploy_edge_function` with `verify_jwt: false`.
+- **Hybrid Static Corpus Rollback:**
+  - Every exported table shard in `.artifacts/static-corpus/tables/<table>/part-*.jsonl.gz` (and `.artifacts/db-backup/20261107/`) is SHA-256 verified by `scripts/verify-static-corpus.py`.
+  - To repopulate any truncated static table in PostgreSQL after Stage G storage reclamation, run `node scripts/restore-supabase-storage.mjs --table=<table_name> --execute`.
+

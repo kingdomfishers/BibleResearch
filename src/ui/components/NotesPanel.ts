@@ -2,7 +2,7 @@
 // @feature: notes
 // @tables: none
 // @candidates: none
-// @toc: imports | logic:load | logic:filter | ui:filters | ui:tiers | ui:header | ui:main
+// @toc: imports | logic:load | logic:filter | ui:filters | ui:tiers | ui:header | ui:selection | ui:main
 
 // === @section:imports ===
 import { BibleRPC } from '../../api/rpc';
@@ -15,6 +15,7 @@ import type {
   NoteReviewStatus,
   PassageNotesResponse,
   TokenNoteCount,
+  WordOccurrenceAnchor,
 } from '../../api/types';
 import { createNoteCard } from './NoteCard';
 import { notesState } from '../notes-state';
@@ -209,9 +210,7 @@ export function renderTiers(
 
   const primaryWrap = document.createElement('div');
   primaryWrap.className = 'notes-panel__primary-list';
-  for (const note of primaryList) {
-    primaryWrap.appendChild(createNoteCard(note, deps));
-  }
+  mountNoteCards(primaryList, primaryWrap, deps);
   container.appendChild(primaryWrap);
 
   if (secondaryList.length > 0) {
@@ -224,9 +223,7 @@ export function renderTiers(
 
     const secondaryWrap = document.createElement('div');
     secondaryWrap.className = 'notes-panel__secondary-list';
-    for (const note of secondaryList) {
-      secondaryWrap.appendChild(createNoteCard(note, deps));
-    }
+    mountNoteCards(secondaryList, secondaryWrap, deps);
     details.appendChild(secondaryWrap);
     container.appendChild(details);
   }
@@ -293,6 +290,54 @@ export function createNotesPanelHeader(onAdd?: () => void): {
   return { header, updateCounts };
 }
 
+// === @section:ui:selection ===
+export function mountNoteCards(notes: Note[], wrap: HTMLElement, deps: NotesPanelDeps): void {
+  for (const note of notes) {
+    const card = createNoteCard(note, deps);
+    card.dataset.noteId = note.id;
+    const positions = (note.anchors || [])
+      .filter((a): a is WordOccurrenceAnchor => a.kind === 'word_occurrence' && typeof a.word_position === 'number')
+      .map((a) => a.word_position);
+    if (positions.length > 0) card.dataset.tokenPositions = positions.join(',');
+    wrap.appendChild(card);
+  }
+}
+
+export function renderNotesError(msg: string, onRetry: () => void, container: HTMLElement): void {
+  const errWrap = document.createElement('div');
+  errWrap.className = 'notes-panel__error';
+  const errP = document.createElement('p');
+  errP.textContent = msg;
+  const retryBtn = document.createElement('button');
+  retryBtn.type = 'button';
+  retryBtn.className = 'study-button';
+  retryBtn.id = 'notes-retry-btn';
+  retryBtn.textContent = 'Retry';
+  retryBtn.addEventListener('click', onRetry);
+  errWrap.appendChild(errP);
+  errWrap.appendChild(retryBtn);
+  container.replaceChildren(errWrap);
+}
+
+export function applyTokenSelection(container: HTMLElement, selectedPos: number | null): void {
+  const allCards = container.querySelectorAll<HTMLElement>('.note-card');
+  let matchedCard: HTMLElement | null = null;
+
+  for (const card of Array.from(allCards)) {
+    const rawPos = card.dataset.tokenPositions;
+    const positions = rawPos ? rawPos.split(',').map(Number) : [];
+    const isMatch = selectedPos !== null && positions.includes(selectedPos);
+    card.classList.toggle('is-token-matched', isMatch);
+    if (isMatch && !matchedCard) matchedCard = card;
+  }
+
+  if (matchedCard && selectedPos !== null) {
+    const details = matchedCard.closest('details');
+    if (details) details.open = true;
+    matchedCard.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' });
+  }
+}
+
 // === @section:ui:main ===
 export function createNotesPanel(deps: NotesPanelDeps = {}): NotesPanelHandle {
   const element = document.createElement('section');
@@ -318,6 +363,7 @@ export function createNotesPanel(deps: NotesPanelDeps = {}): NotesPanelHandle {
     if (!lastData) return;
     updateCounts(lastData.totals);
     renderTiers(lastData, deps, contentArea);
+    applyTokenSelection(contentArea, notesState.getSelectedTokenPosition());
   }
 
   function fetchNotes() {
@@ -336,19 +382,7 @@ export function createNotesPanel(deps: NotesPanelDeps = {}): NotesPanelHandle {
         }
       },
       (msg) => {
-        const errWrap = document.createElement('div');
-        errWrap.className = 'notes-panel__error';
-        const errP = document.createElement('p');
-        errP.textContent = msg;
-        const retryBtn = document.createElement('button');
-        retryBtn.type = 'button';
-        retryBtn.className = 'study-button';
-        retryBtn.id = 'notes-retry-btn';
-        retryBtn.textContent = 'Retry';
-        retryBtn.addEventListener('click', fetchNotes);
-        errWrap.appendChild(errP);
-        errWrap.appendChild(retryBtn);
-        contentArea.replaceChildren(errWrap);
+        renderNotesError(msg, fetchNotes, contentArea);
       }
     );
   }
@@ -356,6 +390,10 @@ export function createNotesPanel(deps: NotesPanelDeps = {}): NotesPanelHandle {
   loader.loadConnectionTypes().then((types) => {
     typesData = types;
     filterContainer.replaceChildren(createFilterBar(typesData, renderCurrentData));
+  });
+
+  notesState.subscribe((state) => {
+    applyTokenSelection(contentArea, state.selectedTokenPosition);
   });
 
   return {

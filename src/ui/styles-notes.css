@@ -530,6 +530,74 @@
   gap: 10px;
 }
 
+/* Token Note Badges (NOTE-21) */
+.token-notes-mount {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-top: 4px;
+}
+
+.token-notes-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
+  border: 0;
+  padding: 2px 4px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: transform 0.1s ease;
+}
+
+.token-notes-badge:hover {
+  transform: scale(1.08);
+}
+
+.token-notes-badge:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.token-notes-count {
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 3px;
+  box-sizing: border-box;
+}
+
+/* Distinct Human vs AI Shapes */
+/* Human: solid circular pill with gold accent */
+.token-notes-count--human {
+  border-radius: 999px;
+  background: var(--gold);
+  color: var(--background);
+  border: 1px solid var(--gold-light, var(--gold));
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+/* AI: square faceted badge with dashed border and cool indigo accent */
+.token-notes-count--ai {
+  border-radius: 3px;
+  background: #3b82f6;
+  color: #ffffff;
+  border: 1px dashed #bfdbfe;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+/* Highlighted note card when matching token is selected */
+.note-card.is-token-matched {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+  box-shadow: 0 0 12px color-mix(in srgb, var(--gold) 35%, transparent);
+}
+
 /* Forced Colors (High Contrast) Mode */
 @media (forced-colors: active) {
   .note-card--human {
@@ -546,7 +614,16 @@
 
   .note-btn,
   .note-chip,
-  .note-connection-chip {
+  .note-connection-chip,
+  .token-notes-count--human {
     border: 1px solid ButtonText;
+  }
+
+  .token-notes-count--ai {
+    border: 1px dashed ButtonText;
+  }
+
+  .note-card.is-token-matched {
+    outline: 3px solid Highlight;
   }
 }

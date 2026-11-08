@@ -18,6 +18,7 @@ export interface VerseReaderActions {
   preview: ContextPreview;
   onWord: (id: number, position: number, english: string, rendering?: string) => void;
   onPlace: (key: string) => void;
+  onTokenNotes?: (position: number) => void;
 }
 
 // === @section:ui:tokens ===
@@ -37,7 +38,8 @@ export function renderVerseTokens(container: HTMLElement, tokens: VerseTranslati
     transliteration.textContent = token.transliteration; transliteration.dir = 'ltr'; transliteration.lang = 'en';
     button.addEventListener('click', () => onWordClick(token.word_id, token.word_position, token.selected_english ?? token.source_english ?? ''));
     const here = el('span', 'range-label', 'Here'); here.dir = 'ltr';
-    word.append(button, transliteration, here, createTranslationChoice({ ...p }, token, canSave && !!token.source_ref), el('div', 'token-range-mount'), el('div', 'token-place-mount'));
+    word.append(button, transliteration, here, createTranslationChoice({ ...p }, token, canSave && !!token.source_ref),
+      el('div', 'token-range-mount'), el('div', 'token-place-mount'), el('div', 'token-notes-mount'));
     container.append(word);
   });
 }
@@ -83,6 +85,41 @@ export function createVerseReader(actions: VerseReaderActions) {
     },
     setOverview(data: ReaderOverview | null) { overview = data; applyContext(); },
     selectPosition(position: number | null) { selected = position; applySelection(); },
+    setNoteCounts(counts: { word_position: number; human: number; ai: number }[]) {
+      const map = new Map(counts.map(c => [c.word_position, c]));
+      grid.querySelectorAll<HTMLElement>('.word-token').forEach(node => {
+        const mount = node.querySelector<HTMLElement>('.token-notes-mount');
+        if (!mount) return;
+        mount.replaceChildren();
+        const pos = Number(node.dataset.position);
+        const count = map.get(pos);
+        if (!count || (count.human === 0 && count.ai === 0)) return;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'token-notes-badge';
+        const parts: string[] = [];
+        if (count.human > 0) parts.push(`${count.human} human note${count.human > 1 ? 's' : ''}`);
+        if (count.ai > 0) parts.push(`${count.ai} AI note${count.ai > 1 ? 's' : ''}`);
+        btn.setAttribute('aria-label', parts.join(', '));
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          actions.onTokenNotes?.(pos);
+        });
+        if (count.human > 0) {
+          const h = document.createElement('span');
+          h.className = 'token-notes-count token-notes-count--human';
+          h.textContent = String(count.human);
+          btn.appendChild(h);
+        }
+        if (count.ai > 0) {
+          const a = document.createElement('span');
+          a.className = 'token-notes-count token-notes-count--ai';
+          a.textContent = String(count.ai);
+          btn.appendChild(a);
+        }
+        mount.appendChild(btn);
+      });
+    },
   };
 
   // === @section:logic:context ===

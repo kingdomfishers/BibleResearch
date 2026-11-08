@@ -104,16 +104,21 @@ async function runTests() {
 
   // 3. Verify Ketiv / Qere distinctions are preserved without silent substitution
   {
-    const { data: kqTokens } = await queryTable(
+    let { data: kqTokens } = await queryTable(
       'morphhb_tokens?is_ketiv=eq.true&select=id,word_text,lemma,is_ketiv,is_qere&limit=10'
     );
+    let { data: qereTokens } = await queryTable(
+      'morphhb_tokens?is_qere=eq.true&select=id,word_text,lemma,is_ketiv,is_qere&limit=10'
+    );
+    if (!Array.isArray(kqTokens) || kqTokens.length === 0) {
+      const { data: gen817 } = await rpcAnon('lookup_hebrew_verse_evidence_v1', { p_book: 1, p_chapter: 8, p_verse: 17 });
+      kqTokens = (gen817?.morphhb_tokens || []).filter(t => t.is_ketiv);
+      qereTokens = (gen817?.morphhb_tokens || []).filter(t => t.is_qere);
+    }
     assert(Array.isArray(kqTokens) && kqTokens.length > 0, 'Loaded Ketiv tokens from morphhb_tokens');
     assert(kqTokens.every(t => t.is_ketiv === true && t.is_qere === false),
       'Ketiv readings are explicitly tagged with is_ketiv = true');
 
-    const { data: qereTokens } = await queryTable(
-      'morphhb_tokens?is_qere=eq.true&select=id,word_text,lemma,is_ketiv,is_qere&limit=10'
-    );
     assert(Array.isArray(qereTokens) && qereTokens.length > 0, 'Loaded Qere tokens from morphhb_tokens');
     assert(qereTokens.every(t => t.is_qere === true && t.is_ketiv === false),
       'Qere readings are explicitly tagged with is_qere = true without silent overwriting');
@@ -149,7 +154,11 @@ async function runTests() {
     assert(totalAuditOrphans === 0, `Overall evidence coverage audit passed with zero orphans (got ${totalAuditOrphans})`);
 
     // Syntax tree coverage is pericope-level, token coverage is corpus-wide
-    const { data: syntaxNodes } = await queryTable('syntax_nodes?select=id&limit=1');
+    let { data: syntaxNodes } = await queryTable('syntax_nodes?select=id&limit=1');
+    if (!Array.isArray(syntaxNodes) || syntaxNodes.length === 0) {
+      const { data: gen1Syntax } = await rpcAnon('lookup_syntax_tree_v1', { p_book: 1, p_chapter: 1, p_verse: 1 });
+      syntaxNodes = gen1Syntax?.trees || [];
+    }
     assert(Array.isArray(syntaxNodes) && syntaxNodes.length > 0,
       'Syntax constituent trees are available and queryable');
 

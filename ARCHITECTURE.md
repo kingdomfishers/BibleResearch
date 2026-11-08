@@ -228,3 +228,18 @@ Plan, test points, gates, and step-by-step prompts: `TASKS.md` → "Feature: Not
 3. **AI Prompts & MCP Tool Contract:**
    - **Unified Conceptual Treatment:** All MCP tools (`get_verse_research`, `research_relationships`, `resolve_word_id`, `get_word_details`) and prompt templates (`study_word`, `study_verse`, `study_relationships`, pattern templates) must instruct the AI model to never separate homographs into disjoint concepts.
    - **Contextual Meaning Tracing:** AI prompts must explicitly require the agent to explore the word as a unified conceptual focus, tracing and contrasting its different meanings across different verses, and examining why the biblical authors selected that particular shared word form across diverse passages.
+
+## 7. Hybrid Cloudflare Static Assets + Supabase PostgreSQL Architecture (2026-11-07)
+
+See [STATIC_CORPUS_MIGRATION.md](STATIC_CORPUS_MIGRATION.md) for the complete dependency matrix, shard specification, and migration runbook.
+
+1. **Architectural Separation of Concerns:**
+   - **Cloudflare Workers Static Assets (`bibleresearch-corpus`, `wrangler.corpus.jsonc`, `scripts/corpus-worker.mjs`):** Serves all immutable public biblical source-evidence datasets, precomputed chapter/LXX/lexical/syntax indexes (`1,890` versioned `.gz` assets, `504.44 MiB` compressed, max file `3.15 MiB`), and the **complete 983-file Macula syntax corpus** (`929` Hebrew WLC + `27` Greek Nestle1904 + `27` Greek SBLGNT lowfat XML files = `1,338,108` syntax nodes, `1,298,688` edges, and `128` preserved noncanonical source-only nodes).
+   - **Supabase PostgreSQL (`ejoperxiwxlcbsqrkrvb`):** Stores dynamic research and application state (Auth/users, private notes/anchors/blocks/connections/revisions, personal word translation choices, editable lexical definitions/interpretations, active research/scholarly assertions, changing concepts/relationships/classifications, chronology models/revisions/hypotheses, review states, and compact indexed lookup tables `words`, `verses`, `verse_translation_sources`, `word_form_lemmas`, `lexeme_identifiers`).
+   - **Mixed-Table Separation:** Tables containing both immutable source columns/rows and mutable columns/rows (`words`, `verses`, `lexemes`, `entity_relationships`, `hebrew_lxx_word_alignments`) export their immutable source projections to Cloudflare Static Assets while retaining their stable primary keys and editable columns/rows in PostgreSQL.
+
+2. **Three-Tier Retrieval & Compatibility Gateway:**
+   - **Frontend (`src/api/corpus-client.ts` + `src/api/rpc.ts`):** Routes immutable evidence & syntax lookups (`getReaderPassages`, `lookupPassageTokensSyntax`, `lookupHebrewVerseEvidence`, `lookupGreekVerseEvidence`, `lookupSyntaxTree`, `lookupSeptuagintPassage`, `lookupSeptuagintByCanonicalVerse`, `compareHebrewSeptuagintPassage`, `getHebrewSeptuagintParallel`, `lookupHebrewSeptuagintAlignments`) to `bibleresearch-corpus` (`/v1/rpc/*`) with automatic fallback to Supabase.
+   - **MCP Edge Function (`supabase/functions/bible-mcp/index.ts`):** Routes static corpus tools (`lookup_septuagint_passage_v1`, `lookup_syntax_tree_v1`, `compare_hebrew_septuagint_passage_v1`, `lookup_hebrew_septuagint_alignments_v1`, `audit_evidence_coverage_v1`) to `bibleresearch-corpus` with PostgREST fallback.
+   - **PostgreSQL Hybrid Gateway (`supabase/migrations/20261107213000_hybrid_corpus_gateway.sql`):** Provides `public.call_corpus_rpc_v1(p_operation, p_params)` via `extensions.http_post` so direct PostgREST `/rest/v1/rpc/*` callers and OpenAPI integrations transparently receive the complete 983-file Macula syntax trees and static evidence even after the 1,186 MB of redundant static tables are reclaimed in PostgreSQL.
+

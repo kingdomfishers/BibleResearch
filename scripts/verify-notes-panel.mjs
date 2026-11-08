@@ -99,6 +99,16 @@ class MockElement {
       contains(cls) {
         return el.className.split(' ').includes(cls);
       },
+      toggle(cls, force) {
+        const has = el.classList.contains(cls);
+        const shouldHave = force !== undefined ? Boolean(force) : !has;
+        if (shouldHave) {
+          el.classList.add(cls);
+        } else {
+          el.classList.remove(cls);
+        }
+        return shouldHave;
+      },
     };
   }
 

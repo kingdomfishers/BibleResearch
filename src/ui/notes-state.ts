@@ -2,7 +2,7 @@
 // @feature: notes
 // @tables: none
 // @candidates: none
-// @toc: types | logic:filters | logic:hash | logic:store
+// @toc: types | logic:filters | logic:hash | logic:store | logic:api
 
 // === @section:types ===
 export type AuthorFilter = 'all' | 'human' | 'ai';
@@ -16,6 +16,7 @@ export interface NotesFilterState {
 export interface NotesStoreState {
   filters: NotesFilterState;
   selectedNoteId: string | null;
+  selectedTokenPosition: number | null;
 }
 
 export type NotesStateListener = (state: NotesStoreState) => void;
@@ -87,12 +88,14 @@ export function noteIdFromHash(hash?: string): string | null {
 let currentFilters = loadFilters();
 let currentSelectedNoteId =
   typeof window !== 'undefined' ? parseNoteHash(window.location.hash) : null;
+let currentSelectedTokenPosition: number | null = null;
 const listeners = new Set<NotesStateListener>();
 
 function emit(): void {
   const snapshot: NotesStoreState = {
     filters: { ...currentFilters },
     selectedNoteId: currentSelectedNoteId,
+    selectedTokenPosition: currentSelectedTokenPosition,
   };
   listeners.forEach((fn) => fn(snapshot));
 }
@@ -107,6 +110,7 @@ if (typeof window !== 'undefined') {
   });
 }
 
+// === @section:logic:api ===
 export const notesState = {
   getFilters: (): NotesFilterState => ({ ...currentFilters }),
   setFilters(partial: Partial<NotesFilterState>) {
@@ -143,15 +147,28 @@ export const notesState = {
     currentSelectedNoteId = null;
     emit();
   },
+  getSelectedTokenPosition: (): number | null => currentSelectedTokenPosition,
+  setSelectedTokenPosition(pos: number | null) {
+    if (pos === currentSelectedTokenPosition) return;
+    currentSelectedTokenPosition = pos;
+    emit();
+  },
+  clearSelectedTokenPosition() {
+    if (currentSelectedTokenPosition === null) return;
+    currentSelectedTokenPosition = null;
+    emit();
+  },
   getState: (): NotesStoreState => ({
     filters: { ...currentFilters },
     selectedNoteId: currentSelectedNoteId,
+    selectedTokenPosition: currentSelectedTokenPosition,
   }),
   subscribe(listener: NotesStateListener): () => void {
     listeners.add(listener);
     listener({
       filters: { ...currentFilters },
       selectedNoteId: currentSelectedNoteId,
+      selectedTokenPosition: currentSelectedTokenPosition,
     });
     return () => {
       listeners.delete(listener);

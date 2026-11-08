@@ -12,7 +12,15 @@ import { WORKFLOW_VERSION } from './research-workflow.ts';
 import { RESEARCH_TOOL_NAMES } from './workflow-contract.ts';
 
 // === @section:types ===
-export interface DatabaseConfig { url: string; publicKey: string }
+export interface DatabaseConfig { url: string; publicKey: string; corpusUrl?: string }
+const DEFAULT_CORPUS_URL = 'https://bibleresearch-corpus.kingdomfishers-custom.workers.dev';
+const corpusRpcs = new Set([
+  'lookup_septuagint_passage_v1',
+  'lookup_syntax_tree_v1',
+  'compare_hebrew_septuagint_passage_v1',
+  'lookup_hebrew_septuagint_alignments_v1',
+  'audit_evidence_coverage_v1',
+]);
 const allowedRpcs = new Set([
   'prompt_verse_words',
   'prompt_word_occurrences',
@@ -75,6 +83,27 @@ export function createDatabaseReader(config: DatabaseConfig, fetcher: typeof fet
     const single = singlePacketRpcs.has(name) || name === 'get_word_details';
     const pageLimit = single ? 1 : limit;
     const pageOffset = single ? 0 : offset;
+    const corpusBase = (config.corpusUrl || DEFAULT_CORPUS_URL).replace(/\/+$/, '');
+    if (corpusRpcs.has(name)) {
+      try {
+        const corpRes = await fetcher(`${corpusBase}/v1/rpc/${name}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify(args ?? {}),
+          signal: AbortSignal.timeout(8000),
+        });
+        if (corpRes.ok) {
+          const corpData = await corpRes.json();
+          if (corpData && typeof corpData === 'object' && !Array.isArray(corpData)) {
+            return {
+              source: 'live',
+              rows: [corpData as Record<string, unknown>],
+              page: { limit: 1, offset: 0, has_more: false, next_offset: null },
+            };
+          }
+        }
+      } catch { /* fall back to PostgREST RPC */ }
+    }
     const url = new URL(name === 'get_word_details' ? '/rest/v1/words' : `/rest/v1/rpc/${name}`, base);
     if (name === 'get_word_details') {
       url.searchParams.set('id', `eq.${args.word_id}`);

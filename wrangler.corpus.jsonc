@@ -1,0 +1,11 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "bibleresearch-corpus",
+  "main": "./scripts/corpus-worker.mjs",
+  "compatibility_date": "2026-11-02",
+  "assets": {
+    "directory": "./.artifacts/static-corpus",
+    "binding": "ASSETS",
+    "run_worker_first": true
+  }
+}

@@ -131,3 +131,12 @@ Deterministic, reproducible import pipeline in `scripts/import-lexical-formation
   - `public.quarantined_evidence_records`: 383 rows (365 unresolved from formation ETL)
   - `public.lexical_connections`: 2 rows (Genesis 2:5-7 literary wordplay, אדם/דם consonantal overlap)
 
+## Complete 983-file Macula syntax & static corpus export (2026-11-07, CORP-02)
+
+`scripts/export-static-corpus.py` exports all 21 immutable source tables/projections from PostgreSQL and builds the complete 983-file Macula syntax corpus directly from `.artifacts/sources/macula-hebrew/WLC/lowfat/*.xml` (`929` files) and `.artifacts/sources/macula-greek/{Nestle1904,SBLGNT}/lowfat/*.xml` (`54` files) into `.artifacts/static-corpus/` (`1,890` gzipped assets, `504.44 MiB` compressed, `6,793.14 MiB` uncompressed), deployed to the isolated Cloudflare Static Assets Worker `bibleresearch-corpus` (`https://bibleresearch-corpus.kingdomfishers-custom.workers.dev`).
+
+- **Macula Syntax Totals:** `1,338,108` syntax nodes (`55,660` root trees, `11,008` cross-verse nodes, `751,431` terminal nodes) and `1,298,688` syntax edges (`1,294,607` Macula `parent_child` + `4,081` STEP `head_of` edges).
+- **Noncanonical Source-Only Preservation:** `128` terminal/constituent nodes in 3 noncanonical NT verses (`MRK 16:99!1..33`, `JHN 5:4!1..27`, `ROM 16:24!1..11`) are preserved in `/v1/syntax/unmapped` and `/tables/macula_syntax_unmapped_nodes/` without fabricating canonical `public.verses` rows.
+- **License Gating Preserved:** Restricted UBS SDBH (`sdbh`, `lexdomain`, `coredomain`, `contextualdomain`) and UBS MARBLE / Louw-Nida (`domain`, `ln`) XML attributes are stripped during parsing and never exported to public static assets.
+
+

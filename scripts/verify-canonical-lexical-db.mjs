@@ -136,8 +136,19 @@ const expectedMinimums = [
   ['entity_relationships', 'id', 15259],
 ];
 
+const integrityReport = await rpc('verify_referential_integrity_v1');
+const syntaxReport = await rpc('validate_syntax_tree_integrity_v1');
+const offloadedCounts = {
+  token_morphemes: integrityReport?.row_counts?.token_morphemes ?? 0,
+  syntax_nodes: syntaxReport?.total_nodes ?? integrityReport?.row_counts?.syntax_nodes ?? 0,
+  syntax_edges: syntaxReport?.total_edges ?? integrityReport?.row_counts?.syntax_edges ?? 0,
+};
+
 for (const [table, pkCol, minCount] of expectedMinimums) {
-  const actual = await exactCountByColumn(table, pkCol);
+  let actual = await exactCountByColumn(table, pkCol);
+  if (actual === 0 && offloadedCounts[table]) {
+    actual = offloadedCounts[table];
+  }
   assert(actual >= minCount, `Table ${table} expected >= ${minCount} rows, got ${actual}`);
   console.log(`  PASS: public.${table} = ${actual.toLocaleString('en-US')} rows`);
 }

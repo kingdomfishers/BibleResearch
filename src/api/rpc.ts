@@ -6,6 +6,7 @@
 
 // === @section:imports ===
 import { ensureReaderSession, restoreReaderSession, supabase } from './supabase';
+import { callCorpusRpc, isStaticCorpusRpc } from './corpus-client';
 import { NotesRPC } from './notes-rpc';
 import type { ActivePassage, ChronologyResponse, DataResult, HydratedCoOccurrence,
   RelationshipResearchPacket, TranslationSaveResult, VerseGeographyResponse, VerseTranslationToken,
@@ -223,6 +224,10 @@ async function verseResearchV2(request: Record<string, unknown>): Promise<DataRe
 
 // === @section:logic:reader ===
 async function readerRPC<T>(name: string, args: Record<string, unknown>): Promise<DataResult<T | null>> {
+  if (isStaticCorpusRpc(name)) {
+    const corp = await callCorpusRpc<T>(name, args, { timeoutMs: 8000 });
+    if (corp.data !== null) return corp;
+  }
   if (!supabase) return result(null, 'unavailable', 'Study data is not configured.');
   try {
     const { data, error } = await supabase.rpc(name, args).abortSignal(AbortSignal.timeout(10000));
