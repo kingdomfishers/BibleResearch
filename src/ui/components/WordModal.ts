@@ -7,7 +7,7 @@
 // === @section:imports ===
 import { BibleRPC } from '../../api/rpc';
 import type { ActivePassage, HydratedCoOccurrence, WordOccurrence, WordRecord, WordRelationship } from '../../api/types';
-import { formatVerseRef } from '../utils';
+import { calculateGematria, formatVerseRef } from '../utils';
 import { renderCategorizedConnections, renderWordFormation } from './WordFormation';
 
 // === @section:ui:details ===
@@ -26,11 +26,8 @@ function renderDetails(container: HTMLElement, word: WordRecord, sample: boolean
   set('.strongs', `Strong’s ${word.strongs_nr}`);
   set('.grammar', word.grammar_code ?? 'Grammar not available');
   const gematriaEl = container.querySelector<HTMLElement>('.gematria')!;
-  if (word.gematria != null) {
-    gematriaEl.textContent = `Gematria ${word.gematria}`;
-  } else {
-    gematriaEl.hidden = true;
-  }
+  const gem = word.gematria ?? calculateGematria(word.original_word);
+  gematriaEl.textContent = `Gematria ${gem}`;
   set('.modal-source', sample ? 'Built-in sample · Definitions are concise study notes; relationship scores are illustrative.' : 'Live database word record');
   set('.biblical-definition', word.biblical_def || 'Not yet available.');
   set('.physical-definition', word.physical_def || 'Not yet available.');

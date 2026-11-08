@@ -2,16 +2,17 @@
 // @feature: word-modal
 // @tables: words | reader_rendering_groups | verse_translation_sources | assertions | lexical_formations | lemma_components | lexical_connections
 // @candidates: none
-// @toc: imports | types | ui:main | ui:summary | ui:occurrences | ui:connections | logic:inspect | logic:page
+// @toc: imports | types | ui:main | ui:summary | ui:occurrences | ui:connections | ui:notes | logic:inspect | logic:page
 
 // === @section:imports ===
 import { BibleRPC } from '../../api/rpc';
 import type { ActivePassage, ReaderOverview, ReaderWord, WordRecord } from '../../api/types';
 import { action, el, heading, status } from '../study-dom';
-import { formatVerseRef } from '../utils';
+import { calculateGematria, formatVerseRef } from '../utils';
 import { appState } from '../state';
 import type { ContextPreview } from './ContextPreview';
 import { renderCategorizedConnections, renderWordFormation } from './WordFormation';
+import { createWordNotes } from './WordNotes';
 
 // === @section:types ===
 interface Selection { id: number; position?: number; english?: string; rendering?: string; suggested?: boolean }
@@ -45,7 +46,13 @@ export function createWordInspector(preview: ContextPreview, navigate: (p: Activ
     const original = el('h2', 'modal-original', word.original_word);
     original.dir = word.strongs_nr.startsWith('H') ? 'rtl' : 'ltr';
     original.lang = word.strongs_nr.startsWith('H') ? 'he' : 'el';
-    summary.append(original, el('p', 'inspector-transliteration', word.transliteration),
+    const gematria = word.gematria ?? calculateGematria(word.original_word);
+    const metaRow = el('div', 'inspector-word-meta');
+    metaRow.append(
+      el('span', 'meta-pill', `Gematria ${gematria}`),
+      el('span', 'meta-pill', `Strong’s ${word.strongs_nr}`),
+    );
+    summary.append(original, el('p', 'inspector-transliteration', word.transliteration), metaRow,
       el('p', 'inspector-here', selected.english ? `Here: ${selected.english.replaceAll('/', ' ')}` : word.english_translations?.join(' · ') ?? ''),
       el('p', 'inspector-definition', word.biblical_def || 'A sourced definition is not available for this word.'));
     const grammar = selected.position ? overview?.grammar[selected.position] : null;
@@ -71,7 +78,9 @@ export function createWordInspector(preview: ContextPreview, navigate: (p: Activ
       summary.append(single);
     }
     const details = el('details', 'study-disclosure'); details.append(el('summary', '', 'Identifiers and source'));
-    details.append(el('p', 'strongs', `Strong’s ${word.strongs_nr}`), el('p', '', word.grammar_code ?? 'Grammar unavailable'),
+    details.append(el('p', 'strongs', `Strong’s ${word.strongs_nr}`),
+      el('p', 'gematria-badge', `Gematria: ${gematria}`),
+      el('p', '', word.grammar_code ?? 'Grammar unavailable'),
       el('p', 'study-muted', 'STEP Bible · occurrence renderings across the base Strong’s group. These are observed translations, not assigned semantic senses.'));
     summary.append(details);
   }
@@ -136,6 +145,12 @@ export function createWordInspector(preview: ContextPreview, navigate: (p: Activ
     });
   }
 
+  // === @section:ui:notes ===
+  const wordNotes = createWordNotes({
+    onInspectWord: (targetWordId: number) => { void inspect({ id: targetWordId }); },
+  });
+  element.appendChild(wordNotes.element);
+
   // === @section:logic:inspect ===
   async function inspect(next: Selection, remember = true) {
     const request = ++generation;
@@ -151,6 +166,7 @@ export function createWordInspector(preview: ContextPreview, navigate: (p: Activ
     summary.replaceChildren(heading('WORD & CONNECTIONS', 'Opening word…'));
     formation.replaceChildren(status('Loading word formation & etymology…'));
     occurrences.replaceChildren(); categorized.replaceChildren(); connections.replaceChildren();
+    wordNotes.clear();
     element.setAttribute('aria-busy', 'true');
     const result = await BibleRPC.getReaderWord(next.id, 0, next.rendering ?? null);
     if (request !== generation) return;
@@ -158,7 +174,7 @@ export function createWordInspector(preview: ContextPreview, navigate: (p: Activ
     if (!result.data?.word) {
       summary.replaceChildren(heading('WORD & CONNECTIONS', 'Word unavailable'), status(result.error ?? 'No live word evidence is available.'),
         action('Retry', () => { void inspect(next, false); }));
-      formation.replaceChildren();
+      formation.replaceChildren(); wordNotes.clear();
       return;
     }
     currentData = result.data;
@@ -176,6 +192,11 @@ export function createWordInspector(preview: ContextPreview, navigate: (p: Activ
       void inspect({ id: targetId, ...opts });
     });
     void renderConnections(next.id, strongs, request);
+    const curPassage = appState.getPassage();
+    const curOcc = result.data.occurrences?.find(
+      o => o.book === curPassage.book && o.chapter === curPassage.chapter && o.verse === curPassage.verse
+    );
+    void wordNotes.setWord(next.id, curOcc?.verse_id ?? null, next.position ?? null);
   }
 
   // === @section:logic:page ===
@@ -193,5 +214,6 @@ export function createWordInspector(preview: ContextPreview, navigate: (p: Activ
     reset: () => { generation++; selection = null; history.length = 0; element.dataset.open = 'false';
       returnPassage.hidden = true;
       summary.replaceChildren(heading('WORD & CONNECTIONS', 'Follow a word'), status('Choose a word to explore.'));
-      formation.replaceChildren(); occurrences.replaceChildren(); categorized.replaceChildren(); connections.replaceChildren(); }, close };
+      formation.replaceChildren(); occurrences.replaceChildren(); categorized.replaceChildren(); connections.replaceChildren();
+      wordNotes.clear(); }, close };
 }

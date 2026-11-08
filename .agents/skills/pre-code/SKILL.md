@@ -1,5 +1,7 @@
+---
 name: pre-code
 description: Mandatory pre-coding protocol. Execute BEFORE creating or editing any file in src/ or supabase/. Handles [USER-CHECK] closure, feature decomposition into TASKS.md, progressive context loading, DRY candidate planning, and targeted @section reading.
+---
 
 SKILL: PRE-CODE PROTOCOL (pre-code)
 

@@ -1,6 +1,7 @@
+---
 name: post-code
-
 description: Mandatory post-coding protocol. Execute AFTER completing all file edits for an atomic task. Handles batch type/size/@toc verification, PROJECTMAP.md & SQL migration sync, Two-Track Task Verification, and Git checkpoints.
+---
 
 SKILL: POST-CODE PROTOCOL (post-code)
 

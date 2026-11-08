@@ -138,7 +138,11 @@ const expectedMinimums = [
 
 const integrityReport = await rpc('verify_referential_integrity_v1');
 const syntaxReport = await rpc('validate_syntax_tree_integrity_v1');
+const auditReport = await rpc('audit_evidence_coverage_v1');
 const offloadedCounts = {
+  edition_passages: auditReport?.table_counts?.edition_passages ?? 0,
+  lexeme_identifiers: auditReport?.table_counts?.lexeme_identifiers ?? 0,
+  word_form_lemmas: auditReport?.table_counts?.word_form_lemmas ?? integrityReport?.row_counts?.word_form_lemmas ?? 0,
   token_morphemes: integrityReport?.row_counts?.token_morphemes ?? 0,
   syntax_nodes: syntaxReport?.total_nodes ?? integrityReport?.row_counts?.syntax_nodes ?? 0,
   syntax_edges: syntaxReport?.total_edges ?? integrityReport?.row_counts?.syntax_edges ?? 0,

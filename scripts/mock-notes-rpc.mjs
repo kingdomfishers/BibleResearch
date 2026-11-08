@@ -12,6 +12,7 @@ if (!globalThis.__mockRpcState) {
       ],
     },
     getForPassageHandler: null,
+    getForWordHandler: null,
     abortedRequests: [],
   };
 }
@@ -41,6 +42,26 @@ export const BibleRPC = {
           totals: { total: 0, human: 0, ai: 0 },
           truncated: { primary: false, secondary: false },
           token_note_counts: [],
+        },
+        error: null,
+        source: 'database',
+      };
+    },
+    getForWord: async (wordId, verseId, position, opts) => {
+      if (opts?.signal) {
+        opts.signal.addEventListener('abort', () => {
+          mockRpcState.abortedRequests.push({ wordId, verseId, position });
+        });
+      }
+      if (mockRpcState.getForWordHandler) {
+        return mockRpcState.getForWordHandler(wordId, verseId, position, opts);
+      }
+      return {
+        data: {
+          status: 'ok',
+          groups: { occurrence: [], form: [], lemma: [] },
+          totals: { occurrence: 0, form: 0, lemma: 0, human: 0, ai: 0, total: 0 },
+          lemmas: [],
         },
         error: null,
         source: 'database',

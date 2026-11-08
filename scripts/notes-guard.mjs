@@ -158,6 +158,28 @@ async function captureSnapshot() {
   for (const table of TABLES) {
     row_counts[table] = await getTableCount(table);
   }
+  if (row_counts.word_form_lemmas === 0) {
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/audit_evidence_coverage_v1`, {
+        method: 'POST',
+        headers: {
+          apikey: KEY,
+          Authorization: `Bearer ${KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: '{}',
+        signal: AbortSignal.timeout(15000),
+      });
+      if (res.ok) {
+        const audit = await res.json();
+        if (audit?.table_counts?.word_form_lemmas > 0 && audit?.live_asset_verification?.status === 'PASS') {
+          row_counts.word_form_lemmas = audit.table_counts.word_form_lemmas;
+        }
+      }
+    } catch {
+      // Keep 0 if audit fails
+    }
+  }
   const verse_research = await getVerseResearchGen1_1();
   const mcp_health = await getMcpHealth();
   return {

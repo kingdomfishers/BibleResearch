@@ -46,7 +46,9 @@ button:not(:disabled),summary { cursor:pointer; } a { color:var(--gold); }
 .study-muted { font-size:12px; color:var(--muted); margin:6px 0; line-height:1.6; overflow-wrap:anywhere; }
 .word-inspector { position:sticky; top:16px; max-height:calc(100vh - 32px); overflow:auto; padding:23px; border:1px solid var(--border); background:var(--panel); border-radius:8px; }
 .word-inspector h2 { font:normal 39px/1.5 'Times New Roman',serif; margin:0; text-align:start; }
-.inspector-transliteration { color:var(--gold); font:16px Georgia,serif; margin:0 0 15px; }
+.inspector-transliteration { color:var(--gold); font:16px Georgia,serif; margin:0 0 10px; }
+.inspector-word-meta { display:flex; flex-wrap:wrap; gap:8px; margin:0 0 15px; }
+.inspector-word-meta .meta-pill { font-size:11px; color:var(--gold-light); background:rgba(211,180,120,0.08); border:1px solid rgba(211,180,120,0.3); border-radius:4px; padding:4px 9px; font-variant-numeric:tabular-nums; display:inline-block; }
 .inspector-here { font-size:18px; margin:8px 0; } .inspector-definition { font:17px/1.6 Georgia,serif; overflow-wrap:anywhere; }
 .word-grammar { font-size:12px; color:var(--muted); }.word-inspector h3 { font:normal 19px Georgia,serif; margin:22px 0 8px; }
 .study-disclosure { border-top:1px solid var(--border); margin-top:16px; padding-top:10px; font-size:12px; } .study-disclosure summary { color:var(--gold); }
