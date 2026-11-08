@@ -216,8 +216,8 @@ Status: Phase A in progress (NOTE-09 done). Next task: **NOTE-10**.
 - [x] **NOTE-18 NoteCard with provenance visuals** | Files: src/ui/components/NoteCard.ts, src/ui/styles-notes.css | Verify: [USER-CHECK] TP-A11Y-1, TP-BIDI-1.
 - [x] **NOTE-19 Note blocks renderer** | Files: src/ui/components/NoteBlocks.ts, src/ui/styles-notes.css | Verify: [USER-CHECK] TP-XSS-1.
 - [x] **NOTE-20 NotesPanel (tiers and filters)** | Files: src/ui/components/NotesPanel.ts, src/ui/styles-notes.css | Verify: [USER-CHECK] TP-RACE-1.
-- [-] **NOTE-21 Reader integration (verse notes and token badges)** | Files: src/ui/components/VerseReader.ts, src/main.ts | Verify: [USER-CHECK] TP-RACE-1.
-- [ ] **NOTE-22 Word inspector integration** | Files: src/ui/components/WordNotes.ts, src/ui/components/WordInspector.ts | Verify: [USER-CHECK] TP-RACE-1.
+- [x] **NOTE-21 Reader integration (verse notes and token badges)** | Files: src/ui/components/VerseReader.ts, src/main.ts | Verify: [USER-CHECK] TP-RACE-1.
+- [-] **NOTE-22 Word inspector integration** | Files: src/ui/components/WordNotes.ts, src/ui/components/WordInspector.ts | Verify: [USER-CHECK] TP-RACE-1.
 - [ ] **NOTE-23 Target picker (search + token picker)** | Files: src/ui/components/TargetPicker.ts, src/ui/styles-notes.css | Verify: [USER-CHECK].
 - [ ] **NOTE-24 Connection builder** | Files: src/ui/components/ConnectionBuilder.ts, src/ui/styles-notes.css | Verify: [USER-CHECK] TP-BIDI-1.
 - [ ] **NOTE-25 Note editor** | Files: src/ui/components/NoteEditor.ts, src/main.ts | Verify: [USER-CHECK].
@@ -716,7 +716,7 @@ Design: [ARCHITECTURE.md](ARCHITECTURE.md). Standard Hebrew Gematria and Greek I
 
 - [x] **G1 Database Gematria calculation and schema migration** | Files: supabase/migrations/20261102000000_word_gematria.sql, scripts/verify-gematria-db.sql | Verify: [AUTO-TEST] Live caller-RLS database function `public.calculate_gematria(text)` and `public.words.gematria` column return exact values for Hebrew (Genesis 1:1) and Greek (John 1:1) words.
 - [x] **G2 Canonical types, sample fixtures, and gateway** | Files: src/api/types.ts, src/api/rpc.ts | Verify: [AUTO-TEST] `WordRecord` interface includes `gematria: number | null`, `sampleWords` fixture is populated, and `BibleRPC.getWordDetails` provides gematria under type and size checks.
-- [-] **G3 Word Inspector modal UI integration** | Files: src/ui/components/WordModal.ts, src/ui/styles-modal.css | Verify: [USER-CHECK] Word modal renders discrete Gematria badge in `.word-meta` with verified values upon word inspection.
+- [-] **G3 Word Inspector Gematria UI integration** | Files: src/ui/components/VerseReader.ts, src/ui/components/WordInspector.ts, src/ui/styles-workspace.css | Verify: [USER-CHECK] Gematria is displayed exclusively in the Word Inspector (and modal), and kept hidden from the verse overview reader cards.
 
 ## Shipped feature: hydrated verse AI research and deeper pattern prompts
 

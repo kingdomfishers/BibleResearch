@@ -2,7 +2,7 @@
 // @feature: verse-reader
 // @tables: verses | words | verse_translation_sources | word_translation_choices | reader_rendering_groups | reader_english_verses
 // @candidates: none
-// @toc: imports | types | ui:tokens | ui:main | logic:context
+// @toc: imports | types | ui:tokens | ui:notes-badge | ui:main | logic:context
 
 // === @section:imports ===
 import type { ActivePassage, DataResult, VerseTranslationToken, ReaderOverview, ReaderPassage } from '../../api/types';
@@ -41,6 +41,36 @@ export function renderVerseTokens(container: HTMLElement, tokens: VerseTranslati
     word.append(button, transliteration, here, createTranslationChoice({ ...p }, token, canSave && !!token.source_ref),
       el('div', 'token-range-mount'), el('div', 'token-place-mount'), el('div', 'token-notes-mount'));
     container.append(word);
+  });
+}
+
+// === @section:ui:notes-badge ===
+export function applyNoteCounts(grid: HTMLElement, counts: { word_position: number; human: number; ai: number }[],
+  onTokenNotes?: (pos: number) => void) {
+  const map = new Map(counts.map(c => [c.word_position, c]));
+  grid.querySelectorAll<HTMLElement>('.word-token').forEach(node => {
+    const mount = node.querySelector<HTMLElement>('.token-notes-mount');
+    if (!mount) return;
+    mount.replaceChildren();
+    const pos = Number(node.dataset.position);
+    const count = map.get(pos);
+    if (!count || (count.human === 0 && count.ai === 0)) return;
+    const btn = document.createElement('button');
+    btn.type = 'button'; btn.className = 'token-notes-badge';
+    const parts: string[] = [];
+    if (count.human > 0) parts.push(`${count.human} human note${count.human > 1 ? 's' : ''}`);
+    if (count.ai > 0) parts.push(`${count.ai} AI note${count.ai > 1 ? 's' : ''}`);
+    btn.setAttribute('aria-label', parts.join(', '));
+    btn.addEventListener('click', (e) => { e.stopPropagation(); onTokenNotes?.(pos); });
+    if (count.human > 0) {
+      const h = document.createElement('span'); h.className = 'token-notes-count token-notes-count--human';
+      h.textContent = String(count.human); btn.appendChild(h);
+    }
+    if (count.ai > 0) {
+      const a = document.createElement('span'); a.className = 'token-notes-count token-notes-count--ai';
+      a.textContent = String(count.ai); btn.appendChild(a);
+    }
+    mount.appendChild(btn);
   });
 }
 
@@ -86,39 +116,7 @@ export function createVerseReader(actions: VerseReaderActions) {
     setOverview(data: ReaderOverview | null) { overview = data; applyContext(); },
     selectPosition(position: number | null) { selected = position; applySelection(); },
     setNoteCounts(counts: { word_position: number; human: number; ai: number }[]) {
-      const map = new Map(counts.map(c => [c.word_position, c]));
-      grid.querySelectorAll<HTMLElement>('.word-token').forEach(node => {
-        const mount = node.querySelector<HTMLElement>('.token-notes-mount');
-        if (!mount) return;
-        mount.replaceChildren();
-        const pos = Number(node.dataset.position);
-        const count = map.get(pos);
-        if (!count || (count.human === 0 && count.ai === 0)) return;
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'token-notes-badge';
-        const parts: string[] = [];
-        if (count.human > 0) parts.push(`${count.human} human note${count.human > 1 ? 's' : ''}`);
-        if (count.ai > 0) parts.push(`${count.ai} AI note${count.ai > 1 ? 's' : ''}`);
-        btn.setAttribute('aria-label', parts.join(', '));
-        btn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          actions.onTokenNotes?.(pos);
-        });
-        if (count.human > 0) {
-          const h = document.createElement('span');
-          h.className = 'token-notes-count token-notes-count--human';
-          h.textContent = String(count.human);
-          btn.appendChild(h);
-        }
-        if (count.ai > 0) {
-          const a = document.createElement('span');
-          a.className = 'token-notes-count token-notes-count--ai';
-          a.textContent = String(count.ai);
-          btn.appendChild(a);
-        }
-        mount.appendChild(btn);
-      });
+      applyNoteCounts(grid, counts, actions.onTokenNotes);
     },
   };
 
