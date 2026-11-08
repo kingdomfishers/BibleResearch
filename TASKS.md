@@ -219,8 +219,8 @@ Status: Phase A in progress (NOTE-09 done). Next task: **NOTE-10**.
 - [x] **NOTE-21 Reader integration (verse notes and token badges)** | Files: src/ui/components/VerseReader.ts, src/main.ts | Verify: [USER-CHECK] TP-RACE-1.
 - [x] **NOTE-22 Word inspector integration** | Files: src/ui/components/WordNotes.ts, src/ui/components/WordInspector.ts | Verify: [USER-CHECK] TP-RACE-1.
 - [x] **NOTE-23 Target picker (search + token picker)** | Files: src/ui/components/TargetPicker.ts, src/ui/styles-notes.css | Verify: [USER-CHECK].
-- [-] **NOTE-24 Connection builder** | Files: src/ui/components/ConnectionBuilder.ts, src/ui/styles-notes.css | Verify: [USER-CHECK] TP-BIDI-1.
-- [ ] **NOTE-25 Note editor** | Files: src/ui/components/NoteEditor.ts, src/main.ts | Verify: [USER-CHECK].
+- [x] **NOTE-24 Connection builder** | Files: src/ui/components/ConnectionBuilder.ts, src/ui/styles-notes.css | Verify: [USER-CHECK] TP-BIDI-1.
+- [-] **NOTE-25 Note editor** | Files: src/ui/components/NoteEditor.ts, src/main.ts | Verify: [USER-CHECK].
 - [ ] **NOTE-26 Notes browser and deep links** | Files: src/ui/components/NotesBrowser.ts, src/ui/state.ts | Verify: [USER-CHECK].
 - [ ] **NOTE-27 UI verification suite — Gate G3** | Files: scripts/verify-notes-ui.mjs, src/ui/styles-mobile.css | Verify: [AUTO-TEST] then [USER-CHECK] G3.
 
