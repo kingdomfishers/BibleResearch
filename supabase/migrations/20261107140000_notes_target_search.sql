@@ -132,14 +132,14 @@ begin
         jsonb_build_object(
           'kind', 'lemma',
           'id', l.id,
-          'label', l.lemma_script || ' · ' || l.base_strongs || coalesce(l.homograph_tag, ''),
+          'label', l.lemma_script || case when l.transliteration is not null then ' (' || l.transliteration || ')' else '' end,
           'sublabel', coalesce(ls.short_gloss, l.transliteration, l.base_strongs) || ' [' || l.base_strongs || coalesce(l.homograph_tag, '') || ']',
           'language', l.language,
           'match_type', case when l.lemma_key = 'lemma:' || v_upper or (l.base_strongs = v_upper and l.homograph_tag is null) then 'exact' else 'prefix' end,
           'anchor', jsonb_build_object(
             'kind', 'lemma',
             'lemma_id', l.id,
-            'label', l.lemma_script || ' · ' || l.base_strongs || coalesce(l.homograph_tag, '')
+            'label', l.lemma_script || case when l.transliteration is not null then ' (' || l.transliteration || ')' else '' end
           )
         ) order by
           case when l.lemma_key = 'lemma:' || v_upper or (l.base_strongs = v_upper and l.homograph_tag is null) then 1 else 2 end,
@@ -166,14 +166,14 @@ begin
         jsonb_build_object(
           'kind', 'lemma',
           'id', l.id,
-          'label', l.lemma_script || ' · ' || l.base_strongs || coalesce(l.homograph_tag, ''),
+          'label', l.lemma_script || case when l.transliteration is not null then ' (' || l.transliteration || ')' else '' end,
           'sublabel', coalesce(ls.short_gloss, l.transliteration, l.base_strongs) || ' [' || l.base_strongs || coalesce(l.homograph_tag, '') || ']',
           'language', l.language,
           'match_type', case when l.lemma_script = v_query then 'exact' when l.lemma_stripped = v_norm then 'normalized' else 'prefix' end,
           'anchor', jsonb_build_object(
             'kind', 'lemma',
             'lemma_id', l.id,
-            'label', l.lemma_script || ' · ' || l.base_strongs || coalesce(l.homograph_tag, '')
+            'label', l.lemma_script || case when l.transliteration is not null then ' (' || l.transliteration || ')' else '' end
           )
         ) order by
           case when l.lemma_script = v_query then 1 when l.lemma_stripped = v_norm then 2 else 3 end,
@@ -198,14 +198,14 @@ begin
         jsonb_build_object(
           'kind', 'word_form',
           'id', w.id,
-          'label', w.original_word,
+          'label', w.original_word || case when w.transliteration is not null then ' (' || w.transliteration || ')' else '' end,
           'sublabel', coalesce(w.transliteration, '') || case when w.biblical_def is not null then ' — ' || left(w.biblical_def, 40) else '' end || ' [' || w.strongs_nr || ']',
           'language', 'hbo',
           'match_type', case when w.original_word = v_query then 'exact' when public.strip_hebrew_all(w.original_word) = v_norm then 'normalized' else 'prefix' end,
           'anchor', jsonb_build_object(
             'kind', 'word_form',
             'word_id', w.id,
-            'label', w.original_word
+            'label', w.original_word || case when w.transliteration is not null then ' (' || w.transliteration || ')' else '' end
           )
         ) order by
           case when w.original_word = v_query then 1 when public.strip_hebrew_all(w.original_word) = v_norm then 2 else 3 end,
@@ -229,14 +229,14 @@ begin
         jsonb_build_object(
           'kind', 'lemma',
           'id', l.id,
-          'label', l.lemma_script || ' · ' || l.base_strongs || coalesce(l.homograph_tag, ''),
+          'label', l.lemma_script || case when l.transliteration is not null then ' (' || l.transliteration || ')' else '' end,
           'sublabel', coalesce(ls.short_gloss, l.transliteration, l.base_strongs) || ' [' || l.base_strongs || coalesce(l.homograph_tag, '') || ']',
           'language', l.language,
           'match_type', case when l.lemma_script = v_query then 'exact' when l.lemma_stripped = v_norm then 'normalized' else 'prefix' end,
           'anchor', jsonb_build_object(
             'kind', 'lemma',
             'lemma_id', l.id,
-            'label', l.lemma_script || ' · ' || l.base_strongs || coalesce(l.homograph_tag, '')
+            'label', l.lemma_script || case when l.transliteration is not null then ' (' || l.transliteration || ')' else '' end
           )
         ) order by
           case when l.lemma_script = v_query then 1 when l.lemma_stripped = v_norm then 2 else 3 end,
@@ -261,14 +261,14 @@ begin
         jsonb_build_object(
           'kind', 'word_form',
           'id', w.id,
-          'label', w.original_word,
+          'label', w.original_word || case when w.transliteration is not null then ' (' || w.transliteration || ')' else '' end,
           'sublabel', coalesce(w.transliteration, '') || case when w.biblical_def is not null then ' — ' || left(w.biblical_def, 40) else '' end || ' [' || w.strongs_nr || ']',
           'language', 'grc',
           'match_type', case when w.original_word = v_query then 'exact' when public.strip_greek_diacritics(w.original_word) = v_norm then 'normalized' else 'prefix' end,
           'anchor', jsonb_build_object(
             'kind', 'word_form',
             'word_id', w.id,
-            'label', w.original_word
+            'label', w.original_word || case when w.transliteration is not null then ' (' || w.transliteration || ')' else '' end
           )
         ) order by
           case when w.original_word = v_query then 1 when public.strip_greek_diacritics(w.original_word) = v_norm then 2 else 3 end,
@@ -301,7 +301,7 @@ begin
               'anchor', jsonb_build_object(
                 'kind', 'word_form',
                 'word_id', (elem->>'id')::int,
-                'label', elem->>'original_word'
+                'label', elem->>'original_word' || case when elem->>'transliteration' is not null then ' (' || (elem->>'transliteration') || ')' else '' end
               )
             ) order by (elem->>'rank')::int, (elem->>'id')::int
           ), '[]'::jsonb)
@@ -320,14 +320,14 @@ begin
               jsonb_build_object(
                 'kind', 'lemma',
                 'id', l.id,
-                'label', l.lemma_script || ' · ' || l.base_strongs || coalesce(l.homograph_tag, ''),
+                'label', l.lemma_script || case when l.transliteration is not null then ' (' || l.transliteration || ')' else '' end,
                 'sublabel', coalesce(ls.short_gloss, l.transliteration, l.base_strongs) || ' [' || l.base_strongs || coalesce(l.homograph_tag, '') || ']',
                 'language', l.language,
                 'match_type', 'prefix',
                 'anchor', jsonb_build_object(
                   'kind', 'lemma',
                   'lemma_id', l.id,
-                  'label', l.lemma_script || ' · ' || l.base_strongs || coalesce(l.homograph_tag, '')
+                  'label', l.lemma_script || case when l.transliteration is not null then ' (' || l.transliteration || ')' else '' end
                 )
               ) order by l.base_strongs, l.homograph_tag nulls first, l.id
             ), '[]'::jsonb)

@@ -716,7 +716,7 @@ Design: [ARCHITECTURE.md](ARCHITECTURE.md). Standard Hebrew Gematria and Greek I
 
 - [x] **G1 Database Gematria calculation and schema migration** | Files: supabase/migrations/20261102000000_word_gematria.sql, scripts/verify-gematria-db.sql | Verify: [AUTO-TEST] Live caller-RLS database function `public.calculate_gematria(text)` and `public.words.gematria` column return exact values for Hebrew (Genesis 1:1) and Greek (John 1:1) words.
 - [x] **G2 Canonical types, sample fixtures, and gateway** | Files: src/api/types.ts, src/api/rpc.ts | Verify: [AUTO-TEST] `WordRecord` interface includes `gematria: number | null`, `sampleWords` fixture is populated, and `BibleRPC.getWordDetails` provides gematria under type and size checks.
-- [-] **G3 Word Inspector Gematria UI integration** | Files: src/ui/components/VerseReader.ts, src/ui/components/WordInspector.ts, src/ui/styles-workspace.css | Verify: [USER-CHECK] Gematria is displayed exclusively in the Word Inspector (and modal), and kept hidden from the verse overview reader cards.
+- [x] **G3 Word Inspector Gematria UI integration** | Files: src/ui/components/VerseReader.ts, src/ui/components/WordInspector.ts, src/ui/styles-workspace.css | Verify: [USER-CHECK] Gematria is displayed exclusively in the Word Inspector (and modal), and kept hidden from the verse overview reader cards.
 
 ## Shipped feature: hydrated verse AI research and deeper pattern prompts
 
