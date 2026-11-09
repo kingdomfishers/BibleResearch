@@ -1,3 +1,5 @@
+-- HISTORICAL ARGON SNAPSHOT: expected values and anonymous RPC policy have changed. Run ARGON_UPDATED_READONLY_RECHECKS.sql instead.
+-- Current Greek mismatch count is 0 after guarded production migration; anonymous note-writing access is intentionally ON by user's explicit request.
 -- Argon interruption — READ-ONLY reproducible live integrity checks.
 -- Target Supabase project ejoperxiwxlcbsqrkrvb. No mutation.
 -- 1. Greek syntax vs source-token identities (expected 956 mismatches as observed on 2026-11-09).

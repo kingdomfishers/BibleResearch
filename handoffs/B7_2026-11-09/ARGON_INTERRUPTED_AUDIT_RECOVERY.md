@@ -1,3 +1,7 @@
+## STATUS UPDATE 2026-11-09 (supersedes historical counts below)
+
+The earlier snapshot below is **historical** and is superseded by [ARGON_VERIFIED_DEFECT_REPORT_20261109.md](ARGON_VERIFIED_DEFECT_REPORT_20261109.md). Since that snapshot, the user explicitly instructed that note-writing remain anonymously accessible until accounts exist; anonymous permissions have been restored. Also, a guarded Supabase migration repaired all 956 Greek syntax vs source-token mismatches (892 exact-form links updated, 64 unsupported links cleared; 956 old links privately backed up). Current Greek cross-table mismatches: **0**. Do not follow the older recommendation below to revoke note access or expect 956 live Greek mismatches.
+
 # Argon interruption recovery checkpoint — 2026-11-09
 
 ## Purpose
