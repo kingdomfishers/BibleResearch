@@ -1,6 +1,6 @@
 // @file: supabase/functions/bible-mcp/index.ts
 // @feature: api
-// @tables: words | verses | verse_translation_sources | chronology_models | chronology_runs | chronology_assertions | chronology_evidence | places | place_locations | verse_geography | passage_geography | geography_sources | lexemes | concepts | assertions | assertion_evidence
+// @tables: words | verses | verse_translation_sources | chronology_models | chronology_runs | chronology_assertions | chronology_evidence | places | place_locations | verse_geography | passage_geography | geography_sources | lexemes | concepts | assertions | assertion_evidence | notes | note_anchors | note_connections | note_blocks | note_authors
 // @candidates: none
 // @toc: imports | types | logic:database | logic:transport | logic:entrypoint
 
@@ -40,6 +40,11 @@ const allowedRpcs = new Set([
   'get_word_formation_v1',
   'suggest_orthographic_candidates_v1',
   'get_verse_research_v2',
+  'get_notes_for_passage_v1',
+  'get_notes_for_word_v1',
+  'get_note_v1',
+  'search_note_targets_v1',
+  'list_note_connection_types_v1',
 ]);
 const singlePacketRpcs = new Set([
   'resolve_word_id',
@@ -56,6 +61,11 @@ const singlePacketRpcs = new Set([
   'audit_evidence_coverage_v1',
   'get_word_formation_v1',
   'suggest_orthographic_candidates_v1',
+  'get_notes_for_passage_v1',
+  'get_notes_for_word_v1',
+  'get_note_v1',
+  'search_note_targets_v1',
+  'list_note_connection_types_v1',
 ]);
 const wordColumns = 'id,strongs_nr,original_word,transliteration,grammar_code,biblical_def,physical_def,english_translations';
 const cors = {

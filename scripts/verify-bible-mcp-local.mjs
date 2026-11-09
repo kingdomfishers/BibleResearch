@@ -65,23 +65,24 @@ async function rpc(method, params = {}, extraHeaders = {}) {
 const init = await rpc('initialize', { protocolVersion: '2025-11-25', capabilities: {}, clientInfo: { name: 'verification', version: '1' } });
 assert.equal(init.payload.result.serverInfo.name, 'BibleResearch');
 const tools = (await rpc('tools/list')).payload.result.tools;
-assert.equal(tools.length, 17);
+assert.equal(tools.length, 22);
 assert.ok(tools.every(t => t.annotations.readOnlyHint && !t.annotations.destructiveHint));
 const prompts = (await rpc('prompts/list')).payload.result.prompts;
-assert.equal(prompts.length, 17);
+assert.equal(prompts.length, 18);
 const call = async (name, args) => (await rpc('tools/call', { name, arguments: args })).payload;
 const hydrated = (await call('get_verse_research', { p_request: { passages: [{ book: 1, chapter: 1, verse: 1 }] } })).result.structuredContent;
 assert.equal(hydrated.status, 'ok');
 assert.equal(hydrated.verses.length, 1);
 assert.equal(requests.at(-1).url.searchParams.has('limit'), false);
 assert.equal(requests.at(-1).url.searchParams.has('offset'), false);
-assert.deepEqual(JSON.parse(requests.at(-1).init.body), { p_request: { passages: [{ book: 1, chapter: 1, verse: 1 }] } });
+assert.deepEqual(JSON.parse(requests.at(-1).init.body), { p_request: { passages: [{ book: 1, chapter: 1, verse: 1 }], profile: 'full' } });
 const general = (await call('get_research_prompt', { subject: 'Explain John 1:1' })).result.structuredContent;
 assert.equal(general.name, 'study_bible');
-assert.deepEqual([...general.workflow.expected_tools].sort(), tools.map(t => t.name).sort());
+const researchTools = tools.filter(t => !['get_notes', 'search_note_targets', 'list_note_connection_types'].includes(t.name));
+assert.deepEqual([...general.workflow.expected_tools].sort(), researchTools.map(t => t.name).sort());
 assert.deepEqual(general.workflow.profiles.analysis, { mode: 'sample', limit: 5 });
 assert.deepEqual(general.workflow.routes.geography.starting_tools, ['get_verse_geography']);
-assert.ok(general.workflow.routes.motif.starting_tools.includes('research_relationships'));
+assert.ok(general.workflow.routes.relationships.starting_tools.includes('research_relationships'));
 await call('get_verse_research', { profile: 'analysis', p_request: { passages: [{ book: 43, chapter: 1, verse: 1 }] } });
 assert.deepEqual(JSON.parse(requests.at(-1).init.body).p_request.occurrences, { mode: 'sample', limit: 5 });
 for (const [profile, occurrences] of [
@@ -134,8 +135,8 @@ assert.equal(preflight.headers.get('access-control-allow-origin'), '*');
 const health = await app(new Request('https://example/bible-mcp/health'));
 const healthJson = await health.json();
 assert.equal(healthJson.read_only, true);
-assert.equal(healthJson.tools, 17);
-assert.equal(healthJson.prompts, 17);
+assert.equal(healthJson.tools, 19);
+assert.equal(healthJson.prompts, 18);
 let attempts = 0;
 const retryReader = createDatabaseReader({ url: 'https://example.supabase.co', publicKey: 'sb_publishable_test' },
   async () => ++attempts === 1 ? new Response('Transient upstream failure', { status: 500 })

@@ -1,36 +1,24 @@
 // @file: supabase/functions/bible-mcp/catalog.ts
 // @feature: api
-// @tables: words | verses | verse_translation_sources | chronology_models | chronology_runs | chronology_assertions | chronology_evidence | places | place_locations | verse_geography | passage_geography | geography_sources | lexemes | concepts | assertions | assertion_evidence | lxx_swete_words | hebrew_lxx_word_alignments | syntax_nodes | lexical_formations | lemma_components | lexical_roots | lemma_root_links | lexical_connections | orthographic_candidates
+// @tables: words | verses | verse_translation_sources | chronology_models | chronology_runs | chronology_assertions | chronology_evidence | places | place_locations | verse_geography | passage_geography | geography_sources | lexemes | concepts | assertions | assertion_evidence | lxx_swete_words | hebrew_lxx_word_alignments | syntax_nodes | lexical_formations | lemma_components | lexical_roots | lemma_root_links | lexical_connections | orthographic_candidates | notes | note_anchors | note_connections | note_blocks | note_authors
 // @candidates: none
 // @toc: imports | types | logic:contracts | logic:prompts | logic:register-prompts | logic:database-tools | logic:hydrated-tool | logic:research-tools | logic:formation-tools | logic:evidence-tools | logic:server
 
 // === @section:imports ===
 import { McpServer } from '@modelcontextprotocol/server';
 import * as z from 'zod';
+import { registerNoteReadTools } from './notes-tools.ts';
 import { PATTERN_PROMPTS } from './pattern-prompts.ts';
 import { WORKFLOW_INSTRUCTIONS, WORKFLOW_VERSION } from './research-workflow.ts';
 import { RESEARCH_PROFILES, RESEARCH_TOOL_NAMES, WORKFLOW_ROUTES } from './workflow-contract.ts';
 
 // === @section:types ===
 export type RpcName =
-  | 'prompt_verse_words'
-  | 'prompt_word_occurrences'
-  | 'prompt_word_cooccurrences'
-  | 'prompt_word_relationships'
-  | 'resolve_word_id'
-  | 'get_verse_chronology_v1'
-  | 'get_verse_geography'
-  | 'research_relationships_v1'
-  | 'get_verse_research_v1'
-  | 'get_verse_research_v2'
-  | 'get_word_formation_v1'
-  | 'suggest_orthographic_candidates_v1'
-  | 'lookup_septuagint_passage_v1'
-  | 'lookup_lexical_semantics_v1'
-  | 'lookup_syntax_tree_v1'
-  | 'compare_hebrew_septuagint_passage_v1'
-  | 'lookup_hebrew_septuagint_alignments_v1'
-  | 'audit_evidence_coverage_v1';
+  | 'prompt_verse_words' | 'prompt_word_occurrences' | 'prompt_word_cooccurrences' | 'prompt_word_relationships' | 'resolve_word_id'
+  | 'get_verse_chronology_v1' | 'get_verse_geography' | 'research_relationships_v1' | 'get_verse_research_v1' | 'get_verse_research_v2'
+  | 'get_word_formation_v1' | 'suggest_orthographic_candidates_v1' | 'lookup_septuagint_passage_v1' | 'lookup_lexical_semantics_v1'
+  | 'lookup_syntax_tree_v1' | 'compare_hebrew_septuagint_passage_v1' | 'lookup_hebrew_septuagint_alignments_v1' | 'audit_evidence_coverage_v1'
+  | 'get_notes_for_passage_v1' | 'get_notes_for_word_v1' | 'get_note_v1' | 'search_note_targets_v1' | 'list_note_connection_types_v1';
 export interface DatabaseQuery {
   name: RpcName | 'get_word_details';
   args: Record<string, unknown>;
@@ -441,6 +429,7 @@ export function createResearchServer(read: DatabaseReader): McpServer {
   registerFormationTools(server, read);
   registerEvidenceTools(server, read);
   registerHydratedTool(server, read);
+  registerNoteReadTools(server, read);
   registerPrompts(server);
   return server;
 }

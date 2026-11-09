@@ -239,7 +239,7 @@ Status: Phase A in progress (NOTE-09 done). Next task: **NOTE-10**.
 - [x] **NOTE-27 UI verification suite — Gate G3** | Files: scripts/verify-notes-ui.mjs, src/ui/styles-mobile.css | Verify: [AUTO-TEST] then [USER-CHECK] G3.
 
 **Phase D — MCP / AI**
-- [ ] **NOTE-28 MCP note read tools** | Files: supabase/functions/bible-mcp/notes-tools.ts, supabase/functions/bible-mcp/catalog.ts | Verify: [AUTO-TEST] TP-INJ-1, TP-INT-3.
+- [x] **NOTE-28 MCP note read tools** | Files: supabase/functions/bible-mcp/notes-tools.ts, supabase/functions/bible-mcp/catalog.ts | Verify: [AUTO-TEST] TP-INJ-1, TP-INT-3.
 - [ ] **NOTE-29 Notes in verse/word lookups** | Files: supabase/functions/bible-mcp/catalog.ts, supabase/functions/bible-mcp/workflow-contract.ts | Verify: [AUTO-TEST] TP-SIZE-1, TP-INJ-1.
 - [ ] **NOTE-30 MCP write tools (optional key)** | Files: supabase/functions/bible-mcp/notes-write.ts, supabase/functions/bible-mcp/index.ts | Verify: [AUTO-TEST] TP-CRED-1, TP-SEC-3.
 - [ ] **NOTE-31 Research skill and workflow update** | Files: skills/bible-research/SKILL.md, skills/bible-research/references/tool-contracts.md | Verify: [AUTO-TEST] TP-INJ-1.
