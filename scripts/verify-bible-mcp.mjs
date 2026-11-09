@@ -38,12 +38,17 @@ async function tool(name, args, options) {
 const health = await fetch(endpoint.replace(/\/mcp\/?$/, '') + '/health', { signal: AbortSignal.timeout(30000) });
 assert.equal(health.status, 200);
 const status = await health.json();
-assert.equal(status.read_only, true);
 assert.equal(status.authentication, 'none');
-assert.equal(status.tools, 19);
 assert.equal(status.prompts, 18);
 assert.equal(status.version, WORKFLOW_VERSION);
-pass('anonymous health endpoint (19 tools, 18 prompts)');
+if (status.writes === 'enabled') {
+  assert.equal(status.read_only, false);
+  assert.equal(status.tools, 25);
+} else {
+  assert.equal(status.read_only, true);
+  assert.equal(status.tools, 22);
+}
+pass(`anonymous health endpoint (${status.tools} tools, 18 prompts, writes: ${status.writes || 'disabled'})`);
 
 for (const protocolVersion of ['2025-03-26', '2025-06-18', '2025-11-25']) {
   const init = await result('initialize', { protocolVersion, capabilities: {},
@@ -53,9 +58,10 @@ for (const protocolVersion of ['2025-03-26', '2025-06-18', '2025-11-25']) {
 }
 pass('MCP initialization with three compatible client protocol versions');
 const listed = await result('tools/list');
-const expected = [
+const baseTools = [
   'audit_evidence_coverage',
   'compare_hebrew_septuagint_passage',
+  'get_notes',
   'get_research_prompt',
   'get_septuagint_passage',
   'get_syntax_tree',
@@ -64,6 +70,7 @@ const expected = [
   'get_verse_research',
   'get_word_details',
   'inspect_word_formation',
+  'list_note_connection_types',
   'lookup_hebrew_septuagint_alignments',
   'lookup_lexical_semantics',
   'prompt_verse_words',
@@ -72,15 +79,23 @@ const expected = [
   'prompt_word_relationships',
   'research_relationships',
   'resolve_word_id',
+  'search_note_targets',
   'suggest_word_connections',
 ];
+const writeToolNames = ['create_note', 'update_my_note', 'delete_my_note'];
+const expected = status.writes === 'enabled' ? [...baseTools, ...writeToolNames] : baseTools;
 assert.deepEqual(listed.tools.map(t => t.name).sort(), expected.sort());
 for (const t of listed.tools) {
-  assert.equal(t.annotations.readOnlyHint, true);
-  assert.equal(t.annotations.destructiveHint, false);
+  if (writeToolNames.includes(t.name)) {
+    assert.equal(t.annotations.readOnlyHint, false, `${t.name} must have readOnlyHint: false`);
+    assert.equal(t.annotations.destructiveHint, t.name === 'delete_my_note', `${t.name} destructiveHint mismatch`);
+  } else {
+    assert.equal(t.annotations.readOnlyHint, true, `${t.name} must have readOnlyHint: true`);
+    assert.equal(t.annotations.destructiveHint, false, `${t.name} must have destructiveHint: false`);
+  }
   assert.equal(t.inputSchema.type, 'object');
 }
-pass('exact allowlist of nineteen read-only tools with input schemas');
+pass(`exact allowlist of ${expected.length} tools with input schemas and hints`);
 if (process.argv.includes('--catalog-only')) {
   const workflow = await tool('get_research_prompt', { subject: 'Explain John 1:1' });
   assert.equal(workflow.name, 'study_bible');
@@ -228,7 +243,7 @@ for (const prompt of prompts) {
 const generalWorkflow = await tool('get_research_prompt', { subject: 'Investigate wells and marriage' });
 assert.equal(generalWorkflow.name, 'study_bible');
 assert.equal(generalWorkflow.workflow.version, WORKFLOW_VERSION);
-assert.deepEqual([...generalWorkflow.workflow.expected_tools].sort(), listed.tools.map(t => t.name).sort());
+assert.deepEqual([...generalWorkflow.workflow.expected_tools].sort(), baseTools.sort());
 assert.ok(generalWorkflow.workflow.routes.relationships.starting_tools.includes('research_relationships'));
 assert.ok(generalWorkflow.workflow.routes.word_formation.starting_tools.includes('inspect_word_formation'));
 pass('eighteen native prompts match retrieval; general workflow routing and ten pattern templates are available');

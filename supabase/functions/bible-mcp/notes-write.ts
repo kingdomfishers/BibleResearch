@@ -151,8 +151,7 @@ export const noteAnchorInputSchema = z.strictObject({
   event_id: z.number().int().positive().optional().describe('Event ID for event anchors.'),
   target_note_id: z.string().regex(uuidRegex).optional().describe('Referenced note ID for note-to-note anchors.'),
   external_uri: z.string().trim().max(500).optional().describe('External HTTPS URL for reference.'),
-  anchor_role: z.string().trim().max(50).optional().describe('Role of this anchor (e.g. source, target).'),
-  source_verse_word_ids: z.array(z.number().int().positive()).optional().describe('Verse word IDs.'),
+  role: z.enum(['subject', 'object', 'mention', 'evidence']).optional().default('mention').describe('Role of this anchor (subject, object, mention, evidence).'),
 });
 
 export const noteConnectionInputSchema = z.strictObject({
