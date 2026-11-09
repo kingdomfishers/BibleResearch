@@ -2,7 +2,7 @@
 // @feature: notes
 // @tables: none
 // @candidates: none
-// @toc: imports | types | logic:state | logic:validate | logic:save
+// @toc: imports | types | logic:state | logic:prefill | logic:validate | logic:save
 
 // === @section:imports ===
 import { BibleRPC } from '../../api/rpc';
@@ -16,7 +16,9 @@ import type {
   TargetCandidateAnchor,
 } from '../../api/notes-api-types';
 import type { NoteKind } from '../../api/notes-types';
-import type { ActivePassage, Note } from '../../api/types';
+import type { RelationshipNotePrefill } from '../../api/relationship-notes-adapter';
+import type { ResearcherRelationshipStance } from '../../api/relationship-types';
+import type { ActivePassage, Note, WordRecord } from '../../api/types';
 import { formatVerseRef } from '../utils';
 
 // === @section:types ===
@@ -40,6 +42,7 @@ export interface EditorDraft {
   note_kind: NoteKind;
   language: string;
   confidence?: number | null;
+  source_context?: Record<string, unknown>;
   anchors: EditorAnchor[];
   connections: ConnectionPayload[];
   blocks: EditorBlock[];
@@ -59,9 +62,7 @@ export function generateClientKey(prefix = 'k'): string {
 }
 
 export function generateRequestId(): string {
-  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-    return crypto.randomUUID();
-  }
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
   return `req_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
@@ -98,7 +99,6 @@ export function noteToDraft(note: Note): EditorDraft {
     word_id: 'word_id' in a ? a.word_id : undefined,
     lemma_id: 'lemma_id' in a ? a.lemma_id : undefined,
   }));
-
   const connections: ConnectionPayload[] = (note.connections || []).map(c => ({
     from: c.from_anchor_id,
     to: c.to_anchor_id,
@@ -106,27 +106,75 @@ export function noteToDraft(note: Note): EditorDraft {
     direction: c.direction,
     explanation: null,
   }));
-
   const blocks: EditorBlock[] = (note.blocks || []).map((b, idx) => ({
     client_key: generateClientKey(`blk_${idx}`),
     block_type: b.block_type as 'link' | 'image',
     content: (b.content as Record<string, unknown>) || {},
     text_alternative: b.text_alternative || '',
   }));
-
+  const hasCtx = note.source_context && Object.keys(note.source_context).length > 0;
   return {
-    id: note.id,
-    expected_version: note.version,
-    client_request_id: generateRequestId(),
-    title: note.title || '',
-    body_md: note.body_md || '',
-    note_kind: note.note_kind,
-    language: note.language || 'en',
-    confidence: note.confidence ?? null,
-    anchors,
-    connections,
-    blocks,
+    id: note.id, expected_version: note.version, client_request_id: generateRequestId(),
+    title: note.title || '', body_md: note.body_md || '', note_kind: note.note_kind,
+    language: note.language || 'en', confidence: note.confidence ?? null,
+    ...(hasCtx ? { source_context: { ...(note.source_context as Record<string, unknown>) } } : {}),
+    anchors, connections, blocks,
   };
+}
+
+// === @section:logic:prefill ===
+export interface NewDraftContext {
+  passage?: ActivePassage | null;
+  verseId?: number | null;
+  selectedWord?: WordRecord | null;
+  selectedPosition?: number | null;
+  prefill?: RelationshipNotePrefill | null;
+}
+
+export function buildNewDraftFromContext(ctx?: NewDraftContext): EditorDraft {
+  if (ctx?.prefill) {
+    return {
+      client_request_id: generateRequestId(),
+      title: ctx.prefill.title,
+      body_md: ctx.prefill.body_md,
+      note_kind: ctx.prefill.note_kind,
+      language: 'en',
+      confidence: 1.0,
+      source_context: { ...ctx.prefill.source_context },
+      anchors: ctx.prefill.anchors.map(a => ({ ...a })),
+      connections: ctx.prefill.connections.map(c => ({ ...c })),
+      blocks: [],
+    };
+  }
+  const draft = createEmptyDraft(ctx?.passage, ctx?.verseId);
+  if (ctx?.selectedWord) {
+    const w = ctx.selectedWord;
+    const lbl = `${w.original_word} (${w.transliteration})`;
+    if (ctx.selectedPosition) {
+      draft.anchors.push({
+        client_key: generateClientKey('anc'), kind: 'word_occurrence',
+        verse_id: ctx.verseId ?? 0, word_position: ctx.selectedPosition, word_id: w.id, label: lbl,
+      });
+    }
+    draft.anchors.push({ client_key: generateClientKey('anc'), kind: 'word_form', word_id: w.id, label: lbl });
+  }
+  return draft;
+}
+
+export function setDraftRelationshipStance(draft: EditorDraft, stance: ResearcherRelationshipStance): void {
+  const ref = draft.source_context?.relationship_ref as Record<string, unknown> | undefined;
+  if (!ref) return;
+  draft.source_context = {
+    ...draft.source_context,
+    relationship_ref: { ...ref, stance },
+  };
+  if (stance === 'alternative_interpretation') {
+    draft.note_kind = 'interpretation';
+  } else if (ref.domain === 'cross_reference') {
+    draft.note_kind = 'cross_reference';
+  } else if (ref.domain === 'lexical') {
+    draft.note_kind = 'linguistic';
+  }
 }
 
 // === @section:logic:validate ===
@@ -211,6 +259,7 @@ export function draftToPayload(draft: EditorDraft): NoteSavePayload {
     note_kind: draft.note_kind,
     language: draft.language || 'en',
     confidence: draft.confidence ?? null,
+    ...(draft.source_context ? { source_context: draft.source_context } : {}),
     anchors,
     connections: draft.connections,
     blocks,

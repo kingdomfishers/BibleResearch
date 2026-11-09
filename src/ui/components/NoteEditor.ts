@@ -2,11 +2,12 @@
 // @feature: notes
 // @tables: none
 // @candidates: none
-// @toc: imports | types | ui:dialog | ui:anchors | ui:blocks | ui:form | logic:save-handler | ui:main
+// @toc: imports | types | ui:dialog | ui:stance | ui:anchors | ui:blocks | ui:form | logic:save-handler | ui:main
 
 // === @section:imports ===
-import type { ActivePassage, Note, WordRecord } from '../../api/types';
+import type { ActivePassage, Note, ResearcherRelationshipStance, WordRecord } from '../../api/types';
 import type { NoteKind } from '../../api/notes-types';
+import type { RelationshipNotePrefill } from '../../api/relationship-notes-adapter';
 import { BibleRPC } from '../../api/rpc';
 import { parseMarkdown, renderMarkdown } from '../note-markdown';
 import { createTargetPicker, type TargetPickerComponent } from './TargetPicker';
@@ -14,6 +15,8 @@ import { createConnectionBuilder, type ConnectionBuilderComponent } from './Conn
 import {
   type EditorDraft,
   createEmptyDraft,
+  buildNewDraftFromContext,
+  setDraftRelationshipStance,
   noteToDraft,
   validateDraft,
   saveNoteDraft,
@@ -31,6 +34,7 @@ export interface NoteEditorContext {
   verseId?: number | null;
   selectedWord?: WordRecord | null;
   selectedPosition?: number | null;
+  prefill?: RelationshipNotePrefill | null;
 }
 
 export interface NoteEditorComponent {
@@ -66,6 +70,55 @@ export function createDialogShell(): {
   }
 
   return { dialog, openDialog, closeDialog };
+}
+
+// === @section:ui:stance ===
+export function createRelationshipStanceBar(
+  getDraft: () => EditorDraft,
+  onStanceChanged: () => void
+): { section: HTMLElement; render: () => void } {
+  const section = document.createElement('div');
+  section.className = 'editor-section editor-section--stance';
+  section.hidden = true;
+  const label = document.createElement('p');
+  label.className = 'editor-stance__summary';
+  const btnGroup = document.createElement('div');
+  btnGroup.className = 'editor-stance__buttons';
+  btnGroup.setAttribute('role', 'group');
+  btnGroup.setAttribute('aria-label', 'Researcher stance on external relationship');
+
+  const options: Array<[ResearcherRelationshipStance, string]> = [
+    ['agree', 'Agree'],
+    ['disagree', 'Disagree'],
+    ['alternative_interpretation', 'Alternative interpretation'],
+  ];
+
+  function render(): void {
+    const ref = getDraft().source_context?.relationship_ref as Record<string, unknown> | undefined;
+    if (!ref || typeof ref.relationship_id !== 'string') {
+      section.hidden = true;
+      return;
+    }
+    section.hidden = false;
+    const active = (ref.stance as ResearcherRelationshipStance) || 'agree';
+    label.textContent = `Evaluating ${String(ref.domain || '').replace('_', ' ')}: ${String(ref.subject_label || '')} → ${String(ref.target_label || '')}`;
+    btnGroup.replaceChildren();
+    for (const [val, text] of options) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = `editor-btn editor-btn--sm editor-stance__btn${active === val ? ' is-active' : ''}`;
+      btn.setAttribute('aria-pressed', active === val ? 'true' : 'false');
+      btn.textContent = text;
+      btn.addEventListener('click', () => {
+        setDraftRelationshipStance(getDraft(), val);
+        render();
+        onStanceChanged();
+      });
+      btnGroup.append(btn);
+    }
+  }
+  section.append(label, btnGroup);
+  return { section, render };
 }
 
 // === @section:ui:anchors ===
@@ -323,6 +376,7 @@ export function createNoteEditor(props: NoteEditorProps): NoteEditorComponent {
   const anchorsView = createAnchorsView(() => draft, targetPicker, connBuilder, () => { isDirty = true; });
   const blocksView = createBlocksView(() => draft, () => { isDirty = true; });
   const formView = createEditorForm(() => draft, connBuilder, () => { isDirty = true; });
+  const stanceBar = createRelationshipStanceBar(() => draft, () => { formView.update(); isDirty = true; });
 
   const footer = document.createElement('div'); footer.className = 'note-editor__footer';
   const errBanner = document.createElement('div'); errBanner.className = 'note-editor__error-banner'; errBanner.hidden = true;
@@ -330,11 +384,15 @@ export function createNoteEditor(props: NoteEditorProps): NoteEditorComponent {
   const saveBtn = document.createElement('button'); saveBtn.type = 'button'; saveBtn.className = 'editor-btn editor-btn--primary'; saveBtn.textContent = 'Save Note';
   footer.append(cancelBtn, saveBtn);
 
+  function syncViews(): void {
+    stanceBar.render(); formView.update(); anchorsView.render(); blocksView.render();
+    connBuilder.setConnections(draft.connections);
+  }
+
   const { handleSave } = createSaveHandler(
     () => draft,
-    freshNote => { draft = noteToDraft(freshNote); formView.update(); anchorsView.render(); blocksView.render(); },
-    saveBtn,
-    errBanner,
+    freshNote => { draft = noteToDraft(freshNote); syncViews(); },
+    saveBtn, errBanner,
     note => { isDirty = false; closeDialog(); props.onSaved?.(note); }
   );
 
@@ -346,31 +404,17 @@ export function createNoteEditor(props: NoteEditorProps): NoteEditorComponent {
   dialog.addEventListener('keydown', e => { if (e.key === 'Escape') { e.preventDefault(); handleClose(); } });
   saveBtn.addEventListener('click', () => void handleSave());
 
-  dialog.append(errBanner, formView.form, anchorsView.section, blocksView.section, footer);
+  dialog.append(errBanner, stanceBar.section, formView.form, anchorsView.section, blocksView.section, footer);
 
   function openNew(ctx?: NoteEditorContext): void {
-    draft = createEmptyDraft(ctx?.passage, ctx?.verseId);
-    if (ctx?.selectedWord) {
-      const w = ctx.selectedWord;
-      const lbl = `${w.original_word} (${w.transliteration})`;
-      if (ctx.selectedPosition) {
-        draft.anchors.push({
-          client_key: generateClientKey('anc'), kind: 'word_occurrence',
-          verse_id: ctx.verseId ?? 0, word_position: ctx.selectedPosition, word_id: w.id, label: lbl,
-        });
-      }
-      draft.anchors.push({ client_key: generateClientKey('anc'), kind: 'word_form', word_id: w.id, label: lbl });
-    }
-    isDirty = false; formView.update(); anchorsView.render(); blocksView.render();
-    connBuilder.setConnections(draft.connections);
+    draft = buildNewDraftFromContext(ctx);
+    isDirty = false; syncViews();
     targetPicker.setContext(ctx || {});
     openDialog(); formView.titleInput.focus();
   }
 
   function openEdit(note: Note): void {
-    draft = noteToDraft(note); isDirty = false;
-    formView.update(); anchorsView.render(); blocksView.render();
-    connBuilder.setConnections(draft.connections);
+    draft = noteToDraft(note); isDirty = false; syncViews();
     openDialog(); formView.titleInput.focus();
   }
 

@@ -25,6 +25,7 @@ import { createPassageComparison } from './ui/components/PassageComparison';
 import { createStudySearch } from './ui/components/StudySearch';
 import { createNotesPanel } from './ui/components/NotesPanel';
 import { createNoteEditor } from './ui/components/NoteEditor';
+import { createPassageCrossReferences } from './ui/components/PassageCrossReferences';
 import { notesState } from './ui/notes-state';
 
 // === @section:ui:main ===
@@ -33,7 +34,7 @@ app.innerHTML = `<header class="study-header"><a class="study-brand" href="#1-1-
  <button class="study-button" id="appearance" type="button">Appearance</button></header>
  <main class="study-main"><div class="study-intro"><div><p class="eyebrow">A CLOSER READING OF SCRIPTURE</p><h1>Ancient words. New connections.</h1></div><div id="study-search"></div></div>
  <div id="navigation"></div><div class="passage-stepper"><button class="text-action" id="previous-passage" type="button">← Previous verse</button><span>Read the English. Notice the original. Follow a connection.</span><button class="text-action" id="next-passage" type="button">Next verse →</button></div>
- <div class="study-workspace"><div><div id="reader"></div><div id="notes"></div></div><div id="inspector"></div></div><div id="comparison"></div>
+ <div class="study-workspace"><div><div id="reader"></div><div id="cross-references"></div><div id="notes"></div></div><div id="inspector"></div></div><div id="comparison"></div>
  <div id="geography"></div><details class="study-advanced" id="chronology-disclosure"><summary>Chronology models & historical evidence</summary><div id="chronology"></div></details>
  <details class="study-advanced" id="research-disclosure"><summary>Advanced study, patterns & exports</summary><div id="research-prompts"></div></details>
  <footer class="study-footer"><span>Original text & lexical renderings: STEP Bible · CC BY 4.0</span><span>English: World English Bible · Public domain</span></footer></main>`;
@@ -46,12 +47,14 @@ const noteEditor = createNoteEditor({
     notesState.setSelectedNoteId(note?.id ?? null);
   },
 });
-const inspector = createWordInspector(preview, navigate, data => {
-  noteEditor.openNew({
-    passage: appState.getPassage(),
-    selectedWord: data.word,
-    selectedPosition: data.position,
-  });
+const inspector = createWordInspector(
+  preview, navigate,
+  data => noteEditor.openNew({ passage: appState.getPassage(), selectedWord: data.word, selectedPosition: data.position }),
+  prefill => noteEditor.openNew({ passage: appState.getPassage(), prefill })
+);
+const passageXrefs = createPassageCrossReferences({
+  onNavigate: navigate,
+  onEvaluateRelationship: prefill => noteEditor.openNew({ passage: appState.getPassage(), prefill }),
 });
 const timeline = createEventTimeline(preview, key => geography.focusPlace(key));
 const geography = createVerseMap(packet => timeline.setGeography(packet));
@@ -76,7 +79,7 @@ const chronology = createChronologyPanel(summary => nav.updateChronology(summary
 });
 const research = createResearchPanel({ onSelectPassage: navigate, onInspectWord: id => { void modal.openWordModal(id); } });
 const search = createStudySearch(navigate, id => selectWord(id));
-for (const [selector, element] of [['#navigation', nav.element], ['#reader', reader.element], ['#notes', notesPanel.element],
+for (const [selector, element] of [['#navigation', nav.element], ['#reader', reader.element], ['#cross-references', passageXrefs.element], ['#notes', notesPanel.element],
   ['#inspector', inspector.element], ['#comparison', comparison.element], ['#geography', geography.element],
   ['#chronology', chronology.element], ['#research-prompts', research.element], ['#study-search', search.element]] as const) app.querySelector(selector)!.append(element);
 app.append(modal.element, preview.element, noteEditor.element);
@@ -112,6 +115,7 @@ appState.subscribe(p => {
   reader.setEnglish(null, 'Loading English verse…');
   reader.setNoteCounts([]);
   notesState.setSelectedTokenPosition(null);
+  passageXrefs.setPassage(p);
   notesPanel.setPassage(p);
   const sample = BibleRPC.getSampleTranslations(p);
   reader.render(p, { data: sample, source: sample.length ? 'sample' : 'unavailable', error: null }, !sample.length);

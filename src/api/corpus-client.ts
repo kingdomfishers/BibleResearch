@@ -36,6 +36,8 @@ const CORPUS_RO_OPS = new Set<string>([
   'verify_referential_integrity_v1',
   'get_hebrew_import_status_v1',
   'search_syntax_patterns_v1',
+  'lookup_cross_references_v1',
+  'lookup_lexical_relationships_v1',
 ]);
 
 export function isStaticCorpusRpc(name: string): boolean {

@@ -8,6 +8,7 @@
 import { ensureReaderSession, restoreReaderSession, supabase } from './supabase';
 import { callCorpusRpc, isStaticCorpusRpc } from './corpus-client';
 import { NotesRPC } from './notes-rpc';
+import { RelationshipsRPC } from './relationships-rpc';
 import type { ActivePassage, ChronologyResponse, DataResult, HydratedCoOccurrence,
   RelationshipResearchPacket, TranslationSaveResult, VerseGeographyResponse, VerseTranslationToken,
   VerseWordToken, WordOccurrence, WordRecord, WordRelationship, VerseResearchRequest, VerseResearchResponse,
@@ -428,6 +429,7 @@ export const BibleRPC = {
   researchRelationships,
   getWordPopupDetails: wordDetails,
   notes: NotesRPC,
+  relationships: RelationshipsRPC,
   async resolveWordId(query: string): Promise<number | null> {
     if (!supabase) return null;
     try {

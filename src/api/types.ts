@@ -362,3 +362,4 @@ export type * from './syntax-types';
 export type * from './hebrew-septuagint-comparison-types';
 export type * from './formation-types';
 export type * from './notes-types';
+export type * from './relationship-types';

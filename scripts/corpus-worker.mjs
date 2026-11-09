@@ -16,6 +16,11 @@
  * - `/v1/rpc/<operation>` deterministic query & compatibility gateway for static evidence RPCs
  */
 
+import {
+  handleLookupCrossReferencesV1,
+  handleLookupLexicalRelationshipsV1,
+} from './corpus-relationships-rpc.mjs';
+
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, HEAD, OPTIONS',
@@ -2361,6 +2366,34 @@ export default {
         }
         if (op === 'prompt_word_cooccurrences') {
           return jsonResponse(await handlePromptWordCooccurrences(env, params));
+        }
+        if (op === 'lookup_cross_references_v1') {
+          return jsonResponse(
+            await handleLookupCrossReferencesV1(
+              {
+                env,
+                loadJsonShard,
+                ensureCatalog,
+                getVerseIdByCoord: coord => cachedVerseByCoord?.get(coord) ?? null,
+                getVerseById: id => cachedVerseById?.get(id) ?? null,
+              },
+              params
+            )
+          );
+        }
+        if (op === 'lookup_lexical_relationships_v1') {
+          return jsonResponse(
+            await handleLookupLexicalRelationshipsV1(
+              {
+                env,
+                loadJsonShard,
+                ensureCatalog,
+                getVerseIdByCoord: coord => cachedVerseByCoord?.get(coord) ?? null,
+                getVerseById: id => cachedVerseById?.get(id) ?? null,
+              },
+              params
+            )
+          );
         }
 
         return jsonResponse({ error: 'unknown_rpc_operation', operation: op }, 404, 'no-store');

@@ -1434,3 +1434,100 @@
     outline: 3px solid Highlight;
   }
 }
+
+
+/* Relationship Evidence Cards & Stance Bar (XREF-LEX) */
+.passage-xrefs,
+.lexical-rels {
+  margin-top: 14px;
+}
+
+.passage-xrefs__body,
+.lexical-rels__body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 10px;
+}
+
+.rel-disclaimer {
+  font-size: 12px;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.rel-subheading {
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 8px 0 2px;
+}
+
+.rel-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rel-card {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--soft);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rel-card__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.rel-card__lemma {
+  font-weight: 600;
+}
+
+.rel-badge {
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--muted);
+}
+
+.rel-badge--tier {
+  color: var(--gold);
+}
+
+.rel-card__why,
+.rel-card__prov,
+.rel-card__notes-count {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+.rel-card__actions,
+.editor-stance__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.editor-stance__summary {
+  margin: 0 0 6px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.editor-stance__btn.is-active {
+  border-color: var(--gold);
+  color: var(--gold);
+  font-weight: 600;
+}

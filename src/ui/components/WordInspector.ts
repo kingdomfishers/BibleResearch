@@ -13,6 +13,8 @@ import { appState } from '../state';
 import type { ContextPreview } from './ContextPreview';
 import { renderCategorizedConnections, renderWordFormation } from './WordFormation';
 import { createWordNotes } from './WordNotes';
+import { createLexicalRelationshipsSection } from './LexicalRelationshipsSection';
+import type { RelationshipNotePrefill } from '../../api/relationship-notes-adapter';
 
 // === @section:types ===
 interface Selection { id: number; position?: number; english?: string; rendering?: string; suggested?: boolean }
@@ -21,7 +23,8 @@ interface Selection { id: number; position?: number; english?: string; rendering
 export function createWordInspector(
   preview: ContextPreview,
   navigate: (p: ActivePassage) => void,
-  onAddNote?: (data: { word: WordRecord; position?: number }) => void
+  onAddNote?: (data: { word: WordRecord; position?: number }) => void,
+  onEvaluateRelationship?: (prefill: RelationshipNotePrefill) => void
 ) {
   const element = el('aside', 'word-inspector'); element.setAttribute('aria-label', 'Word meaning and connections');
   let generation = 0, selection: Selection | null = null, overview: ReaderOverview | null = null;
@@ -150,6 +153,10 @@ export function createWordInspector(
   }
 
   // === @section:ui:notes ===
+  const lexicalGraph = createLexicalRelationshipsSection({
+    onInspectTarget: (targetWordId: number) => { void inspect({ id: targetWordId }); },
+    onEvaluateRelationship,
+  });
   const wordNotes = createWordNotes({
     onInspectWord: (targetWordId: number) => { void inspect({ id: targetWordId }); },
     onAddNote: onAddNote ? () => {
@@ -158,7 +165,7 @@ export function createWordInspector(
       }
     } : undefined,
   });
-  element.appendChild(wordNotes.element);
+  element.append(lexicalGraph.element, wordNotes.element);
 
   // === @section:logic:inspect ===
   async function inspect(next: Selection, remember = true) {
@@ -175,7 +182,7 @@ export function createWordInspector(
     summary.replaceChildren(heading('WORD & CONNECTIONS', 'Opening word…'));
     formation.replaceChildren(status('Loading word formation & etymology…'));
     occurrences.replaceChildren(); categorized.replaceChildren(); connections.replaceChildren();
-    wordNotes.clear();
+    lexicalGraph.clear(); wordNotes.clear();
     element.setAttribute('aria-busy', 'true');
     const result = await BibleRPC.getReaderWord(next.id, 0, next.rendering ?? null);
     if (request !== generation) return;
@@ -183,7 +190,7 @@ export function createWordInspector(
     if (!result.data?.word) {
       summary.replaceChildren(heading('WORD & CONNECTIONS', 'Word unavailable'), status(result.error ?? 'No live word evidence is available.'),
         action('Retry', () => { void inspect(next, false); }));
-      formation.replaceChildren(); wordNotes.clear();
+      formation.replaceChildren(); lexicalGraph.clear(); wordNotes.clear();
       return;
     }
     currentData = result.data;
@@ -201,6 +208,7 @@ export function createWordInspector(
       void inspect({ id: targetId, ...opts });
     });
     void renderConnections(next.id, strongs, request);
+    void lexicalGraph.loadForWord(next.id, strongs);
     const curPassage = appState.getPassage();
     const curOcc = result.data.occurrences?.find(
       o => o.book === curPassage.book && o.chapter === curPassage.chapter && o.verse === curPassage.verse
@@ -224,5 +232,5 @@ export function createWordInspector(
       returnPassage.hidden = true;
       summary.replaceChildren(heading('WORD & CONNECTIONS', 'Follow a word'), status('Choose a word to explore.'));
       formation.replaceChildren(); occurrences.replaceChildren(); categorized.replaceChildren(); connections.replaceChildren();
-      wordNotes.clear(); }, close };
+      lexicalGraph.clear(); wordNotes.clear(); }, close };
 }
