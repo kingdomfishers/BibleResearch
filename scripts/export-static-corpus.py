@@ -65,6 +65,16 @@ FORBIDDEN_GATED_FIELDS = {
 }
 
 ALLOW_INCOMPLETE_EXPORT = "--allow-incomplete-export" in sys.argv
+REPARSE_SYNTAX = "--reparse-syntax" in sys.argv
+REFRESH_ALL = "--refresh-all" in sys.argv
+REFRESH_TABLES: set[str] = set()
+for arg in sys.argv[1:]:
+    if arg.startswith("--refresh-table="):
+        REFRESH_TABLES.add(arg.split("=", 1)[1].strip())
+    elif arg.startswith("--refresh-tables="):
+        for t in arg.split("=", 1)[1].split(","):
+            if t.strip():
+                REFRESH_TABLES.add(t.strip())
 
 MIN_EXPECTED_TABLE_ROWS: dict[str, int] = {
     "books": 66,
@@ -103,8 +113,8 @@ MIN_EXPECTED_TABLE_ROWS: dict[str, int] = {
     "lxx_swete_words": 580000,
     "verse_translation_sources": 440000,
     "macula_hebrew_morphemes": 470000,
-    "syntax_nodes_step": 120000,
-    "syntax_edges_step": 120000,
+    "syntax_nodes_step": 4000,
+    "syntax_edges_step": 4000,
     "verses_full": 31000,
     "syntax_nodes_db": 120000,
     "syntax_edges_db": 120000,
@@ -179,7 +189,8 @@ def write_jsonl_shards(base_dir: Path, table_name: str, rows: list[dict[str, Any
     out_dir = base_dir / "tables" / table_name
     out_dir.mkdir(parents=True, exist_ok=True)
     meta_cache_file = out_dir / ".shard-meta.json"
-    if meta_cache_file.exists():
+    is_refreshed = REFRESH_ALL or table_name in REFRESH_TABLES or (table_name in ("syntax_nodes", "syntax_edges") and REPARSE_SYNTAX)
+    if meta_cache_file.exists() and not is_refreshed:
         try:
             cached_meta = json.loads(meta_cache_file.read_text(encoding="utf-8"))
             if (
@@ -291,35 +302,38 @@ def fetch_table_rows(table_key: str, mode: str, page_size: int) -> list[dict[str
     min_expected = MIN_EXPECTED_TABLE_ROWS.get(table_key, 1)
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
     cache_file = CACHE_DIR / f"{table_key}.json.gz"
-    if cache_file.exists():
-        try:
-            with gzip.open(cache_file, "rt", encoding="utf-8") as fh:
-                cached = json.load(fh)
-            if isinstance(cached, list) and len(cached) >= min_expected:
-                print(f"  [cache hit] {table_key}: {len(cached):,} rows", flush=True)
-                return cached
-        except Exception:
-            pass
+    should_refresh = REFRESH_ALL or table_key in REFRESH_TABLES
 
-    # Check local offline fallback shards before network RPC
-    offline_candidates = [
-        CORPUS_DIR / "tables" / table_key,
-        BACKUP_DIR / "tables" / table_key,
-    ]
-    for cand in offline_candidates:
-        shards = sorted(cand.glob("part-*.jsonl.gz"))
-        if shards:
-            loaded_rows: list[dict[str, Any]] = []
-            for sf in shards:
-                with gzip.open(sf, "rt", encoding="utf-8") as f:
-                    for line in f:
-                        if line.strip():
-                            loaded_rows.append(json.loads(line))
-            if len(loaded_rows) >= min_expected:
-                print(f"  [offline shard hit] {table_key}: {len(loaded_rows):,} rows reconstructed from {len(shards)} local shards", flush=True)
-                with gzip.open(cache_file, "wt", encoding="utf-8", compresslevel=3) as fh:
-                    json.dump(loaded_rows, fh, ensure_ascii=False, separators=(",", ":"))
-                return loaded_rows
+    if not should_refresh:
+        if cache_file.exists():
+            try:
+                with gzip.open(cache_file, "rt", encoding="utf-8") as fh:
+                    cached = json.load(fh)
+                if isinstance(cached, list) and len(cached) >= min_expected:
+                    print(f"  [cache hit] {table_key}: {len(cached):,} rows", flush=True)
+                    return cached
+            except Exception:
+                pass
+
+        # Check local offline fallback shards before network RPC
+        offline_candidates = [
+            CORPUS_DIR / "tables" / table_key,
+            BACKUP_DIR / "tables" / table_key,
+        ]
+        for cand in offline_candidates:
+            shards = sorted(cand.glob("part-*.jsonl.gz"))
+            if shards:
+                loaded_rows: list[dict[str, Any]] = []
+                for sf in shards:
+                    with gzip.open(sf, "rt", encoding="utf-8") as f:
+                        for line in f:
+                            if line.strip():
+                                loaded_rows.append(json.loads(line))
+                if len(loaded_rows) >= min_expected:
+                    print(f"  [offline shard hit] {table_key}: {len(loaded_rows):,} rows reconstructed from {len(shards)} local shards", flush=True)
+                    with gzip.open(cache_file, "wt", encoding="utf-8", compresslevel=3) as fh:
+                        json.dump(loaded_rows, fh, ensure_ascii=False, separators=(",", ":"))
+                    return loaded_rows
 
     rows: list[dict[str, Any]] = []
     after_id = 0
@@ -424,7 +438,8 @@ def parse_all_macula_syntax_files(
     mf_dir = CORPUS_DIR / "tables" / "macula_syntax_import_files"
     un_dir = CORPUS_DIR / "tables" / "macula_syntax_unmapped_nodes"
     if (
-        sn_dir.exists() and len(list(sn_dir.glob("part-*.jsonl.gz"))) == 146
+        not REPARSE_SYNTAX
+        and sn_dir.exists() and len(list(sn_dir.glob("part-*.jsonl.gz"))) == 146
         and se_dir.exists() and len(list(se_dir.glob("part-*.jsonl.gz"))) == 91
         and mf_dir.exists() and len(list(mf_dir.glob("part-*.jsonl.gz"))) == 1
         and un_dir.exists() and len(list(un_dir.glob("part-*.jsonl.gz"))) == 1

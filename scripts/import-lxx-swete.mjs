@@ -304,18 +304,27 @@ async function main() {
   const mappingsToInsert = [];
 
   for (const v of allOtVerses) {
-    const bookNo = Object.keys(SWETE_CANONICAL_MAP).find(
-      k => SWETE_CANONICAL_MAP[k] === v.book && SWETE_CANONICAL_MAP[k] !== null
-    );
-    if (!bookNo) continue; // No direct counterpart (e.g. Ecclesiastes)
-
-    const lxxBookNo = parseInt(bookNo, 10);
+    let lxxBookNo;
     let lxxCh = v.chapter;
     let lxxChSuffix = '';
     let lxxV = v.verse_nr;
     let lxxVSuffix = '';
     let mappingKind = 'same_reference';
     let ruleCitation = `Standard direct chapter and verse alignment between MT and LXX ${v.book}:${v.chapter}.${v.verse_nr}.`;
+
+    if (v.book === 16) {
+      // AUDIT-02: Nehemiah (book 16) is contained in Swete 18.Esdras_B chapters 11..23
+      lxxBookNo = 18;
+      lxxCh = v.chapter + 10;
+      mappingKind = 'versification_shift';
+      ruleCitation = `Nehemiah canonical book 16 ch ${v.chapter} aligns to Swete 18.Esdras_B ch ${lxxCh}.`;
+    } else {
+      const bookNo = Object.keys(SWETE_CANONICAL_MAP).find(
+        k => SWETE_CANONICAL_MAP[k] === v.book && SWETE_CANONICAL_MAP[k] !== null
+      );
+      if (!bookNo) continue; // No direct counterpart (e.g. Ecclesiastes)
+      lxxBookNo = parseInt(bookNo, 10);
+    }
 
     // Special per-book versification rules
     if (v.book === 19) {

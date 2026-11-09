@@ -52,7 +52,7 @@ EXPECTED_ROW_COUNTS = {
     "reader_english_verses": 31215,
     "lexical_senses": 26179,
     "lexemes": 22719,
-    "hebrew_lxx_verse_map": 22633,
+    "hebrew_lxx_verse_map": 23039,
     "lemmas": 22171,
     "lexical_formations": 744,
     "entity_relationships": 15642,
