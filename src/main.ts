@@ -2,7 +2,7 @@
 // @feature: app-shell
 // @tables: words | verses | reader_english_verses | reader_rendering_groups | reader_text_events | places | chronology_models
 // @candidates: none
-// @toc: imports | ui:main | logic:selection | logic:passage
+// @toc: imports | ui:main | ui:notes-browser | logic:selection | logic:passage
 
 // === @section:imports ===
 import './ui/styles.css';
@@ -25,15 +25,17 @@ import { createPassageComparison } from './ui/components/PassageComparison';
 import { createStudySearch } from './ui/components/StudySearch';
 import { createNotesPanel } from './ui/components/NotesPanel';
 import { createNoteEditor } from './ui/components/NoteEditor';
+import { createNotesBrowser } from './ui/components/NotesBrowser';
 import { createPassageCrossReferences } from './ui/components/PassageCrossReferences';
-import { notesState } from './ui/notes-state';
+import { notesState, parseNoteHash } from './ui/notes-state';
 
 // === @section:ui:main ===
 const app = document.querySelector<HTMLDivElement>('#app')!;
 app.innerHTML = `<header class="study-header"><a class="study-brand" href="#1-1-1"><span class="study-brand-symbol" aria-hidden="true">א</span><span>BIBLE RESEARCH<small>WORDS. PLACES. CONNECTIONS.</small></span></a>
- <button class="study-button" id="appearance" type="button">Appearance</button></header>
+ <button class="study-button" id="all-notes-btn" type="button">All notes</button><button class="study-button" id="appearance" type="button">Appearance</button></header>
  <main class="study-main"><div class="study-intro"><div><p class="eyebrow">A CLOSER READING OF SCRIPTURE</p><h1>Ancient words. New connections.</h1></div><div id="study-search"></div></div>
  <div id="navigation"></div><div class="passage-stepper"><button class="text-action" id="previous-passage" type="button">← Previous verse</button><span>Read the English. Notice the original. Follow a connection.</span><button class="text-action" id="next-passage" type="button">Next verse →</button></div>
+ <div id="notes-browser-slot"></div>
  <div class="study-workspace"><div><div id="reader"></div><div id="cross-references"></div><div id="notes"></div></div><div id="inspector"></div></div><div id="comparison"></div>
  <div id="geography"></div><details class="study-advanced" id="chronology-disclosure"><summary>Chronology models & historical evidence</summary><div id="chronology"></div></details>
  <details class="study-advanced" id="research-disclosure"><summary>Advanced study, patterns & exports</summary><div id="research-prompts"></div></details>
@@ -44,6 +46,7 @@ const preview = createContextPreview(navigate, target => { void comparison.open(
 const noteEditor = createNoteEditor({
   onSaved: note => {
     notesPanel.refresh();
+    notesBrowser.refresh();
     notesState.setSelectedNoteId(note?.id ?? null);
   },
 });
@@ -96,6 +99,31 @@ appearance.addEventListener('click', () => {
   const theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; setTheme(theme);
   try { localStorage.setItem('bible-reading-theme', theme); } catch { /* Reading works without storage. */ }
 });
+
+// === @section:ui:notes-browser ===
+const notesBrowser = createNotesBrowser({
+  onNavigatePassage: navigate,
+  onInspectWord: id => selectWord(id),
+  onEditNote: note => noteEditor.openEdit(note),
+  onDeleteNote: async id => {
+    await BibleRPC.notes.remove(id);
+    notesPanel.refresh();
+  },
+});
+app.querySelector('#notes-browser-slot')!.append(notesBrowser.returnBar, notesBrowser.element);
+app.querySelector<HTMLButtonElement>('#all-notes-btn')!.addEventListener('click', () => {
+  if (notesBrowser.isOpen()) notesBrowser.close(); else notesBrowser.open();
+});
+function checkHash() {
+  const noteId = parseNoteHash(location.hash);
+  if (noteId) {
+    void notesBrowser.openDeepLink(noteId);
+  } else if (location.hash === '#notes') {
+    notesBrowser.open();
+  }
+}
+window.addEventListener('hashchange', checkHash);
+checkHash();
 
 // === @section:logic:selection ===
 const selections = new Map<string, { id: number; position?: number; english?: string; rendering?: string }>();

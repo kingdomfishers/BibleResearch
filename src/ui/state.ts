@@ -23,15 +23,17 @@ function readHash(): ActivePassage {
 const hash = (p: ActivePassage) => `#${p.book}-${p.chapter}-${p.verse}`;
 
 // === @section:logic:store ===
+const isNotesHash = (h: string) => h.startsWith('#note=') || h === '#notes';
 let passage = readHash();
 const listeners = new Set<(p: ActivePassage) => void>();
-history.replaceState(null, '', hash(passage));
+if (!isNotesHash(location.hash)) history.replaceState(null, '', hash(passage));
 function publish(next: ActivePassage) {
   if (hash(next) === hash(passage)) return;
   passage = { ...next };
   listeners.forEach(listener => listener({ ...passage }));
 }
 window.addEventListener('hashchange', () => {
+  if (isNotesHash(location.hash)) return;
   const next = readHash();
   if (location.hash !== hash(next)) history.replaceState(null, '', hash(next));
   publish(next);

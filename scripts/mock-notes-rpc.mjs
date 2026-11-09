@@ -18,6 +18,7 @@ if (!globalThis.__mockRpcState) {
     getForWordHandler: null,
     searchTargetsHandler: null,
     getVerseWordsHandler: null,
+    listHandler: null,
     abortedRequests: [],
   };
 }
@@ -221,6 +222,20 @@ export const BibleRPC = {
           anchors: [],
           connections: [],
           blocks: [],
+        },
+        error: null,
+        source: 'database',
+      };
+    },
+    list: async (filters, cursor, opts) => {
+      if (mockRpcState.listHandler) {
+        return mockRpcState.listHandler(filters, cursor, opts);
+      }
+      return {
+        data: {
+          notes: [],
+          page: { limit: opts?.limit ?? 25, next_cursor: null, has_more: false },
+          total: 0,
         },
         error: null,
         source: 'database',
