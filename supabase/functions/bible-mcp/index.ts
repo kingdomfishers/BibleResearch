@@ -10,9 +10,16 @@ import { createResearchServer, type DatabasePage, type DatabaseQuery, type Datab
 import { PROMPTS } from './catalog.ts';
 import { WORKFLOW_VERSION } from './research-workflow.ts';
 import { RESEARCH_TOOL_NAMES } from './workflow-contract.ts';
+import { createNotesWriter, registerNoteWriteTools } from './notes-write.ts';
 
 // === @section:types ===
-export interface DatabaseConfig { url: string; publicKey: string; corpusUrl?: string }
+export interface DatabaseConfig {
+  url: string;
+  publicKey: string;
+  corpusUrl?: string;
+  serviceRoleKey?: string;
+  agentKey?: string;
+}
 const DEFAULT_CORPUS_URL = 'https://bibleresearch-corpus.kingdomfishers-custom.workers.dev';
 const corpusRpcs = new Set([
   'lookup_septuagint_passage_v1',
@@ -130,8 +137,7 @@ export function createDatabaseReader(config: DatabaseConfig, fetcher: typeof fet
       signal: AbortSignal.timeout(12000),
     };
     let response = await fetcher(url, request);
-    // Every allowlisted operation is a read. Retry one transient upstream failure
-    // within the original 12-second budget, preserving the same public identity.
+    // Every allowlisted operation is a read. Retry one transient upstream failure within budget.
     if ([500, 502, 503, 504].includes(response.status)) {
       await response.body?.cancel();
       response = await fetcher(url, request);
@@ -157,7 +163,14 @@ export function createDatabaseReader(config: DatabaseConfig, fetcher: typeof fet
 // === @section:logic:transport ===
 export function createApp(config: DatabaseConfig, fetcher: typeof fetch = fetch) {
   const read = createDatabaseReader(config, fetcher);
-  const mcp = createMcpHandler(() => createResearchServer(read), { maxRequestBodySize: 32768 });
+  const writer = config.serviceRoleKey
+    ? createNotesWriter({ url: config.url, serviceRoleKey: config.serviceRoleKey, agentKey: config.agentKey }, fetcher)
+    : undefined;
+  const mcp = createMcpHandler((context) => {
+    const server = createResearchServer(read);
+    if (writer) registerNoteWriteTools(server, writer, () => context?.requestInfo?.headers);
+    return server;
+  }, { maxRequestBodySize: 32768 });
   const paths = new Set(['/', '/mcp', '/bible-mcp', '/bible-mcp/mcp',
     '/functions/v1/bible-mcp', '/functions/v1/bible-mcp/mcp']);
   const withCors = (response: Response) => {
@@ -171,9 +184,11 @@ export function createApp(config: DatabaseConfig, fetcher: typeof fetch = fetch)
     const path = new URL(request.url).pathname.replace(/\/+$/, '') || '/';
     if (request.method === 'OPTIONS') return withCors(new Response(null, { status: 204 }));
     if (request.method === 'GET' && path.endsWith('/health')) {
+      const toolCount = RESEARCH_TOOL_NAMES.length + (writer ? 3 : 0);
       return withCors(Response.json({ name: 'BibleResearch', version: WORKFLOW_VERSION, status: 'ok',
-        transport: 'streamable-http', authentication: 'none', read_only: true,
-        tools: RESEARCH_TOOL_NAMES.length, prompts: Object.keys(PROMPTS).length }));
+        transport: 'streamable-http', authentication: 'none', read_only: !writer,
+        writes: writer ? 'enabled' : 'disabled',
+        tools: toolCount, prompts: Object.keys(PROMPTS).length }));
     }
     if (!paths.has(path)) return withCors(Response.json({ error: 'Not found' }, { status: 404 }));
     try { return withCors(await mcp.fetch(request)); }
@@ -188,6 +203,8 @@ export function createApp(config: DatabaseConfig, fetcher: typeof fetch = fetch)
 if (import.meta.main) {
   const url = Deno.env.get('SUPABASE_URL');
   const publicKey = Deno.env.get('BIBLE_SUPABASE_PUBLISHABLE_KEY') ?? Deno.env.get('SUPABASE_ANON_KEY');
+  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  const agentKey = Deno.env.get('NOTES_AGENT_KEY');
   if (!url || !publicKey) throw new Error('Supabase public environment is not configured.');
-  Deno.serve(createApp({ url, publicKey }));
+  Deno.serve(createApp({ url, publicKey, serviceRoleKey, agentKey }));
 }

@@ -10,6 +10,11 @@ const LONG_BODY_TEXT = 'A'.repeat(5000);
 let simulateNotesOutage = false;
 let simulate200Notes = false;
 let simulate100Verses = false;
+let simulateWritesDisabled = false;
+let simulateRateLimited = false;
+let simulateForbidden = false;
+
+const capturedResponseTexts = [];
 
 const fakeFetch = async (input, init) => {
   const url = new URL(input);
@@ -183,31 +188,100 @@ const fakeFetch = async (input, init) => {
     });
   }
 
+  if (name === 'agent_save_note_v1') {
+    if (simulateWritesDisabled) {
+      return Response.json({
+        ok: false,
+        error: { code: 'writes_disabled', message: 'AI writes are currently disabled in note_settings' },
+      });
+    }
+    if (simulateRateLimited) {
+      return Response.json({
+        ok: false,
+        error: { code: 'rate_limited', message: 'Hourly note limit exceeded for this model' },
+      });
+    }
+    if (simulateForbidden) {
+      return Response.json({
+        ok: false,
+        error: { code: 'forbidden', message: 'Agent may only update its own notes' },
+      });
+    }
+    const isUpdate = Boolean(body.p_note?.id);
+    return Response.json({
+      ok: true,
+      created: !isUpdate,
+      note: {
+        id: body.p_note?.id || '33333333-3333-3333-3333-333333333333',
+        title: body.p_note?.title || 'AI Generated Note',
+        body_md: body.p_note?.body_md || 'Analysis content',
+        version: isUpdate ? (body.p_note?.expected_version || 1) + 1 : 1,
+        author: {
+          kind: 'ai',
+          provider: body.p_agent?.provider,
+          model: body.p_agent?.model,
+          client: body.p_agent?.client,
+          display_name: body.p_agent?.display_name,
+        },
+        review_status: 'unreviewed',
+        note_kind: body.p_note?.note_kind || 'observation',
+        anchors: body.p_note?.anchors || [],
+        connections: body.p_note?.connections || [],
+        blocks: body.p_note?.blocks || [],
+        source_context: body.p_note?.source_context || {},
+      },
+    });
+  }
+
+  if (name === 'agent_delete_note_v1') {
+    if (simulateWritesDisabled) {
+      return Response.json({
+        ok: false,
+        error: { code: 'writes_disabled', message: 'AI writes are currently disabled in note_settings' },
+      });
+    }
+    if (simulateForbidden) {
+      return Response.json({
+        ok: false,
+        error: { code: 'forbidden', message: 'Agent may only delete its own notes' },
+      });
+    }
+    return Response.json({
+      ok: true,
+      status: 'removed',
+      version: 2,
+    });
+  }
+
   return Response.json({ status: 'unknown' });
 };
 
 const app = createApp({ url: 'https://example.supabase.co', publicKey: 'sb_publishable_test' }, fakeFetch);
 let idCounter = 0;
 
-async function rpc(method, params = {}) {
+async function rpc(method, params = {}, options = {}) {
   const currentId = ++idCounter;
-  const response = await app(new Request('https://example.supabase.co/functions/v1/bible-mcp/mcp', {
+  const targetApp = options.app || app;
+  const headers = {
+    'Content-Type': 'application/json',
+    Accept: 'application/json, text/event-stream',
+    'MCP-Protocol-Version': '2025-11-25',
+    ...(options.headers || {}),
+  };
+  const response = await targetApp(new Request('https://example.supabase.co/functions/v1/bible-mcp/mcp', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Accept: 'application/json, text/event-stream',
-      'MCP-Protocol-Version': '2025-11-25',
-    },
+    headers,
     body: JSON.stringify({ jsonrpc: '2.0', id: currentId, method, params }),
   }));
   const text = await response.text();
+  capturedResponseTexts.push(text);
   const payload = response.headers.get('content-type')?.includes('text/event-stream')
     ? text.split('\n').filter(l => l.startsWith('data:')).map(l => JSON.parse(l.slice(5))).find(p => p.id === currentId)
     : JSON.parse(text);
   return { response, payload };
 }
 
-const call = async (name, args) => (await rpc('tools/call', { name, arguments: args })).payload;
+const call = async (name, args, options = {}) => (await rpc('tools/call', { name, arguments: args }, options)).payload;
 
 console.log('--- TEST 1: Tool registration and readOnlyHint ---');
 const tools = (await rpc('tools/list')).payload.result.tools;
@@ -380,4 +454,244 @@ assert.equal(occRes.result.structuredContent.notes_hint, 'call get_notes with wo
 const lexRes = await call('lookup_lexical_semantics', { p_query: 'H7225' });
 assert.equal(lexRes.result.structuredContent.notes_hint, 'call get_notes with word_id');
 
-console.log('All NOTE-28 and NOTE-29 tests passed cleanly!');
+console.log('--- TEST 16: NOTE-30 Write tools registration, inventory & health ---');
+const TEST_SERVICE_KEY = 'test_service_role_secret_key_98765';
+const TEST_AGENT_KEY = 'test_agent_bearer_secret_12345';
+
+// Read-only app health
+const readOnlyHealthRes = await app(new Request('https://example.supabase.co/functions/v1/bible-mcp/health'));
+const readOnlyHealth = await readOnlyHealthRes.json();
+assert.equal(readOnlyHealth.writes, 'disabled');
+assert.equal(readOnlyHealth.read_only, true);
+assert.equal(readOnlyHealth.tools, 22);
+
+// Writer-enabled app with agent key
+const writerApp = createApp({
+  url: 'https://example.supabase.co',
+  publicKey: 'sb_publishable_test',
+  serviceRoleKey: TEST_SERVICE_KEY,
+  agentKey: TEST_AGENT_KEY,
+}, fakeFetch);
+
+const writerHealthRes = await writerApp(new Request('https://example.supabase.co/functions/v1/bible-mcp/health'));
+const writerHealth = await writerHealthRes.json();
+assert.equal(writerHealth.writes, 'enabled');
+assert.equal(writerHealth.read_only, false);
+assert.equal(writerHealth.tools, 25);
+
+// Tools list on writerApp
+const writeToolsListRes = await rpc('tools/list', {}, { app: writerApp });
+const writeTools = writeToolsListRes.payload.result.tools;
+assert.equal(writeTools.length, 25, 'Writer-enabled server must expose exactly 25 tools (22 read + 3 write)');
+
+const writeToolNames = ['create_note', 'update_my_note', 'delete_my_note'];
+for (const name of writeToolNames) {
+  const t = writeTools.find(x => x.name === name);
+  assert.ok(t, `Tool ${name} must be registered on writer app`);
+  assert.equal(t.annotations.readOnlyHint, false, `${name} must have readOnlyHint: false`);
+  assert.equal(t.annotations.idempotentHint, false, `${name} must have idempotentHint: false`);
+  assert.equal(t.annotations.openWorldHint, false, `${name} must have openWorldHint: false`);
+  if (name === 'delete_my_note') {
+    assert.equal(t.annotations.destructiveHint, true, 'delete_my_note must have destructiveHint: true');
+  } else {
+    assert.equal(t.annotations.destructiveHint, false, `${name} must have destructiveHint: false`);
+  }
+}
+
+// Ensure remaining 22 tools are read-only
+const readOnlyTools = writeTools.filter(t => !writeToolNames.includes(t.name));
+assert.equal(readOnlyTools.length, 22);
+assert.ok(readOnlyTools.every(t => t.annotations.readOnlyHint === true && t.annotations.destructiveHint === false));
+
+console.log('--- TEST 17: NOTE-30 TP-CRED-1 Credential Isolation ---');
+import { createDatabaseReader } from '../supabase/functions/bible-mcp/index.ts';
+assert.throws(() => {
+  createDatabaseReader({ url: 'https://example.supabase.co', publicKey: TEST_SERVICE_KEY }, fakeFetch);
+}, /BibleResearch requires a Supabase URL and public publishable\/anon key/);
+
+console.log('--- TEST 18: NOTE-30 Auth enforcement with NOTES_AGENT_KEY ---');
+const sampleAnchors = [
+  { client_key: 'anc-v1', kind: 'verse', label: 'Gen 9:6', verse_id: 100 },
+];
+const sampleConnections = [];
+const sampleBlocks = [];
+
+// 18a: Missing Authorization header on write tool
+const noAuthRes = await call('create_note', {
+  title: 'Test Note',
+  body_md: 'This is a test note.',
+  note_kind: 'observation',
+  anchors: sampleAnchors,
+  connections: sampleConnections,
+  blocks: sampleBlocks,
+}, { app: writerApp });
+assert.equal(noAuthRes.result.isError, true);
+assert.ok(noAuthRes.result.content[0].text.includes('Writing notes requires the agent key'));
+
+// 18b: Wrong Authorization header on write tool
+const wrongAuthRes = await call('create_note', {
+  title: 'Test Note',
+  body_md: 'This is a test note.',
+  note_kind: 'observation',
+  anchors: sampleAnchors,
+  connections: sampleConnections,
+  blocks: sampleBlocks,
+}, { app: writerApp, headers: { Authorization: 'Bearer wrong_token_abc' } });
+assert.equal(wrongAuthRes.result.isError, true);
+assert.ok(wrongAuthRes.result.content[0].text.includes('Writing notes requires the agent key'));
+
+// 18c: Read tools unaffected without authorization header
+const readNoAuth = await call('get_notes', { book: 1, chapter: 9, verse_start: 6 }, { app: writerApp });
+assert.equal(readNoAuth.result.isError ?? false, false);
+assert.ok(readNoAuth.result.structuredContent.untrusted_notes);
+
+// 18d: Correct Authorization header on write tool
+const rightAuthRes = await call('create_note', {
+  title: 'Test Note Auth',
+  body_md: 'This is a test note with valid auth.',
+  note_kind: 'observation',
+  model: 'claude-3-5-sonnet',
+  anchors: sampleAnchors,
+  connections: sampleConnections,
+  blocks: sampleBlocks,
+}, { app: writerApp, headers: { Authorization: `Bearer ${TEST_AGENT_KEY}` } });
+assert.equal(rightAuthRes.result.isError ?? false, false);
+assert.equal(rightAuthRes.result.structuredContent.epistemic_layer, 'user_note');
+assert.equal(rightAuthRes.result.structuredContent.notice, NOTE_SECURITY_NOTICE);
+assert.equal(rightAuthRes.result.structuredContent.ok, true);
+
+console.log('--- TEST 19: NOTE-30 Single-user mode without NOTES_AGENT_KEY ---');
+const singleUserApp = createApp({
+  url: 'https://example.supabase.co',
+  publicKey: 'sb_publishable_test',
+  serviceRoleKey: TEST_SERVICE_KEY,
+  // agentKey unset
+}, fakeFetch);
+
+const singleUserRes = await call('create_note', {
+  title: 'Single User Note',
+  body_md: 'Created in single-user mode without token.',
+  note_kind: 'observation',
+  anchors: sampleAnchors,
+  connections: sampleConnections,
+  blocks: sampleBlocks,
+}, { app: singleUserApp });
+assert.equal(singleUserRes.result.isError ?? false, false);
+assert.equal(singleUserRes.result.structuredContent.ok, true);
+
+console.log('--- TEST 20: NOTE-30 Functional create_note with rich structures ---');
+const richCreateRes = await call('create_note', {
+  title: 'Rich Study Note on Gen 9:6',
+  body_md: 'Exegetical observation linking wordplay and covenant justice.',
+  note_kind: 'word_play',
+  language: 'he',
+  confidence: 0.95,
+  model: 'claude-3-5-sonnet',
+  anchors: [
+    { client_key: 'anc-adam', kind: 'word_occurrence', label: 'הָאָדָם', verse_id: 100, word_position: 3, word_id: 501 },
+    { client_key: 'anc-dam', kind: 'word_occurrence', label: 'דַּם', verse_id: 100, word_position: 2, word_id: 502 },
+  ],
+  connections: [
+    { from_client_key: 'anc-dam', to_client_key: 'anc-adam', connection_type: 'linguistic_wordplay', direction: 'bidirectional', confidence: 0.98, explanation: 'Alliteration and phonetic containment' },
+  ],
+  blocks: [
+    { block_type: 'link', content: { url: 'https://example.com/chiasm', title: 'Gen 9:6 Chiasm' }, text_alternative: 'Chiasm analysis link' },
+  ],
+  source_context: {
+    tool_calls: ['prompt_verse_words', 'prompt_word_occurrences'],
+    rationale: 'Chiastic structure analysis of MT Gen 9:6',
+  },
+}, { app: writerApp, headers: { Authorization: `Bearer ${TEST_AGENT_KEY}` } });
+
+assert.equal(richCreateRes.result.isError ?? false, false);
+assert.equal(richCreateRes.result.structuredContent.epistemic_layer, 'user_note');
+assert.equal(richCreateRes.result.structuredContent.notice, NOTE_SECURITY_NOTICE);
+assert.equal(richCreateRes.result.structuredContent.created, true);
+assert.equal(richCreateRes.result.structuredContent.note.note_kind, 'word_play');
+
+// Check RPC request body passed to fetcher
+const saveReq = requests.find(r => r.name === 'agent_save_note_v1' && r.body.p_note?.title === 'Rich Study Note on Gen 9:6');
+assert.ok(saveReq, 'agent_save_note_v1 must have been called');
+assert.equal(saveReq.body.p_agent.model, 'claude-3-5-sonnet');
+assert.equal(saveReq.body.p_agent.provider, 'anthropic');
+assert.ok(saveReq.body.p_agent.display_name.includes('anthropic/claude-3-5-sonnet'));
+assert.equal(saveReq.body.p_note.anchors.length, 2);
+assert.equal(saveReq.body.p_note.connections.length, 1);
+assert.equal(saveReq.body.p_note.blocks.length, 1);
+
+console.log('--- TEST 21: NOTE-30 Functional update_my_note ---');
+const updateRes = await call('update_my_note', {
+  note_id: '33333333-3333-3333-3333-333333333333',
+  expected_version: 1,
+  title: 'Updated Study Note on Gen 9:6',
+  body_md: 'Updated body with additional evidence.',
+  note_kind: 'word_play',
+  model: 'claude-3-5-sonnet',
+  anchors: sampleAnchors,
+  connections: sampleConnections,
+  blocks: sampleBlocks,
+}, { app: writerApp, headers: { Authorization: `Bearer ${TEST_AGENT_KEY}` } });
+
+assert.equal(updateRes.result.isError ?? false, false);
+assert.equal(updateRes.result.structuredContent.epistemic_layer, 'user_note');
+assert.equal(updateRes.result.structuredContent.created, false);
+assert.equal(updateRes.result.structuredContent.note.version, 2);
+
+console.log('--- TEST 22: NOTE-30 Functional delete_my_note ---');
+const deleteRes = await call('delete_my_note', {
+  note_id: '33333333-3333-3333-3333-333333333333',
+  model: 'claude-3-5-sonnet',
+}, { app: writerApp, headers: { Authorization: `Bearer ${TEST_AGENT_KEY}` } });
+
+assert.equal(deleteRes.result.isError ?? false, false);
+assert.equal(deleteRes.result.structuredContent.epistemic_layer, 'user_note');
+assert.equal(deleteRes.result.structuredContent.status, 'removed');
+assert.equal(deleteRes.result.structuredContent.version, 2);
+
+console.log('--- TEST 23: NOTE-30 RPC Error propagation ---');
+// 23a: writes_disabled
+simulateWritesDisabled = true;
+const disabledRes = await call('create_note', {
+  title: 'Note while writes disabled',
+  body_md: 'This will fail.',
+  note_kind: 'observation',
+  anchors: sampleAnchors,
+  connections: sampleConnections,
+  blocks: sampleBlocks,
+}, { app: writerApp, headers: { Authorization: `Bearer ${TEST_AGENT_KEY}` } });
+assert.equal(disabledRes.result.isError, true);
+assert.ok(disabledRes.result.content[0].text.includes('writes_disabled'));
+simulateWritesDisabled = false;
+
+// 23b: rate_limited
+simulateRateLimited = true;
+const rateLimitedRes = await call('create_note', {
+  title: 'Note while rate limited',
+  body_md: 'This will fail.',
+  note_kind: 'observation',
+  anchors: sampleAnchors,
+  connections: sampleConnections,
+  blocks: sampleBlocks,
+}, { app: writerApp, headers: { Authorization: `Bearer ${TEST_AGENT_KEY}` } });
+assert.equal(rateLimitedRes.result.isError, true);
+assert.ok(rateLimitedRes.result.content[0].text.includes('rate_limited'));
+simulateRateLimited = false;
+
+// 23c: forbidden
+simulateForbidden = true;
+const forbiddenRes = await call('delete_my_note', {
+  note_id: '33333333-3333-3333-3333-333333333333',
+}, { app: writerApp, headers: { Authorization: `Bearer ${TEST_AGENT_KEY}` } });
+assert.equal(forbiddenRes.result.isError, true);
+assert.ok(forbiddenRes.result.content[0].text.includes('forbidden'));
+simulateForbidden = false;
+
+// TP-CRED-1 check across all captured response texts
+console.log('--- TEST 24: NOTE-30 TP-CRED-1 Leak Check across all responses ---');
+const allResponsesJoined = capturedResponseTexts.join('\n');
+assert.ok(
+  !allResponsesJoined.includes(TEST_SERVICE_KEY),
+  'Service role key must never leak into any response body or envelope'
+);
+
+console.log('All NOTE-28, NOTE-29, and NOTE-30 tests passed cleanly!');
