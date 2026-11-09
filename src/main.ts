@@ -24,6 +24,7 @@ import { createEventTimeline } from './ui/components/EventTimeline';
 import { createPassageComparison } from './ui/components/PassageComparison';
 import { createStudySearch } from './ui/components/StudySearch';
 import { createNotesPanel } from './ui/components/NotesPanel';
+import { createNoteEditor } from './ui/components/NoteEditor';
 import { notesState } from './ui/notes-state';
 
 // === @section:ui:main ===
@@ -39,14 +40,34 @@ app.innerHTML = `<header class="study-header"><a class="study-brand" href="#1-1-
 const navigate = (p: ActivePassage) => appState.setPassage(p);
 const comparison = createPassageComparison(navigate);
 const preview = createContextPreview(navigate, target => { void comparison.open(appState.getPassage(), target); });
-const inspector = createWordInspector(preview, navigate);
+const noteEditor = createNoteEditor({
+  onSaved: note => {
+    notesPanel.refresh();
+    notesState.setSelectedNoteId(note?.id ?? null);
+  },
+});
+const inspector = createWordInspector(preview, navigate, data => {
+  noteEditor.openNew({
+    passage: appState.getPassage(),
+    selectedWord: data.word,
+    selectedPosition: data.position,
+  });
+});
 const timeline = createEventTimeline(preview, key => geography.focusPlace(key));
 const geography = createVerseMap(packet => timeline.setGeography(packet));
 const reader = createVerseReader({
   context: timeline.element, preview, onWord: selectWord, onPlace: key => geography.focusPlace(key),
   onTokenNotes: pos => notesState.setSelectedTokenPosition(pos),
 });
-const notesPanel = createNotesPanel({ onTokenCounts: counts => reader.setNoteCounts(counts) });
+const notesPanel = createNotesPanel({
+  onAdd: () => noteEditor.openNew({ passage: appState.getPassage() }),
+  onEdit: note => noteEditor.openEdit(note),
+  onDelete: async noteId => {
+    await BibleRPC.notes.remove(noteId);
+    notesPanel.refresh();
+  },
+  onTokenCounts: counts => reader.setNoteCounts(counts),
+});
 const nav = createNavSelector(navigate);
 const modal = createWordModal(navigate);
 let timelineModel = 'theographic-verse-v1';
@@ -58,7 +79,7 @@ const search = createStudySearch(navigate, id => selectWord(id));
 for (const [selector, element] of [['#navigation', nav.element], ['#reader', reader.element], ['#notes', notesPanel.element],
   ['#inspector', inspector.element], ['#comparison', comparison.element], ['#geography', geography.element],
   ['#chronology', chronology.element], ['#research-prompts', research.element], ['#study-search', search.element]] as const) app.querySelector(selector)!.append(element);
-app.append(modal.element, preview.element);
+app.append(modal.element, preview.element, noteEditor.element);
 let overview: Awaited<ReturnType<typeof BibleRPC.getReaderOverview>>['data'] = null;
 const previous = app.querySelector<HTMLButtonElement>('#previous-passage')!, next = app.querySelector<HTMLButtonElement>('#next-passage')!;
 previous.addEventListener('click', () => { if (overview?.previous) navigate(overview.previous); });

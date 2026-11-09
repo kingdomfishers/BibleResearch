@@ -17,6 +17,7 @@ export interface WordNotesOptions {
   onOpenNote?: (id: string) => void;
   onAnchor?: (anchor: NoteAnchor) => void;
   onInspectWord?: (wordId: number) => void;
+  onAddNote?: () => void;
 }
 
 export interface WordNotesComponent {
@@ -150,6 +151,14 @@ export function createWordNotes(options: WordNotesOptions = {}): WordNotesCompon
   const heading = document.createElement('h3');
   heading.className = 'word-notes__title';
   heading.textContent = 'Word Notes';
+  if (options.onAddNote) {
+    const addBtn = document.createElement('button');
+    addBtn.type = 'button';
+    addBtn.className = 'word-notes__add-btn';
+    addBtn.textContent = '+ Add note';
+    addBtn.addEventListener('click', () => options.onAddNote?.());
+    heading.append(' ', addBtn);
+  }
   const statusEl = document.createElement('p');
   statusEl.className = 'word-notes__status';
   statusEl.textContent = 'Select a word to view notes.';

@@ -157,8 +157,25 @@ export function renderSearchResults(
         sub.textContent = cand.sublabel; opt.append(main, sub);
       } else { opt.append(main); }
 
-      opt.addEventListener('mouseenter', () => { mgr.activeIndex = idx; renderSearchResults(container, mgr, onPick); });
-      opt.addEventListener('click', () => onPick(cand.anchor));
+      opt.addEventListener('mouseenter', () => {
+        if (mgr.activeIndex !== idx) {
+          const prev = container.querySelector('.target-candidate.is-focused');
+          if (prev) {
+            prev.classList.remove('is-focused');
+            prev.setAttribute('aria-selected', 'false');
+          }
+          mgr.activeIndex = idx;
+          opt.classList.add('is-focused');
+          opt.setAttribute('aria-selected', 'true');
+        }
+      });
+      const pickHandler = (e: Event) => {
+        e?.preventDefault?.();
+        e?.stopPropagation?.();
+        onPick(cand.anchor);
+      };
+      opt.addEventListener('mousedown', pickHandler);
+      opt.addEventListener('click', pickHandler);
       grpEl.append(opt);
     }
     container.append(grpEl);

@@ -107,6 +107,21 @@ export const BibleRPC = {
           });
         }
       }
+      if (q === 'dam' || q === 'h1818' || q.includes('1818') || (q.includes('דם') && !q.includes('אדם'))) {
+        groups.push({
+          kind: 'lemma',
+          label: 'Lemmas (Lexical roots & headwords)',
+          candidates: [{
+            kind: 'lemma',
+            id: 1818,
+            label: 'דָּם (dam)',
+            sublabel: 'blood [H1818]',
+            language: 'he',
+            match_type: 'exact',
+            anchor: { kind: 'lemma', lemma_id: 1818, label: 'דָּם (dam)' },
+          }],
+        });
+      }
       if (q === 'logos' || q.includes('logo')) {
         groups.push({
           kind: 'lemma',
@@ -175,6 +190,47 @@ export const BibleRPC = {
         error: null,
         source: 'database',
       };
+    },
+    save: async (payload) => {
+      if (mockRpcState.overrideSave) {
+        return mockRpcState.overrideSave(payload);
+      }
+      return {
+        ok: true,
+        note: {
+          id: payload.id || 'mock_note_1',
+          title: payload.title,
+          body_md: payload.body_md,
+          version: (payload.expected_version || 0) + 1,
+          anchors: payload.anchors || [],
+          connections: payload.connections || [],
+          blocks: payload.blocks || [],
+        },
+      };
+    },
+    getNote: async (id) => {
+      if (mockRpcState.overrideGetNote) {
+        return mockRpcState.overrideGetNote(id);
+      }
+      return {
+        data: {
+          id,
+          title: 'Mock Note',
+          body_md: 'Mock body',
+          version: 1,
+          anchors: [],
+          connections: [],
+          blocks: [],
+        },
+        error: null,
+        source: 'database',
+      };
+    },
+    remove: async (id, expectedVersion) => {
+      if (mockRpcState.overrideRemove) {
+        return mockRpcState.overrideRemove(id, expectedVersion);
+      }
+      return { ok: true, id };
     },
   },
 };

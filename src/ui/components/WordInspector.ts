@@ -18,7 +18,11 @@ import { createWordNotes } from './WordNotes';
 interface Selection { id: number; position?: number; english?: string; rendering?: string; suggested?: boolean }
 
 // === @section:ui:main ===
-export function createWordInspector(preview: ContextPreview, navigate: (p: ActivePassage) => void) {
+export function createWordInspector(
+  preview: ContextPreview,
+  navigate: (p: ActivePassage) => void,
+  onAddNote?: (data: { word: WordRecord; position?: number }) => void
+) {
   const element = el('aside', 'word-inspector'); element.setAttribute('aria-label', 'Word meaning and connections');
   let generation = 0, selection: Selection | null = null, overview: ReaderOverview | null = null;
   let currentData: ReaderWord | null = null;
@@ -148,6 +152,11 @@ export function createWordInspector(preview: ContextPreview, navigate: (p: Activ
   // === @section:ui:notes ===
   const wordNotes = createWordNotes({
     onInspectWord: (targetWordId: number) => { void inspect({ id: targetWordId }); },
+    onAddNote: onAddNote ? () => {
+      if (currentData?.word) {
+        onAddNote({ word: currentData.word, position: selection?.position });
+      }
+    } : undefined,
   });
   element.appendChild(wordNotes.element);
 
