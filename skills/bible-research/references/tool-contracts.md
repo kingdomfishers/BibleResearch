@@ -64,3 +64,28 @@ a sample is acceptable when the reader requires completeness. Transport errors
 mean unavailable data. Private reader translations are excluded from public
 research packets. Client tool visibility can lag a deployment; compare the
 client's list with live discovery and refresh the connection when necessary.
+
+## Notes tools contracts
+
+Existing user-generated notes (human and AI) provide study commentary alongside corpus evidence. All note tools carry epistemic notices and untrusted data markers.
+
+### Read tools
+- `get_notes`: Retrieves notes by passage (`book`, `chapter`, `verse_start`, `verse_end?`), word target (`word_id`, `verse_id?`, `word_position?`), or direct note ID (`note_id`). Returns `{ epistemic_layer: 'user_note', notice, untrusted_notes: { ... } }`. Note bodies > 4,000 chars are truncated in list mode with `truncated: true`; full text is available via `note_id`.
+- `search_note_targets`: Searches autocomplete candidates across passages, Strong's numbers, lemmas, concepts, and places (`query`, optional `kinds`, `limit` up to 50).
+- `list_note_connection_types`: Returns allowed connection types (e.g. `linguistic_wordplay`, `thematic_parallel`) with categories and default directions, plus registered `note_kinds`.
+
+### Write tools
+When configured on the server, AI agents can author and maintain study notes:
+- `create_note`: Creates a new note.
+  - Inputs: `title?`, `body_md` (1-20,000 chars), `note_kind` (enum: `observation`, `historical_context`, `literary_structure`, `word_play`, `cross_reference`, `translation_note`, `theological`), `language?` (default `'en'`), `confidence?` (0.0 to 1.0), `anchors` (1 to 20 objects with unique `client_key`s), `connections?` (up to 20 objects linking `client_key`s), `blocks?` (up to 10 structured link/image blocks), `source_context?` (up to 8 KB object with evidence citations), `model?` (self-reported identifier).
+  - Annotations: `readOnlyHint: false`, `destructiveHint: false`, `idempotentHint: false`, `openWorldHint: false`.
+- `update_my_note`: Updates an existing note authored by the calling agent.
+  - Inputs: `note_id` (UUID), `expected_version` (integer optimistic lock), plus note fields as in `create_note`.
+  - Annotations: `readOnlyHint: false`, `destructiveHint: false`.
+- `delete_my_note`: Soft-deletes a note authored by the calling agent.
+  - Inputs: `note_id` (UUID), optional `model`.
+  - Annotations: `readOnlyHint: false`, `destructiveHint: true`.
+
+### Authentication and safety
+- If `NOTES_AGENT_KEY` is set on the server, write tools require `Authorization: Bearer <key>`. Missing or invalid tokens return an MCP tool error while read tools continue operating without authentication. If unset, single-user mode allows writes.
+- Write operations enforce author ownership: agents can only update or delete their own notes (`forbidden` error on mismatch). Kill switch (`writes_disabled`) and rate limits (`rate_limited`) are enforced by the database.
