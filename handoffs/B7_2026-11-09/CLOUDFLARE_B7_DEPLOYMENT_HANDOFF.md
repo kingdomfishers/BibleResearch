@@ -5,8 +5,8 @@
 ## Verified live deployment
 
 - Worker: `bibleresearch-corpus`
-- Active Worker version: `3f53b796-5b56-4fb1-a30e-545b001afb9b`, **100% traffic, sole version**.
-- Deployment: `dfe26609-d8fa-4622-adc2-751d0d32bc98`.
+- Active Worker version: `dc01ca7e-34ee-424f-aff9-c453352a3d97`, **100% traffic, sole version**.
+- Deployment: `abb2278a-8671-4839-96e6-69c16a529369`.
 - Previous recovery version retained by Cloudflare history: `1a9ee4cb-f567-4b0e-9962-cc5333a36183` (not in active deployment).
 - Version preview URLs: disabled.
 - Existing uploaded Static Assets: kept; NO corpus rebuild or modification was performed through this Cloudflare change.
@@ -40,3 +40,9 @@
 4. Deploy a new version only after a complete verified candidate build, preserving restricted-field rules and version-preview restrictions. Perform a 0%-traffic version-override smoke test; then promote to 100% with **no older version remaining in the active deployment**.
 5. Validate `GET /__integrity/b7` and the privileged Supabase `bible_internal.verify_b7_deployed_canaries_v1()` canaries. Both must PASS, along with the exhaustive verification suite.
 6. Do not run Stage G deletion or remove the 23 `BEFORE TRUNCATE` release locks. Full backup/restore verification and complete API regression still need independent approval.
+
+## Additional CORS regression fixed
+
+The previous production wrapper returned HTTP 502 to browser `OPTIONS` preflight for `/v1/rpc/*`. The active version now handles `OPTIONS` on `/v1/rpc/*` and `/v1/syntax/unmapped` with HTTP 204 and explicit public read API CORS headers (`Access-Control-Allow-Origin: *`, methods, requested headers). Normal read-only JSON RPC responses also include `Access-Control-Allow-Origin: *`. Tested a `POST` preflight from the BibleResearch site, the Genesis syntax RPC, B7 FAIL status, and raw shard 403 after promotion. Reconcile this into the local Worker source before the next deployment. A browser regression test should also be added.
+
+Current active version: `dc01ca7e-34ee-424f-aff9-c453352a3d97`; active deployment: `abb2278a-8671-4839-96e6-69c16a529369` (sole version).
