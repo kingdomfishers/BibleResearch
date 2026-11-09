@@ -1,7 +1,7 @@
-// REFERENCE ONLY: Compiled middleware extracted from live Cloudflare Worker.
-// Merge the protections into LOCAL scripts/corpus-worker.mjs.
-// Do not paste this compiled bundle verbatim or overwrite local source.
-// Version-preview URLs must remain disabled.
+// REFERENCE ONLY: Compiled production middleware extracted from Cloudflare Workers.
+// Merge protections into LOCAL scripts/corpus-worker.mjs; do not paste this bundle verbatim.
+// Includes B7 canary diagnostic, restricted-field filtering, raw asset blocking, and CORS preflight.
+// Keep version-preview URLs disabled and remove old versions from active deployments.
 
 const __restrictedKeys = new Set(['semantic_frame','frame','greekstrong','sdbh','lexdomain','coredomain','contextualdomain','domain','ln']);
 const __b7Expected = [
@@ -48,6 +48,10 @@ function __stripRestrictedFields(value, depth=0){
 export default {
  async fetch(request,env,ctx){
    const path=new URL(request.url).pathname;
+   if(request.method==='OPTIONS' && (path.startsWith('/v1/rpc/') || path==='/v1/syntax/unmapped')){
+     const reqHeaders=request.headers.get('Access-Control-Request-Headers')||'content-type,authorization,apikey';
+     return new Response(null,{status:204,headers:{'Access-Control-Allow-Origin':'*','Access-Control-Allow-Methods':'GET,POST,OPTIONS','Access-Control-Allow-Headers':reqHeaders,'Access-Control-Max-Age':'600','Vary':'Origin, Access-Control-Request-Headers','Cache-Control':'no-store'}});
+   }
    if(path==='/__integrity/b7') return __b7LiveCheck(request,env,ctx);
    if(__restrictedAssetPrefixes.some(p=>path.startsWith(p) && (path !== '/v1/syntax/unmapped'))){
      return new Response(JSON.stringify({error:'raw_corpus_asset_access_disabled',message:'Use the public versioned read-only RPC instead.'}),{status:403,headers:{'Content-Type':'application/json','Cache-Control':'no-store','Access-Control-Allow-Origin':'*','X-BibleResearch-Corpus-Security':'semantic-frame-redaction-v1'}});
@@ -61,7 +65,10 @@ export default {
      const headers=new Headers(res.headers);
      headers.delete('Content-Length');
      headers.set('Cache-Control','no-store');
-     headers.set('X-BibleResearch-Corpus-Security','semantic-frame-redaction-v1');
+     headers.set('Access-Control-Allow-Origin','*');
+     headers.set('Access-Control-Allow-Methods','GET,POST,OPTIONS');
+     headers.set('Access-Control-Allow-Headers','content-type,authorization,apikey');
+     headers.set('X-BibleResearch-Corpus-Security','semantic-frame-redaction-v2');
      return new Response(JSON.stringify(__stripRestrictedFields(data)),{status:res.status,statusText:res.statusText,headers});
    }catch(e){
      return new Response(JSON.stringify({error:'corpus_response_redaction_failed'}),{status:502,headers:{'Content-Type':'application/json','Cache-Control':'no-store'}});
