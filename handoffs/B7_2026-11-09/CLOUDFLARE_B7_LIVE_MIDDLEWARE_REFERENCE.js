@@ -1,4 +1,7 @@
-Cloudflare generated bundle reference only. Integrate logic into LOCAL scripts/corpus-worker.mjs; DO NOT overwrite the live or local Worker with this compiled code. Keep version-preview URLs disabled.
+// REFERENCE ONLY: Compiled middleware extracted from live Cloudflare Worker.
+// Merge the protections into LOCAL scripts/corpus-worker.mjs.
+// Do not paste this compiled bundle verbatim or overwrite local source.
+// Version-preview URLs must remain disabled.
 
 const __restrictedKeys = new Set(['semantic_frame','frame','greekstrong','sdbh','lexdomain','coredomain','contextualdomain','domain','ln']);
 const __b7Expected = [
