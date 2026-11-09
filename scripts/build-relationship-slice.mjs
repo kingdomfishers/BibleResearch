@@ -31,12 +31,19 @@ function readGzipJson(relPath) {
   return JSON.parse(zlib.gunzipSync(raw).toString('utf8'));
 }
 
-function readGzipJsonl(relPath) {
-  const full = path.join(CORPUS_ROOT, relPath);
-  if (!fs.existsSync(full)) return [];
-  const text = zlib.gunzipSync(fs.readFileSync(full)).toString('utf8').trim();
-  if (!text) return [];
-  return text.split(/\r?\n/).filter(Boolean).map(line => JSON.parse(line));
+function readTableJsonl(tableName) {
+  const dir = path.join(CORPUS_ROOT, 'tables', tableName);
+  if (!fs.existsSync(dir)) return [];
+  const rows = [];
+  for (const f of fs.readdirSync(dir).sort()) {
+    if (!f.startsWith('part-') || !f.endsWith('.jsonl.gz')) continue;
+    const text = zlib.gunzipSync(fs.readFileSync(path.join(dir, f))).toString('utf8').trim();
+    if (!text) continue;
+    for (const line of text.split(/\r?\n/)) {
+      if (line) rows.push(JSON.parse(line));
+    }
+  }
+  return rows;
 }
 
 function writeGzipJson(outFile, obj) {
@@ -75,9 +82,15 @@ const SYMMETRIC_LEX = new Set([
   'co_occurrence',
 ]);
 
-function buildLexId(sourceKey, category, rawCode, tier, subjKey, tgtKey) {
-  const sym = SYMMETRIC_LEX.has(category);
-  const [a, b] = sym && subjKey > tgtKey ? [tgtKey, subjKey] : [subjKey, tgtKey];
+function buildLexId(sourceKey, category, rawCode, tier, subjKey, tgtKey, direction = null) {
+  const sym = direction === 'symmetric' || SYMMETRIC_LEX.has(category);
+  const [a, b] = sym
+    ? subjKey > tgtKey
+      ? [tgtKey, subjKey]
+      : [subjKey, tgtKey]
+    : direction === 'inverse'
+      ? [tgtKey, subjKey]
+      : [subjKey, tgtKey];
   const arrow = sym ? '<->' : '->';
   const raw = `lex|${sourceKey}|${category}|${rawCode}|${tier}|${a}${arrow}${b}`;
   return `rel:v1:lex:${category}:${a}:${b}:${fnv1a64Hex(raw).slice(0, 12)}`;
@@ -116,12 +129,17 @@ const catalog = readGzipJson('v1/catalog/metadata.json.gz');
 const verseIdByCoord = new Map();
 const verseById = new Map();
 const bookNameById = new Map();
+const maxCanonicalVsByChapter = new Map();
 for (const b of catalog.books) {
   bookNameById.set(Number(b.id), b.name);
 }
 for (const [id, book, chapter, verse_nr] of catalog.verses_compact) {
   verseIdByCoord.set(`${book}:${chapter}:${verse_nr}`, id);
   verseById.set(id, { id, book, chapter, verse_nr });
+  const chKey = `${book}:${chapter}`;
+  if (verse_nr > (maxCanonicalVsByChapter.get(chKey) || 0)) {
+    maxCanonicalVsByChapter.set(chKey, verse_nr);
+  }
 }
 
 function formatSpanLabel(spans) {
@@ -143,9 +161,16 @@ function formatSpanLabel(spans) {
 // 2. Build Cross-Reference Shards from Pinned Fixture
 const xrefFixture = JSON.parse(fs.readFileSync(XREF_FIXTURE_PATH, 'utf8'));
 const bsbGroupCounts = new Map();
+const maxBsbVsByChapter = new Map();
 for (const v of xrefFixture.bible_verses) {
   const k = `${v.book_id}:${v.bsb_ch}:${v.bsb_vs}`;
   bsbGroupCounts.set(k, (bsbGroupCounts.get(k) || 0) + 1);
+  if (v.has_bsb_text) {
+    const chKey = `${v.book_id}:${v.bsb_ch}`;
+    if (v.bsb_vs > (maxBsbVsByChapter.get(chKey) || 0)) {
+      maxBsbVsByChapter.set(chKey, v.bsb_vs);
+    }
+  }
 }
 
 const mappedBySourceUid = new Map();
@@ -203,11 +228,45 @@ for (const v of xrefFixture.bible_verses) {
     continue;
   }
 
+  // Case B2: Chapter-tail split where English KJV/BSB combines the final two Greek/NA28 canonical verses (e.g. 3 John 1:14b -> canonical 1:15)
+  const chKey = `${b}:${v.bsb_ch}`;
+  const isChapterTailSplit =
+    b !== 19 &&
+    groupCount === 2 &&
+    v.bsb_vs === (maxBsbVsByChapter.get(chKey) || 0) &&
+    (maxCanonicalVsByChapter.get(chKey) || 0) === v.bsb_vs + 1;
+  if (
+    isChapterTailSplit &&
+    v.bsb_sort === 2 &&
+    v.aov_ch === v.bsb_ch &&
+    v.aov_vs === v.bsb_vs + 1 &&
+    verseIdByCoord.has(`${b}:${v.bsb_ch}:${v.aov_vs}`)
+  ) {
+    const shiftedVid = verseIdByCoord.get(`${b}:${v.bsb_ch}:${v.aov_vs}`);
+    mappedBySourceUid.set(v.id, {
+      endpoint: {
+        book: b,
+        chapter: v.bsb_ch,
+        verse_start: v.aov_vs,
+        verse_end: v.aov_vs,
+        start_verse_id: shiftedVid,
+        end_verse_id: shiftedVid,
+        is_psalm_heading: false,
+        versification_status: 'versification_shift',
+        edition_only_ref: null,
+        versification_note: `English KJV/BSB ${v.bsb_ch}:${v.bsb_vs}b corresponds to canonical Greek/NA28 ${v.bsb_ch}:${v.aov_vs} (source aov_vs=${v.aov_vs}).`,
+      },
+      subverseSort: 1,
+      alsoIndexPsalmV0: false,
+    });
+    continue;
+  }
+
   // Case C: Canonical BSB coordinate exists
   const directVid = verseIdByCoord.get(`${b}:${v.bsb_ch}:${v.bsb_vs}`);
   if (directVid != null && v.has_bsb_text) {
     const isKjvShift = v.kjv_ch !== v.bsb_ch || v.kjv_vs !== v.bsb_vs;
-    const isSubverse = groupCount > 1;
+    const isSubverse = groupCount > 1 && !isChapterTailSplit;
     mappedBySourceUid.set(v.id, {
       endpoint: {
         book: b,
@@ -358,6 +417,16 @@ for (const c of SLICE_COORDS) {
   const [b, ch, vs] = c.split(':').map(Number);
   ensureBookShard(b).covered_verses.add(`${ch}:${vs}`);
 }
+for (const m of mappedBySourceUid.values()) {
+  const ep = m.endpoint;
+  if (ep.versification_status === 'edition_only_non_canonical') continue;
+  const shard = ensureBookShard(ep.book);
+  const coord = `${ep.chapter}:${ep.verse_start}`;
+  shard.versification_status_by_coord[coord] = ep.versification_status;
+  if (ep.versification_note) {
+    shard.versification_notes_by_coord[coord] = ep.versification_note;
+  }
+}
 
 let globalRank = 0;
 for (const xr of xrefFixture.cross_references) {
@@ -488,17 +557,21 @@ for (const [bookId, shard] of bookShards.entries()) {
 }
 
 // 3. Build Lexical Relationship Vertical Slice from Real Local Corpus + STEP Bible
-const lemmasTable = readGzipJsonl('tables/lemmas/part-0000.jsonl.gz');
-const lexemesTable = readGzipJsonl('tables/lexemes/part-0000.jsonl.gz');
-const rootLinksTable = readGzipJsonl('tables/lemma_root_links/part-0000.jsonl.gz');
-const rootsTable = readGzipJsonl('tables/lexical_roots/part-0000.jsonl.gz');
-const entityRelsTable = readGzipJsonl('tables/entity_relationships/part-0000.jsonl.gz');
-const entitiesTable = readGzipJsonl('tables/canonical_entities/part-0000.jsonl.gz');
-const formationsTable = readGzipJsonl('tables/lexical_formations/part-0000.jsonl.gz');
-const componentsTable = readGzipJsonl('tables/lemma_components/part-0000.jsonl.gz');
-const lexConnsTable = readGzipJsonl('tables/lexical_connections/part-0000.jsonl.gz');
-const wflTable = readGzipJsonl('tables/word_form_lemmas/part-0000.jsonl.gz');
-const queryIndex = readGzipJson('v1/lexical/query-index.json.gz');
+const lemmasTable = readTableJsonl('lemmas');
+const lexemesTable = readTableJsonl('lexemes');
+const rootLinksTable = readTableJsonl('lemma_root_links');
+const rootsTable = readTableJsonl('lexical_roots');
+const entityRelsTable = readTableJsonl('entity_relationships');
+const entitiesTable = readTableJsonl('canonical_entities');
+const formationsTable = readTableJsonl('lexical_formations');
+const componentsTable = readTableJsonl('lemma_components');
+const lexConnsTable = readTableJsonl('lexical_connections');
+const wflTable = readTableJsonl('word_form_lemmas');
+
+function compactStrongs(s) {
+  const m = /^([HG])0*(\d+)$/i.exec(String(s || '').trim());
+  return m ? `${m[1].toUpperCase()}${Number(m[2])}` : String(s || '').trim().toUpperCase();
+}
 
 // Load word records across word shards for word_id / co_occurrences / observed English renderings
 const wordsById = new Map();
@@ -511,7 +584,7 @@ for (const fname of fs.readdirSync(path.join(CORPUS_ROOT, 'v1/lexical'))) {
     const w = val.word || val;
     if (!w || typeof w.id !== 'number') continue;
     wordsById.set(w.id, w);
-    const st = String(w.strongs_nr || '').toUpperCase();
+    const st = compactStrongs(w.strongs_nr);
     if (st) {
       if (!wordsByStrongs.has(st)) wordsByStrongs.set(st, []);
       wordsByStrongs.get(st).push(w);
@@ -520,7 +593,7 @@ for (const fname of fs.readdirSync(path.join(CORPUS_ROOT, 'v1/lexical'))) {
 }
 
 const lemmaById = new Map(lemmasTable.map(l => [l.id, l]));
-const lemmaByKey = new Map(lemmasTable.map(l => [l.canonical_key, l]));
+const lemmaByKey = new Map(lemmasTable.map(l => [l.lemma_key, l]));
 const lexemeById = new Map(lexemesTable.map(lx => [lx.id, lx]));
 const lexemesByLemmaId = new Map();
 const lemmasByBaseStrongs = new Map();
@@ -532,7 +605,7 @@ for (const lx of lexemesTable) {
 }
 for (const l of lemmasTable) {
   if (l.base_strongs) {
-    const bs = l.base_strongs.toUpperCase();
+    const bs = compactStrongs(l.base_strongs);
     if (!lemmasByBaseStrongs.has(bs)) lemmasByBaseStrongs.set(bs, []);
     lemmasByBaseStrongs.get(bs).push(l);
   }
@@ -543,31 +616,30 @@ const entityById = new Map(entitiesTable.map(e => [e.id, e]));
 const wordIdsByLemmaId = new Map();
 for (const row of wflTable) {
   if (!wordIdsByLemmaId.has(row.lemma_id)) wordIdsByLemmaId.set(row.lemma_id, []);
-  wordIdsByLemmaId.get(row.lemma_id).push(row.word_id);
+  const arr = wordIdsByLemmaId.get(row.lemma_id);
+  if (!arr.includes(row.word_id)) arr.push(row.word_id);
 }
 
 function makeLexicalEndpoint(lemma) {
   const lxs = lexemesByLemmaId.get(lemma.id) || [];
   const primaryLx = lexemeById.get(lemma.primary_lexeme_id) || lxs[0] || null;
   const wIds = wordIdsByLemmaId.get(lemma.id) || [];
-  const compactBase = String(lemma.base_strongs || '').replace(/^([HG])0+(\d+)/, '$1$2');
-  const fallbackWords = wordsByStrongs.get(String(lemma.base_strongs || '').toUpperCase())
-    || wordsByStrongs.get(compactBase.toUpperCase())
-    || [];
+  const bs = compactStrongs(lemma.base_strongs);
+  const fallbackWords = wordsByStrongs.get(bs) || [];
   const primaryWordId = wIds[0] ?? fallbackWords[0]?.id ?? null;
-  const siblings = lemmasByBaseStrongs.get(String(lemma.base_strongs || '').toUpperCase()) || [];
+  const siblings = lemmasByBaseStrongs.get(bs) || [];
   return {
     entity_kind: 'lemma',
-    canonical_key: lemma.canonical_key,
+    canonical_key: lemma.lemma_key,
     lemma_id: lemma.id,
     word_id: primaryWordId,
     language: lemma.language,
-    base_strongs: lemma.base_strongs || null,
+    base_strongs: bs || null,
     extended_strongs: primaryLx?.extended_strongs || null,
     disambiguated_strongs: primaryLx?.disambiguated_strongs || null,
     unified_strongs: primaryLx?.unified_strongs || null,
     homograph_tag: lemma.homograph_tag || null,
-    lemma_text: lemma.lemma_text,
+    lemma_text: lemma.lemma_script,
     transliteration: lemma.transliteration || primaryLx?.transliteration || null,
     primary_gloss: primaryLx?.primary_gloss || fallbackWords[0]?.english_translations?.[0] || null,
     sense_ambiguous: siblings.length > 1 || lxs.length > 1,
@@ -596,16 +668,32 @@ const tbesgByEStrong = new Map();
 const greekLemmaIndex = new Map();
 for (const l of lemmasTable) {
   if (l.language === 'grc') {
-    const k = normalizeGreekStrip(l.lemma_text);
+    const k = normalizeGreekStrip(l.lemma_script);
     if (k && !greekLemmaIndex.has(k)) greekLemmaIndex.set(k, l);
   }
 }
-const hebrewConsonantIndex = new Map();
+const hebrewVocalizedIndex = new Map();
 for (const l of lemmasTable) {
   if (l.language === 'hbo') {
-    const k = normalizeHebrewConsonants(l.lemma_text);
-    if (k && !hebrewConsonantIndex.has(k)) hebrewConsonantIndex.set(k, l);
+    const voc = String(l.lemma_script || '').normalize('NFC');
+    const cons = normalizeHebrewConsonants(l.lemma_script);
+    for (const k of [voc, cons]) {
+      if (!k) continue;
+      if (!hebrewVocalizedIndex.has(k)) hebrewVocalizedIndex.set(k, []);
+      hebrewVocalizedIndex.get(k).push(l);
+    }
   }
+}
+
+function pickPrimaryLemma(baseStrongs) {
+  const list = lemmasByBaseStrongs.get(compactStrongs(baseStrongs)) || [];
+  return (
+    list.find(x => x.homograph_tag === 'G') ||
+    list.find(x => x.homograph_tag === 'A') ||
+    list.find(x => !x.homograph_tag) ||
+    list[0] ||
+    null
+  );
 }
 
 if (fs.existsSync(TBESG_PATH)) {
@@ -625,21 +713,22 @@ if (fs.existsSync(TBESG_PATH)) {
   }
 }
 
-// Target vertical slice base Strong's families
+// Target vertical slice base Strong's families (compact canonical format)
 const TARGET_BASES = new Set([
-  'H7225', 'H7218', 'H1254', 'H6213', 'H0430', 'H0410', 'H0120', 'H0127', 'H1818',
-  'H7501', 'H7495', 'H0001', 'H0002', 'H0175', 'H0216', 'H8064', 'H0776',
-  'G3056', 'G3004', 'G0746', 'G2316', 'G0450', 'G1453', 'G1458', 'G2723',
-  'G0002', 'G0005', 'G5457', 'G4655', 'G0018', 'G2556',
+  'H7225', 'H7218', 'H1254', 'H6213', 'H430', 'H410', 'H120', 'H127', 'H1818',
+  'H7501', 'H7495', 'H1', 'H2', 'H175', 'H216', 'H8064', 'H776',
+  'G3056', 'G3004', 'G746', 'G2316', 'G450', 'G1453', 'G1458', 'G2723',
+  'G2', 'G5', 'G5457', 'G4655', 'G18', 'G2556',
 ]);
 
-const sliceLemmas = lemmasTable.filter(l => TARGET_BASES.has(String(l.base_strongs || '').toUpperCase()));
+const sliceLemmas = lemmasTable.filter(l => TARGET_BASES.has(compactStrongs(l.base_strongs)));
 const edgesByKey = new Map();
 function pushLexEdge(subjLemma, tgtLemma, category, rawCode, tier, reusedTable, explanation, provenance, stats = null, evidenceCoords = [], direction = null) {
-  if (!subjLemma || !tgtLemma || subjLemma.canonical_key === tgtLemma.canonical_key && category !== 'same_lemma') return;
+  if (!subjLemma || !tgtLemma || (subjLemma.lemma_key === tgtLemma.lemma_key && category !== 'same_lemma')) return;
   const subj = makeLexicalEndpoint(subjLemma);
   const tgt = makeLexicalEndpoint(tgtLemma);
-  const relId = buildLexId(provenance.source_key, category, rawCode, tier, subj.canonical_key, tgt.canonical_key);
+  const resolvedDir = direction || (SYMMETRIC_LEX.has(category) ? 'symmetric' : 'directed');
+  const relId = buildLexId(provenance.source_key, category, rawCode, tier, subj.canonical_key, tgt.canonical_key, resolvedDir);
   const evidenceVerses = evidenceCoords
     .map(c => {
       const [b, ch, vs] = c.split(':').map(Number);
@@ -659,7 +748,7 @@ function pushLexEdge(subjLemma, tgtLemma, category, rawCode, tier, reusedTable, 
     category,
     raw_relation_code: rawCode,
     epistemic_tier: tier,
-    direction: direction || (SYMMETRIC_LEX.has(category) ? 'symmetric' : 'directed'),
+    direction: resolvedDir,
     subject: subj,
     target: tgt,
     reused_source_table: reusedTable,
@@ -704,8 +793,10 @@ const stepGProv = (locator, rawField = 'Abbott-Smith/dStrong', algo = null) => (
 // A. Same-lemma inflected word-form links (`same_lemma` & `morphological_relationship`)
 for (const l of sliceLemmas) {
   const wIds = wordIdsByLemmaId.get(l.id) || [];
-  if (wIds.length > 0) {
-    const w0 = wordsById.get(wIds[0]);
+  const bs = compactStrongs(l.base_strongs);
+  const candidateWordIds = wIds.length ? wIds : (wordsByStrongs.get(bs) || []).map(w => w.id);
+  if (candidateWordIds.length > 0) {
+    const w0 = wordsById.get(candidateWordIds[0]);
     if (w0) {
       const subj = makeLexicalEndpoint(l);
       const wfEndpoint = {
@@ -734,14 +825,14 @@ for (const l of sliceLemmas) {
         subject: subj,
         target: wfEndpoint,
         reused_source_table: 'word_form_lemmas',
-        explanation: `Inflected surface form "${w0.original_word}" (${w0.grammar_code || 'attested form'}) is mapped to disambiguated lemma ${l.canonical_key} (${wIds.length} distinct inflected form(s) in corpus).`,
+        explanation: `Inflected surface form "${w0.original_word}" (${w0.grammar_code || 'attested form'}) maps to disambiguated lemma ${l.lemma_key} (${candidateWordIds.length} inflected form(s) in corpus).`,
         evidence_verses: [],
         statistics: null,
         provenance: prov,
         guardrails: lexicalGuardrails('same_lemma'),
       });
-      if (wIds.length > 1) {
-        const w1 = wordsById.get(wIds[1]);
+      if (candidateWordIds.length > 1) {
+        const w1 = wordsById.get(candidateWordIds[1]);
         if (w1) {
           const wf2 = {
             ...subj,
@@ -763,7 +854,7 @@ for (const l of sliceLemmas) {
             subject: subj,
             target: wf2,
             reused_source_table: 'word_form_lemmas',
-            explanation: `Morphological inflection "${w1.original_word}" (${w1.grammar_code || 'paradigm form'}) shares stem/paradigm with ${l.lemma_text}.`,
+            explanation: `Morphological inflection "${w1.original_word}" (${w1.grammar_code || 'paradigm form'}) shares stem/paradigm with ${l.lemma_script}.`,
             evidence_verses: [],
             statistics: null,
             provenance: prov,
@@ -776,7 +867,7 @@ for (const l of sliceLemmas) {
   }
 }
 
-// B. Reuse `lemma_root_links` (`same_documented_root`, `derivation`, `cognate`, `morphological_relationship`)
+// B. Reuse `lemma_root_links` (`same_documented_root`, `derivation`, `cognate`, `loan_transliteration`)
 const lemmasByRootId = new Map();
 for (const rl of rootLinksTable) {
   if (!lemmasByRootId.has(rl.root_id)) lemmasByRootId.set(rl.root_id, []);
@@ -784,39 +875,71 @@ for (const rl of rootLinksTable) {
 }
 for (const rl of rootLinksTable) {
   const subj = lemmaById.get(rl.lemma_id);
-  if (!subj || !TARGET_BASES.has(String(subj.base_strongs || '').toUpperCase())) continue;
+  if (!subj || !TARGET_BASES.has(compactStrongs(subj.base_strongs))) continue;
   const root = rootById.get(rl.root_id);
   const peers = lemmasByRootId.get(rl.root_id) || [];
+  const eType = rl.etymology_type;
   for (const peerRl of peers) {
     if (peerRl.lemma_id === rl.lemma_id) continue;
     const tgt = lemmaById.get(peerRl.lemma_id);
     if (!tgt) continue;
-    const prov = (subj.language === 'grc' ? stepGProv : stepHProv)(
-      `lemma_root_links#id=${rl.id}->root=${root?.canonical_key}`,
-      rl.raw_relation || rl.link_type
-    );
-    if (rl.link_type === 'aramaic_cognate_of' || rl.link_type === 'hebrew_cognate_of' || rl.link_type === 'greek_loan_or_transliteration' || subj.language !== tgt.language) {
+    const peerType = peerRl.etymology_type;
+    const minId = Math.min(rl.id, peerRl.id);
+    const maxId = Math.max(rl.id, peerRl.id);
+    const pairLoc = `lemma_root_links#id=${minId}&peer_id=${maxId}->root=${root?.root_key}`;
+
+    if (eType === 'greek_loan_or_transliteration' || peerType === 'greek_loan_or_transliteration' ||
+        (subj.language === 'grc' && tgt.language !== 'grc') || (subj.language !== 'grc' && tgt.language === 'grc')) {
+      const grcFirst = subj.language === 'grc';
+      const prov = stepGProv(pairLoc, 'greek_loan_or_transliteration', 'co_root_loan_join_v1');
       pushLexEdge(
-        subj, tgt, 'cognate', rl.link_type, 'attested_lexical_fact', 'lemma_root_links',
-        `Documented ${subj.language.toUpperCase()} ↔ ${tgt.language.toUpperCase()} cognate/loan relationship (${rl.link_type}) via ${root?.canonical_key || 'lexicon anchor'}.`,
-        prov
+        subj, tgt, 'loan_transliteration', 'greek_loan_or_transliteration', 'deterministic_computational', 'lemma_root_links',
+        `Cross-family loan/transliteration link (${subj.language.toUpperCase()} ↔ ${tgt.language.toUpperCase()}) via ${root?.root_key || 'lexicon anchor'}; borrowing across language families is not cognacy.`,
+        prov, null, [], grcFirst ? 'directed' : 'inverse'
       );
-    } else if (rl.link_type === 'derived_from' && peerRl.link_type === 'base_root_anchor') {
+    } else if (
+      eType === 'aramaic_cognate_of' || eType === 'hebrew_cognate_of' ||
+      peerType === 'aramaic_cognate_of' || peerType === 'hebrew_cognate_of' ||
+      (subj.language !== tgt.language && subj.language !== 'grc' && tgt.language !== 'grc')
+    ) {
+      const canonDir = subj.lemma_key < tgt.lemma_key ? 'directed' : 'inverse';
+      const prov = stepHProv(pairLoc, 'semitic_cognate_anchor', 'co_root_semitic_cognate_v1');
       pushLexEdge(
-        subj, tgt, 'derivation', rl.link_type, 'attested_lexical_fact', 'lemma_root_links',
-        `Documented lexical derivation (${rl.raw_relation || 'derived_from'}) from historical root anchor ${tgt.lemma_text} (${root?.root_text || ''}).`,
+        subj, tgt, 'cognate', 'semitic_root_cognate', 'deterministic_computational', 'lemma_root_links',
+        `Documented Semitic (${subj.language.toUpperCase()} ↔ ${tgt.language.toUpperCase()}) cognate sharing root ${root?.root_script || root?.root_key || 'lexicon anchor'}.`,
+        prov, null, [], canonDir
+      );
+    } else if (eType === 'derived_from' && peerType === 'base_root_anchor') {
+      const prov = (subj.language === 'grc' ? stepGProv : stepHProv)(
+        `lemma_root_links#id=${rl.id}&anchor_id=${peerRl.id}->root=${root?.root_key}`,
+        'derived_from',
+        'root_anchor_derivation_v1'
+      );
+      pushLexEdge(
+        subj, tgt, 'derivation', 'derived_from_root_anchor', 'deterministic_computational', 'lemma_root_links',
+        `Lexical derivation from root-anchor lemma ${tgt.lemma_script} (${root?.root_script || ''}).`,
         prov, null, [], 'directed'
       );
-    } else if (rl.link_type === 'form_of' || rl.link_type === 'spelling_variant_of') {
+    } else if (eType === 'base_root_anchor' && peerType === 'derived_from') {
+      const prov = (subj.language === 'grc' ? stepGProv : stepHProv)(
+        `lemma_root_links#id=${peerRl.id}&anchor_id=${rl.id}->root=${root?.root_key}`,
+        'derived_from',
+        'root_anchor_derivation_v1'
+      );
       pushLexEdge(
-        subj, tgt, 'morphological_relationship', rl.link_type, 'attested_lexical_fact', 'lemma_root_links',
-        `Documented morphological/orthographic form relationship (${rl.link_type}) in STEP lexicon.`,
-        prov, null, [], 'directed'
+        subj, tgt, 'derivation', 'derived_from_root_anchor', 'deterministic_computational', 'lemma_root_links',
+        `Root-anchor lemma ${subj.lemma_script} from which ${tgt.lemma_script} derives via ${root?.root_script || ''}.`,
+        prov, null, [], 'inverse'
       );
     } else {
+      const prov = (subj.language === 'grc' ? stepGProv : stepHProv)(
+        pairLoc,
+        'co_root_sibling',
+        'co_root_peer_join_v1'
+      );
       pushLexEdge(
-        subj, tgt, 'same_documented_root', rl.link_type, 'attested_lexical_fact', 'lemma_root_links',
-        `Both lemmas are linked to documented historical root ${root?.root_text || root?.canonical_key || ''} (shared root never implies synonymy).`,
+        subj, tgt, 'same_documented_root', 'co_root_sibling', 'deterministic_computational', 'lemma_root_links',
+        `Derived co-root sibling join: both lemmas link to documented root ${root?.root_script || root?.root_key || ''} in STEP lexicon (shared root never implies synonymy).`,
         prov
       );
     }
@@ -824,98 +947,117 @@ for (const rl of rootLinksTable) {
 }
 
 // C. Reuse `lexical_formations` & `lemma_components` (`derivation`)
-const compsByLemmaKey = new Map();
+const compsByFormationId = new Map();
 for (const c of componentsTable) {
-  if (!compsByLemmaKey.has(c.lemma_key)) compsByLemmaKey.set(c.lemma_key, []);
-  compsByLemmaKey.get(c.lemma_key).push(c);
+  if (!compsByFormationId.has(c.formation_id)) compsByFormationId.set(c.formation_id, []);
+  compsByFormationId.get(c.formation_id).push(c);
 }
 for (const f of formationsTable) {
-  const subj = lemmaByKey.get(f.lemma_key);
-  if (!subj || !TARGET_BASES.has(String(subj.base_strongs || '').toUpperCase())) continue;
-  const comps = compsByLemmaKey.get(f.lemma_key) || [];
+  const subj = lemmaById.get(f.lemma_id);
+  if (!subj || !TARGET_BASES.has(compactStrongs(subj.base_strongs))) continue;
+  const comps = compsByFormationId.get(f.id) || [];
   for (const c of comps) {
-    if (!c.component_lemma_key) continue;
-    const tgt = lemmaByKey.get(c.component_lemma_key);
+    if (!c.component_lemma_id) continue;
+    const tgt = lemmaById.get(c.component_lemma_id);
     if (!tgt) continue;
+    const formProv = stepHProv(`lexical_formations#id=${f.id}`, 'formation_type');
     pushLexEdge(
-      subj, tgt, 'derivation', f.formation_kind, 'attested_lexical_fact', 'lexical_formations',
-      `Documented ${f.formation_kind} component (${c.component_role}): ${f.explanation || c.component_surface}.`,
-      stepHProv(`lexical_formations#${f.lemma_key}`, 'formation_kind'),
-      null, [], 'directed'
+      subj, tgt, 'derivation', f.formation_type, 'attested_lexical_fact', 'lexical_formations',
+      `Documented ${f.formation_type} component (${c.component_role}): ${f.evidence_note || c.surface_text}.`,
+      formProv, null, [], 'directed'
+    );
+    pushLexEdge(
+      tgt, subj, 'derivation', f.formation_type, 'attested_lexical_fact', 'lexical_formations',
+      `Component lemma in documented ${f.formation_type} ${subj.lemma_script}: ${f.evidence_note || c.surface_text}.`,
+      formProv, null, [], 'inverse'
     );
   }
 }
 
 // D. Reuse `lexical_connections` (`literary_wordplay` vs `orthographic_overlap`)
 for (const lc of lexConnsTable) {
-  const left = lemmaByKey.get(lc.left_lemma_key);
-  const right = lemmaByKey.get(lc.right_lemma_key);
+  const left = lemmaById.get(lc.subject_lemma_id);
+  const right = lemmaById.get(lc.target_lemma_id);
   if (!left || !right) continue;
-  if (!TARGET_BASES.has(String(left.base_strongs || '').toUpperCase()) && !TARGET_BASES.has(String(right.base_strongs || '').toUpperCase())) continue;
-  const isWordplay = lc.connection_type === 'literary_wordplay';
+  if (!TARGET_BASES.has(compactStrongs(left.base_strongs)) && !TARGET_BASES.has(compactStrongs(right.base_strongs))) continue;
+  const isWordplay = lc.relation_type === 'literary_wordplay';
   const cat = isWordplay ? 'literary_wordplay' : 'orthographic_overlap';
-  const tier = isWordplay
-    ? (lc.epistemic_status === 'reviewed_interpretation' ? 'human_reviewed_interpretation' : 'attested_lexical_fact')
-    : 'deterministic_computational';
+  const tier = isWordplay ? 'human_reviewed_interpretation' : 'deterministic_computational';
   const evCoords = isWordplay ? ['1:2:5', '1:2:7'] : [];
-  const prov = stepHProv(
-    `lexical_connections#id=${lc.id}`,
-    lc.connection_type,
-    isWordplay ? null : 'consonantal_containment_v1'
-  );
-  pushLexEdge(left, right, cat, lc.connection_type, tier, 'lexical_connections', lc.explanation, prov, null, evCoords);
-  pushLexEdge(right, left, cat, lc.connection_type, tier, 'lexical_connections', lc.explanation, prov, null, evCoords);
+  const prov = {
+    source_key: isWordplay ? 'bibleresearch_curated_wordplay_v1' : 'bibleresearch_orthographic_v1',
+    source_title: lc.source_title || (isWordplay ? 'Hebrew text juxtaposition' : 'BibleResearch orthographic observation'),
+    dataset_url: lc.source_url || 'https://github.com/STEPBible/STEPBible-Data',
+    pinned_commit: STEP_COMMIT,
+    license: 'CC BY 4.0',
+    attribution: lc.source_title || 'BibleResearch curated linguistic observation over STEP WLC text',
+    locator: `lexical_connections#id=${lc.id}`,
+    raw_field: lc.relation_type,
+    algorithm_version: isWordplay ? null : (lc.derivation_method || 'exact_consonantal_substring_v1'),
+  };
+  pushLexEdge(left, right, cat, lc.relation_type, tier, 'lexical_connections', lc.evidence_note, prov, null, evCoords);
+  pushLexEdge(right, left, cat, lc.relation_type, tier, 'lexical_connections', lc.evidence_note, prov, null, evCoords);
 }
 
-// E. Reuse `entity_relationships` (`cognate` & `source_lexical_equivalence`)
+// E. Reuse `entity_relationships` (`cognate`, `loan_transliteration` & `source_lexical_equivalence`)
 for (const er of entityRelsTable) {
-  const fromEnt = entityById.get(er.from_entity_id);
-  const toEnt = entityById.get(er.to_entity_id);
+  const fromEnt = entityById.get(er.subject_entity_id);
+  const toEnt = entityById.get(er.object_entity_id);
   if (!fromEnt || !toEnt) continue;
-  const subj = lemmaByKey.get(fromEnt.canonical_key);
-  const tgt = lemmaByKey.get(toEnt.canonical_key);
+  const subj = fromEnt.lemma_id ? lemmaById.get(fromEnt.lemma_id) : lemmaByKey.get(fromEnt.entity_key);
+  const tgt = toEnt.lemma_id ? lemmaById.get(toEnt.lemma_id) : lemmaByKey.get(toEnt.entity_key);
   if (!subj || !tgt) continue;
-  if (!TARGET_BASES.has(String(subj.base_strongs || '').toUpperCase()) && !TARGET_BASES.has(String(tgt.base_strongs || '').toUpperCase())) continue;
+  if (!TARGET_BASES.has(compactStrongs(subj.base_strongs)) && !TARGET_BASES.has(compactStrongs(tgt.base_strongs))) continue;
 
-  if (er.relation_type_code === 'greek_transliteration_of' || er.relation_type_code === 'aramaic_cognate_of' || er.relation_type_code === 'hebrew_cognate_of') {
-    const prov = stepGProv(`entity_relationships#id=${er.id}`, er.relation_type_code);
-    pushLexEdge(subj, tgt, 'cognate', er.relation_type_code, 'attested_lexical_fact', 'entity_relationships',
-      `Attested cross-language cognate/transliteration (${er.relation_type_code}) between ${subj.language} and ${tgt.language}.`, prov, null, [], 'directed');
-    pushLexEdge(tgt, subj, 'cognate', er.relation_type_code, 'attested_lexical_fact', 'entity_relationships',
-      `Attested cross-language cognate/transliteration (${er.relation_type_code}) between ${subj.language} and ${tgt.language}.`, prov, null, [], 'inverse');
-  } else if (er.relation_type_code === 'source_provided_lexical_equivalent') {
-    const prov = stepGProv(`entity_relationships#id=${er.id}`, er.relation_type_code);
-    pushLexEdge(subj, tgt, 'source_lexical_equivalence', er.relation_type_code, 'attested_lexical_fact', 'entity_relationships',
-      `Source-attested lexical equivalence recorded in primary lexicon (not inferred from English glosses).`, prov, null, [], 'directed');
+  const rType = er.relation_type;
+  if (rType === 'greek_transliteration_of') {
+    const prov = stepGProv(`entity_relationships#id=${er.id}`, rType);
+    pushLexEdge(subj, tgt, 'loan_transliteration', rType, 'attested_lexical_fact', 'entity_relationships',
+      er.evidence_summary || `Attested cross-family transliteration/loan (${rType}) from ${tgt.language} into ${subj.language}; transliteration does not establish cognacy.`, prov, null, [], 'directed');
+    pushLexEdge(tgt, subj, 'loan_transliteration', rType, 'attested_lexical_fact', 'entity_relationships',
+      er.evidence_summary || `Attested cross-family transliteration/loan (${rType}) from ${tgt.language} into ${subj.language}; transliteration does not establish cognacy.`, prov, null, [], 'inverse');
+  } else if (rType === 'aramaic_cognate_of' || rType === 'hebrew_cognate_of') {
+    const prov = stepHProv(`entity_relationships#id=${er.id}`, rType);
+    pushLexEdge(subj, tgt, 'cognate', rType, 'attested_lexical_fact', 'entity_relationships',
+      er.evidence_summary || `Attested Semitic cognate (${rType}) between ${subj.language} and ${tgt.language}.`, prov, null, [], 'directed');
+    pushLexEdge(tgt, subj, 'cognate', rType, 'attested_lexical_fact', 'entity_relationships',
+      er.evidence_summary || `Attested Semitic cognate (${rType}) between ${subj.language} and ${tgt.language}.`, prov, null, [], 'inverse');
+  } else if (rType === 'source_provided_lexical_equivalent') {
+    const prov = stepGProv(`entity_relationships#id=${er.id}`, rType);
+    pushLexEdge(subj, tgt, 'source_lexical_equivalence', rType, 'attested_lexical_fact', 'entity_relationships',
+      er.evidence_summary || `Source-attested lexical equivalence recorded in primary lexicon (not inferred from English glosses).`, prov, null, [], 'directed');
+    pushLexEdge(tgt, subj, 'source_lexical_equivalence', rType, 'attested_lexical_fact', 'entity_relationships',
+      er.evidence_summary || `Source-attested lexical equivalence recorded in primary lexicon (not inferred from English glosses).`, prov, null, [], 'inverse');
   }
 }
 
 // F. Parse TBESG explicit Abbott-Smith `SYN.:`, `opposite to`, and `[in LXX chiefly for <Hebrew>]` + `uStrong` semantic_overlap
 for (const l of sliceLemmas) {
-  // Semantic overlap within unified Strong's sub-meanings (e.g. H0430G <-> H0430a, G2556G <-> G2556H)
-  const siblings = lemmasByBaseStrongs.get(String(l.base_strongs || '').toUpperCase()) || [];
+  const siblings = lemmasByBaseStrongs.get(compactStrongs(l.base_strongs)) || [];
   for (const sib of siblings) {
     if (sib.id === l.id) continue;
     const lxsA = lexemesByLemmaId.get(l.id) || [];
     const lxsB = lexemesByLemmaId.get(sib.id) || [];
-    const uA = lxsA[0]?.unified_strongs;
-    const uB = lxsB[0]?.unified_strongs;
-    if (uA && uB && uA === uB) {
+    const uA = String(lxsA[0]?.unified_strongs || '').replace(/[a-z]$/i, '');
+    const uB = String(lxsB[0]?.unified_strongs || '').replace(/[a-z]$/i, '');
+    const dA = String(lxsA[0]?.disambiguated_strongs || '');
+    const dB = String(lxsB[0]?.disambiguated_strongs || '');
+    if ((uA && uB && uA === uB) || dA.includes('Meaning of') || dB.includes('Meaning of')) {
       pushLexEdge(
         l, sib, 'semantic_overlap', 'unified_strongs_submeaning', 'attested_lexical_fact', 'stepbible_lexicon',
-        `STEP Bible groups ${l.canonical_key} and ${sib.canonical_key} under unified Strong’s ${uA} with distinct contextual sub-meanings.`,
-        (l.language === 'grc' ? stepGProv : stepHProv)(`uStrong#${uA}`, 'uStrong')
+        `STEP Bible links ${l.lemma_key} and ${sib.lemma_key} as contextual sub-meanings within unified Strong’s family ${lxsA[0]?.unified_strongs || l.base_strongs}.`,
+        (l.language === 'grc' ? stepGProv : stepHProv)(`uStrong#${l.base_strongs}`, 'uStrong/dStrong')
       );
     }
   }
 
   if (l.language === 'grc') {
     const lxs = lexemesByLemmaId.get(l.id) || [];
-    const eKey = lxs[0]?.extended_strongs || l.base_strongs;
-    const tbesg = tbesgByEStrong.get(eKey) || tbesgByEStrong.get(String(l.base_strongs || ''));
+    const padded = String(l.base_strongs || '').replace(/^G(\d+)$/i, (_, d) => `G${d.padStart(4, '0')}`);
+    const eKey = lxs[0]?.extended_strongs || padded;
+    const tbesg = tbesgByEStrong.get(eKey) || tbesgByEStrong.get(padded);
     if (tbesg?.abbottSmith) {
       const def = tbesg.abbottSmith;
-      // 1. Explicit SYN.:
       const synMatch = def.match(/SYN\.?:<\/i>?\s*(?:see:\s*)?([^<.]+)\./i) || def.match(/SYN\.?:\s*([^<.]+)\./i);
       if (synMatch) {
         const greekTokens = synMatch[1].match(/[\u0370-\u03ff\u1f00-\u1fff]+/g) || [];
@@ -926,11 +1068,10 @@ for (const l of sliceLemmas) {
             pushLexEdge(l, tgt, 'synonymy', 'abbott_smith_syn', 'attested_lexical_fact', 'stepbible_lexicon',
               `Explicitly listed under Abbott-Smith SYN.: "${synMatch[0].replace(/<[^>]+>/g, '').trim()}".`, prov);
             pushLexEdge(tgt, l, 'synonymy', 'abbott_smith_syn', 'attested_lexical_fact', 'stepbible_lexicon',
-              `Explicitly listed under Abbott-Smith SYN. of ${l.lemma_text}: "${synMatch[0].replace(/<[^>]+>/g, '').trim()}".`, prov);
+              `Explicitly listed under Abbott-Smith SYN. of ${l.lemma_script}: "${synMatch[0].replace(/<[^>]+>/g, '').trim()}".`, prov);
           }
         }
       }
-      // 2. Explicit `opposite to <Greek>` antonymy
       const oppMatch = def.match(/opposite\s+to\s+([^<):;]+)/i);
       if (oppMatch) {
         const greekTokens = oppMatch[1].match(/[\u0370-\u03ff\u1f00-\u1fff]+/g) || [];
@@ -942,21 +1083,27 @@ for (const l of sliceLemmas) {
             pushLexEdge(l, tgt, 'antonymy', 'abbott_smith_opposite', 'attested_lexical_fact', 'stepbible_lexicon',
               `Explicitly attested as lexical opposite in Abbott-Smith: "${oppMatch[0].trim()}".`, prov);
             pushLexEdge(tgt, l, 'antonymy', 'abbott_smith_opposite', 'attested_lexical_fact', 'stepbible_lexicon',
-              `Explicitly attested as lexical opposite of ${l.lemma_text} in Abbott-Smith: "${oppMatch[0].trim()}".`, prov);
+              `Explicitly attested as lexical opposite of ${l.lemma_script} in Abbott-Smith: "${oppMatch[0].trim()}".`, prov);
           }
         }
       }
-      // 3. Explicit `[in LXX chiefly for <Hebrew>]` or `Heb. <Hebrew>` source lexical equivalence
       const lxxForMatch = def.match(/(?:in\s+LXX[^;\]]*for|Heb\.)\s+([\u0590-\u05ff]+)/i);
       if (lxxForMatch) {
-        const hebCons = normalizeHebrewConsonants(lxxForMatch[1]);
-        const hebTgt = hebrewConsonantIndex.get(hebCons);
+        const vocKey = lxxForMatch[1].normalize('NFC');
+        const consKey = normalizeHebrewConsonants(lxxForMatch[1]);
+        const cands = hebrewVocalizedIndex.get(vocKey) || hebrewVocalizedIndex.get(consKey) || [];
+        const wantNoun = /:N/.test(l.primary_pos || '');
+        const wantVerb = /:V/.test(l.primary_pos || '');
+        const hebTgt =
+          cands.find(c => (wantNoun && /:N/.test(c.primary_pos || '')) || (wantVerb && /:V/.test(c.primary_pos || ''))) ||
+          cands[0] ||
+          null;
         if (hebTgt) {
           const prov = stepGProv(`TBESG.txt#${tbesg.eStrong}:LXX_Heb`, 'Abbott-Smith LXX/Heb');
           pushLexEdge(l, hebTgt, 'source_lexical_equivalence', 'abbott_smith_lxx_hebrew', 'attested_lexical_fact', 'stepbible_lexicon',
             `Abbott-Smith explicitly attests Hebrew lexical counterpart: "${lxxForMatch[0].trim()}".`, prov, null, [], 'directed');
           pushLexEdge(hebTgt, l, 'source_lexical_equivalence', 'abbott_smith_lxx_hebrew', 'attested_lexical_fact', 'stepbible_lexicon',
-            `Abbott-Smith (${l.lemma_text}) explicitly attests LXX/Greek counterpart for ${hebTgt.lemma_text}: "${lxxForMatch[0].trim()}".`, prov, null, [], 'inverse');
+            `Abbott-Smith (${l.lemma_script}) explicitly attests LXX/Greek counterpart for ${hebTgt.lemma_script}: "${lxxForMatch[0].trim()}".`, prov, null, [], 'inverse');
         }
       }
     }
@@ -964,34 +1111,59 @@ for (const l of sliceLemmas) {
 }
 
 // G. Statistical `related_translation` & `co_occurrence` (strictly marked `statistical_association`)
-const beraA = lemmaByKey.get('lemma:H1254A') || sliceLemmas.find(x => x.base_strongs === 'H1254');
-const asahA = lemmaByKey.get('lemma:H6213A') || sliceLemmas.find(x => x.base_strongs === 'H6213');
+const beraA = pickPrimaryLemma('H1254');
+const asahA = pickPrimaryLemma('H6213');
 if (beraA && asahA) {
-  const wBera = (wordsByStrongs.get('H1254') || [])[0];
-  const wAsah = (wordsByStrongs.get('H6213') || [])[0];
-  const sharedGlosses = (wBera?.english_translations || ['create', 'make']).filter(g =>
-    (wAsah?.english_translations || ['make', 'do', 'create']).some(x => x.toLowerCase() === g.toLowerCase())
-  );
-  const rendered = sharedGlosses.length ? sharedGlosses : ['make'];
-  const prov = stepHProv('verse_translation_sources#H1254+H6213', 'english_translations', 'shared_rendering_overlap_v1');
-  const stats = {
-    shared_count: rendered.length,
-    subject_total: wBera?.english_translations?.length || 1,
-    object_total: wAsah?.english_translations?.length || 1,
-    score: null,
-    metric_formula: 'count(intersect(observed_english_renderings))',
-    shared_renderings: rendered,
-  };
-  pushLexEdge(
-    beraA, asahA, 'related_translation', 'shared_english_rendering', 'statistical_association', 'verse_translation_sources',
-    `Observed English translation overlap (${rendered.map(r => `"${r}"`).join(', ')}); shared English translation is a rendering distribution and NEVER establishes synonymy or shared etymology.`,
-    prov, stats, ['1:1:1', '1:1:26', '1:2:3']
-  );
-  pushLexEdge(
-    asahA, beraA, 'related_translation', 'shared_english_rendering', 'statistical_association', 'verse_translation_sources',
-    `Observed English translation overlap (${rendered.map(r => `"${r}"`).join(', ')}); shared English translation NEVER establishes synonymy or shared etymology.`,
-    prov, stats, ['1:1:1', '1:1:26', '1:2:3']
-  );
+  const beraWords = wordsByStrongs.get('H1254') || [];
+  const asahWords = wordsByStrongs.get('H6213') || [];
+  const beraGlossSet = new Map();
+  for (const w of beraWords) {
+    for (const g of w.english_translations || []) {
+      const clean = String(g).trim().toLowerCase();
+      if (clean && !beraGlossSet.has(clean)) beraGlossSet.set(clean, String(g).trim());
+    }
+  }
+  const asahGlossSet = new Set();
+  for (const w of asahWords) {
+    for (const g of w.english_translations || []) {
+      const clean = String(g).trim().toLowerCase();
+      if (clean) asahGlossSet.add(clean);
+    }
+  }
+  const rendered = [...beraGlossSet.entries()]
+    .filter(([k]) => asahGlossSet.has(k))
+    .map(([, v]) => v);
+  if (rendered.length > 0) {
+    const prov = {
+      source_key: 'stepbible_tahot_renderings_v1',
+      source_title: 'STEP Bible TAHOT Observed English Renderings',
+      dataset_url: 'https://github.com/STEPBible/STEPBible-Data',
+      pinned_commit: STEP_COMMIT,
+      license: 'CC BY 4.0',
+      attribution: 'STEP Bible TAHOT (Tyndale House Cambridge, CC BY 4.0)',
+      locator: 'verse_translation_sources#H1254+H6213',
+      raw_field: 'english_translations',
+      algorithm_version: 'shared_rendering_overlap_v1',
+    };
+    const stats = {
+      shared_count: rendered.length,
+      subject_total: beraGlossSet.size,
+      object_total: asahGlossSet.size,
+      score: Number((rendered.length / Math.max(1, beraGlossSet.size + asahGlossSet.size - rendered.length)).toFixed(4)),
+      metric_formula: 'jaccard(distinct_observed_english_renderings)',
+      shared_renderings: rendered.slice(0, 8),
+    };
+    pushLexEdge(
+      beraA, asahA, 'related_translation', 'shared_english_rendering', 'statistical_association', 'verse_translation_sources',
+      `Observed English rendering overlap (${rendered.slice(0, 5).map(r => `"${r}"`).join(', ')}); shared English translation is a rendering distribution and NEVER establishes synonymy or shared etymology.`,
+      prov, stats, ['1:2:3', '1:1:26', '1:1:27']
+    );
+    pushLexEdge(
+      asahA, beraA, 'related_translation', 'shared_english_rendering', 'statistical_association', 'verse_translation_sources',
+      `Observed English rendering overlap (${rendered.slice(0, 5).map(r => `"${r}"`).join(', ')}); shared English translation NEVER establishes synonymy or shared etymology.`,
+      prov, stats, ['1:2:3', '1:1:26', '1:1:27']
+    );
+  }
 }
 
 for (const l of sliceLemmas) {
@@ -1002,15 +1174,22 @@ for (const l of sliceLemmas) {
   for (const co of w.co_occurrences.slice(0, 3)) {
     const coWord = wordsById.get(co.word_id);
     if (!coWord) continue;
-    const padded = String(coWord.strongs_nr || '').replace(/^([HG])(\d+)/i, (_, p, d) => p.toUpperCase() + d.padStart(4, '0'));
-    const coLemmas = lemmasByBaseStrongs.get(padded) || [];
+    const coLemmas = lemmasByBaseStrongs.get(compactStrongs(coWord.strongs_nr)) || [];
     const tgtLemma = coLemmas[0];
     if (!tgtLemma || tgtLemma.id === l.id) continue;
-    const prov = (l.language === 'grc' ? stepGProv : stepHProv)(
-      `words.co_occurrences#word_id=${w.id}->${coWord.id}`,
-      'co_occurrences',
-      'proximity_score_v1:freq/(1+avg_dist)'
-    );
+    const prov = {
+      source_key: 'step_corpus_cooccurrence_v1',
+      source_title: l.language === 'grc'
+        ? 'STEP Bible TAGNT Token Co-Occurrence Index'
+        : 'STEP Bible TAHOT Token Co-Occurrence Index',
+      dataset_url: 'https://github.com/STEPBible/STEPBible-Data',
+      pinned_commit: STEP_COMMIT,
+      license: 'CC BY 4.0',
+      attribution: 'Computed from STEP Bible TAHOT/TAGNT canonical verse word arrays (CC BY 4.0)',
+      locator: `words.co_occurrences#word_id=${w.id}->${coWord.id}`,
+      raw_field: 'co_occurrences',
+      algorithm_version: 'proximity_score_v1:freq/(1+avg_dist)',
+    };
     pushLexEdge(
       l, tgtLemma, 'co_occurrence', 'within_verse_cooccurrence', 'statistical_association', 'words.co_occurrences',
       `Statistical within-verse co-occurrence (${co.freq} shared verses, avg token distance ${co.avg_dist}, score ${co.score}); contextual proximity does not imply shared meaning.`,
@@ -1033,12 +1212,20 @@ const keyByLookup = {};
 const keyBySurface = {};
 const keyByWordId = {};
 
-const allSliceKeys = new Set([...sliceLemmas.map(l => l.canonical_key), ...edgesByKey.keys()]);
+const TIER_RANK = {
+  attested_lexical_fact: 1,
+  human_reviewed_interpretation: 2,
+  deterministic_computational: 3,
+  statistical_association: 4,
+  ai_hypothesis: 5,
+};
+
+const allSliceKeys = new Set([...sliceLemmas.map(l => l.lemma_key), ...edgesByKey.keys()]);
 for (const key of allSliceKeys) {
   const l = lemmaByKey.get(key);
   if (!l) continue;
   const focus = makeLexicalEndpoint(l);
-  const siblings = (lemmasByBaseStrongs.get(String(l.base_strongs || '').toUpperCase()) || [])
+  const siblings = (lemmasByBaseStrongs.get(compactStrongs(l.base_strongs)) || [])
     .filter(s => s.id !== l.id)
     .map(makeLexicalEndpoint);
   const bucketNum = Number(BigInt(`0x${fnv1a64Hex(key).slice(0, 8)}`) % 64n);
@@ -1046,16 +1233,19 @@ for (const key of allSliceKeys) {
   bucketByKey[key] = bucket;
 
   if (focus.base_strongs) {
-    const bs = focus.base_strongs.toUpperCase();
-    const compact = bs.replace(/^([HG])0+(\d+)/, '$1$2');
-    // Prefer primary 'G' or 'A' homograph or exact match for base lookup
-    if (!keyByLookup[bs] || focus.homograph_tag === 'G' || focus.homograph_tag === 'A') {
-      keyByLookup[bs] = key;
+    const compact = compactStrongs(focus.base_strongs);
+    const padded = compact.replace(/^([HG])(\d+)$/i, (_, p, d) => `${p.toUpperCase()}${d.padStart(4, '0')}`);
+    const primaryForBase = pickPrimaryLemma(compact);
+    if (!keyByLookup[compact] || primaryForBase?.lemma_key === key) {
       keyByLookup[compact] = key;
+      keyByLookup[padded] = key;
     }
   }
   if (focus.extended_strongs) keyByLookup[focus.extended_strongs.toUpperCase()] = key;
-  if (focus.disambiguated_strongs) keyByLookup[focus.disambiguated_strongs.toUpperCase()] = key;
+  if (focus.disambiguated_strongs) {
+    const cleanDis = focus.disambiguated_strongs.split(/\s+/)[0].toUpperCase();
+    keyByLookup[cleanDis] = key;
+  }
   if (focus.lemma_text && !keyBySurface[focus.lemma_text]) keyBySurface[focus.lemma_text] = key;
   for (const wid of wordIdsByLemmaId.get(l.id) || []) {
     if (!keyByWordId[String(wid)]) keyByWordId[String(wid)] = key;
@@ -1064,11 +1254,18 @@ for (const key of allSliceKeys) {
     keyByWordId[String(focus.word_id)] = key;
   }
 
+  const sortedEdges = [...(edgesByKey.get(key) || [])].sort((a, b) => {
+    const tDiff = (TIER_RANK[a.epistemic_tier] || 9) - (TIER_RANK[b.epistemic_tier] || 9);
+    if (tDiff !== 0) return tDiff;
+    if (a.category !== b.category) return a.category.localeCompare(b.category);
+    return a.relationship_id.localeCompare(b.relationship_id);
+  });
+
   if (!bucketShards.has(bucket)) bucketShards.set(bucket, { schema_version: 1, bucket, entries: {} });
   bucketShards.get(bucket).entries[key] = {
     focus,
     homograph_siblings: siblings,
-    edges: edgesByKey.get(key) || [],
+    edges: sortedEdges,
   };
 }
 

@@ -1,9 +1,12 @@
 // scripts/extract-private-backups.mjs
-// Extracts and saves:
+// Extracts and saves encrypted datasets:
 // 1. 200 restricted frame records from public.macula_gated_field_values
 // 2. 60 records from bible_internal.macula_syntax_unmapped_nodes
 // 3. 983 records from bible_internal.macula_syntax_import_files
 // into .artifacts/private-backup/ with AES-256-GCM encryption and plaintext SHA-256 verification.
+//
+// SECURITY: Plaintext JSON is NEVER written to disk. The encryption passphrase must be supplied
+// via the PRIVATE_BACKUP_PASSPHRASE environment variable.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -13,9 +16,11 @@ const outDir = path.resolve('.artifacts/private-backup');
 fs.mkdirSync(outDir, { recursive: true });
 
 export function encryptAndSave(name, data, secretSalt) {
-  const jsonPath = path.join(outDir, `${name}.json`);
+  if (!secretSalt || typeof secretSalt !== 'string' || secretSalt.length < 16) {
+    throw new Error('A strong secret passphrase (min 16 chars) is required for encryption.');
+  }
+
   const plaintext = Buffer.from(JSON.stringify(data, null, 2), 'utf8');
-  fs.writeFileSync(jsonPath, plaintext);
   const sha256 = crypto.createHash('sha256').update(plaintext).digest('hex');
 
   const key = crypto.createHash('sha256').update(secretSalt).digest();
@@ -37,13 +42,13 @@ export function encryptAndSave(name, data, secretSalt) {
 
   const encPath = path.join(outDir, `${name}.json.enc`);
   fs.writeFileSync(encPath, JSON.stringify(encPayload, null, 2), 'utf8');
-  console.log(`[SAVED] ${name}: ${encPayload.record_count} records | SHA-256: ${sha256} | Encrypted: ${encPath}`);
-  return { jsonPath, encPath, sha256, count: encPayload.record_count };
+  console.log(`[ENCRYPTED] ${name}: ${encPayload.record_count} records | SHA-256: ${sha256} | Encrypted: ${encPath}`);
+  return { encPath, sha256, count: encPayload.record_count };
 }
 
 function extractFromStepOutput(stepFilePath) {
   if (!fs.existsSync(stepFilePath)) {
-    throw new Error(`File not found: ${stepFilePath}`);
+    throw new Error(`Step file not found: ${stepFilePath}`);
   }
   const raw = fs.readFileSync(stepFilePath, 'utf8');
   const parsed = JSON.parse(raw);
@@ -53,18 +58,25 @@ function extractFromStepOutput(stepFilePath) {
   return jsonArr[0].json_agg;
 }
 
-const salt = 'BibleResearch:ejoperxiwxlcbsqrkrvb:private_macula_frame_vault:2026';
+if (process.argv.includes('--run')) {
+  const salt = process.env.PRIVATE_BACKUP_PASSPHRASE;
+  if (!salt) {
+    console.error('ERROR: PRIVATE_BACKUP_PASSPHRASE environment variable is required.');
+    process.exit(1);
+  }
 
-// 1. Process 200 restricted frame records from step 217 output
-const frameRows = extractFromStepOutput('C:/Users/fluck/.gemini/antigravity/brain/665d66fd-5dd3-4293-8f5a-1ae633a34d7f/.system_generated/steps/217/output.txt');
-encryptAndSave('macula_gated_restricted_frame_200', frameRows, salt);
+  const p200 = process.env.FRAME_200_PATH;
+  const p60 = process.env.UNMAPPED_60_PATH;
+  const p983 = process.env.IMPORT_FILES_983_PATH;
 
-// 2. Process 60 unmapped nodes from step 241 output
-const unmappedRows = extractFromStepOutput('C:/Users/fluck/.gemini/antigravity/brain/665d66fd-5dd3-4293-8f5a-1ae633a34d7f/.system_generated/steps/241/output.txt');
-encryptAndSave('macula_syntax_unmapped_nodes_60', unmappedRows, salt);
-
-// 3. Process 983 import files from step 244 output
-const importFilesRows = extractFromStepOutput('C:/Users/fluck/.gemini/antigravity/brain/665d66fd-5dd3-4293-8f5a-1ae633a34d7f/.system_generated/steps/244/output.txt');
-encryptAndSave('macula_syntax_import_files_983', importFilesRows, salt);
-
-console.log('\nAll 3 private datasets extracted, encrypted, and saved successfully.');
+  if (p200 && fs.existsSync(p200)) {
+    encryptAndSave('macula_gated_restricted_frame_200', extractFromStepOutput(p200), salt);
+  }
+  if (p60 && fs.existsSync(p60)) {
+    encryptAndSave('macula_syntax_unmapped_nodes_60', extractFromStepOutput(p60), salt);
+  }
+  if (p983 && fs.existsSync(p983)) {
+    encryptAndSave('macula_syntax_import_files_983', extractFromStepOutput(p983), salt);
+  }
+  console.log('Private backup encryption complete.');
+}

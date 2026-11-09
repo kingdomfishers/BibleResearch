@@ -19,7 +19,7 @@ import type { NoteKind } from '../../api/notes-types';
 import type { RelationshipNotePrefill } from '../../api/relationship-notes-adapter';
 import type { ResearcherRelationshipStance } from '../../api/relationship-types';
 import type { ActivePassage, Note, WordRecord } from '../../api/types';
-import { formatVerseRef } from '../utils';
+import { formatVerseRef, parseAnchorPassage } from '../utils';
 
 // === @section:types ===
 export interface EditorAnchor extends TargetCandidateAnchor {
@@ -72,7 +72,7 @@ export function createEmptyDraft(passage?: ActivePassage | null, verseId?: numbe
     anchors.push({
       client_key: generateClientKey('anc'),
       kind: 'verse',
-      verse_id: verseId ?? 0,
+      verse_id: verseId || undefined,
       label: formatVerseRef(passage),
     });
   }
@@ -267,6 +267,17 @@ export function draftToPayload(draft: EditorDraft): NoteSavePayload {
 }
 
 export async function saveNoteDraft(draft: EditorDraft): Promise<NoteWriteResult> {
+  for (const a of draft.anchors) {
+    if (a.kind === 'verse' && (!a.verse_id || a.verse_id === 0) && a.label) {
+      const p = parseAnchorPassage(a.label);
+      if (p) {
+        const res = await BibleRPC.notes.getForPassage(p);
+        if (res.data?.passage?.verse_ids?.[0]) {
+          a.verse_id = res.data.passage.verse_ids[0];
+        }
+      }
+    }
+  }
   const payload = draftToPayload(draft);
   return BibleRPC.notes.save(payload);
 }

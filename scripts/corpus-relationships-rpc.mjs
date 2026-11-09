@@ -157,6 +157,12 @@ export async function handleLookupCrossReferencesV1(ctx, params = {}) {
   const startId = ctx.getVerseIdByCoord(`${book}:${chapter}:${verse}`);
   const endId = ctx.getVerseIdByCoord(`${book}:${chapter}:${verseEnd}`);
 
+  const matchesTranslationFilter = e => {
+    if (translationFilter === 'bsb' && !e.anchor?.phrase_bsb && e.anchor?.anchor_scope !== 'whole_verse') return false;
+    if (translationFilter === 'kjv' && !e.anchor?.phrase_kjv && e.anchor?.anchor_scope !== 'whole_verse') return false;
+    return true;
+  };
+
   if (startId == null) {
     const edEntry =
       bookShard?.edition_only_by_coord?.[`${chapter}:${verse}`] ||
@@ -164,22 +170,38 @@ export async function handleLookupCrossReferencesV1(ctx, params = {}) {
       null;
     if (edEntry) {
       const edEndpoint = edEntry.endpoint || edEntry;
-      const outEdges = direction === 'incoming' ? [] : deduplicateXrefEdges(edEntry.outgoing || []);
-      const inEdges = direction === 'outgoing' ? [] : deduplicateXrefEdges(edEntry.incoming || []);
+      const edScopeKey = `xref:ed:${book}:${chapter}:${verse}-${verseEnd}:${direction}:${translationFilter}`;
+      const edCursor = decodeCursor(params.p_cursor, edScopeKey);
+      if (!edCursor.ok) {
+        return emptyResp('invalid_cursor', edEndpoint, edCursor.error, attribution);
+      }
+      const outEdges = direction === 'incoming'
+        ? []
+        : deduplicateXrefEdges((edEntry.outgoing || []).filter(matchesTranslationFilter));
+      const inEdges = direction === 'outgoing'
+        ? []
+        : deduplicateXrefEdges((edEntry.incoming || []).filter(matchesTranslationFilter));
+      const edCombined = [
+        ...outEdges.map(item => ({ kind: 'out', item })),
+        ...inEdges.map(item => ({ kind: 'in', item })),
+      ];
+      const edSlice = edCombined.slice(edCursor.offset, edCursor.offset + limit);
+      const edNext = edCursor.offset + edSlice.length;
+      const edHasMore = edNext < edCombined.length;
       return {
         schema_version: 1,
         status: 'edition_only_passage',
         epistemic_layer: 'static_source_evidence',
         query_passage: edEndpoint,
         direction,
-        outgoing: outEdges.slice(0, limit),
-        incoming: inEdges.slice(0, limit),
+        outgoing: edSlice.filter(x => x.kind === 'out').map(x => x.item),
+        incoming: edSlice.filter(x => x.kind === 'in').map(x => x.item),
         page: {
           limit,
-          returned: Math.min(limit, outEdges.length + inEdges.length),
-          total_available: outEdges.length + inEdges.length,
-          next_cursor: null,
-          has_more: false,
+          returned: edSlice.length,
+          total_available: edCombined.length,
+          next_cursor: edHasMore ? encodeCursor(edNext, edScopeKey) : null,
+          has_more: edHasMore,
         },
         guardrails: CROSS_REFERENCE_GUARDRAILS,
         dataset_attribution: attribution,
@@ -238,14 +260,12 @@ export async function handleLookupCrossReferencesV1(ctx, params = {}) {
     const coord = `${chapter}:${v}`;
     if (direction !== 'incoming') {
       for (const e of bookShard.outgoing_by_verse?.[coord] || []) {
-        if (translationFilter === 'bsb' && !e.anchor?.phrase_bsb && e.anchor?.anchor_scope !== 'whole_verse') continue;
-        if (translationFilter === 'kjv' && !e.anchor?.phrase_kjv && e.anchor?.anchor_scope !== 'whole_verse') continue;
-        rawOut.push(e);
+        if (matchesTranslationFilter(e)) rawOut.push(e);
       }
     }
     if (direction !== 'outgoing') {
       for (const e of bookShard.incoming_by_verse?.[coord] || []) {
-        rawIn.push(e);
+        if (matchesTranslationFilter(e)) rawIn.push(e);
       }
     }
   }

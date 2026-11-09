@@ -10,7 +10,7 @@ import type { KeysetCursor, NoteListResponse } from '../../api/notes-api-types';
 import { BibleRPC } from '../../api/rpc';
 import { notesState } from '../notes-state';
 import { createNoteCard } from './NoteCard';
-import { BIBLE_BOOKS } from '../utils';
+import { parseAnchorPassage } from '../utils';
 
 // === @section:types ===
 export interface NotesBrowserProps {
@@ -41,18 +41,7 @@ export interface NotesBrowserHandle {
 }
 
 // === @section:logic:load ===
-export function parseAnchorPassage(label: string | null): ActivePassage | null {
-  if (!label) return null;
-  const match = /^([1-3]?\s*[a-zA-Z]+)\s+(\d+)[:\s]+(\d+)$/.exec(label.trim());
-  if (!match) return null;
-  const rawBook = match[1]!.toLowerCase();
-  const bookIdx = BIBLE_BOOKS.findIndex(b => {
-    const l = b.toLowerCase();
-    return l === rawBook || l.replace('psalms', 'psalm') === rawBook;
-  });
-  if (bookIdx < 0) return null;
-  return { book: bookIdx + 1, chapter: Number(match[2]), verse: Number(match[3]) };
-}
+export { parseAnchorPassage };
 
 export class NotesListManager {
   notes: Note[] = [];

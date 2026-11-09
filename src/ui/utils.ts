@@ -28,6 +28,19 @@ export const BOOK_CHAPTERS = [
 // === @section:logic:reference ===
 export const formatVerseRef = (p: ActivePassage) => `${BIBLE_BOOKS[p.book - 1]} ${p.chapter}:${p.verse}`;
 
+export function parseAnchorPassage(label: string | null): ActivePassage | null {
+  if (!label) return null;
+  const match = /^([1-3]?\s*[a-zA-Z]+)\s+(\d+)[:\s]+(\d+)$/.exec(label.trim());
+  if (!match) return null;
+  const rawBook = match[1]!.toLowerCase();
+  const bookIdx = BIBLE_BOOKS.findIndex(b => {
+    const l = b.toLowerCase();
+    return l === rawBook || l.replace('psalms', 'psalm') === rawBook;
+  });
+  if (bookIdx < 0) return null;
+  return { book: bookIdx + 1, chapter: Number(match[2]), verse: Number(match[3]) };
+}
+
 // === @section:logic:gematria ===
 const GEMATRIA_MAP: Record<string, number> = {
   // Hebrew consonants (Standard Mispar Hechrechi)

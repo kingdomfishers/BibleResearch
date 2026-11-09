@@ -126,6 +126,7 @@ export type LexicalRelationshipCategory =
   | 'same_documented_root'
   | 'derivation'
   | 'cognate'
+  | 'loan_transliteration'
   | 'morphological_relationship'
   | 'source_lexical_equivalence'
   | 'semantic_overlap'

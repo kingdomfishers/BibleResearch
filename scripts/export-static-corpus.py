@@ -64,6 +64,52 @@ FORBIDDEN_GATED_FIELDS = {
     "ln",
 }
 
+ALLOW_INCOMPLETE_EXPORT = "--allow-incomplete-export" in sys.argv
+
+MIN_EXPECTED_TABLE_ROWS: dict[str, int] = {
+    "books": 66,
+    "lxx_swete_books": 55,
+    "source_releases": 4,
+    "source_editions": 7,
+    "field_license_registry": 15,
+    "reader_english_editions": 1,
+    "verses_immutable": 31000,
+    "words_full": 150000,
+    "lemmas": 22000,
+    "lexemes": 22000,
+    "lexical_senses": 26000,
+    "lexical_roots": 2500,
+    "lemma_root_links": 6000,
+    "lexical_formations": 700,
+    "lemma_components": 1500,
+    "lexical_connections": 1,
+    "canonical_entities": 80000,
+    "entity_relationships": 15000,
+    "hebrew_lxx_word_alignments": 1,
+    "semantic_annotations": 900,
+    "token_morphemes": 2000,
+    "cross_token_mappings": 100,
+    "versification_mappings": 2000,
+    "macula_gated_field_values": 2000,
+    "hebrew_lxx_verse_map": 20000,
+    "reader_english_verses": 31000,
+    "reader_rendering_groups": 90000,
+    "edition_passages": 60000,
+    "lexeme_identifiers": 110000,
+    "tagnt_tokens": 140000,
+    "word_form_lemmas": 270000,
+    "macula_greek_tokens": 270000,
+    "morphhb_tokens": 300000,
+    "lxx_swete_words": 580000,
+    "verse_translation_sources": 440000,
+    "macula_hebrew_morphemes": 470000,
+    "syntax_nodes_step": 120000,
+    "syntax_edges_step": 120000,
+    "verses_full": 31000,
+    "syntax_nodes_db": 120000,
+    "syntax_edges_db": 120000,
+}
+
 
 def load_env() -> dict[str, str]:
     env_map: dict[str, str] = {}
@@ -242,17 +288,38 @@ EXPORT_TABLES_SPEC: list[tuple[str, str, int, bool]] = [
 
 
 def fetch_table_rows(table_key: str, mode: str, page_size: int) -> list[dict[str, Any]]:
+    min_expected = MIN_EXPECTED_TABLE_ROWS.get(table_key, 1)
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
     cache_file = CACHE_DIR / f"{table_key}.json.gz"
     if cache_file.exists():
         try:
             with gzip.open(cache_file, "rt", encoding="utf-8") as fh:
                 cached = json.load(fh)
-            if isinstance(cached, list) and len(cached) > 0:
+            if isinstance(cached, list) and len(cached) >= min_expected:
                 print(f"  [cache hit] {table_key}: {len(cached):,} rows", flush=True)
                 return cached
         except Exception:
             pass
+
+    # Check local offline fallback shards before network RPC
+    offline_candidates = [
+        CORPUS_DIR / "tables" / table_key,
+        BACKUP_DIR / "tables" / table_key,
+    ]
+    for cand in offline_candidates:
+        shards = sorted(cand.glob("part-*.jsonl.gz"))
+        if shards:
+            loaded_rows: list[dict[str, Any]] = []
+            for sf in shards:
+                with gzip.open(sf, "rt", encoding="utf-8") as f:
+                    for line in f:
+                        if line.strip():
+                            loaded_rows.append(json.loads(line))
+            if len(loaded_rows) >= min_expected:
+                print(f"  [offline shard hit] {table_key}: {len(loaded_rows):,} rows reconstructed from {len(shards)} local shards", flush=True)
+                with gzip.open(cache_file, "wt", encoding="utf-8", compresslevel=3) as fh:
+                    json.dump(loaded_rows, fh, ensure_ascii=False, separators=(",", ":"))
+                return loaded_rows
 
     rows: list[dict[str, Any]] = []
     after_id = 0
@@ -297,6 +364,15 @@ def fetch_table_rows(table_key: str, mode: str, page_size: int) -> list[dict[str
             break
 
     elapsed = time.time() - t0
+    if len(rows) < min_expected and not ALLOW_INCOMPLETE_EXPORT:
+        raise RuntimeError(
+            f"REBUILD GUARD ERROR: Table '{table_key}' returned {len(rows):,} rows from database, "
+            f"which is below minimum required threshold {min_expected:,}. "
+            f"The PostgreSQL source table appears to have been reclaimed or emptied! "
+            f"Storage reclamation safety guard prevented silently overwriting with an empty corpus shard. "
+            f"To override explicitly, pass --allow-incomplete-export."
+        )
+
     print(f"  [exported] {table_key}: {len(rows):,} rows in {elapsed:.1f}s", flush=True)
     with gzip.open(cache_file, "wt", encoding="utf-8", compresslevel=3) as fh:
         json.dump(rows, fh, ensure_ascii=False, separators=(",", ":"))
@@ -398,6 +474,8 @@ def parse_all_macula_syntax_files(
         nid = int(sn["id"])
         if nid > max_node_id:
             max_node_id = nid
+        if int(sn.get("edition_id", 0)) == 11:
+            sn["semantic_frame"] = None
         all_syntax_nodes.append(sn)
 
     max_edge_id = 0
@@ -463,7 +541,8 @@ def parse_all_macula_syntax_files(
             cl_type = (el.attrib.get("clType") or "").strip() or None
             is_head = el.attrib.get("head") == "true"
             morphology = (el.attrib.get("morph") or "").strip() or None
-            semantic_frame = (el.attrib.get("frame") or "").strip() or None
+            # AUDIT-01: macula-hebrew @frame is license-gated per field_license_registry (disabled_unverified)
+            semantic_frame = None if repo == "macula-hebrew" else ((el.attrib.get("frame") or "").strip() or None)
             surface_text = (el.text or "").strip() or None if kind == "w" else None
 
             rec = {
@@ -720,9 +799,57 @@ def main() -> None:
     BACKUP_DIR.mkdir(parents=True, exist_ok=True)
 
     print("=== Step 1: Fetching Manifest Metadata & Grammar Catalog from Supabase ===", flush=True)
-    meta_payload = rpc_call("get_static_corpus_manifest_meta_v1")
-    manifest_files: list[dict[str, Any]] = meta_payload["macula_syntax_import_files"]
-    decode_grammar_catalog: dict[str, Any] = meta_payload["decode_grammar_catalog"]
+    manifest_files: list[dict[str, Any]] = []
+    decode_grammar_catalog: dict[str, Any] = {}
+    try:
+        meta_payload = rpc_call("get_static_corpus_manifest_meta_v1")
+        manifest_files = meta_payload.get("macula_syntax_import_files") or []
+        decode_grammar_catalog = meta_payload.get("decode_grammar_catalog") or {}
+    except Exception as exc:
+        print(f"  [warn] get_static_corpus_manifest_meta_v1 call failed: {exc}", flush=True)
+
+    # Rebuild guard for manifest_files
+    if len(manifest_files) < 983:
+        p_private = ARTIFACTS_DIR / "private-backup" / "macula_syntax_import_files_983.json"
+        p_table = CORPUS_DIR / "tables" / "macula_syntax_import_files"
+        if p_private.exists():
+            try:
+                manifest_files = json.loads(p_private.read_text(encoding="utf-8"))
+                print(f"  [offline fallback] loaded {len(manifest_files)} macula_syntax_import_files from private backup", flush=True)
+            except Exception:
+                pass
+        if len(manifest_files) < 983 and p_table.exists():
+            shards = sorted(p_table.glob("part-*.jsonl.gz"))
+            loaded = []
+            for sf in shards:
+                with gzip.open(sf, "rt", encoding="utf-8") as f:
+                    for line in f:
+                        if line.strip():
+                            loaded.append(json.loads(line))
+            if len(loaded) >= 983:
+                manifest_files = loaded
+                print(f"  [offline fallback] loaded {len(manifest_files)} macula_syntax_import_files from local shards", flush=True)
+
+        if len(manifest_files) < 983 and not ALLOW_INCOMPLETE_EXPORT:
+            raise RuntimeError(
+                f"REBUILD GUARD ERROR: macula_syntax_import_files has only {len(manifest_files)} files (expected 983). "
+                f"Database table appears truncated and no local fallback found. "
+                f"Pass --allow-incomplete-export to override."
+            )
+
+    # Rebuild guard for decode_grammar_catalog
+    if len(decode_grammar_catalog) < 1000:
+        cat_file = CORPUS_DIR / "v1" / "catalog" / "metadata.json.gz"
+        if cat_file.exists():
+            try:
+                with gzip.open(cat_file, "rt", encoding="utf-8") as f:
+                    cat_data = json.load(f)
+                    if isinstance(cat_data.get("decode_grammar_catalog"), dict) and len(cat_data["decode_grammar_catalog"]) >= 1000:
+                        decode_grammar_catalog = cat_data["decode_grammar_catalog"]
+                        print(f"  [offline fallback] loaded {len(decode_grammar_catalog):,} decode_grammar_catalog entries from metadata.json.gz", flush=True)
+            except Exception:
+                pass
+
     print(f"  macula_syntax_import_files: {len(manifest_files)} files", flush=True)
     print(f"  decode_grammar_catalog: {len(decode_grammar_catalog):,} distinct grammar codes", flush=True)
 
@@ -1983,6 +2110,15 @@ def main() -> None:
         "tables": public_table_manifests,
         "v1_retrieval_shards": v1_assets,
     }
+
+    total_assets = len(all_asset_files) + 1  # +1 for manifest.json
+    if total_assets < 1890 and not ALLOW_INCOMPLETE_EXPORT:
+        raise RuntimeError(
+            f"MANIFEST SAFETY ERROR: Generated {total_assets} static assets, which is less than "
+            f"the required pinned manifest count (1890). "
+            f"Storage reclamation safety guard prevented overwriting manifest.json with incomplete data. "
+            f"Pass --allow-incomplete-export to override."
+        )
 
     manifest_path = CORPUS_DIR / "manifest.json"
     manifest_path.write_text(json.dumps(manifest_doc, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

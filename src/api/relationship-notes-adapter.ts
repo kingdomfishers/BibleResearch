@@ -148,6 +148,7 @@ function mapLexicalCategoryToNoteConnection(
   if (cat === 'same_documented_root' || cat === 'derivation' || cat === 'cognate') {
     return { type: 'same_root', direction: cat === 'derivation' ? 'directed' : 'bidirectional' };
   }
+  if (cat === 'loan_transliteration') return { type: 'related', direction: 'directed' };
   if (cat === 'literary_wordplay') return { type: 'wordplay', direction: 'bidirectional' };
   if (cat === 'orthographic_overlap') return { type: 'contained_in', direction: 'directed' };
   if (cat === 'antonymy') return { type: 'contrasts_with', direction: 'bidirectional' };

@@ -21,7 +21,7 @@ import { createNoteCard } from './NoteCard';
 import { notesState } from '../notes-state';
 
 export interface NotesPanelDeps {
-  onAdd?: () => void;
+  onAdd?: (verseId?: number) => void;
   onEdit?: (note: Note) => void;
   onDelete?: (noteId: string) => void;
   onAnchor?: (anchor: NoteAnchor) => void;
@@ -240,7 +240,7 @@ export function renderTiers(
       addBtn.type = 'button';
       addBtn.className = 'study-button primary';
       addBtn.textContent = 'Add note';
-      addBtn.addEventListener('click', deps.onAdd);
+      addBtn.addEventListener('click', () => deps.onAdd?.(data.passage.verse_ids?.[0]));
       empty.appendChild(addBtn);
     }
     container.appendChild(empty);
@@ -248,7 +248,7 @@ export function renderTiers(
 }
 
 // === @section:ui:header ===
-export function createNotesPanelHeader(onAdd?: () => void): {
+export function createNotesPanelHeader(onAdd?: (verseId?: number) => void, getVerseId?: () => number | undefined): {
   header: HTMLElement;
   updateCounts: (totals?: { total: number; human: number; ai: number }) => void;
 } {
@@ -275,7 +275,7 @@ export function createNotesPanelHeader(onAdd?: () => void): {
     addBtn.type = 'button';
     addBtn.className = 'study-button';
     addBtn.textContent = '+ Add note';
-    addBtn.addEventListener('click', onAdd);
+    addBtn.addEventListener('click', () => onAdd(getVerseId?.()));
     header.appendChild(addBtn);
   }
 
@@ -349,7 +349,7 @@ export function createNotesPanel(deps: NotesPanelDeps = {}): NotesPanelHandle {
   let typesData: ConnectionTypesResponse | null = null;
   let lastData: PassageNotesResponse | null = null;
 
-  const { header, updateCounts } = createNotesPanelHeader(deps.onAdd);
+  const { header, updateCounts } = createNotesPanelHeader(deps.onAdd, () => lastData?.passage?.verse_ids?.[0]);
   element.appendChild(header);
 
   const filterContainer = document.createElement('div');

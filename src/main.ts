@@ -66,7 +66,7 @@ const reader = createVerseReader({
   onTokenNotes: pos => notesState.setSelectedTokenPosition(pos),
 });
 const notesPanel = createNotesPanel({
-  onAdd: () => noteEditor.openNew({ passage: appState.getPassage() }),
+  onAdd: verseId => noteEditor.openNew({ passage: appState.getPassage(), verseId }),
   onEdit: note => noteEditor.openEdit(note),
   onDelete: async noteId => {
     await BibleRPC.notes.remove(noteId);

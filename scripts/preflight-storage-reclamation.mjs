@@ -188,7 +188,7 @@ console.log(
 );
 
 console.log('\n=== Storage Reclamation Target Summary ===');
-console.log('  Current Live Database Size:         1,385.49 MiB');
-console.log('  19 Offloaded Static Tables Total:   1,035.06 MiB');
-console.log('  Projected Post-Reclamation Size:      350.43 MiB (< 400 MiB preferred target & < 500 MiB Free limit)');
+console.log('  Current Live Database Size:         1,397.73 MiB');
+console.log('  19 Offloaded Static Tables Total:   1,035.13 MiB');
+console.log('  Projected Post-Reclamation Size:      362.60 MiB (< 400 MiB preferred target & < 500 MiB Free limit)');
 console.log('  Status: READY FOR STAGE G RECLAMATION (scripts/reclaim-supabase-storage.sql kept unexecuted)');

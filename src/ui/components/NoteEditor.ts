@@ -408,13 +408,14 @@ export function createNoteEditor(props: NoteEditorProps): NoteEditorComponent {
 
   function openNew(ctx?: NoteEditorContext): void {
     draft = buildNewDraftFromContext(ctx);
-    isDirty = false; syncViews();
+    syncViews(); isDirty = false;
     targetPicker.setContext(ctx || {});
     openDialog(); formView.titleInput.focus();
   }
 
   function openEdit(note: Note): void {
-    draft = noteToDraft(note); isDirty = false; syncViews();
+    draft = noteToDraft(note);
+    syncViews(); isDirty = false;
     openDialog(); formView.titleInput.focus();
   }
 

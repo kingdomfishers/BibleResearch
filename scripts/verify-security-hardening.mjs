@@ -107,6 +107,27 @@ async function runTests() {
     `Status: ${resIngestMorph.status}`
   );
 
+  const resIngestFormations = await rpcAnon('ingest_lexical_formations_batch_v1', { p_formations: [] });
+  assert(
+    'ingest_lexical_formations_batch_v1 denied to anonymous caller (AUDIT-01)',
+    resIngestFormations.status === 401 || resIngestFormations.status === 403 || resIngestFormations.status === 404 || !resIngestFormations.ok,
+    `Status: ${resIngestFormations.status}`
+  );
+
+  const resIngestQuarantined = await rpcAnon('ingest_quarantined_records_batch_v1', { p_records: [] });
+  assert(
+    'ingest_quarantined_records_batch_v1 denied to anonymous caller (AUDIT-01)',
+    resIngestQuarantined.status === 401 || resIngestQuarantined.status === 403 || resIngestQuarantined.status === 404 || !resIngestQuarantined.ok,
+    `Status: ${resIngestQuarantined.status}`
+  );
+
+  const resCallCorpus = await rpcAnon('call_corpus_rpc_v1', { p_operation: 'lookup_syntax_tree_v1', p_params: {} });
+  assert(
+    'call_corpus_rpc_v1 denied to anonymous caller (AUDIT-01)',
+    resCallCorpus.status === 401 || resCallCorpus.status === 403 || resCallCorpus.status === 404 || !resCallCorpus.ok,
+    `Status: ${resCallCorpus.status}`
+  );
+
   // 2. Direct RLS table write denials
   console.log('\n2. Testing RLS write denials on evidence & legacy tables...');
   const resWriteVerse = await postgrestAnon('verses', 'POST', {

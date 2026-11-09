@@ -92,12 +92,17 @@ export function buildLexicalRelationshipId(params: {
   epistemicTier: RelationshipEpistemicTier;
   subjectKey: string;
   targetKey: string;
-   symmetric?: boolean;
+  direction?: 'directed' | 'symmetric' | 'inverse';
+  symmetric?: boolean;
 }): string {
-  const sym = params.symmetric ?? isSymmetricLexicalCategory(params.category);
-  const [a, b] = sym && params.subjectKey > params.targetKey
-    ? [params.targetKey, params.subjectKey]
-    : [params.subjectKey, params.targetKey];
+  const sym = params.symmetric ?? (params.direction === 'symmetric' || isSymmetricLexicalCategory(params.category));
+  const [a, b] = sym
+    ? params.subjectKey > params.targetKey
+      ? [params.targetKey, params.subjectKey]
+      : [params.subjectKey, params.targetKey]
+    : params.direction === 'inverse'
+      ? [params.targetKey, params.subjectKey]
+      : [params.subjectKey, params.targetKey];
   const arrow = sym ? '<->' : '->';
   const raw = `lex|${params.sourceKey}|${params.category}|${params.rawRelationCode}|${params.epistemicTier}|${a}${arrow}${b}`;
   const digest = fnv1a64Hex(raw).slice(0, 12);
@@ -161,7 +166,10 @@ export function validateLexicalEdgeIntegrity(edge: LexicalRelationshipEdge): str
     return `Category ${edge.category} must never claim implies_synonymy=true.`;
   }
   if (
-    (edge.category === 'orthographic_overlap' ||
+    (edge.category === 'loan_transliteration' ||
+      edge.category === 'source_lexical_equivalence' ||
+      edge.category === 'literary_wordplay' ||
+      edge.category === 'orthographic_overlap' ||
       edge.category === 'related_translation' ||
       edge.category === 'co_occurrence' ||
       edge.category === 'semantic_overlap' ||

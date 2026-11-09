@@ -1,7 +1,7 @@
 // scripts/build-reclamation-backup-schema.mjs
 // Assembles complete, authentic PostgreSQL DDL for:
 // - All 19 reclamation-target tables
-// - Core dependency tables (source_editions, source_releases, verses, words, lemmas, lexemes, field_license_registry)
+// - Core dependency tables (source_editions, source_releases, verses, words, lemmas, lexemes, field_license_registry, books, lxx_swete_books, reader_english_editions)
 // - Primary keys, foreign keys, unique constraints, check constraints, and indexes.
 
 import fs from 'node:fs';
@@ -19,6 +19,30 @@ const targetCols = parseStepOutput('C:/Users/fluck/.gemini/antigravity/brain/665
 const targetConstraints = parseStepOutput('C:/Users/fluck/.gemini/antigravity/brain/665d66fd-5dd3-4293-8f5a-1ae633a34d7f/.system_generated/steps/295/output.txt');
 const targetIndexes = parseStepOutput('C:/Users/fluck/.gemini/antigravity/brain/665d66fd-5dd3-4293-8f5a-1ae633a34d7f/.system_generated/steps/297/output.txt');
 const depCols = parseStepOutput('C:/Users/fluck/.gemini/antigravity/brain/665d66fd-5dd3-4293-8f5a-1ae633a34d7f/.system_generated/steps/299/output.txt');
+
+// Step 381 has books, lxx_swete_books, reader_english_editions
+const extraDepCols = [
+  { table_schema: 'public', table_name: 'books', column_name: 'id', is_nullable: 'NO', data_type: 'smallint', column_default: null },
+  { table_schema: 'public', table_name: 'books', column_name: 'name', is_nullable: 'NO', data_type: 'text', column_default: null },
+  { table_schema: 'public', table_name: 'books', column_name: 'testament', is_nullable: 'NO', data_type: 'text', column_default: null },
+  { table_schema: 'public', table_name: 'books', column_name: 'original_language', is_nullable: 'NO', data_type: 'text', column_default: null },
+  { table_schema: 'public', table_name: 'books', column_name: 'total_chapters', is_nullable: 'NO', data_type: 'smallint', column_default: null },
+  { table_schema: 'public', table_name: 'books', column_name: 'usfm', is_nullable: 'NO', data_type: 'text', column_default: null },
+  { table_schema: 'public', table_name: 'books', column_name: 'theographic_code', is_nullable: 'NO', data_type: 'text', column_default: null },
+  { table_schema: 'public', table_name: 'books', column_name: 'division', is_nullable: 'NO', data_type: 'text', column_default: null },
+  { table_schema: 'public', table_name: 'lxx_swete_books', column_name: 'book_no', is_nullable: 'NO', data_type: 'smallint', column_default: null },
+  { table_schema: 'public', table_name: 'lxx_swete_books', column_name: 'file_name', is_nullable: 'NO', data_type: 'text', column_default: null },
+  { table_schema: 'public', table_name: 'lxx_swete_books', column_name: 'latin_name', is_nullable: 'NO', data_type: 'text', column_default: null },
+  { table_schema: 'public', table_name: 'lxx_swete_books', column_name: 'canonical_book', is_nullable: 'YES', data_type: 'smallint', column_default: null },
+  { table_schema: 'public', table_name: 'lxx_swete_books', column_name: 'source_release_id', is_nullable: 'NO', data_type: 'bigint', column_default: null },
+  { table_schema: 'public', table_name: 'lxx_swete_books', column_name: 'source_edition_id', is_nullable: 'NO', data_type: 'bigint', column_default: null },
+  { table_schema: 'public', table_name: 'reader_english_editions', column_name: 'id', is_nullable: 'NO', data_type: 'text', column_default: null },
+  { table_schema: 'public', table_name: 'reader_english_editions', column_name: 'name', is_nullable: 'NO', data_type: 'text', column_default: null },
+  { table_schema: 'public', table_name: 'reader_english_editions', column_name: 'source_url', is_nullable: 'NO', data_type: 'text', column_default: null },
+  { table_schema: 'public', table_name: 'reader_english_editions', column_name: 'sha256', is_nullable: 'NO', data_type: 'text', column_default: null },
+  { table_schema: 'public', table_name: 'reader_english_editions', column_name: 'license', is_nullable: 'NO', data_type: 'text', column_default: null },
+  { table_schema: 'public', table_name: 'reader_english_editions', column_name: 'mapping_note', is_nullable: 'NO', data_type: 'text', column_default: null }
+];
 
 const schemaDir = path.resolve('.artifacts/db-backup/schema');
 fs.mkdirSync(schemaDir, { recursive: true });
@@ -66,7 +90,7 @@ function buildTableDDL(schema, table, cols, constraints) {
 function groupByTable(rows) {
   const map = new Map();
   for (const r of rows) {
-    const key = `${r.table_schema}.${r.table_name}`;
+    const key = `${r.table_schema || 'public'}.${r.table_name}`;
     if (!map.has(key)) map.set(key, []);
     map.get(key).push(r);
   }
@@ -74,7 +98,7 @@ function groupByTable(rows) {
 }
 
 const targetColsMap = groupByTable(targetCols);
-const depColsMap = groupByTable(depCols);
+const depColsMap = groupByTable([...depCols, ...extraDepCols]);
 
 const constraintsMap = new Map();
 for (const c of targetConstraints) {
@@ -84,7 +108,7 @@ for (const c of targetConstraints) {
 }
 
 // Sequences
-const allCols = [...targetCols, ...depCols];
+const allCols = [...targetCols, ...depCols, ...extraDepCols];
 const allSequences = extractSequences(allCols);
 
 // Build 01_dependencies_schema.sql
@@ -98,8 +122,9 @@ for (const s of allSequences) {
 for (const [key, cols] of depColsMap.entries()) {
   const [schema, table] = key.split('.');
   depSQL.push(`\n-- ${key}`);
-  const idCol = cols.find(c => c.column_name === 'id');
-  const pkDef = idCol ? `  CONSTRAINT ${table}_pkey PRIMARY KEY (id)` : '';
+  let pkCol = cols.find(c => c.column_name === 'id');
+  if (!pkCol && table === 'lxx_swete_books') pkCol = cols.find(c => c.column_name === 'book_no');
+  const pkDef = pkCol ? `  CONSTRAINT ${table}_pkey PRIMARY KEY (${pkCol.column_name})` : '';
   const colDefs = cols.map(c => `  ${c.column_name} ${formatColType(c)}${c.is_nullable === 'NO' ? ' NOT NULL' : ''}${c.column_default ? ' DEFAULT ' + c.column_default : ''}`);
   if (pkDef) colDefs.push(pkDef);
   depSQL.push(`CREATE TABLE IF NOT EXISTS ${schema}.${table} (\n${colDefs.join(',\n')}\n);`);
@@ -147,4 +172,4 @@ for (const idx of targetIndexes) {
 }
 fs.writeFileSync(path.join(schemaDir, '03_indexes.sql'), idxSQL.join('\n'), 'utf8');
 
-console.log('Successfully regenerated complete DDL in .artifacts/db-backup/schema/');
+console.log('Successfully regenerated complete DDL with all dependencies in .artifacts/db-backup/schema/');

@@ -181,7 +181,8 @@ def verify_static_corpus() -> dict[str, Any]:
     assert len(gen1_terminals) == 11, f"Genesis 1:1 expected 11 terminals, got {len(gen1_terminals)}"
     bara_node = next((n for n in gen1_terminals if n["terminal_xml_id"] == "o010010010021"), None)
     assert bara_node is not None and bara_node["syntactic_role"] == "v"
-    assert "A0:010010010031" in (bara_node["semantic_frame"] or "")
+    # AUDIT-01: macula-hebrew semantic_frame must be stripped per field_license_registry (disabled_unverified)
+    assert bara_node["semantic_frame"] is None, f"Genesis 1:1 bara_node semantic_frame must be None, got {bara_node['semantic_frame']}"
 
     # 4b. Psalm headings at verse 0 (Psalm 3:0 and Psalm 51:0) + WLC Psalm 3:1 versification shift
     ps3_ch = load_gzip_json("/v1/chapters/b19-c3.json.gz")

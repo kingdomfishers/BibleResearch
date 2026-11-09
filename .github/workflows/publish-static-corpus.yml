@@ -45,6 +45,23 @@ jobs:
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         run: python3 scripts/export-static-corpus.py
 
+      - name: Verify static corpus manifest completeness
+        run: |
+          node -e "
+            const fs = require('fs');
+            const manifest = JSON.parse(fs.readFileSync('.artifacts/static-corpus/manifest.json', 'utf8'));
+            const total = manifest.cloudflare_limits_check?.total_asset_files || 0;
+            if (total < 1890) {
+              console.error('CRITICAL: Manifest asset count (' + total + ') is below the required 1,890. Refusing deploy!');
+              process.exit(1);
+            }
+            if (!manifest.macula_syntax_completion || manifest.macula_syntax_completion.manifest_files_total < 983) {
+              console.error('CRITICAL: Macula syntax manifest files total is incomplete. Refusing deploy!');
+              process.exit(1);
+            }
+            console.log('Manifest pre-deploy verification PASSED: ' + total + ' assets, 983 Macula syntax files verified.');
+          "
+
       - name: Run local corpus verification & unit tests
         run: |
           python3 scripts/verify-static-corpus.py
