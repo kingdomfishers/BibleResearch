@@ -20,6 +20,7 @@ export const WORKFLOW_ROUTES = {
   word_formation: { prompt: 'trace_word_formation', starting_tools: ['inspect_word_formation', 'suggest_word_connections'], purpose: 'Lexical compounds, theophoric names, roots, relatives, and orthographic candidates' },
   chronology: { prompt: 'study_chronology', starting_tools: ['get_verse_chronology_v1'], purpose: 'Multi-model dating and historical evidence' },
   geography: { prompt: 'study_geography', starting_tools: ['get_verse_geography'], purpose: 'Context-aware coordinates and disputed sites' },
+  notes: { prompt: 'study_bible', starting_tools: ['get_notes', 'search_note_targets', 'list_note_connection_types'], purpose: 'User commentary, cross-anchor connections, and interpretive notes' },
 } as const;
 
 // === @section:logic:tools ===
@@ -43,4 +44,7 @@ export const RESEARCH_TOOL_NAMES = [
   'compare_hebrew_septuagint_passage',
   'lookup_hebrew_septuagint_alignments',
   'audit_evidence_coverage',
+  'get_notes',
+  'search_note_targets',
+  'list_note_connection_types',
 ] as const;

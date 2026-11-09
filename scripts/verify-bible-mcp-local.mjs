@@ -12,6 +12,12 @@ const fakeFetch = async (input, init) => {
     lexical_entries: {}, coverage: { occurrences_complete: true },
   });
   if (name === 'research_relationships_v1') return Response.json({ schema_version: 1, status: 'ok', evidence_paths: [] });
+  if (name === 'get_notes_for_passage_v1') {
+    return Response.json({
+      status: 'ok', epistemic_layer: 'user_note',
+      primary: [], secondary: [], totals: { primary: 0, secondary: 0, human: 0, ai: 0, total: 0 },
+    });
+  }
   if (name === 'get_verse_chronology_v1') {
     return Response.json({
       schema_version: 1,
@@ -73,23 +79,26 @@ const call = async (name, args) => (await rpc('tools/call', { name, arguments: a
 const hydrated = (await call('get_verse_research', { p_request: { passages: [{ book: 1, chapter: 1, verse: 1 }] } })).result.structuredContent;
 assert.equal(hydrated.status, 'ok');
 assert.equal(hydrated.verses.length, 1);
-assert.equal(requests.at(-1).url.searchParams.has('limit'), false);
-assert.equal(requests.at(-1).url.searchParams.has('offset'), false);
-assert.deepEqual(JSON.parse(requests.at(-1).init.body), { p_request: { passages: [{ book: 1, chapter: 1, verse: 1 }], profile: 'full' } });
+const req1 = requests.filter(r => r.url.pathname.endsWith('/get_verse_research_v1')).at(-1);
+assert.equal(req1.url.searchParams.has('limit'), false);
+assert.equal(req1.url.searchParams.has('offset'), false);
+assert.deepEqual(JSON.parse(req1.init.body), { p_request: { passages: [{ book: 1, chapter: 1, verse: 1 }], profile: 'full' } });
 const general = (await call('get_research_prompt', { subject: 'Explain John 1:1' })).result.structuredContent;
 assert.equal(general.name, 'study_bible');
-const researchTools = tools.filter(t => !['get_notes', 'search_note_targets', 'list_note_connection_types'].includes(t.name));
-assert.deepEqual([...general.workflow.expected_tools].sort(), researchTools.map(t => t.name).sort());
+assert.deepEqual([...general.workflow.expected_tools].sort(), tools.map(t => t.name).sort());
 assert.deepEqual(general.workflow.profiles.analysis, { mode: 'sample', limit: 5 });
 assert.deepEqual(general.workflow.routes.geography.starting_tools, ['get_verse_geography']);
 assert.ok(general.workflow.routes.relationships.starting_tools.includes('research_relationships'));
+assert.ok(general.workflow.routes.notes.starting_tools.includes('get_notes'));
 await call('get_verse_research', { profile: 'analysis', p_request: { passages: [{ book: 43, chapter: 1, verse: 1 }] } });
-assert.deepEqual(JSON.parse(requests.at(-1).init.body).p_request.occurrences, { mode: 'sample', limit: 5 });
+const req2 = requests.filter(r => r.url.pathname.endsWith('/get_verse_research_v1')).at(-1);
+assert.deepEqual(JSON.parse(req2.init.body).p_request.occurrences, { mode: 'sample', limit: 5 });
 for (const [profile, occurrences] of [
   ['analysis', { mode: 'all' }], ['analysis', { mode: 'sample', limit: 2 }], ['full', { mode: 'sample', limit: 7 }],
 ]) {
   await call('get_verse_research', { profile, p_request: { passages: [{ book: 1, chapter: 1, verse: 1 }], occurrences } });
-  assert.deepEqual(JSON.parse(requests.at(-1).init.body).p_request.occurrences, occurrences, 'Explicit settings must win');
+  const reqLoop = requests.filter(r => r.url.pathname.endsWith('/get_verse_research_v1')).at(-1);
+  assert.deepEqual(JSON.parse(reqLoop.init.body).p_request.occurrences, occurrences, 'Explicit settings must win');
 }
 await call('get_verse_chronology_v1', { p_book: 1, p_chapter: 1, p_verse: 1, p_run_id: '123' });
 assert.equal(JSON.parse(requests.at(-1).init.body).p_run_id, '123');
@@ -135,7 +144,7 @@ assert.equal(preflight.headers.get('access-control-allow-origin'), '*');
 const health = await app(new Request('https://example/bible-mcp/health'));
 const healthJson = await health.json();
 assert.equal(healthJson.read_only, true);
-assert.equal(healthJson.tools, 19);
+assert.equal(healthJson.tools, 22);
 assert.equal(healthJson.prompts, 18);
 let attempts = 0;
 const retryReader = createDatabaseReader({ url: 'https://example.supabase.co', publicKey: 'sb_publishable_test' },

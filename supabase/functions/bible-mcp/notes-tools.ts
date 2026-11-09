@@ -2,7 +2,7 @@
 // @feature: api
 // @tables: notes | note_anchors | note_connections | note_blocks | note_authors
 // @candidates: none
-// @toc: imports | types | logic:security | logic:tool-get-notes-schema | logic:tool-get-notes | logic:tool-search-conn | logic:register
+// @toc: imports | types | logic:security | logic:tool-get-notes-schema | logic:tool-get-notes | logic:tool-search-conn | logic:packet-notes-helpers | logic:packet-notes | logic:register
 
 // === @section:imports ===
 import { McpServer } from '@modelcontextprotocol/server';
@@ -234,8 +234,107 @@ function registerSearchAndConnTools(server: McpServer, read: DatabaseReader): vo
   });
 }
 
+// === @section:logic:packet-notes-helpers ===
+export interface PassageQueryItem {
+  book: number; chapter: number; verse?: number; start_verse?: number; end_verse?: number;
+}
+
+export function formatCompactNote(n: Record<string, unknown>) {
+  const body = typeof n.body_md === 'string' ? n.body_md : '';
+  const ancs = Array.isArray(n.anchors) ? (n.anchors as Record<string, unknown>[]) : [];
+  const aMap = new Map(ancs.map(a => [String(a.id || ''), String(a.label || '')]));
+  const conns = Array.isArray(n.connections) ? (n.connections as Record<string, unknown>[]) : [];
+  const author = (n.author && typeof n.author === 'object') ? (n.author as Record<string, unknown>) : {};
+  return {
+    id: String(n.id || ''),
+    author_kind: String(author.kind || 'human'),
+    author_model: (author.ai_model || null) as string | null,
+    review_status: String(n.review_status || 'unreviewed'),
+    note_kind: String(n.note_kind || 'study'),
+    title: String(n.title || ''),
+    excerpt: body.length > 600 ? body.slice(0, 600) : body,
+    anchors: ancs.map(a => ({ kind: String(a.kind || ''), label: String(a.label || ''),
+      verse_id: typeof a.verse_id === 'number' ? a.verse_id : null,
+      word_position: typeof a.word_position === 'number' ? a.word_position : null })),
+    connections: conns.map(c => ({
+      from_label: String(c.from_label || aMap.get(String(c.from_anchor_id)) || ''),
+      to_label: String(c.to_label || aMap.get(String(c.to_anchor_id)) || ''),
+      type: (c.type_label || c.custom_label || c.connection_type || null) as string | null,
+      direction: (c.direction || null) as string | null,
+    })),
+    has_more: body.length > 600,
+  };
+}
+
+// === @section:logic:packet-notes ===
+export async function attachNotesToResearchPacket(
+  packet: Record<string, unknown>,
+  passages: PassageQueryItem[],
+  profile: 'analysis' | 'full' = 'full',
+  includeNotes = true,
+  includeSecondary = false,
+  read: DatabaseReader,
+): Promise<void> {
+  if (!includeNotes) return;
+  const notesMap: Record<string, Record<string, unknown>> = {};
+  const maxNotes = profile === 'analysis' ? 5 : 15;
+
+  try {
+    const batches: Array<{ book: number; chapter: number; start: number; end: number }> = [];
+    for (const p of passages) {
+      if (typeof p.verse === 'number') {
+        batches.push({ book: p.book, chapter: p.chapter, start: p.verse, end: p.verse });
+      } else if (typeof p.start_verse === 'number' && typeof p.end_verse === 'number') {
+        const start = p.start_verse;
+        const end = Math.min(p.end_verse, start + 99);
+        for (let s = start; s <= end && batches.length < 4; s += 25) {
+          batches.push({ book: p.book, chapter: p.chapter, start: s, end: Math.min(end, s + 24) });
+        }
+      }
+      if (batches.length >= 4) break;
+    }
+
+    for (const b of batches) {
+      const res = await read({
+        name: 'get_notes_for_passage_v1',
+        args: { p_book: b.book, p_chapter: b.chapter, p_verse_start: b.start, p_verse_end: b.end,
+          p_author_kind: null, p_note_kind: null, p_limit: 100 },
+        limit: 1, offset: 0,
+      });
+      const data = (res.rows[0] ?? {}) as Record<string, unknown>;
+      const primary = Array.isArray(data.primary) ? (data.primary as Record<string, unknown>[]) : [];
+      const secondary = (includeSecondary && Array.isArray(data.secondary)) ? (data.secondary as Record<string, unknown>[]) : [];
+      const rawNotes = [...primary, ...secondary];
+
+      for (let v = b.start; v <= b.end; v++) {
+        const vKey = `${b.book}:${b.chapter}:${v}`;
+        const vNotes = (b.start === b.end)
+          ? rawNotes
+          : rawNotes.filter(n => {
+              const ancs = Array.isArray(n.anchors) ? (n.anchors as Record<string, unknown>[]) : [];
+              return ancs.some(a => typeof a.label === 'string' && a.label.includes(`:${v}`)) || ancs.length === 0;
+            });
+        const total = (b.start === b.end && data.totals && typeof data.totals === 'object')
+          ? Number((data.totals as Record<string, unknown>).total ?? vNotes.length) : vNotes.length;
+        const items = vNotes.map(formatCompactNote);
+        notesMap[vKey] = {
+          epistemic_layer: 'user_note',
+          notice: NOTE_SECURITY_NOTICE,
+          notes_total: total,
+          shown: Math.min(items.length, maxNotes),
+          items: items.slice(0, maxNotes),
+        };
+      }
+    }
+    packet.notes = notesMap;
+  } catch {
+    packet.notes = { status: 'unavailable' };
+  }
+}
+
 // === @section:logic:register ===
 export function registerNoteReadTools(server: McpServer, read: DatabaseReader): void {
   registerGetNotesTool(server, read);
   registerSearchAndConnTools(server, read);
 }
+
