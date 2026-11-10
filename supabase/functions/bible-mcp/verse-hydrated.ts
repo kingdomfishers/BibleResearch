@@ -3,6 +3,7 @@ import { McpServer } from '@modelcontextprotocol/server';
 import * as z from 'zod';
 import type { DatabaseReader } from './catalog.ts';
 import { attachNotesToResearchPacket } from './notes-tools.ts';
+import { fetchMaculaSyntax } from './syntax-research.ts';
 
 const asObj = (v: unknown): Record<string, unknown> =>
   v && typeof v === 'object' && !Array.isArray(v) ? v as Record<string, unknown> : {};
@@ -13,18 +14,20 @@ const outputText = (v: unknown) => [{ type: 'text' as const, text: JSON.stringif
 export function registerVerseHydratedTool(server: McpServer, read: DatabaseReader): void {
   server.registerTool('get_verse_hydrated', {
     title: 'Hydrate one Bible verse: word studies, notes, historical setting',
-    description: 'One-call original-language verse study with ordered words, glosses, morphology, STEP definitions, exact occurrence totals plus 7 sample references, 7 statistical co-occurrences, documented root/formation relatives and up to 7 heuristic same-letter candidates per Strong’s entry. Includes canonical verse and word notes, geography, and competing chronology models. Explicitly marks absent or uncertain evidence; spelling similarity does NOT prove etymology. A currently stale Cloudflare B7 build must never be used as the ground truth for source alignment.',
+    description: 'One-call original-language verse study with ordered words, glosses, morphology, STEP definitions, exact occurrence totals plus 7 sample references, 7 statistical co-occurrences, documented root/formation relatives and up to 7 heuristic same-letter candidates per Strong’s entry. Includes canonical verse and word notes, geography, competing chronology models, MACULA phrase/clause relationships, syntactic roles, and explicit unavailability of restricted semantic frames. Explicitly marks absent or uncertain evidence; spelling similarity does NOT prove etymology. A currently stale Cloudflare B7 build must never be used as the ground truth for source alignment.',
     inputSchema: z.strictObject({
       book: z.number().int().min(1).max(66).describe('Canonical book ID: Genesis 1, Psalms 19, Matthew 40, John 43.'),
       chapter: z.number().int().min(1).max(150),
       verse: z.number().int().min(0).max(176).describe('Use 0 for Psalm superscriptions when present.'),
+      include_syntax: z.boolean().default(true).describe('Include MACULA constituent syntax, grammatical roles, clause/phrase edges and cross-verse span metadata. Semantic A0/A1 roles are not independently available when withheld.'),
+      syntax_edition: z.enum(['macula-hebrew-wlc','macula-greek-nestle1904','macula-greek-sblgnt']).optional().describe('Select explicit Macula edition; defaults to WLC OT and Nestle1904 NT.'),
       include_notes: z.boolean().default(true).describe('Include user/AI notes connected to the verse and its word occurrences.'),
       include_spelling_candidates: z.boolean().default(true).describe('Look up up to 7 similar-consonant candidate lemmas for each distinct Strong’s entry, bounded to 24 entries.'),
     }),
     outputSchema: z.record(z.string(), z.unknown()),
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     _meta: { securitySchemes: [{ type: 'noauth' }] },
-  }, async ({book,chapter,verse,include_notes=true,include_spelling_candidates=true}) => {
+  }, async ({book,chapter,verse,include_notes=true,include_spelling_candidates=true,include_syntax=true,syntax_edition}) => {
     try {
       const source = await read({
         name:'get_verse_research_v2',
@@ -39,6 +42,9 @@ export function registerVerseHydratedTool(server: McpServer, read: DatabaseReade
       const verses = asArray(packet.verses);
       if(verses.length !== 1) throw Error('Expected exactly one verse');
       const verseRec = verses[0], words = asArray(verseRec.words);
+      const syntaxPromise = include_syntax
+        ? fetchMaculaSyntax(read,{book,chapter,verse,edition_key:syntax_edition},'compact')
+        : Promise.resolve({status:'not_requested',has_syntax:false});
       const lexical = asObj(packet.lexical_entries);
       const formations = asObj(packet.lexical_formations);
       const entries: Record<string,unknown> = {};
@@ -98,6 +104,7 @@ export function registerVerseHydratedTool(server: McpServer, read: DatabaseReade
       }
       if(include_spelling_candidates) await Promise.all(Array.from({length:Math.min(4,chosen.length)},()=>lookup()));
       packet.same_letter_candidates_by_strongs=sameLetters;
+      packet.macula_syntax=await syntaxPromise;
       packet.hydration_scope={
         source:'live_supabase_research_v2',
         status:'bounded_single_verse',
@@ -110,6 +117,7 @@ export function registerVerseHydratedTool(server: McpServer, read: DatabaseReade
         orthographic_status:!include_spelling_candidates?'not_requested':terms.length>maxUnique?'partial_capped_at_24':'requested',
         notes_classification:'untrusted_user_commentary_not_primary_text',
         chronology_classification:'competing_historical_models_not_known_fact',
+        syntax_classification:'macula_source_constituents_and_grammatical_roles_only; semantic_agent_patient_frames_are_not_publicly_available',
         lexical_limitations:'Co-occurrence is statistical; spelling resemblance is heuristic; root family does not prove synonymy.',
         corpus_warning:'Verify canonical source mappings independently before treating historical Cloudflare B7 assets as aligned.',
       };

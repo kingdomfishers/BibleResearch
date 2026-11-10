@@ -20,6 +20,7 @@ export const WORKFLOW_ROUTES = {
   word_formation: { prompt: 'trace_word_formation', starting_tools: ['inspect_word_formation', 'suggest_word_connections'], purpose: 'Lexical compounds, theophoric names, roots, relatives, and orthographic candidates' },
   chronology: { prompt: 'study_chronology', starting_tools: ['get_verse_chronology_v1'], purpose: 'Multi-model dating and historical evidence' },
   geography: { prompt: 'study_geography', starting_tools: ['get_verse_geography'], purpose: 'Context-aware coordinates and disputed sites' },
+  syntax: { prompt: 'study_macula_syntax', starting_tools: ['research_macula_syntax'], purpose: 'MACULA clause and phrase hierarchy, grammatical roles and cross-verse constituent relationships; withheld semantic frames remain unavailable' },
   notes: { prompt: 'study_bible', starting_tools: ['get_notes', 'search_note_targets', 'list_note_connection_types'], purpose: 'User commentary, cross-anchor connections, and interpretive notes' },
 } as const;
 
@@ -28,6 +29,7 @@ export const RESEARCH_TOOL_NAMES = [
   'get_research_prompt',
   'get_verse_research',
   'get_verse_hydrated',
+  'research_macula_syntax',
   'prompt_verse_words',
   'resolve_word_id',
   'get_word_details',
