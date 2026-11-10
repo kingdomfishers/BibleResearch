@@ -8,6 +8,7 @@
 import { McpServer } from '@modelcontextprotocol/server';
 import * as z from 'zod';
 import { NOTE_SECURITY_NOTICE } from './notes-tools.ts';
+import type { DatabaseReader } from './catalog.ts';
 
 // === @section:types ===
 export interface AgentIdentity {
@@ -60,23 +61,22 @@ function constantTimeEqual(a: string, b: string): boolean {
   return diff === 0;
 }
 
-export function checkAgentAuth(headers?: Headers | null, expectedKey?: string): boolean {
-  if (!expectedKey) return true;
+export function checkAgentAuth(headers?: Headers | null, configuredKey?: string): boolean {
+  if (!configuredKey) return true;
   if (!headers) return false;
-  const raw = headers.get('authorization') ?? headers.get('Authorization');
-  if (!raw) return false;
-  const match = raw.match(/^Bearer\s+(.+)$/i);
+  const auth = headers.get('Authorization') ?? headers.get('authorization') ?? '';
+  const match = auth.match(/^Bearer\s+(.+)$/i);
   if (!match) return false;
-  return constantTimeEqual(match[1].trim(), expectedKey.trim());
+  return constantTimeEqual(match[1].trim(), configuredKey);
 }
 
 export function deriveAgentIdentity(
-  clientVersion?: { name?: string; version?: string } | null,
-  userAgent?: string | null,
-  explicitModel?: string | null,
+  clientInfo?: { name?: string; version?: string },
+  userAgentHeader?: string | null,
+  explicitModel?: string,
 ): AgentIdentity {
-  const clientName = (clientVersion?.name || (userAgent ? userAgent.split('/')[0] : 'mcp-client')).trim().slice(0, 80);
-  const clientVer = (clientVersion?.version || '1.0').trim().slice(0, 80);
+  const clientName = clientInfo?.name || (userAgentHeader ? userAgentHeader.split('/')[0] : 'mcp-client');
+  const clientVer = clientInfo?.version || '1.0';
   const client = `${clientName}/${clientVer}`.slice(0, 80);
   const model = (explicitModel?.trim() || clientName || 'mcp-agent').slice(0, 80);
   let provider = 'mcp';
@@ -128,13 +128,9 @@ export function createNotesWriter(config: NotesWriterConfig, fetcher: typeof fet
 
 // === @section:logic:tool-schemas ===
 const noteKinds = [
-  'observation',
-  'historical_context',
-  'literary_structure',
-  'word_play',
-  'cross_reference',
-  'translation_note',
-  'theological',
+  // Seven actual public.note_kinds entries. DLM-specific card type is in source_context.dlm_v1.
+  'observation','linguistic','interpretation','question',
+  'cross_reference','research_lead','citation',
 ] as const;
 
 export const noteAnchorInputSchema = z.strictObject({
@@ -266,13 +262,88 @@ function registerDeleteNoteTool(server: McpServer, writer: NotesWriter, getHeade
   });
 }
 
+
+// === @section:logic:tool-add-research-note ===
+// Convenience wrapper: resolve book/chapter/verse and word positions from the authoritative
+// live verse packet. Never trust a user-supplied word ID without comparing its position.
+function registerAddResearchNoteTool(
+  server: McpServer, writer: NotesWriter, read: DatabaseReader, getHeaders?:()=>Headers|undefined,
+): void {
+  const reference = z.strictObject({
+    book:z.number().int().min(1).max(66),
+    chapter:z.number().int().min(1).max(150),
+    verse:z.number().int().min(0).max(176),
+    word_position:z.number().int().min(1).optional().describe('When set, anchor to this exact occurrence within the verse. Otherwise anchor to the verse.'),
+    word_id:z.number().int().positive().optional().describe('Optional assertion of STEP word identity, validated against the verse and position.'),
+    role:z.enum(['subject','object','mention','evidence']).default('subject').optional(),
+  });
+  server.registerTool('add_research_note',{
+    title:'Save a research note anchored to biblical verses and exact words',
+    description:'Create an AI-authored research note and link it to canonical book/chapter/verse plus optional exact word position and STEP word ID. Automatically resolves and validates verse IDs and word IDs; refuses mismatches. Notes are explicitly user/agent commentary, not biblical textual evidence. Only save when the user explicitly requests it.',
+    inputSchema:z.strictObject({
+      title:z.string().trim().max(200).optional(),
+      body_md:z.string().trim().min(1).max(20000),
+      note_kind:z.enum(noteKinds).default('observation'),
+      language:z.string().trim().max(16).default('en'),
+      confidence:z.number().min(0).max(1).optional(),
+      references:z.array(reference).min(1).max(8).describe('Up to 8 verse references, with optional word positions.'),
+      source_context:z.record(z.string(),z.unknown()).optional(),
+      model:z.string().trim().max(80).optional(),
+    }),
+    outputSchema:z.record(z.string(),z.unknown()),
+    annotations:writeAnnotations,
+  },async ({title,body_md,note_kind,language,confidence,references,source_context,model})=>{
+    const headers=getHeaders?.();
+    if(!writer.checkAuth(headers))return {isError:true,content:textContent('Writing notes requires the configured agent key.')};
+    try{
+      if(references.some(r=>r.word_id!==undefined && r.word_position===undefined))
+        return {isError:true,content:textContent('For a word occurrence, include its 1-based word_position with word_id.')};
+      const unique=[...new Map(references.map(r=>[r.book+':'+r.chapter+':'+r.verse,{book:r.book,chapter:r.chapter,verse:r.verse}])).values()];
+      const row=await read({name:'get_verse_research_v2',args:{p_request:{passages:unique,profile:'analysis',occurrences:{mode:'sample',limit:1}}},limit:1,offset:0});
+      const packet=row.rows[0];
+      if(!packet||packet.status!=='ok'||!Array.isArray(packet.verses))throw Error('Verse identification unavailable');
+      const verseMap=new Map((packet.verses as Record<string,unknown>[]).map(v=>{
+        const p=(v.passage||{}) as Record<string,unknown>;
+        return [p.book+':'+p.chapter+':'+p.verse,v];
+      }));
+      const anchors:Record<string,unknown>[]=[];
+      for(let i=0;i<references.length;i++){
+        const r=references[i],key=r.book+':'+r.chapter+':'+r.verse;
+        const v=verseMap.get(key);
+        if(!v||!Number.isInteger(Number(v.verse_id))||Number(v.verse_id)<=0)throw Error('Verse not found: '+key);
+        const info:Record<string,unknown>={client_key:'reference_'+(i+1),label:key,role:r.role||'subject',
+          verse_id:Number(v.verse_id)};
+        if(r.word_position!==undefined){
+          const words=(Array.isArray(v.words)?v.words:[]) as Record<string,unknown>[];
+          const w=words.find(x=>Number(x.word_position)===r.word_position);
+          if(!w||!Number.isInteger(Number(w.word_id))||Number(w.word_id)<=0)throw Error('Unresolved word occurrence: '+key+' position '+r.word_position);
+          if(r.word_id!==undefined && r.word_id!==Number(w.word_id))throw Error('Word ID disagrees with canonical STEP occurrence: '+key+' position '+r.word_position);
+          info.kind='word_occurrence';
+          info.word_id=Number(w.word_id);
+          info.word_position=r.word_position;
+          info.label=key+' word '+r.word_position+' '+String(w.original_word||'');
+        }else info.kind='verse';
+        anchors.push(info);
+      }
+      const agent=deriveAgentIdentity(server.server.getClientVersion?.(),headers?.get('user-agent'),model);
+      const note:Record<string,unknown>={title,body_md,note_kind,language,confidence,anchors,
+        connections:[],blocks:[],source_context:{...source_context,creation_method:'mcp_add_research_note',reference_count:references.length}};
+      return handleWriteResult(await writer.saveNote(agent,note),'add research note');
+    }catch(e){
+      return {isError:true,content:textContent('Cannot save note: '+(e instanceof Error?e.message:'validation or database failure'))};
+    }
+  });
+}
+
 // === @section:logic:register ===
 export function registerNoteWriteTools(
   server: McpServer,
   writer: NotesWriter,
   getHeaders?: () => Headers | undefined,
+  read?: DatabaseReader,
 ): void {
   registerCreateNoteTool(server, writer, getHeaders);
   registerUpdateNoteTool(server, writer, getHeaders);
   registerDeleteNoteTool(server, writer, getHeaders);
+  if(read) registerAddResearchNoteTool(server, writer, read, getHeaders);
 }

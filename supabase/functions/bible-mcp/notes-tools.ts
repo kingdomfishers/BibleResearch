@@ -337,4 +337,3 @@ export function registerNoteReadTools(server: McpServer, read: DatabaseReader): 
   registerGetNotesTool(server, read);
   registerSearchAndConnTools(server, read);
 }
-

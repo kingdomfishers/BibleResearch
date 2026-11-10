@@ -10,7 +10,8 @@ import { createResearchServer, type DatabasePage, type DatabaseQuery, type Datab
 import { PROMPTS } from './catalog.ts';
 import { WORKFLOW_VERSION } from './research-workflow.ts';
 import { RESEARCH_TOOL_NAMES } from './workflow-contract.ts';
-import { createNotesWriter, registerNoteWriteTools } from './notes-write.ts';
+import { createNotesWriter, registerNoteWriteTools, type NotesWriter } from './notes-write.ts';
+import { registerDlmWriteTools } from './dlm-notes.ts';
 
 // === @section:types ===
 export interface DatabaseConfig {
@@ -47,6 +48,11 @@ const allowedRpcs = new Set([
   'get_word_formation_v1',
   'suggest_orthographic_candidates_v1',
   'get_verse_research_v2',
+  'research_word_lens_v1',
+  'research_word_bridge_v1',
+  'research_passage_lens_v1',
+  'get_dlm_notes_for_verse_v1',
+  'verify_dlm_lemma_occurrence_v1',
   'get_notes_for_passage_v1',
   'get_notes_for_word_v1',
   'get_note_v1',
@@ -54,6 +60,11 @@ const allowedRpcs = new Set([
   'list_note_connection_types_v1',
 ]);
 const singlePacketRpcs = new Set([
+  'get_dlm_notes_for_verse_v1',
+  'verify_dlm_lemma_occurrence_v1',
+  'research_word_lens_v1',
+  'research_word_bridge_v1',
+  'research_passage_lens_v1',
   'resolve_word_id',
   'get_verse_chronology_v1',
   'get_verse_geography',
@@ -137,7 +148,8 @@ export function createDatabaseReader(config: DatabaseConfig, fetcher: typeof fet
       signal: AbortSignal.timeout(12000),
     };
     let response = await fetcher(url, request);
-    // Every allowlisted operation is a read. Retry one transient upstream failure within budget.
+    // Every allowlisted operation is a read. Retry one transient upstream failure
+    // within the original 12-second budget, preserving the same public identity.
     if ([500, 502, 503, 504].includes(response.status)) {
       await response.body?.cancel();
       response = await fetcher(url, request);
@@ -147,7 +159,9 @@ export function createDatabaseReader(config: DatabaseConfig, fetcher: typeof fet
       throw new Error('Bible database unavailable.');
     }
     const data = await response.json();
-    const rows: Record<string, unknown>[] = name === 'resolve_word_id'
+    const rows: Record<string, unknown>[] = name === 'verify_dlm_lemma_occurrence_v1'
+      ? [{attested:data===true}]
+      : name === 'resolve_word_id'
       ? (typeof data === 'number' && data > 0 ? [{ word_id: data }] : [])
       : singlePacketRpcs.has(name)
         ? (data && typeof data === 'object' && !Array.isArray(data) ? [data as Record<string, unknown>] : [])
@@ -163,12 +177,21 @@ export function createDatabaseReader(config: DatabaseConfig, fetcher: typeof fet
 // === @section:logic:transport ===
 export function createApp(config: DatabaseConfig, fetcher: typeof fetch = fetch) {
   const read = createDatabaseReader(config, fetcher);
-  const writer = config.serviceRoleKey
-    ? createNotesWriter({ url: config.url, serviceRoleKey: config.serviceRoleKey, agentKey: config.agentKey }, fetcher)
-    : undefined;
-  const mcp = createMcpHandler((context) => {
+  let requestHeaders: Headers | undefined;
+  let writer: NotesWriter | null = null;
+  if (config.serviceRoleKey) {
+    writer = createNotesWriter({
+      url: config.url,
+      serviceRoleKey: config.serviceRoleKey,
+      agentKey: config.agentKey,
+    }, fetcher);
+  }
+  const mcp = createMcpHandler(() => {
     const server = createResearchServer(read);
-    if (writer) registerNoteWriteTools(server, writer, () => context?.requestInfo?.headers);
+    if (writer) {
+      registerNoteWriteTools(server, writer, () => requestHeaders, read);
+      registerDlmWriteTools(server, read, writer, () => requestHeaders);
+    }
     return server;
   }, { maxRequestBodySize: 32768 });
   const paths = new Set(['/', '/mcp', '/bible-mcp', '/bible-mcp/mcp',
@@ -184,13 +207,22 @@ export function createApp(config: DatabaseConfig, fetcher: typeof fetch = fetch)
     const path = new URL(request.url).pathname.replace(/\/+$/, '') || '/';
     if (request.method === 'OPTIONS') return withCors(new Response(null, { status: 204 }));
     if (request.method === 'GET' && path.endsWith('/health')) {
-      const toolCount = RESEARCH_TOOL_NAMES.length + (writer ? 3 : 0);
-      return withCors(Response.json({ name: 'BibleResearch', version: WORKFLOW_VERSION, status: 'ok',
-        transport: 'streamable-http', authentication: 'none', read_only: !writer,
-        writes: writer ? 'enabled' : 'disabled',
-        tools: toolCount, prompts: Object.keys(PROMPTS).length }));
+      const writesEnabled = Boolean(writer);
+      const totalTools = RESEARCH_TOOL_NAMES.length + (writesEnabled ? 5 : 0);
+      return withCors(Response.json({
+        name: 'BibleResearch',
+        version: WORKFLOW_VERSION,
+        status: 'ok',
+        transport: 'streamable-http',
+        authentication: config.agentKey ? 'bearer' : 'none',
+        read_only: !writesEnabled,
+        writes: writesEnabled ? 'enabled' : 'disabled',
+        tools: totalTools,
+        prompts: Object.keys(PROMPTS).length,
+      }));
     }
     if (!paths.has(path)) return withCors(Response.json({ error: 'Not found' }, { status: 404 }));
+    requestHeaders = request.headers;
     try { return withCors(await mcp.fetch(request)); }
     catch {
       console.error('BibleResearch MCP transport failed');

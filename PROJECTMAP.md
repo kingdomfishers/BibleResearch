@@ -5,6 +5,7 @@
 ---
 
 ## 1. Active Shared (`src/api/` & `src/ui/state.ts`)
+Phase 0 source reconciliation: `scripts/reconcile-phase0-sources.mjs` compares captured deployed SQL/MCP sources and preserves function ACLs; `scripts/verify-phase0-source.mjs` checks exact deployed files and the five additional RPC routing contracts using the existing Deno toolchain. Provider captures and pre-change fixtures are stored in `.artifacts/phase0/`. Deployed MCP v29 includes `verse-hydrated.ts`, `syntax-research.ts`, `research-lenses.ts`, and `dlm-notes.ts`; do not regenerate these from an older workflow package.
 Core modules used across 2+ components. Import these directly—never duplicate their logic.
 
 | Filepath | Responsibility | Exported Symbols | Tables / RPCs Touched |
