@@ -108,6 +108,22 @@ export function registerVerseHydratedTool(server: McpServer, read: DatabaseReade
       packet.same_letter_candidates_by_strongs=sameLetters;
       packet.macula_syntax=await syntaxPromise;
       packet.dlm_research=include_dlm?await fetchDlmResearch(read,book,chapter,verse,8):{status:'not_requested',items:[]};
+      // DLM notes have their own evidence-classified compact cards; avoid repeating
+      // the same AI/human note excerpt in the generic annotation summaries.
+      if(include_dlm&&include_notes){
+        const shown=(packet.dlm_research&&typeof packet.dlm_research==='object'
+          ?(packet.dlm_research as Record<string,unknown>).items:[]) as Record<string,unknown>[];
+        const ids=new Set((Array.isArray(shown)?shown:[]).map(n=>String(n.note_id||'')));
+        const map=(packet.notes&&typeof packet.notes==='object'?packet.notes:{}) as Record<string,unknown>;
+        const key=book+':'+chapter+':'+verse;
+        const summary=(map[key]&&typeof map[key]==='object'?map[key]:{}) as Record<string,unknown>;
+        if(Array.isArray(summary.items)&&ids.size){
+          const original=summary.items as Record<string,unknown>[];
+          const filtered=original.filter(n=>!ids.has(String(n.id||'')));
+          summary.items=filtered;summary.shown=filtered.length;
+          summary.dlm_notes_hoisted_into_evidence_cards=original.length-filtered.length;
+        }
+      }
       packet.hydration_scope={
         source:'live_supabase_research_v2',
         status:'bounded_single_verse',
