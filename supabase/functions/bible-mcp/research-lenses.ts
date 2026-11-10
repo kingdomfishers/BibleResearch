@@ -26,7 +26,7 @@ function compactWord(p:Record<string,any>, includePartners:boolean):Record<strin
     lemma:c.lemma_key,strongs:c.strongs,language:c.language,original:c.original,
     transliteration:c.transliteration,pos:c.pos,match_rank:c.resolution_rank,
     senses:asList(c.senses).map(s=>({label:s.sense,source:s.source,id:s.sense_id})),
-    documented_root_links:asList(c.root_links).map(r=>({root:r.root_id,relation:r.relation,source:r.source})),
+    source_attested_root_links:asList(c.root_links).map(r=>({root:r.root_id,relation:r.relation,source:r.source})),
     attested_frequency:c.occurrence_counts,
     sampled_passages:asList(c.book_diverse_samples).map(v=>({book:v.book,chapter:v.chapter,verse:v.verse,
       position:v.word_position,original:v.word_original,step_gloss:v.word_gloss,english_web:v.english_web})),
@@ -47,6 +47,10 @@ function compactBridge(p:Record<string,any>):Record<string,unknown> {
  return {
   schema_version:2,status:p.status,query:{left:p.left_query,right:p.right_query},
   resolved_lexemes:{left:p.left_lexical_strongs,right:p.right_lexical_strongs},
+  lexical_resolution_warning: (Array.isArray(p.left_lexical_strongs) && p.left_lexical_strongs.length>3)
+    || (Array.isArray(p.right_lexical_strongs) && p.right_lexical_strongs.length>3)
+    ? 'Ambiguous English gloss resolved to several original lemmas: refine to explicit Strong codes before interpreting the witness set.'
+    : null,
   evidence_type:'same_or_nearby_verse_attestation_not_semantic_relation',
   witnesses:asList(p.matches).map(x=>({
     book:x.book,chapter:x.chapter,verse_left:x.left_verse,verse_right:x.right_verse,
@@ -65,7 +69,7 @@ function compactPassage(p:Record<string,any>, mode:string):Record<string,unknown
   schema_version:2,status:p.status,canonical_reference:p.reference,language:p.language,
   edition:p.macula_edition,english_web:p.english_web,
   original_language_tokens:toks.map(t=>({
-    position:t.word,part:t.part??null,text:t.text,lemma:t.lemma,strongs_source:t.strongs_raw,
+    position:t.word,part:t.part??null,source_morph_no:mode==='full'?t.source_morph_no:undefined,text:t.text,lemma:t.lemma,strongs_source:t.strongs_raw,
     morphology:t.morphology,grammar_role:t.grammatical_role??t.class??null,
     source_sense_tag:t.sense_annotation??null,frame_source:t.semantic_frame_source??null,
     subject_ref:t.subject_ref??null,participant_ref:t.participant_ref??t.referent??null,
