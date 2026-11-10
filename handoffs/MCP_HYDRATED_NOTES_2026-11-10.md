@@ -1,6 +1,6 @@
 # BibleResearch MCP v1.6.0 handoff (2026-11-10)
 
-LIVE SUPABASE EDGE FUNCTION DEPLOYED: `bible-mcp` version 20, Supabase project `ejoperxiwxlcbsqrkrvb`, JWT verification OFF (pre-existing no-account mode).
+LIVE SUPABASE EDGE FUNCTION DEPLOYED: `bible-mcp` version 21, Supabase project `ejoperxiwxlcbsqrkrvb`, JWT verification OFF (pre-existing no-account mode).
 
 ## New capabilities
 - MCP tool `get_verse_hydrated(book,chapter,verse,include_notes?,include_spelling_candidates?)`: wraps existing server-side `get_verse_research_v2` for a single verse (7 sampled occurrence references per headword, 7 co-occurrence partners, documented roots and literary evidence) and enriches with up to 7 explicitly unverified same-letter candidates for each distinct Strong's entry (maximum 24), plus 15 bounded verse/word research notes, chronology, geography, and original token sequence. The created MCP prompt `get_verse_hydrated(subject)` guides correct use.
@@ -14,9 +14,11 @@ LIVE SUPABASE EDGE FUNCTION DEPLOYED: `bible-mcp` version 20, Supabase project `
 - `tools/call get_verse_hydrated` for Gen 1:1: HTTP 200, status ok, one verse, 6 distinct orthographic query groups, context included.
 - `tools/call add_research_note` with incorrect Genesis 1:1 word identity: clean validation rejection (isError true), no note saved.
 - A successful note INSERT via the new alias was NOT tested (avoid creating unsolicited data). Existing `create_note` backend / `agent_save_note_v1` is reused.
+- The underlying `agent_save_note_v1` RPC successfully saved a canonical Genesis 1:1 **word-occurrence anchor** in a transaction that was immediately **rolled back**; verification showed no test note persisted.
+- Hydration v21 preserved the correct `occurrences.complete` flag when seven references genuinely cover all occurrences. Full live Genesis 1:1 hydration returned `ok` after deployment (the first long request transiently returned an error, the repeated request passed).
 
 ## Local/GitHub reconciliation
-LOCAL `C:\Projects\BibleResearch` remains authoritative, and main is intentionally UNCHANGED. This branch captures the exact deployed live `supabase/functions/bible-mcp/` Edge Function source from v20. Integrate these changes into LOCAL source after reviewing `git status` and current local test results. DO NOT overwrite newer local changes or merge this branch blindly. Restart/refresh ChatGPT/Gemini MCP connection to see newly declared tool schemas; a running client can cache its previous list.
+LOCAL `C:\Projects\BibleResearch` remains authoritative, and main is intentionally UNCHANGED. This branch captures the exact deployed live `supabase/functions/bible-mcp/` Edge Function source from v21. Integrate these changes into LOCAL source after reviewing `git status` and current local test results. DO NOT overwrite newer local changes or merge this branch blindly. Restart/refresh ChatGPT/Gemini MCP connection to see newly declared tool schemas; a running client can cache its previous list.
 
 ## Risks / limitations
 - The user explicitly requires accountless note editing until account creation is implemented. Both anonymous and authenticated note write RPCs currently remain enabled; the MCP writer uses an existing server-side service key. This permits public abuse until authorization is installed. Do not revoke notes permissions unilaterally.
