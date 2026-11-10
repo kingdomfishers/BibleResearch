@@ -45,7 +45,10 @@ export function registerVerseHydratedTool(server: McpServer, read: DatabaseReade
       for (const [key,value] of Object.entries(lexical)) {
         const entry = {...asObj(value)};
         const occ=asObj(entry.occurrences);
-        if (Object.keys(occ).length) entry.occurrences = {...occ,references:asArray(occ.references).slice(0,7),complete:false};
+        if (Object.keys(occ).length) {
+          const refs=asArray(occ.references);
+          entry.occurrences={...occ,references:refs.slice(0,7),complete:occ.complete===true && refs.length<=7};
+        }
         entry.top_connected_words=asArray(entry.top_connected_words).slice(0,7);
         entries[key]=entry;
       }
