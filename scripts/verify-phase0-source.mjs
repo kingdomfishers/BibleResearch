@@ -2,6 +2,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
+import { execFileSync } from 'node:child_process';
 import { createApp, createDatabaseReader } from '../supabase/functions/bible-mcp/index.ts';
 import { RESEARCH_TOOL_NAMES } from '../supabase/functions/bible-mcp/workflow-contract.ts';
 
@@ -9,8 +10,12 @@ const edge = JSON.parse(fs.readFileSync('.artifacts/phase0/live-bible-mcp.json',
 const functions = JSON.parse(fs.readFileSync('.artifacts/phase0/live-functions.json', 'utf8'));
 const digest = s => crypto.createHash('sha256').update(s.replace(/\r\n/g, '\n')).digest('hex');
 let assertions = 0;
+const sourceRefIndex = process.argv.indexOf('--source-ref');
+const sourceRef = sourceRefIndex < 0 ? null : process.argv[sourceRefIndex + 1];
 for (const file of edge.files) {
-  assert.equal(digest(fs.readFileSync(`supabase/functions/bible-mcp/${file.name}`, 'utf8')), digest(file.content), `Deployed file changed: ${file.name}`);
+  const name = `supabase/functions/bible-mcp/${file.name}`;
+  const captured = sourceRef ? execFileSync('git', ['show', `${sourceRef}:${name}`], { encoding: 'utf8' }) : fs.readFileSync(name, 'utf8');
+  assert.equal(digest(captured), digest(file.content), `Deployed file changed: ${file.name}`);
   assertions++;
 }
 const migration = fs.readFileSync('supabase/migrations/20261110202614_phase0_live_source_reconciliation.sql', 'utf8');

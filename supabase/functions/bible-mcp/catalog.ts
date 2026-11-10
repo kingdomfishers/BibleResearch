@@ -49,6 +49,7 @@ const pagination = {
 };
 const pageSchema = z.object({
   source: z.literal('live'),
+  notes_hint: z.string().optional(),
   rows: z.array(z.record(z.string(), z.unknown())),
   page: z.object({
     limit: z.number(), offset: z.number(), has_more: z.boolean(), next_offset: z.number().nullable(),
@@ -183,7 +184,8 @@ function databaseTool(server: McpServer, read: DatabaseReader, name: DatabaseQue
     const { limit = 25, offset = 0, ...args } = raw;
     try {
       const result = await read({ name, args, limit: Number(limit), offset: Number(offset) });
-      return { content: textContent(JSON.stringify(result)), structuredContent: { ...result } };
+      const packet = { ...result, ...(name === 'prompt_word_occurrences' ? { notes_hint: 'call get_notes with word_id' } : {}) };
+      return { content: textContent(JSON.stringify(packet)), structuredContent: packet };
     } catch {
       return { isError: true, content: textContent('The Bible database is temporarily unavailable. Retry this research request.') };
     }
@@ -224,7 +226,7 @@ function registerHydratedTool(server: McpServer, read: DatabaseReader): void {
       semantic_evidence: z.record(z.string(), z.array(z.record(z.string(), z.unknown()))).optional().describe('Hoisted top-level reviewed semantic evidence paths keyed by verse reference string.'),
       lexical_entries: z.record(z.string(), z.record(z.string(), z.unknown())).optional().describe('Shared base-Strongs entries: exact totals, occurrence references/complete, ranked connections, and polysemous candidate lexemes. Words point here with lexical_entry_key.'),
       lexical_formations: z.record(z.string(), z.record(z.string(), z.unknown())).optional().describe('Hoisted top-level lexical formations, roots, relatives, and literary connections dictionary keyed by disambiguated lemma key.'),
-      notes: z.record(z.string(), z.record(z.string(), z.unknown())).optional().describe('Hoisted top-level user/AI notes dictionary keyed by book:chapter:verse. Notes are commentary (epistemic_layer=user_note) and not biblical text evidence.'),
+      notes: z.union([z.object({ status: z.literal('unavailable') }), z.record(z.string(), z.record(z.string(), z.unknown()))]).optional().describe('Hoisted user/AI commentary keyed by book:chapter:verse, or an explicit unavailable status when optional notes cannot be retrieved.'),
       notes_status: z.string().optional().describe('Status of notes attachment (e.g. unavailable if notes RPC fails).'),
       coverage: z.object({ occurrences_complete: z.boolean() }).passthrough().optional().describe('Actual completeness, source scope, component statuses and resource limits; do not treat analysis samples as exhaustive.'),
     }).passthrough(),
@@ -430,6 +432,7 @@ function registerEvidenceTools(server: McpServer, read: DatabaseReader): void {
     try {
       const res = await read({ name: 'lookup_lexical_semantics_v1', args, limit: 1, offset: 0 });
       const p = res.rows[0]; if (!p) throw new Error();
+      p.notes_hint = 'call get_notes with word_id';
       return { content: textContent(JSON.stringify(p)), structuredContent: p };
     } catch { return { isError: true, content: textContent('The lexical semantics service is temporarily unavailable.') }; }
   });

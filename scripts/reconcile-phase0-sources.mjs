@@ -37,6 +37,8 @@ const migrationFlag = process.argv.indexOf('--migration');
 if (migrationFlag >= 0) {
   const target = process.argv[migrationFlag + 1];
   if (!target?.startsWith('supabase/migrations/')) throw Error('Expected generated migration path');
+  if (fs.existsSync(target) && fs.readFileSync(target, 'utf8').trim()) throw Error('Refusing to overwrite an existing migration');
+  if (!missing.length) throw Error('No missing definitions to reconcile');
   const statements = missing.map(f => {
     const signature = `${f.schema}.${f.name}(${f.identity_arguments})`;
     const grants = (f.acl ?? '{=X/postgres}').slice(1, -1).split(',').filter(Boolean).map(acl => {
