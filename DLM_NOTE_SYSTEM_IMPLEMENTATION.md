@@ -1,6 +1,6 @@
 # BibleResearch DLM note system v1.9 — shipped implementation
 
-**Deployed:** Supabase Edge Function bible-mcp **version 28** on 2026-11-10, workflow **1.9.0**.
+**Deployed:** Supabase Edge Function bible-mcp **version 29** on 2026-11-10, workflow **1.9.0**.
 **Source:** GitHub branch feature/bibleresearch-ai-lenses-20261110 (not merged to main). This branch was reconciled from the running Edge Function so that existing notes and MACULA support were not overwritten by older GitHub main files.
 
 ## 1. Evidence-first DLM card model
@@ -34,7 +34,7 @@ Existing create_note, add_research_note, update_my_note and delete_my_note tools
 
 - **get_dlm_research**: read-only lookup by book, chapter, verse, with max_notes default 8 (max 20). Returns compact claim, epistemic class, note kind, review status, DLM layers, science citations, limitations, note_id and relevant anchor type. Searches direct verse/word anchors and source-verified unambiguous lemma or word-form anchors. Only published, public, RLS-visible DLM notes are returned. Explicit total/truncated coverage.
 - **save_dlm_research_note**: write exactly one approved card, exact STEP verse/word positions validated against get_verse_research_v2, optional lemma_id validated against word_form_lemmas, 1–8 Scripture references, 0–12 typed connections among the references, 0–6 independent scientific sources, 0–8 counterexamples. Creates a backend idempotency key; checks for identical primary-verse claims where possible. Uses the existing agent_save_note_v1 security-definer writer and its author ownership, duplicate and rate-limit checks. New notes stay unreviewed.
-- **get_verse_hydrated**: now includes dlm_research by default (include_dlm=true), alongside existing primary text, lexical structures, MACULA grammar and ordinary notes. The DLM overlay does not pollute the primary text or source lexical definitions.
+- **get_verse_hydrated**: now includes dlm_research by default (include_dlm=true), alongside existing primary text, lexical structures, MACULA grammar and ordinary notes. The DLM overlay does not pollute the primary text or source lexical definitions. Hydration de-duplicates DLM note summaries that would otherwise appear in both generic notes and the DLM overlay.
 - **study_dlm_research**: dedicated MCP prompt for an evidence-first original-language and science research workflow; the general workflow was updated to 1.9.0.
 
 ## 4. Evidence partition rules
@@ -89,7 +89,7 @@ After saving, retrieve the note ID via get_dlm_research or get_notes, and rehydr
 - Optional lemma verification: G4703 lemma_id 7061 correctly verified against STEP word_id 22429.
 - DLM verse overlay: returned status no_dlm_notes on an empty DLM verse.
 - Transactional note write-readback: a note anchored to Luke 8:11 positions 7 and 10, with typed explains connection, passed through public.agent_save_note_v1, was retrieved by get_dlm_notes_for_verse_v1 and was **rolled back**. Zero test notes persist.
-- Deployed source and research prompt: BibleResearch MCP reports workflow 1.9.0; Edge Function version 28 is ACTIVE.
+- Deployed source and research prompt: BibleResearch MCP reports workflow 1.9.0; Edge Function version 29 is ACTIVE.
 
 These test passes verify the database writer and its query contract. An **end-to-end ChatGPT client call to the new save tool has not yet been possible**, because the currently connected ChatGPT BibleResearch plugin advertises a stale seven-tool catalogue. Refresh/reconnect it and perform one authorized save/readback to confirm the client pathway.
 
