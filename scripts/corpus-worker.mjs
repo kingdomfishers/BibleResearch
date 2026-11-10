@@ -16,6 +16,7 @@
  * - `/v1/rpc/<operation>` deterministic query & compatibility gateway for static evidence RPCs
  */
 
+import { withCorpusSecurity } from './corpus-security.mjs';
 import {
   handleLookupCrossReferencesV1,
   handleLookupLexicalRelationshipsV1,
@@ -2262,7 +2263,7 @@ async function handleGetHebrewImportStatusV1(env) {
 // Worker Fetch Handler
 // ============================================================================
 
-export default {
+const corpusWorker = {
   async fetch(request, env) {
     if (request.method === 'OPTIONS') {
       return new Response(null, { status: 204, headers: CORS_HEADERS });
@@ -2466,3 +2467,5 @@ export default {
     }
   },
 };
+
+export default withCorpusSecurity(corpusWorker);
