@@ -1,6 +1,6 @@
 # BibleResearch MCP AI Evidence Lenses — Implementation & Handoff
 
-**Date:** 2026-11-10. **Live:** Supabase project `ejoperxiwxlcbsqrkrvb`, Edge Function `bible-mcp` version **25**, workflow contract **1.8.0**. **Git:** feature branch `feature/bibleresearch-ai-lenses-20261110` (NOT merged to main).
+**Date:** 2026-11-10. **Live:** Supabase project `ejoperxiwxlcbsqrkrvb`, Edge Function `bible-mcp` version **26**, workflow contract **1.8.0**. **Git:** feature branch `feature/bibleresearch-ai-lenses-20261110` (NOT merged to main).
 
 ## What shipped (live)
 
