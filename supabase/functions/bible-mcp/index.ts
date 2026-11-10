@@ -22,6 +22,9 @@ const corpusRpcs = new Set([
   'audit_evidence_coverage_v1',
 ]);
 const allowedRpcs = new Set([
+  'research_word_lens_v1',
+  'research_word_bridge_v1',
+  'research_passage_lens_v1',
   'prompt_verse_words',
   'prompt_word_occurrences',
   'prompt_word_cooccurrences',
@@ -42,6 +45,9 @@ const allowedRpcs = new Set([
   'get_verse_research_v2',
 ]);
 const singlePacketRpcs = new Set([
+  'research_word_lens_v1',
+  'research_word_bridge_v1',
+  'research_passage_lens_v1',
   'resolve_word_id',
   'get_verse_chronology_v1',
   'get_verse_geography',
