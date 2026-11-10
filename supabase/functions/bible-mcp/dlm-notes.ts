@@ -103,6 +103,12 @@ export function registerDlmWriteTools(server:McpServer,read:DatabaseReader,write
    return {isError:true,content:text({status:'not_authorized',message:'MCP note writer not authorized.'})};
   const k=a.card_kind,c=a.evidence_class,refs=a.references;
   const valid=(k!=='lexical_definition'||c==='TEXT_LINGUISTIC') &&
+    (k!=='biblical_definition'||['TEXT_EXPLICIT','TEXT_INTERTEXTUAL','TEXT_PATTERN'].includes(c)) &&
+    (k!=='text_observation'||['TEXT_EXPLICIT','TEXT_LINGUISTIC'].includes(c)) &&
+    (k!=='literary_connection'||['TEXT_INTERTEXTUAL','TEXT_PATTERN','DLM_HYPOTHESIS','DISPUTED'].includes(c)) &&
+    (k!=='narrative_event'||['TEXT_EXPLICIT','TEXT_PATTERN'].includes(c)) &&
+    (c!=='SCIENCE_EMPIRICAL'||k==='physical_mechanism') &&
+    (c!=='DLM_HYPOTHESIS'||['dlm_layer_hypothesis','literary_connection'].includes(k)) &&
     (k!=='physical_mechanism'||c==='SCIENCE_EMPIRICAL') &&
     (k!=='dlm_layer_hypothesis'||c==='DLM_HYPOTHESIS') &&
     (k!=='explicit_symbol'||c==='TEXT_EXPLICIT'||c==='TEXT_INTERTEXTUAL') &&
@@ -196,7 +202,7 @@ export function registerDlmWriteTools(server:McpServer,read:DatabaseReader,write
    if(a.confidence!==undefined)note.confidence=a.confidence;
    const saved=await writer.saveNote(agent,note);
    if(saved.ok===false)return {isError:true,content:text({status:'rejected',error:saved.error})};
-   const out={status:'ok',saved:true,result:saved,note_kind:noteKinds[k],
+   const out={status:saved.created===false?'already_exists':'ok',saved:saved.created!==false,result:saved,note_kind:noteKinds[k],
       evidence_class:c,review_status:'unreviewed',
       readback_verse:{book:primary.book,chapter:primary.chapter,verse:primary.verse},
    };
