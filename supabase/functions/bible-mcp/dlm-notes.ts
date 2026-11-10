@@ -37,7 +37,7 @@ const reference=z.strictObject({
 });
 const scientificSource=z.strictObject({
  title:z.string().trim().min(4).max(220),
- url:z.string().url().max(550).refine(s=>s.startsWith('https://'),'An HTTPS citation is required'),
+ url:z.string().url().max(500).refine(s=>s.startsWith('https://'),'An HTTPS citation is required'),
 });
 const link=z.strictObject({
  from_reference:z.number().int().min(1).max(8),
