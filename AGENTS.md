@@ -1,59 +1,31 @@
-# AGENTS.md — Operational Contract
+# BibleResearch development contract
 
-## 1. STACK & COMMANDS
-* **Stack:** Vite (Vanilla TypeScript + CSS Variables), Supabase PostgreSQL (100% Database-Native RPCs via `src/api/rpc.ts`).
-* **Dev Server:** `npm run dev`
-* **Build & Typecheck:** `npm run check:types` (`tsc --noEmit`) | `npm run build`
-* **Size & @toc Sync Check:** `npm run check:size` (Enforces max 450 lines/file, max 80 lines/section, and exact `@toc` match)
-* **Run Specific Test Script:** `npm run test:run <filepath>`
-* **Inspect File Header/TOC (Lines 1-6):** Read lines 1–6 (`head -n 6 <filepath>` or PowerShell `Get-Content <filepath> -TotalCount 6`)
-* **Locate Section Lines:** Search for `@section:` (`grep -n "@section:" <filepath>` or `Select-String -Path <filepath> -Pattern "@section:"`)
-* **MCPs:**
-  * `supabase` (`project_ref=ejoperxiwxlcbsqrkrvb`): Inspect DB schemas, execute/verify SQL migrations, test RPC functions, and check RLS policies.
-  * `context7`: Live library and PostgREST/Supabase documentation.
-  * `playwright` & `chrome-devtools`: Automated browser verification and DOM/network inspection.
+## Scope and safety
 
----
+Work from the local checkout. Inspect Git status and branch first; preserve unrelated work. Make one cohesive change at a time. Aim for 1?5 implementation files including relevant tests. Before exceeding about eight files, check for unnecessary refactoring, formatting, generated tests, or documentation churn. Explain genuine dependencies and keep the larger scope justified.
 
-## 2. MANDATORY SKILL PIPELINE
-NEVER write or edit code in `src/` or `supabase/` without executing these skills in order:
-1. **PRE-CODE:** Read & execute `.agents/skills/pre-code/SKILL.md`.
-2. **POST-CODE:** Read & execute `.agents/skills/post-code/SKILL.md`.
+Never deploy, change production data, or execute recovery/reclamation operations without explicit authorization. Applied migrations, source datasets, recovery archives, provenance and license notices are protected. Do not treat an old filename as evidence that a file is disposable.
 
----
+## Find ? Understand ? Change
 
-## 3. PROGRESSIVE CONTEXT ROUTER (Load Only On-Demand)
-* `TASKS.md` -> Active task queue (`[ ]` Open, `[-]` In Progress, `[x]` Done). Execute ONE atomic task at a time.
-* `PROJECTMAP.md` -> Active Shared modules, Reusable Candidates, Test Scripts, and UI/RPC Index.
-* `ARCHITECTURE.md` -> System blueprint, Supabase RPC contracts, UI component layout, and AI Plugin OpenAPI rules.
-* `supabase/migrations/001_schema.sql` -> Canonical `words` and `verses` tables, GIN indexes, and RLS policies.
-* `supabase/migrations/002_rpc_prompts.sql` -> Canonical PostgreSQL RPC functions (`prompt_verse_words`, `prompt_word_occurrences`, `prompt_word_cooccurrences`, `prompt_word_relationships`).
+Read and apply [pre-code](.agents/skills/pre-code/SKILL.md) before edits in src/ or supabase/. Use [PROJECTMAP](PROJECTMAP.md) only to locate relevant files. Read headers, section anchors and immediate dependencies; search for existing functionality before adding it. Load [architecture](ARCHITECTURE.md) or specialized designs only when relevant. Consult [TASKS](TASKS.md) when working on its active objective; small requests need no new queue entries.
 
----
+Use Context7 for current library, SDK, API, CLI or cloud-service documentation: resolve the library ID, then query the specific concept. General programming, business logic, code review and refactoring do not require library documentation.
 
-## 4. ARCHITECTURE & FOLDER LAWS
-* **SQL-First Compute Law:** All array intersections (`@>`), word-order unnesting, co-occurrence hydration, and proximity scoring MUST happen inside PostgreSQL RPCs (`supabase/migrations/002_rpc_prompts.sql`). Never compute joins or full-table filters in browser JavaScript.
-* `src/api/supabase.ts` -> Single Supabase client initialization. The ONLY file allowed to import `@supabase/supabase-js`.
-* `src/api/rpc.ts` -> Single Database Gateway (`BibleRPC`). UI components MUST call `BibleRPC.<method>()` and NEVER import `supabase.ts` or `@supabase/supabase-js` directly.
-* `src/api/types.ts` -> Canonical TypeScript interfaces matching PostgreSQL tables and RPC return signatures.
-* `src/ui/state.ts` -> Lightweight URL-hash synchronized state (`#book-chapter-verse`). Zero external state libraries.
-* `src/ui/components/<Name>.ts` -> Focused, modular DOM components (`NavSelector.ts`, `VerseReader.ts`, `WordModal.ts`, max 450 lines/file, max 80 lines per `@section`). Components communicate via `appState` or explicit callback props—never by mutating another component's DOM directly.
-* `src/main.ts` -> Top-level application shell that mounts components and wires state transitions.
+## Boundaries
 
----
+Vanilla TypeScript + Vite and CSS; MapLibre for maps. UI uses BibleRPC through src/api/rpc.ts and its existing adapters. Only src/api/supabase.ts initializes/imports the Supabase client. Components communicate through state or explicit callbacks.
 
-## 5. FILE ANATOMY (6-LINE MANIFEST & ANCHORS)
-Every `.ts` file in `src/` MUST begin with this exact 6-line manifest and use matching `@section` anchors. Update `@tables`, `@candidates`, and `@toc` during every file edit:
+Cloudflare serves immutable public corpus evidence and precomputed indexes; Supabase owns dynamic notes, private preferences, research/review state and retained canonical lookups. Follow the existing operation routing in src/api/corpus-client.ts, the Worker and MCP adapter. Corpus retrieval/computation belongs in the appropriate gateway, Worker, build pipeline or SQL RPC, not full-corpus browser scans. Dynamic validation, permissions and writes remain server-enforced. Do not move all corpus computation to PostgreSQL.
 
-```typescript
-// @file: <relative-filepath>
-// @feature: <api | state | nav-selector | verse-reader | word-modal | app-shell>
-// @tables: <words | verses | none>
-// @candidates: <section-names of reusable candidates in this file | none>
-// @toc: imports | types | logic:<name> | ui:<name> | ui:main
+Preserve original-language identities, canonical/edition mappings, provenance, restricted-field controls and recovery guarantees. Keep source evidence distinct from interpretations and heuristic candidates.
 
-// === @section:imports ===
-// === @section:types ===
-// === @section:logic:<name> ===
-// === @section:ui:<name> ===
-// === @section:ui:main ===
+## Navigation and module size
+
+Keep useful existing @section anchors; use targeted rg searches. Six-line manifests, @tables, @candidates and exact @toc synchronization are optional legacy metadata. Keep metadata accurate if maintained; do not touch other files to refresh it. New modules need a clear responsibility, not a metadata template. No hard file/section line caps: prefer cohesion; split only when it improves comprehension or reuse. A second use alone does not require extraction.
+
+## Verify ? Record ? Finish
+
+Apply [post-code](.agents/skills/post-code/SKILL.md). Available commands: npm run dev, npm run check:types, npm run build, npm run check:size (advisory structure review); check:lines is an alias. On Windows use npm.cmd if PowerShell blocks npm.ps1.
+
+There is no generic test:run command. Inspect a relevant script's runtime, prerequisites and side effects before running it directly. Some verification scripts access or mutate live services. Run local targeted checks first; broader tests require interface/risk justification. Update documentation only when its content changes, PROJECTMAP only for responsibility/location/entry-point changes, and the queue only for relevant progress. Stage explicit intended paths; never use broad staging in a dirty checkout.
