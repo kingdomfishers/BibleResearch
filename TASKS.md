@@ -18,7 +18,7 @@ Implementation authority: `RELATIONSHIP_ARCHITECTURE.md` **v5**; read only relev
 
 ## Other open work — defer until the two priorities permit
 
-- [ ] **Notes:** `NOTE-33` [x] end-to-end UI/MCP tests, `NOTE-34` [x] minimal doc sync, `NOTE-35` user acceptance. Preserve accountless single-user writes until authentication exists; check privileged review permissions. Do not redo NOTE-00–32.
+- [ ] **Notes:** `NOTE-33` [x] end-to-end UI/MCP tests, `NOTE-34` [x] minimal doc sync, `NOTE-35` [-] user acceptance. Preserve accountless single-user writes until authentication exists; check privileged review permissions. Do not redo NOTE-00–32.
 - [ ] **Existing UI sign-offs:** `O5` hydrated research, `M1` mobile reader, `T9` private word-translation persistence.
 - [ ] **UX backlog:** Reassess `UX_STRATEGY.md` after relationship MVP: word inspector, licensed English previews, visual relationship groups, comparison, geography links, timeline, accessible mobile UX. Audit source rights and mapping before full English previews; diagram optional.
 - [ ] **Coverage backlog:** Reconcile obsolete `AUDIT-06`/`XREF-LEX` and `L1–L9` plans with R3–R7; import additional CrossReferences/lexical/LXX data only for demonstrated gaps. Do not expand the 19-table deletion scope.
@@ -55,7 +55,7 @@ Implementation authority: `RELATIONSHIP_ARCHITECTURE.md` **v5**; read only relev
 **Edit** `ARCHITECTURE.md` §4 and `DATA_MODEL.md` §5 to match this section **exactly** (single-user mode S1–S11: remove the old agent-key table, magic-link, private/draft mentions; add `note_settings`, `book_aliases`, anchor kinds without `lexeme`, S9 no uploads; link §N.6 go-public checklist), add `DATA_MODEL.md` §5.2 "Verification results" (perf numbers, accepted advisor warnings, test counts); `PROJECTMAP.md`: new modules (`src/api/notes-types.ts`, `notes-rpc.ts`, UI components, state/markdown), migrations, MCP files, verification commands (`notes-guard`, `verify-notes-*`); `RESEARCH_API.md` + `MCP_SETUP.md`: new tools, parameters, caps, notice/untrusted semantics, `NOTES_AGENT_KEY` option, kill switch, deployment version, rollback version. Keep existing content; add only. Run the encoding check from rule 4 on every edited file.
 **Done when:** `npm.cmd run check:size` passes; every new file/section appears in PROJECTMAP; links resolve (`Select-String` each referenced path exists).
 
-#### NOTE-35 User acceptance
+#### [-] NOTE-35 User acceptance
 Ask the user to: (1) add a note in the UI (try Adam/Dam with a connection and direction), (2) ask an AI client with the MCP connected to add a note on a verse, (3) reload and confirm both appear on verse load and word inspection and are visually distinct, (4) search for tag targets (`Gen 9:6`, `H120`, `אדם`, `blood`), (5) toggle hide-AI, confirm/dispute an AI note, delete a note. Record the user's result; mark `[x]` only on explicit confirmation. Then list remaining go-public items from §N.6.
 
 ### N.8 Backlog (designed for, not scheduled; no schema redesign expected)

@@ -180,12 +180,13 @@ export async function runIsolatedRestoreTest({ maxShardsRows = 5000 } = {}) {
   // Verify Private Frame record
   const frameSample = privateFrames.find(f => f.ref_mt === 'GEN 1:1!2');
   if (!frameSample) throw new Error('Missing Genesis 1:1!2 frame in private backup');
-  console.log(`  PASS: Private restricted frame verified: ${frameSample.ref_mt} (${frameSample.text_form}) -> frame: "${frameSample.field_value}"`);
+  console.log('  PASS: Restricted frame presence checked; private content withheld.');
 
-  console.log('\n=== Isolated PostgreSQL Database Restoration Test: ALL VERIFICATIONS PASSED ===\n');
+  console.log('\n=== Legacy partial recovery checks only; full restoration is NOT certified ===\n');
   return {
     backup_files_valid: true,
-    database_restore_verified: true,
+    database_restore_verified: false,
+    verification_scope: 'legacy_partial_only_not_a_reclamation_gate',
     engine: 'PostgreSQL 16 (PGlite WASM)',
     total_reclamation_tables: 19,
     private_datasets_verified: 3,

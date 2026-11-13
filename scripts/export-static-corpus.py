@@ -424,6 +424,7 @@ def parse_all_macula_syntax_files(
     verses_by_coord: dict[tuple[int, int, int], int],
     step_syntax_nodes: list[dict[str, Any]],
     step_syntax_edges: list[dict[str, Any]],
+    verses_by_id: dict[int, dict[str, Any]] | None = None,
 ) -> tuple[
     list[dict[str, Any]],
     list[dict[str, Any]],
@@ -629,6 +630,10 @@ def parse_all_macula_syntax_files(
             if repo == "macula-hebrew":
                 if xid and xid in heb_xml_map:
                     vid, wpos, twid = heb_xml_map[xid]
+                    if verses_by_id and vid in verses_by_id and twid is not None:
+                        v_words = verses_by_id[vid].get("word_ids") or []
+                        if twid in v_words:
+                            wpos = v_words.index(twid) + 1
                     w["verse_id"] = vid
                     w["word_position"] = wpos
                     w["terminal_word_id"] = twid
@@ -636,6 +641,10 @@ def parse_all_macula_syntax_files(
             else:
                 if xid and (edition_key, xid) in grk_xml_map:
                     vid, wpos, twid = grk_xml_map[(edition_key, xid)]
+                    if verses_by_id and vid in verses_by_id and twid is not None:
+                        v_words = verses_by_id[vid].get("word_ids") or []
+                        if twid in v_words:
+                            wpos = v_words.index(twid) + 1
                     w["verse_id"] = vid
                     w["word_position"] = wpos
                     w["terminal_word_id"] = twid
@@ -926,6 +935,7 @@ def main() -> None:
         verses_by_coord=verses_by_coord,
         step_syntax_nodes=tables_data["syntax_nodes_step"],
         step_syntax_edges=tables_data["syntax_edges_step"],
+        verses_by_id=verses_by_id,
     )
 
     tables_data["syntax_nodes"] = all_syntax_nodes
