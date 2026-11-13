@@ -1,175 +1,57 @@
-// scripts/build-reclamation-backup-schema.mjs
-// Assembles complete, authentic PostgreSQL DDL for:
-// - All 19 reclamation-target tables
-// - Core dependency tables (source_editions, source_releases, verses, words, lemmas, lexemes, field_license_registry, books, lxx_swete_books, reader_english_editions)
-// - Primary keys, foreign keys, unique constraints, check constraints, and indexes.
-
+// Portable recovery DDL from the checked-in read-only pg_catalog capture.
 import fs from 'node:fs';
 import path from 'node:path';
+import crypto from 'node:crypto';
+import { fileURLToPath } from 'node:url';
+import { RECLAMATION_TABLES, assertReclamationScope } from './phase0-storage-scope.mjs';
 
-function parseStepOutput(stepFilePath) {
-  const raw = fs.readFileSync(stepFilePath, 'utf8');
-  const parsed = JSON.parse(raw);
-  const match = parsed.result.match(/<untrusted-data-[0-9a-f-]+>\s*(\[[\s\S]+?\])\s*<\/untrusted-data-[0-9a-f-]+>/);
-  if (!match) throw new Error(`Could not parse step output: ${stepFilePath}`);
-  return JSON.parse(match[1]);
-}
+export const quoteIdentifier = s => '"' + s.replaceAll('"', '""') + '"';
+export const quoteRelation = s => s.split('.').map(quoteIdentifier).join('.');
 
-const targetCols = parseStepOutput('C:/Users/fluck/.gemini/antigravity/brain/665d66fd-5dd3-4293-8f5a-1ae633a34d7f/.system_generated/steps/293/output.txt');
-const targetConstraints = parseStepOutput('C:/Users/fluck/.gemini/antigravity/brain/665d66fd-5dd3-4293-8f5a-1ae633a34d7f/.system_generated/steps/295/output.txt');
-const targetIndexes = parseStepOutput('C:/Users/fluck/.gemini/antigravity/brain/665d66fd-5dd3-4293-8f5a-1ae633a34d7f/.system_generated/steps/297/output.txt');
-const depCols = parseStepOutput('C:/Users/fluck/.gemini/antigravity/brain/665d66fd-5dd3-4293-8f5a-1ae633a34d7f/.system_generated/steps/299/output.txt');
-
-// Step 381 has books, lxx_swete_books, reader_english_editions
-const extraDepCols = [
-  { table_schema: 'public', table_name: 'books', column_name: 'id', is_nullable: 'NO', data_type: 'smallint', column_default: null },
-  { table_schema: 'public', table_name: 'books', column_name: 'name', is_nullable: 'NO', data_type: 'text', column_default: null },
-  { table_schema: 'public', table_name: 'books', column_name: 'testament', is_nullable: 'NO', data_type: 'text', column_default: null },
-  { table_schema: 'public', table_name: 'books', column_name: 'original_language', is_nullable: 'NO', data_type: 'text', column_default: null },
-  { table_schema: 'public', table_name: 'books', column_name: 'total_chapters', is_nullable: 'NO', data_type: 'smallint', column_default: null },
-  { table_schema: 'public', table_name: 'books', column_name: 'usfm', is_nullable: 'NO', data_type: 'text', column_default: null },
-  { table_schema: 'public', table_name: 'books', column_name: 'theographic_code', is_nullable: 'NO', data_type: 'text', column_default: null },
-  { table_schema: 'public', table_name: 'books', column_name: 'division', is_nullable: 'NO', data_type: 'text', column_default: null },
-  { table_schema: 'public', table_name: 'lxx_swete_books', column_name: 'book_no', is_nullable: 'NO', data_type: 'smallint', column_default: null },
-  { table_schema: 'public', table_name: 'lxx_swete_books', column_name: 'file_name', is_nullable: 'NO', data_type: 'text', column_default: null },
-  { table_schema: 'public', table_name: 'lxx_swete_books', column_name: 'latin_name', is_nullable: 'NO', data_type: 'text', column_default: null },
-  { table_schema: 'public', table_name: 'lxx_swete_books', column_name: 'canonical_book', is_nullable: 'YES', data_type: 'smallint', column_default: null },
-  { table_schema: 'public', table_name: 'lxx_swete_books', column_name: 'source_release_id', is_nullable: 'NO', data_type: 'bigint', column_default: null },
-  { table_schema: 'public', table_name: 'lxx_swete_books', column_name: 'source_edition_id', is_nullable: 'NO', data_type: 'bigint', column_default: null },
-  { table_schema: 'public', table_name: 'reader_english_editions', column_name: 'id', is_nullable: 'NO', data_type: 'text', column_default: null },
-  { table_schema: 'public', table_name: 'reader_english_editions', column_name: 'name', is_nullable: 'NO', data_type: 'text', column_default: null },
-  { table_schema: 'public', table_name: 'reader_english_editions', column_name: 'source_url', is_nullable: 'NO', data_type: 'text', column_default: null },
-  { table_schema: 'public', table_name: 'reader_english_editions', column_name: 'sha256', is_nullable: 'NO', data_type: 'text', column_default: null },
-  { table_schema: 'public', table_name: 'reader_english_editions', column_name: 'license', is_nullable: 'NO', data_type: 'text', column_default: null },
-  { table_schema: 'public', table_name: 'reader_english_editions', column_name: 'mapping_note', is_nullable: 'NO', data_type: 'text', column_default: null }
-];
-
-const schemaDir = path.resolve('.artifacts/db-backup/schema');
-fs.mkdirSync(schemaDir, { recursive: true });
-
-function formatColType(col) {
-  let dt = col.data_type;
-  if (dt === 'character varying') dt = col.character_maximum_length ? `varchar(${col.character_maximum_length})` : 'varchar';
-  else if (dt === 'USER-DEFINED') dt = col.udt_name;
-  else if (dt === 'ARRAY') dt = `${col.udt_name.replace(/^_/, '')}[]`;
-  return dt;
-}
-
-function extractSequences(cols) {
-  const seqs = new Set();
-  for (const c of cols) {
-    if (c.column_default) {
-      const m = c.column_default.match(/nextval\('([^']+)'::regclass\)/);
-      if (m) seqs.add(m[1]);
+export function buildReclamationSchema(catalog) {
+  assertReclamationScope();
+  const relations = catalog.relations;
+  const names = new Set(relations.map(t => t.schema + '.' + t.name));
+  for (const t of RECLAMATION_TABLES) if (!names.has(t)) throw Error('Missing recovery DDL: ' + t);
+  const schemas = [...new Set(relations.map(t => t.schema))].map(s => 'CREATE SCHEMA IF NOT EXISTS ' + quoteIdentifier(s) + ';');
+  const tables = [], foreignKeys = [], indexes = [], security = [], sequences = [];
+  const explicitSequences = new Set();
+  for (const t of relations) {
+    const relation = t.schema + '.' + t.name, qtable = quoteRelation(relation);
+    const columns = t.columns.map(c => {
+      const seq = c.default?.match(/nextval\('([^']+)'::regclass\)/)?.[1];
+      if (seq && !c.identity) explicitSequences.add(seq);
+      if (seq || c.identity) sequences.push({ relation, column: c.name, sequence: seq ?? null });
+      const generated = c.generated ? ' GENERATED ALWAYS AS (' + c.default + ') STORED' : '';
+      const identity = c.identity ? ' GENERATED ' + (c.identity === 'a' ? 'ALWAYS' : 'BY DEFAULT') + ' AS IDENTITY' : '';
+      const def = !generated && !identity && c.default ? ' DEFAULT ' + c.default : '';
+      return quoteIdentifier(c.name) + ' ' + c.type + generated + identity + def + (c.not_null ? ' NOT NULL' : '');
+    });
+    for (const c of t.constraints ?? []) {
+      const sql = 'CONSTRAINT ' + quoteIdentifier(c.name) + ' ' + c.definition;
+      if (c.type === 'f') {
+        const parent = c.parent.includes('.') ? c.parent : 'public.' + c.parent;
+        if (!names.has(parent)) throw Error('Missing FK dependency ' + parent);
+        foreignKeys.push('ALTER TABLE ' + qtable + ' ADD ' + sql + ';');
+      } else columns.push(sql);
     }
+    tables.push('CREATE TABLE ' + qtable + ' (\n  ' + columns.join(',\n  ') + '\n);');
+    const constraintNames = new Set((t.constraints ?? []).filter(c => ['p','u','x'].includes(c.type)).map(c => c.name));
+    for (const i of t.indexes ?? []) if (!constraintNames.has(i.name)) indexes.push(i.definition + ';');
+    if (t.rls) security.push('ALTER TABLE ' + qtable + ' ENABLE ROW LEVEL SECURITY;');
+    if (t.force_rls) security.push('ALTER TABLE ' + qtable + ' FORCE ROW LEVEL SECURITY;');
+    for (const p of t.policies ?? []) security.push('CREATE POLICY ' + quoteIdentifier(p.name) + ' ON ' + qtable + ' AS ' + p.permissive + ' FOR ' + p.command + ' TO ' + p.roles.map(r => r === 'public' ? 'PUBLIC' : quoteIdentifier(r)).join(', ') + (p.using ? ' USING (' + p.using + ')' : '') + (p.check ? ' WITH CHECK (' + p.check + ')' : '') + ';');
+    security.push('REVOKE ALL ON TABLE ' + qtable + ' FROM PUBLIC, anon, authenticated, service_role;');
+    for (const g of t.grants ?? []) security.push('GRANT ' + g.privilege + ' ON TABLE ' + qtable + ' TO ' + (g.role === 'PUBLIC' ? 'PUBLIC' : quoteIdentifier(g.role)) + (g.grantable === 'YES' ? ' WITH GRANT OPTION' : '') + ';');
   }
-  return Array.from(seqs);
+  return { tables: [...schemas, ...(catalog.helpers ?? []).map(f => f.definition.trim() + ';'), ...[...explicitSequences].map(s => 'CREATE SEQUENCE ' + quoteRelation(s) + ';'), ...tables].join('\n\n') + '\n', foreignKeys: foreignKeys.join('\n') + '\n', indexes: indexes.join('\n') + '\n', security: security.join('\n') + '\n', sequences, relations: [...names], targets: [...RECLAMATION_TABLES] };
 }
-
-function buildTableDDL(schema, table, cols, constraints) {
-  const lines = [];
-  lines.push(`CREATE TABLE IF NOT EXISTS ${schema}.${table} (`);
-  const colDefs = cols.map(c => {
-    let def = `  ${c.column_name} ${formatColType(c)}`;
-    if (c.is_nullable === 'NO') def += ' NOT NULL';
-    if (c.column_default) def += ` DEFAULT ${c.column_default}`;
-    return def;
-  });
-
-  const pkeys = constraints.filter(c => c.contype === 'p').map(c => `  CONSTRAINT ${c.conname} ${c.condef}`);
-  const uniques = constraints.filter(c => c.contype === 'u').map(c => `  CONSTRAINT ${c.conname} ${c.condef}`);
-  const checks = constraints.filter(c => c.contype === 'c').map(c => `  CONSTRAINT ${c.conname} ${c.condef}`);
-
-  const allElements = [...colDefs, ...pkeys, ...uniques, ...checks];
-  lines.push(allElements.join(',\n'));
-  lines.push(');');
-  return lines.join('\n');
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  const input = process.argv[2] ?? 'supabase/recovery/reclamation-catalog.json';
+  const output = process.argv[3] ?? '.artifacts/phase0/recovery-schema';
+  const bytes = fs.readFileSync(input), result = buildReclamationSchema(JSON.parse(bytes));
+  fs.mkdirSync(output, { recursive: true });
+  for (const [name, key] of [['01_tables.sql','tables'],['02_foreign_keys.sql','foreignKeys'],['03_indexes.sql','indexes'],['04_security.sql','security']]) fs.writeFileSync(path.join(output, name), result[key]);
+  fs.writeFileSync(path.join(output, 'manifest.json'), JSON.stringify({ catalog_sha256: crypto.createHash('sha256').update(bytes).digest('hex'), targets: result.targets, relations: result.relations, sequences: result.sequences }, null, 2) + '\n');
+  console.log(JSON.stringify({ status: 'GENERATED', target_tables: result.targets.length, total_relations: result.relations.length, output }));
 }
-
-// 1. Group columns by table
-function groupByTable(rows) {
-  const map = new Map();
-  for (const r of rows) {
-    const key = `${r.table_schema || 'public'}.${r.table_name}`;
-    if (!map.has(key)) map.set(key, []);
-    map.get(key).push(r);
-  }
-  return map;
-}
-
-const targetColsMap = groupByTable(targetCols);
-const depColsMap = groupByTable([...depCols, ...extraDepCols]);
-
-const constraintsMap = new Map();
-for (const c of targetConstraints) {
-  const key = `${c.table_schema}.${c.table_name}`;
-  if (!constraintsMap.has(key)) constraintsMap.set(key, []);
-  constraintsMap.get(key).push(c);
-}
-
-// Sequences
-const allCols = [...targetCols, ...depCols, ...extraDepCols];
-const allSequences = extractSequences(allCols);
-
-// Build 01_dependencies_schema.sql
-const depSQL = [];
-depSQL.push('-- 01_dependencies_schema.sql');
-depSQL.push('CREATE SCHEMA IF NOT EXISTS bible_internal;');
-for (const s of allSequences) {
-  depSQL.push(`CREATE SEQUENCE IF NOT EXISTS ${s};`);
-}
-
-for (const [key, cols] of depColsMap.entries()) {
-  const [schema, table] = key.split('.');
-  depSQL.push(`\n-- ${key}`);
-  let pkCol = cols.find(c => c.column_name === 'id');
-  if (!pkCol && table === 'lxx_swete_books') pkCol = cols.find(c => c.column_name === 'book_no');
-  const pkDef = pkCol ? `  CONSTRAINT ${table}_pkey PRIMARY KEY (${pkCol.column_name})` : '';
-  const colDefs = cols.map(c => `  ${c.column_name} ${formatColType(c)}${c.is_nullable === 'NO' ? ' NOT NULL' : ''}${c.column_default ? ' DEFAULT ' + c.column_default : ''}`);
-  if (pkDef) colDefs.push(pkDef);
-  depSQL.push(`CREATE TABLE IF NOT EXISTS ${schema}.${table} (\n${colDefs.join(',\n')}\n);`);
-}
-// Add unique constraint on field_license_registry(dataset_key, field_name)
-depSQL.push(`
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_constraint WHERE conname = 'field_license_registry_dataset_key_field_name_key'
-  ) THEN
-    ALTER TABLE public.field_license_registry ADD CONSTRAINT field_license_registry_dataset_key_field_name_key UNIQUE (dataset_key, field_name);
-  END IF;
-END $$;
-`);
-fs.writeFileSync(path.join(schemaDir, '01_dependencies_schema.sql'), depSQL.join('\n'), 'utf8');
-
-// Build 02_reclamation_tables_schema.sql (without FKs initially to avoid ordering circularities)
-const recSQL = [];
-recSQL.push('-- 02_reclamation_tables_schema.sql');
-for (const [key, cols] of targetColsMap.entries()) {
-  const [schema, table] = key.split('.');
-  recSQL.push(`\n-- ${key}`);
-  const cons = constraintsMap.get(key) || [];
-  recSQL.push(buildTableDDL(schema, table, cols, cons));
-}
-
-// Add Foreign Keys at the end
-recSQL.push('\n-- Foreign Key Constraints');
-for (const [key, cons] of constraintsMap.entries()) {
-  const [schema, table] = key.split('.');
-  const fkeys = cons.filter(c => c.contype === 'f');
-  for (const fk of fkeys) {
-    recSQL.push(`ALTER TABLE ${schema}.${table} ADD CONSTRAINT ${fk.conname} ${fk.condef};`);
-  }
-}
-fs.writeFileSync(path.join(schemaDir, '02_reclamation_tables_schema.sql'), recSQL.join('\n'), 'utf8');
-
-// Build 03_indexes.sql
-const idxSQL = [];
-idxSQL.push('-- 03_indexes.sql');
-for (const idx of targetIndexes) {
-  if (idx.indexname.endsWith('_pkey') || idx.indexname.endsWith('_key')) continue;
-  idxSQL.push(`${idx.indexdef};`);
-}
-fs.writeFileSync(path.join(schemaDir, '03_indexes.sql'), idxSQL.join('\n'), 'utf8');
-
-console.log('Successfully regenerated complete DDL with all dependencies in .artifacts/db-backup/schema/');

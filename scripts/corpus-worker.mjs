@@ -1769,7 +1769,7 @@ async function handleGetWordFormLemmasBatchV1(env, params) {
   const wordsOut = {};
   for (const [bHex, wids] of bucketsToLoad.entries()) {
     const bucket = await loadJsonShard(env, `/v1/lexical/words-${bHex}.json.gz`);
-    if (!bucket) continue;
+    if (!bucket) throw new Error(`Required word-form shard unavailable: ${bHex}`);
     for (const wid of wids) {
       const entry = bucket[String(wid)];
       if (entry) {
@@ -2263,6 +2263,60 @@ async function handleGetHebrewImportStatusV1(env) {
 // Worker Fetch Handler
 // ============================================================================
 
+async function handlePassageLensSourceV1(env, params) {
+  await ensureCatalog(env);
+  const book = Number(params.p_book), chapter = Number(params.p_chapter), verse = Number(params.p_verse);
+  if (![book, chapter, verse].every(Number.isInteger) || book < 1 || book > 66 || chapter < 1 || verse < 0) return { status: 'invalid_request' };
+  const id = cachedVerseByCoord.get(`${book}:${chapter}:${verse}`);
+  if (!id) return { status: 'passage_not_found' };
+  const shard = await loadJsonShard(env, `/v1/chapters/b${book}-c${chapter}.json.gz`);
+  const entry = shard?.verses?.[String(verse)];
+  if (!entry || entry.verse_id !== id) throw new Error('Required canonical passage source unavailable');
+  const hebrew = (entry.macula_hebrew_morphemes || []).map(({ gated_fields, ...row }) => row);
+  // Greek MACULA frames are licensed source annotations; Hebrew gated fields are never returned.
+  const greek = (entry.macula_greek_tokens || []).map(({ frame, gated_fields, ...row }) => ({ ...row, semantic_frame_source: frame ?? null }));
+  return { status: 'ok', verse_id: id, hebrew, greek };
+}
+
+async function handleStaticCorpusMetadataV1(env) {
+  const cat = await ensureCatalog(env);
+  const bytes = await readAssetBytes(env, '/tables/macula_syntax_import_files/part-0000.jsonl.gz');
+  if (!bytes) throw new Error('Required corpus source manifest unavailable');
+  const text = new TextDecoder('utf-8', { fatal: true }).decode(await decompressGzipIfNeeded(bytes));
+  const files = text.split('\n').filter(line => line.trim()).map(line => JSON.parse(line));
+  const manifestBytes = await readAssetBytes(env, '/manifest.json');
+  const manifest = JSON.parse(new TextDecoder().decode(manifestBytes));
+  if (files.length !== manifest.macula_syntax_completion.manifest_files_total) throw new Error('Incomplete corpus source manifest');
+  return { status: 'ok', macula_syntax_import_files: files, decode_grammar_catalog: cat.decode_grammar_catalog };
+}
+
+async function handleCorpusChunkIntegrity(env, url) {
+  const offset = Number(url.searchParams.get('offset') ?? 0), limit = Number(url.searchParams.get('limit') ?? 4);
+  if (!Number.isInteger(offset) || offset < 0 || !Number.isInteger(limit) || limit < 1 || limit > 8) return jsonResponse({ status: 'invalid_request' }, 400, 'no-store');
+  const manifestBytes = await readAssetBytes(env, '/manifest.json');
+  if (!manifestBytes) throw new Error('Required corpus manifest unavailable');
+  const manifest = JSON.parse(new TextDecoder().decode(manifestBytes));
+  const entries = [...Object.values(manifest.tables).flatMap(t => t.shards || []), ...Object.values(manifest.v1_retrieval_shards)];
+  const unique = new Map();
+  const manifestDigest = new Uint8Array(await crypto.subtle.digest('SHA-256', manifestBytes));
+  unique.set('/manifest.json', { path: '/manifest.json', sha256_compressed: [...manifestDigest].map(b => b.toString(16).padStart(2,'0')).join(''), compressed_bytes: manifestBytes.length });
+  for (const entry of entries) {
+    if (!entry.path?.startsWith('/') || entry.path.includes('..')) throw new Error('Invalid corpus manifest path');
+    if (unique.has(entry.path)) throw new Error('Duplicate corpus manifest path');
+    unique.set(entry.path, entry);
+  }
+  if (unique.size !== manifest.cloudflare_limits_check.total_asset_files) throw new Error('Incomplete corpus manifest');
+  const checks = [];
+  for (const entry of [...unique.values()].sort((a,b) => a.path.localeCompare(b.path)).slice(offset, offset + limit)) {
+    const bytes = await readAssetBytes(env, entry.path);
+    if (!bytes) { checks.push({ path: entry.path, status: 'missing' }); continue; }
+    const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', bytes));
+    checks.push({ path: entry.path, sha256_compressed: [...digest].map(b => b.toString(16).padStart(2,'0')).join(''), compressed_bytes: bytes.length });
+  }
+  // Hashes only: raw public/restricted source and private backups remain inaccessible.
+  return jsonResponse({ status: 'ok', corpus_version: manifest.corpus_version, total_assets: unique.size, offset, checks }, 200, 'no-store');
+}
+
 const corpusWorker = {
   async fetch(request, env) {
     if (request.method === 'OPTIONS') {
@@ -2273,6 +2327,7 @@ const corpusWorker = {
     const pathname = url.pathname;
 
     try {
+      if (pathname === '/__integrity/chunks') return await handleCorpusChunkIntegrity(env, url);
       // 1. Health check
       if (pathname === '/health' || pathname === '/v1/health') {
         return jsonResponse(
@@ -2319,6 +2374,12 @@ const corpusWorker = {
         }
         if (op === 'lookup_septuagint_by_canonical_verse_v1') {
           return jsonResponse(await handleLookupSeptuagintByCanonicalVerseV1(env, params));
+        }
+        if (op === 'get_passage_lens_source_v1') {
+          return jsonResponse(await handlePassageLensSourceV1(env, params));
+        }
+        if (op === 'get_static_corpus_metadata_v1') {
+          return jsonResponse(await handleStaticCorpusMetadataV1(env));
         }
         if (op === 'get_reader_passages_v1') {
           return jsonResponse(await handleGetReaderPassagesV1(env, params));

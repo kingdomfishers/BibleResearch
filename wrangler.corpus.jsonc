@@ -3,6 +3,7 @@
   "name": "bibleresearch-corpus",
   "main": "./scripts/corpus-worker.mjs",
   "compatibility_date": "2026-11-02",
+  "preview_urls": false,
   "assets": {
     "directory": "./.artifacts/static-corpus",
     "binding": "ASSETS",
