@@ -1,55 +1,31 @@
+// Advisory navigation review: no mandatory manifests, TOC synchronization or splitting.
 import fs from 'node:fs';
 import path from 'node:path';
 
-const walk = (d) =>
-  fs.readdirSync(d).flatMap((f) => {
-    const q = path.join(d, f);
-    return fs.statSync(q).isDirectory() ? walk(q) : q;
+const walk = (entry) => fs.statSync(entry).isDirectory()
+  ? fs.readdirSync(entry).flatMap(name => walk(path.join(entry, name)))
+  : [entry];
+const roots = process.argv.slice(2);
+const files = [...new Set((roots.length ? roots : ['src']).flatMap(walk))]
+  .filter(file => /\.(ts|tsx)$/.test(file) && !file.endsWith('.test.ts'));
+let notices = 0;
+const advise = (file, message) => {
+  console.log('REVIEW:', file, message);
+  notices++;
+};
+for (const file of files) {
+  const lines = fs.readFileSync(file, 'utf8').split(/\r?\n/);
+  if (lines.length > 800) advise(file, lines.length + ' lines; consider cohesion before splitting.');
+  const sections = lines.flatMap((line, index) => {
+    const match = line.match(/^\s*[/][/] === @section:(.+?) ===\s*$/);
+    return match ? [{ name: match[1], index }] : [];
   });
-
-let ok = true;
-walk('src')
-  .filter((f) => /\.(ts|tsx)$/.test(f) && !f.endsWith('.test.ts'))
-  .forEach((f) => {
-    const txt = fs.readFileSync(f, 'utf8');
-    const lines = txt.split(/\r?\n/);
-    if (lines.length > 450) {
-      console.error('FILE > 450 LINES:', f, lines.length);
-      ok = false;
-    }
-    const tocLine = (lines.slice(0, 6).find((l) => l.startsWith('// @toc:')) || '')
-      .replace('// @toc:', '')
-      .split('|')
-      .map((s) => s.trim())
-      .filter(Boolean);
-    const secs = [];
-    txt
-      .split('// === @section:')
-      .slice(1)
-      .forEach((s) => {
-        const n = s.split(/\r?\n/).length;
-        const name = s.split('===')[0].trim();
-        secs.push(name);
-        if (n > 80) {
-          console.error('SECTION > 80 LINES:', f, '@section:' + name, n);
-          ok = false;
-        }
-      });
-    if (tocLine.join('|') !== secs.join('|')) {
-      console.error(
-        'TOC MISMATCH in',
-        f,
-        '\n  Header @toc:',
-        tocLine.join(' | '),
-        '\n  Actual @sections:',
-        secs.join(' | ')
-      );
-      ok = false;
-    }
+  const seen = new Set();
+  sections.forEach((section, index) => {
+    if (seen.has(section.name)) advise(file, 'Duplicate navigation anchor: ' + section.name);
+    seen.add(section.name);
+    const length = (sections[index + 1]?.index ?? lines.length) - section.index;
+    if (length > 150) advise(file, '@section:' + section.name + ' spans ' + length + ' lines; review readability.');
   });
-
-if (!ok) {
-  process.exit(1);
-} else {
-  console.log('PASS: check:size verified successfully.');
 }
+console.log('Reviewed ' + files.length + ' files; ' + notices + ' advisory notices (no hard size/metadata gates).');

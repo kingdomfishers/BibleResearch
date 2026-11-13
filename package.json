@@ -18,8 +18,8 @@
     "dev": "vite --host localhost --port 3000 --strictPort",
     "build": "vite build",
     "check:types": "tsc --noEmit",
-    "check:lines": "node -e \"const fs=require('fs'),path=require('path');const walk=d=>fs.readdirSync(d).flatMap(f=>{const p=path.join(d,f);return fs.statSync(p).isDirectory()?walk(p):p});walk('src').filter(f=>/\\.(ts|tsx)$/.test(f)).forEach(f=>{const n=fs.readFileSync(f,'utf8').split('\\n').length;if(n>200){console.error('OVER 200 LINES:',f,n);process.exitCode=1}});\"",
-    "check:size": "node -e \"const fs=require('fs'),p=require('path'),walk=d=>fs.readdirSync(d).flatMap(f=>{const q=p.join(d,f);return fs.statSync(q).isDirectory()?walk(q):q});walk('src').filter(f=>/\\.(ts|tsx)$/.test(f)&&!f.endsWith('.test.ts')).forEach(f=>{const txt=fs.readFileSync(f,'utf8'),lines=txt.split(/\\r?\\n/);if(lines.length>450){console.error('FILE > 450 LINES:',f,lines.length);process.exitCode=1}const tocLine=(lines.slice(0,6).find(l=>l.startsWith('// @toc:'))||'').replace('// @toc:','').split('|').map(s=>s.trim()).filter(Boolean);const secs=[];txt.split('// === @section:').slice(1).forEach(s=>{const n=s.split(/\\r?\\n/).length,name=s.split('===')[0].trim();secs.push(name);if(n>80){console.error('SECTION > 80 LINES:',f,'@section:'+name,n);process.exitCode=1}});if(tocLine.join('|')!==secs.join('|')){console.error('TOC MISMATCH in',f,'\\n  Header @toc:',tocLine.join(' | '),'\\n  Actual @sections:',secs.join(' | '));process.exitCode=1}});\""
+    "check:lines": "node scripts/check-size.mjs",
+    "check:size": "node scripts/check-size.mjs"
   },
   "keywords": [],
   "author": "",

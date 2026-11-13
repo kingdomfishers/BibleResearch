@@ -6,3 +6,6 @@ dist/
 .artifacts/
 __pycache__/
 *.pyc
+
+# Local Supabase CLI state (existing tracked entries are not removed).
+/supabase/.temp/
