@@ -29,7 +29,7 @@ Implementation authority: `RELATIONSHIP_ARCHITECTURE.md` **v5**; read only relev
 
 ## Other open work — defer until the two priorities permit
 
-- [ ] **Notes:** `NOTE-33` [x] end-to-end UI/MCP tests, `NOTE-34` minimal doc sync, `NOTE-35` user acceptance. Preserve accountless single-user writes until authentication exists; check privileged review permissions. Do not redo NOTE-00–32.
+- [ ] **Notes:** `NOTE-33` [x] end-to-end UI/MCP tests, `NOTE-34` [x] minimal doc sync, `NOTE-35` user acceptance. Preserve accountless single-user writes until authentication exists; check privileged review permissions. Do not redo NOTE-00–32.
 - [ ] **Existing UI sign-offs:** `O5` hydrated research, `M1` mobile reader, `T9` private word-translation persistence.
 - [ ] **UX backlog:** Reassess `UX_STRATEGY.md` after relationship MVP: word inspector, licensed English previews, visual relationship groups, comparison, geography links, timeline, accessible mobile UX. Audit source rights and mapping before full English previews; diagram optional.
 - [ ] **Coverage backlog:** Reconcile obsolete `AUDIT-06`/`XREF-LEX` and `L1–L9` plans with R3–R7; import additional CrossReferences/lexical/LXX data only for demonstrated gaps. Do not expand the 19-table deletion scope.
@@ -62,7 +62,7 @@ Implementation authority: `RELATIONSHIP_ARCHITECTURE.md` **v5**; read only relev
 **Create `scripts/verify-notes-e2e.mjs`** (+ extend fixtures): browser + MCP in one run, tagged data, full cleanup. Journeys: (1) *Human*: create the Adam/Dam note in the UI → verify on Gen 9:6 (panel, badges), on both words (inspector), in All-notes browser, via anon RPC, and **via MCP `get_verse_research` and `get_notes`** (AI can see it). (2) *AI*: `create_note` through the live MCP (Gen 9:6, word occurrence + connection) → refresh UI → AI styling, model name, `unreviewed`; confirm it via the UI (`set_note_review_v1`) → state changes in UI and MCP output. (3) *Mixed*: both note types on one verse; filter All/Human/AI counts consistent with totals. (4) *Safety*: kill switch blocks both UI save (clear message, data preserved) and MCP create; restore. (5) *Resilience*: stale navigation, offline, double submit. (6) *Integrity*: TP-GUARD-1 `--compare` exits 0 (corpus tables unchanged); TP-INT-3 Hebrew/Greek identical in UI text, RPC, MCP; TP-CLEAN-1 zero leftovers. Output `.artifacts/notes/e2e-report.json`.
 **Done when:** exits 0 twice in a row (run twice to catch flakiness); RP-DB and RP-UI at baseline.
 
-#### NOTE-34 Documentation sync
+#### [x] NOTE-34 Documentation sync
 **Edit** `ARCHITECTURE.md` §4 and `DATA_MODEL.md` §5 to match this section **exactly** (single-user mode S1–S11: remove the old agent-key table, magic-link, private/draft mentions; add `note_settings`, `book_aliases`, anchor kinds without `lexeme`, S9 no uploads; link §N.6 go-public checklist), add `DATA_MODEL.md` §5.2 "Verification results" (perf numbers, accepted advisor warnings, test counts); `PROJECTMAP.md`: new modules (`src/api/notes-types.ts`, `notes-rpc.ts`, UI components, state/markdown), migrations, MCP files, verification commands (`notes-guard`, `verify-notes-*`); `RESEARCH_API.md` + `MCP_SETUP.md`: new tools, parameters, caps, notice/untrusted semantics, `NOTES_AGENT_KEY` option, kill switch, deployment version, rollback version. Keep existing content; add only. Run the encoding check from rule 4 on every edited file.
 **Done when:** `npm.cmd run check:size` passes; every new file/section appears in PROJECTMAP; links resolve (`Select-String` each referenced path exists).
 

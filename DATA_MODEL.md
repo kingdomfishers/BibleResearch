@@ -80,7 +80,7 @@ Enables original-language comparison between the Hebrew Masoretic Text (MT), the
 
 ---
 
-## 5. Notes & Connections Layer (planned 2026-11-07; migrations `20261107010000`-`20261107019000`)
+## 5. Notes & Connections Layer (single-user mode S1–S11; migrations `20261107005704`–`20261107140000`)
 
 All tables are additive, RLS-enabled, FK-indexed, with direct `INSERT`/`UPDATE`/`DELETE` revoked from `anon`/`authenticated`. Notes carry `epistemic_layer = 'user_note'` and are isolated from every evidence table above. Single-user mode (`S1`–`S11`) requires no login yet; `note_settings` provides kill switches, caps, and hourly rate limits. See [ARCHITECTURE.md](ARCHITECTURE.md) §4 and `TASKS.md` §N.3.
 
@@ -89,14 +89,14 @@ All tables are additive, RLS-enabled, FK-indexed, with direct `INSERT`/`UPDATE`/
 | `public.note_settings` | single-row (`id = true`); `single_user_mode`, `human_writes_enabled`, `ai_writes_enabled`, `default_visibility`, size/count caps, `human_writes_per_hour`, `ai_writes_per_hour` |
 | `public.note_authors` | `id uuid`, `author_kind` (`human`/`ai`), `display_name`, `ai_provider`, `ai_model`, `ai_client`, `user_id -> auth.users` (unused in single-user mode; hidden from public SELECT); seeded owner `"You"` (`00000000-0000-0000-0000-00000000a001`) |
 | `public.note_kinds` | vocabulary: `observation`, `linguistic`, `interpretation`, `question`, `cross_reference`, `research_lead`, `citation` |
-| `public.notes` | `id uuid`, `(author_id, author_kind)` composite FK to `note_authors`, `note_kind`, `title`, `body_md`, `language`, `visibility`, `status` (`removed` = soft delete), `review_status` (+`reviewed_at`), `confidence`, `created_via`, `source_context jsonb`, `supersedes_note_id`, `version`, `client_request_id` (idempotency), `content_hash`, generated `tsv`, timestamps |
+| `public.notes` | `id uuid`, `(author_id, author_kind)` composite FK to `note_authors`, `note_kind`, `title`, `body_md`, `language`, `visibility` (`published` in v1), `status` (`removed` = soft delete), `review_status` (+`reviewed_at`), `confidence`, `created_via`, `source_context jsonb`, `supersedes_note_id`, `version`, `client_request_id` (idempotency), `content_hash`, generated `tsv`, timestamps |
 | `public.note_revisions` | `(note_id, version)` action, `editor_author_id`, `editor_kind`, `snapshot jsonb`, `created_at` (no public SELECT; drives hourly rate limits) |
-| `public.note_anchors` | `anchor_kind` (`verse`, `verse_range`, `word_occurrence`, `word_form`, `lemma`, `concept`, `place`, `event`, `note`, `external`) + per-kind column CHECK, occurrence integrity trigger (`verses.word_ids[word_position] = word_id`), `role`, `label` snapshot, `ordinal`, `block_id`, `element_ref`; unique de-dup; partial indexes |
+| `public.note_anchors` | `anchor_kind` (`verse`, `verse_range`, `word_occurrence`, `word_form`, `lemma`, `concept`, `place`, `event`, `note`, `external` — 10 anchor kinds, no `lexeme`) + per-kind column CHECK, occurrence integrity trigger (`verses.word_ids[word_position] = word_id`), `role`, `label` snapshot, `ordinal`, `block_id`, `element_ref`; unique de-dup; partial indexes |
 | `public.note_connection_types` | 16 seeded types (`contained_in`, `same_root`, `wordplay`, `same_letters`, `sounds_like`, `quotes`, `alludes_to`, `parallels`, `contrasts_with`, `explains`, `related`, `typifies`, `contemporary_with`, `located_at`, `same_gematria`, `other`) |
 | `public.note_connections` | `(from_anchor_id, note_id)` and `(to_anchor_id, note_id)` composite FKs forcing same note, `from_anchor_id <> to_anchor_id`, nullable `connection_type`, `custom_label`, `direction`, `explanation` |
 | `public.note_block_types` | registry: `block_type`, `renderer_status` (`available`: `markdown`/`link`/`image`; `planned`: `map`/`timeline`/`model_3d`/`archaeological_find`/`table`/`chart`), `is_enabled`, `required_keys`, `url_keys` (HTTPS-only), `max_bytes` |
-| `public.note_blocks` | `ordinal`, `block_type`, `content jsonb`, `schema_version`, required non-empty `text_alternative`; validated by `note_validate_block_v1` trigger |
-| `public.book_aliases` | normalized lowercase abbreviation/alias -> `books.id` for `parse_bible_ref_v1` |
+| `public.note_blocks` | `ordinal`, `block_type`, `content jsonb`, `schema_version`, required non-empty `text_alternative`; validated by `note_validate_block_v1` trigger (S9: no file uploads; external HTTPS URLs only) |
+| `public.book_aliases` | normalized lowercase abbreviation/alias -> `books.id` for `parse_bible_ref_v1` (375 seeded aliases) |
 
 ### Notes RPCs (all `*_v1`)
 
@@ -157,6 +157,17 @@ Validated on live PostgreSQL 17 database (`ejoperxiwxlcbsqrkrvb`) on 2026-11-07 
 - **TP-GUARD-1:** `node scripts/notes-guard.mjs --compare` PASSED (all 11 canonical table counts, Gen 1:1 hash, and MCP `/health` match baseline).
 - **TP-CLEAN-1:** 0 active unremoved test notes in `public.notes`.
 - **Gate G1 Status:** **APPROVED**. Database layer complete and ready for Phase B (Contracts & Gateway).
+
+### 5.5 Comprehensive Verification Results Across Gates (G1–G4 & NOTE-33 E2E)
+
+| Gate / Suite | Script & Command | Scope & Key Assertions | Result & Assertions Count |
+| :--- | :--- | :--- | :--- |
+| **Gate G1: Database Acceptance** | `node scripts/verify-notes-db.mjs` | 10 sub-suites (NOTE-03–12): Foundation, Core, Connections, Blocks, Security, Human Writes, AI Writes, Read RPCs, Book Aliases, Target Search; XSS inertness, soft deletion, TP-GUARD-1, TP-CLEAN-1 | **APPROVED** (372 passed, 0 failed) |
+| **Gate G2: Gateway & Contracts** | `npm run check:types` & `check:size` | TypeScript contracts in `src/api/notes-types.ts`, `notes-api-types.ts`, `notes-rpc.ts`; zero direct supabase-js imports in UI; exact @toc and <=80 lines/section | **APPROVED** (100% typechecked, 0 TOC mismatches) |
+| **Gate G3: UI Acceptance** | `node scripts/verify-notes-ui.mjs` | Playwright browser suite: Adam/Dam note creation, token badges in VerseReader, WordNotes inspection, AI dashed styling, hide-AI filter, review actions, TP-XSS-1, TP-BIDI-1, TP-A11Y-1, 6 responsive viewports (320px–1280px), offline retry recovery, TP-CLEAN-1 | **APPROVED** (42 passed, 0 failed) |
+| **Gate G4: MCP Live Deployment** | `node scripts/verify-notes-mcp.mjs` | Live MCP `bible-mcp` v1.9.0 on Supabase: 25 tools, 18 prompts; `create_note`, `update_my_note`, `delete_my_note`, `get_notes`, `search_note_targets`, `list_note_connection_types`; TP-CRED-1 credential isolation, duplicate suppression, TP-INJ-1 marker | **APPROVED** (25 passed, 0 failed) |
+| **E2E Acceptance (NOTE-33)** | `node scripts/verify-notes-e2e.mjs` | Full-stack end-to-end journey verification across UI, PostgREST RPC, and Live MCP: Journey 1 (Human), Journey 2 (AI creation & UI confirmation), Journey 3 (Mixed author filters), Journey 4 (Kill switch & draft preservation), Journey 5 (Stale nav & offline retry), Journey 6 (TP-INT-3 UTF-8 parity, TP-GUARD-1 corpus baseline compare, TP-CLEAN-1 zero test row residue). Ran 2x in succession without flakiness. | **APPROVED** (37 passed, 0 failed; 2 consecutive runs) |
+
 
 
 
