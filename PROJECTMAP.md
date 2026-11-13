@@ -177,6 +177,8 @@ Focused DOM components and application shell (max 450 lines/file, max 80 lines/`
 
 ## 5. Reusable Test Scripts & Verification Queries
 
+`scripts/build-reclamation-approval.mjs` generates review-only transactional SQL from verified backup evidence and pinned protected-table metadata. `scripts/reclamation-preservation.sql` fingerprints every retained non-system table; `node scripts/verify-reclamation-preservation.mjs` verifies content/schema/security mutation detection and rollback in isolated PostgreSQL.
+
 Phase 0: `scripts/verify-phase0-reader-isolation.mjs --clients` exercises real SQL, website gateways and MCP transport with 19 static tables empty/denied; `scripts/verify-phase0-backup-records.mjs` compares typed recovery hashes (use `--failed-only` for mismatches); `scripts/verify-phase0-representative-restore.mjs` restores a small FK-complete sample. `scripts/verify-cloudflare-chunks.mjs` verifies asset hashes without granting raw backup access. Scope and current limitations: [PHASE_0_CHECKPOINT.md](PHASE_0_CHECKPOINT.md).
 
 | Target / Scope | Verification Command | What It Verifies |

@@ -1,287 +1,69 @@
-# STAGE G: Final Production Storage Reclamation Approval Report
+# Phase 0: final production reclamation approval
 
-**Project:** BibleResearch (`ejoperxiwxlcbsqrkrvb`)  
-**Static Asset Layer:** Cloudflare Workers Static Assets (`bibleresearch-corpus`)  
-**Date:** 2026-11-09  
-**Status:** **READY FOR USER APPROVAL**  
+**Status: VERIFIED AND AWAITING SEPARATE USER CONFIRMATION. Production reclamation has not run; Phase 0 is not complete.**
 
----
+## Verified gates
 
-## Executive Summary
+- Backups: **PASS**, all 19 counts and canonical content digests, **3,083,555 records**. Original shards and three encrypted historical archives are retained. Corrected local syntax recovery shards match fresh production content. Rendering differences were locale ordering; syntax differences were actual frame/canonical mapping changes.
+- Representative restoration: **PASS**, 23 records / 14 relations, including FK/index/sequence and retrieval checks. No full-data restore was performed or claimed.
+- Isolated reclaimed state: **PASS**, 19 tables empty and SELECT-denied; five exact RPCs, 12 website operations including accountless notes, five MCP tools, geography/chronology and explicit required-source failures.
+- Production preflight: **PASS**, 13 individual assertions and combined sequence. Production research baselines: **5/5 PASS**. Earlier transient failures were recorded, investigated and rerun, never waived.
+- Protection: **PASS baseline and rollback-only dry-run**, 116 retained tables fingerprinted. Eight mutation/rollback tests passed. Actual post-reclamation preservation remains pending.
+- Cloudflare: **1,890/1,890 verified core assets**, unchanged Worker version `21e402c0-3da7-49b3-b3cd-f7703cca8f18`. No core assets changed since verification. Raw backup access remains forbidden. Clean-checkout Worker compilation with verified existing assets passed without Supabase source reads or dataset regeneration.
+- Typecheck, size/manifest checks and website build: **PASS**.
 
-All prerequisites, safeguards, cryptographic backups, and isolated database restoration tests for the production storage reclamation of BibleResearch have been **independently verified and completed**. 
+## Exact scope: 19 tables
 
-**Destructive production SQL has NOT been executed.** The updated reclamation script (`scripts/reclaim-supabase-storage.sql`) has been prepared as an atomic, fail-closed transaction with in-transaction preflight and post-truncation assertions, awaiting explicit human approval.
-
-| Metric | Measured Live State | Projected Post-Reclamation | Target Threshold |
-| :--- | :--- | :--- | :--- |
-| **Total Database Size** | **1,397.73 MiB** (1,465,625,747 B) | **362.60 MiB** (380,214,419 B) | **< 400.00 MiB** (PASS) |
-| **Reclaimable 19 Tables** | **1,035.13 MiB** (1,085,411,328 B) | **0.00 MiB** | Reclaims 74.06% of database |
-| **Supabase Free Limit** | 500.00 MiB | 362.60 MiB | **Safe (< 73% of limit)** |
-| **Cloudflare Corpus Assets** | 1,890 files (504.45 MiB) | 1,890 files (unchanged) | Free Plan (max 20,000 files) |
-| **Restricted Records** | 200 `frame` rows protected | 200 rows retained in DB & backup | Zero exposure to public |
-| **Recovery Test** | Isolated PostgreSQL 16 WASM | Verified: Schema, Data & Probes | **PASS (true)** |
-
----
-
-## 1. Restricted Macula Data Resolution
-
-### 1.1 License & Policy Audit
-An independent audit of `public.field_license_registry` (Record ID 15) confirmed:
-- **Field Name:** `frame`
-- **Origin:** *"A0/A1 frames resemble SDBH frames; Clear vs UBS origin not stated"*
-- **License:** `unverified`
-- **Status:** `disabled_unverified`
-- **Decision Note:** *"Stored, not exposed."*
-- **Policy Law:** Retention in secure internal database storage is **authorized**; distribution or publishing to public channels (Cloudflare Static Assets or GitHub) is **strictly prohibited**.
-
-### 1.2 Storage Separation & Preservation
-The live Supabase database contained 2,294 rows in `public.macula_gated_field_values`:
-- 2,094 public unencumbered rows (`greek`, `greekstrong`).
-- 200 restricted semantic frame rows (`frame`), covering Genesis 1 (94), Psalm 1 (14), Psalm 2 (27), Psalm 3 (17), and Isaiah 53 (48).
-
-**Preservation Actions Completed:**
-1. **Private Encrypted Backup:** All 200 restricted records extracted with full morpheme context and encrypted with AES-256-GCM at `.artifacts/private-backup/macula_gated_restricted_frame_200.json.enc` (plaintext SHA-256: `a214c54cc88dd377d0a279cf603fc348bd5d45ed9b555ac3e13c1aa5c48e982a`).
-2. **Private Production Table:** Migrated into private table `bible_internal.macula_gated_restricted_frames` on Supabase (`ejoperxiwxlcbsqrkrvb`). Row count verified: **200**.
-   - Placed in private `bible_internal` schema (unexposed to PostgREST/anon).
-   - Created with independent schema (zero external foreign keys), ensuring it survives the truncation of `macula_hebrew_morphemes`.
-
-### 1.3 Internal Macula Syntax Tables Preservation
-The two internal Macula syntax tables included in the reclamation target list were audited and preserved:
-- `bible_internal.macula_syntax_import_files` (983 rows | SHA-256: `eeab778defca8f50dd6da00584c7988399a40c72b5816dd597f85fbfe1ce40e6`) -> Preserved at `.artifacts/private-backup/macula_syntax_import_files_983.json.enc`.
-- `bible_internal.macula_syntax_unmapped_nodes` (60 live Supabase rows | SHA-256: `4dc208f6fc9c881915b8cf74de26490270d75b3a1404a4925bd63e3031b1455c`) -> Preserved at `.artifacts/private-backup/macula_syntax_unmapped_nodes_60.json.enc`.
-
----
-
-## 2. Authentic PostgreSQL Backup Verification
-
-Genuine PostgreSQL schema definitions and partitioned backup datasets have been constructed outside the Cloudflare public deployment directory.
-
-### 2.1 Backup DDL Files
-Generated by `scripts/build-reclamation-backup-schema.mjs`:
-- `.artifacts/db-backup/schema/01_dependencies_schema.sql` (Sequences, schemas `bible_internal`, dependency tables `source_releases`, `source_editions`, `books`, `lxx_swete_books`, `reader_english_editions`, `field_license_registry`, `lemmas`, `lexemes`, `verses`, `words`).
-- `.artifacts/db-backup/schema/02_reclamation_tables_schema.sql` (Canonical DDL for all 19 reclamation tables, primary keys, check constraints, unique constraints, and foreign key relationships).
-- `.artifacts/db-backup/schema/03_indexes.sql` (76 secondary indexes supporting the 19 reclamation tables).
-
-### 2.2 Backup Data Shards
-Stored under `.artifacts/static-corpus/tables/` and `.artifacts/db-backup/tables/` (total 3,083,152 rows across 19 reclamation tables + 4 db-backup tables):
-- `public.macula_hebrew_morphemes`: 475,911 rows (42 shards)
-- `public.macula_greek_tokens`: 275,520 rows (30 shards)
-- `public.lxx_swete_words`: 588,579 rows (20 shards)
-- `public.morphhb_tokens`: 306,786 rows (22 shards)
-- `public.tagnt_tokens`: 142,096 rows (15 shards)
-- `public.syntax_nodes`: 1,338,108 rows (146 shards)
-- `public.syntax_edges`: 1,298,688 rows (91 shards)
-- `public.verse_translation_sources`: 443,524 rows (14 shards)
-- `public.lexeme_identifiers`: 113,595 rows (3 shards)
-- `public.edition_passages`: 62,418 rows (2 shards)
-- `public.reader_rendering_groups`: 98,133 rows (2 shards)
-- `public.hebrew_lxx_verse_map`: 22,633 rows (2 shards)
-- `public.reader_english_verses`: 31,215 rows (1 shard)
-- `public.word_form_lemmas`: 270,447 rows (22 shards)
-- `public.token_morphemes`: 2,321 rows (1 shard)
-- `public.cross_token_mappings`: 147 rows (1 shard)
-- `public.macula_gated_field_values`: 2,094 public rows (1 shard) + 200 restricted private rows
-- `bible_internal.macula_syntax_import_files`: 983 rows (1 shard)
-- `bible_internal.macula_syntax_unmapped_nodes`: 60 live rows / 128 corpus rows (1 shard)
-- `db-backup.words_full`: 150,105 rows (10 shards)
-- `db-backup.verses_full`: 31,203 rows (1 shard)
-- `db-backup.syntax_nodes_db`: 125,010 rows (14 shards)
-- `db-backup.syntax_edges_db`: 121,477 rows (9 shards)
-
----
-
-## 3. Real Isolated PostgreSQL Restoration Test
-
-Recovery verification was split into two independent tracks in `scripts/restore-supabase-storage.mjs` and verified using an isolated local PostgreSQL 16 WASM engine (`@electric-sql/pglite`):
-
-### Results:
-```
-============================================================
-FINAL RECOVERY CERTIFICATION STATUS
-============================================================
-  backup_files_valid:         PASS (true)
-  database_restore_verified:  PASS (true)
-============================================================
-OVERALL RECOVERY VERIFICATION: PASSED
+```text
+public.cross_token_mappings
+public.token_morphemes
+public.macula_gated_field_values
+public.macula_hebrew_morphemes
+public.macula_greek_tokens
+public.word_form_lemmas
+public.lxx_swete_words
+public.morphhb_tokens
+public.syntax_edges
+public.syntax_nodes
+public.verse_translation_sources
+public.tagnt_tokens
+public.lexeme_identifiers
+public.edition_passages
+public.reader_rendering_groups
+public.hebrew_lxx_verse_map
+public.reader_english_verses
+bible_internal.macula_syntax_unmapped_nodes
+bible_internal.macula_syntax_import_files
 ```
 
-### Restoration Test Phases (`scripts/test-isolated-pg-restore.mjs`):
-1. **Phase 1 — Schema DDL Execution:** All schemas, 19 reclamation tables, core dependencies, constraints, and indexes created successfully.
-2. **Phase 2 — Core Dependencies Loading:** Loaded `source_releases` (10), `source_editions` (16), `books` (66), `field_license_registry` (40).
-3. **Phase 3 — Reclamation & Private Restoration:** Restored `macula_syntax_import_files` (983/983), `macula_syntax_unmapped_nodes` (60/60), `cross_token_mappings` (147/147), and `macula_gated_field_values` (2,294 = 2,094 public + 200 private frame).
-4. **Phase 4 — Constraint Enforcement Probes:**
-   - Primary Key duplicate rejection: **PASS** (expected error caught).
-   - CHECK constraint rejection: **PASS** (invalid status rejected).
-5. **Phase 5 — Representative Record Probes:**
-   - Hebrew morphology: Genesis 1:1!1 -> `בְּ` (`בְּ`) verified.
-   - Greek token: Matthew 1:1!1 -> `Βίβλος` (`βίβλος`) verified.
-   - Septuagint: Swete Book 1 1:1 -> `ΕΝ` verified.
-   - Word form lemmas: Probed and verified.
-   - Syntax nodes: Probed and verified.
-   - Private restricted frame: Genesis 1:1!2 (`בָּרָ֣א`) -> `A0:010010010031; A1:010010010052;010010010072;` verified.
+Retain all other tables, including `hebrew_lxx_word_alignments`, `versification_mappings`, `lxx_norm_word_summary`, `macula_greekstrong_morphemes`, notes, discoveries, users, chronology, geography, lexical data and private translation choices. Every current count was verified. The only corrected SQL count was `hebrew_lxx_verse_map`: **23,039**, replacing 22,633.
 
----
+## Protected production fingerprints
 
-## 4. Rebuild Protection & Upstream Provenance
+The content digest includes every typed field and primary key. Full schema/column/index/constraint/trigger/RLS/privilege metadata is pinned in the reviewed SQL. The five tables are explicitly excluded from scope.
 
-### 4.1 Export Script Hardening (`scripts/export-static-corpus.py`)
-- **Minimum Expected Row Thresholds (`MIN_EXPECTED_TABLE_ROWS`):** Added strict non-zero row assertions for all tables (e.g. `lxx_swete_words` >= 580,000, `macula_hebrew_morphemes` >= 470,000, `syntax_nodes` >= 120,000).
-- **Automatic Offline Shard Fallback:** If cache is missing, the exporter inspects local shards in `.artifacts/static-corpus/tables/` before touching the network. If the live database tables have been truncated, it uses the immutable local shards rather than generating empty files.
-- **Fail-Closed Rebuild Guard:** If database rows are below minimum threshold and no valid local shards exist, the script **aborts immediately** with `REBUILD GUARD ERROR`, preventing the generation of corrupted or empty corpus shards.
-- **Manifest Completeness Check:** Asserts total static assets >= 1,890 before writing `manifest.json`.
+| Table | Rows | Content SHA-256 |
+| --- | ---: | --- |
+| public.bol_events | 5 | `18e1434fae8c039147dbf87430f6dd9c19c51ffc17e48c36e21d452c773d4f76` |
+| public.bol_profiles | 1 | `1b922818d209b19a07f93683464baf113269b5964d262001bdca360416b3c822` |
+| public.bol_years | 4 | `72ecb663453422dde710c4c902bfab52f9d6f0d5043e8b2c42538ddcecac8972` |
+| public.content | 66 | `849f46c9065fb833d5425ab223ce7f31b93578839bbc5165a199d8caefdb4450` |
+| public.pages | 5 | `274a84809491aedcae6084497e5161e41e8fc81c0455888d169be72eb02ac192` |
 
-### 4.2 CI Pre-Deployment Safeguards (`.github/workflows/publish-static-corpus.yml`)
-- Added mandatory pre-deployment verification step checking manifest asset count (>= 1,890) and Macula syntax completion (983 files) before `wrangler deploy` can execute.
+## Size and exact guarded operation
 
-### 4.3 Pinned Upstream Revisions
-- `STEPBible/STEPBible-Data`: `be4191f0082aeedddb0eff0c02c966292b2bd641`
-- `Clear-Bible/macula-hebrew`: `47db250c8fa2cef65f8bf9dca5befa0cd9fc0112`
-- `Clear-Bible/macula-greek`: `8423afed4de1b1fb3dc57de9e5fafb72abffbe29`
-- `nathans/lxx-swete`: `26bad3e`
-- `openscriptures/morphhb`: `3d15126`
+- Current: **1,513,426,067 bytes / 1443.32 MiB**.
+- Target allocation: **1,132,150,784 bytes / 1079.70 MiB**.
+- Projected remaining: **381,275,283 bytes / 363.61 MiB**. Actual size must be measured after execution.
 
-### 4.4 Durable Backup Strategy for `.artifacts`
-Because `.artifacts` is gitignored:
-1. **Primary Working Copy:** Authoritative local repository (`c:\Projects\BibleResearch\.artifacts`).
-2. **Cold Archive Bundle:** To create a compressed, encrypted snapshot for offsite storage:
-   ```bash
-   tar -czf bibleresearch-artifacts-cold-backup.tar.gz .artifacts/db-backup .artifacts/private-backup .artifacts/static-corpus/manifest.json
-   sha256sum bibleresearch-artifacts-cold-backup.tar.gz > bibleresearch-artifacts-cold-backup.sha256
-   ```
-3. **Restoration on New Environment:** Can be cloned directly from Cloudflare R2 / private cold backup.
+Review the exact SQL at [.artifacts/phase0/reclamation-approval.sql](.artifacts/phase0/reclamation-approval.sql). **SHA-256: `4e3088eb91559d069ded21c905dd78715c8eb0230ece3ee9f00e9d6cd8cf4ad7`**. Generated by [build-reclamation-approval.mjs](scripts/build-reclamation-approval.mjs), from [the base SQL](scripts/reclaim-supabase-storage.sql) and [preservation checks](scripts/reclamation-preservation.sql).
 
----
+After separate approval, the authorized session sets `phase0.release_approved = 'Execute the verified TRUNCATE.'` and executes the reviewed SQL as one transaction. It pins the five baselines, checks release-trigger definitions, locks/fingerprints every retained non-system regular/partitioned table, runs the original research/count/size assertions, disables release guards only for the exact 19 targets, performs one **TRUNCATE without CASCADE or identity reset**, re-enables the guards, verifies zero target rows and compares all retained content/schema before COMMIT. Service-owned tables use ACCESS SHARE where stronger locking is unavailable; strict equality is still required. No table is dropped, reset, recreated or replaced.
 
-## 5. Storage Accounting & Table Sizing
+## Rollback, recovery and follow-up
 
-Measured on live Supabase PostgreSQL (`ejoperxiwxlcbsqrkrvb`):
+- Before COMMIT: any error rolls back TRUNCATE and guard changes atomically. Stop, inspect the failed assertion, and verify original counts/fingerprints. Never bypass an assertion.
+- After COMMIT: if a regression requires recovery, restore only the 19 targets from the verified inventory, corrected syntax shards and original encrypted archives. Use one authorized PostgreSQL transaction, temporary JSONB staging and typed inserts with original IDs (`jsonb_populate_record`, `OVERRIDING SYSTEM VALUE`), FK parents first, with all syntax nodes in one INSERT for self-references. Retained canonical/dynamic tables must not be replaced. Preserve existing sequences, constraints, indexes, policies and privileges. Verify all 19 counts/digests, retrieval contracts and retained fingerprints before committing recovery. The existing representative test verifies this procedure's components; a full production restore and its duration have not been demonstrated or claimed.
+- After successful reclamation: verify all 19 counts are zero, every protected/retained table is unchanged, actual database size is below 500 MiB (preferably 400), and focused production website/MCP/research/Cloudflare checks pass. Then synchronize the dedicated branch into main without overwriting unrelated work or force-pushing.
 
-### Complete Breakdown of the 19 Reclamation Tables:
-| Schema | Table Name | Live Bytes | Live MiB | Live Rows | Status |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| `public` | `macula_hebrew_morphemes` | 210,026,496 | 200.30 | 475,911 | Offloaded to Cloudflare |
-| `public` | `macula_greek_tokens` | 128,868,352 | 122.90 | 275,520 | Offloaded to Cloudflare |
-| `public` | `word_form_lemmas` | 120,561,664 | 114.98 | 270,447 | Offloaded to Cloudflare |
-| `public` | `lxx_swete_words` | 117,866,496 | 112.41 | 588,579 | Offloaded to Cloudflare |
-| `public` | `morphhb_tokens` | 106,053,632 | 101.14 | 306,786 | Offloaded to Cloudflare |
-| `public` | `syntax_nodes` | 101,777,408 | 97.06 | 125,010 | Offloaded to Cloudflare |
-| `public` | `verse_translation_sources` | 90,677,248 | 86.48 | 443,524 | Offloaded to Cloudflare |
-| `public` | `tagnt_tokens` | 67,010,560 | 63.91 | 142,096 | Offloaded to Cloudflare |
-| `public` | `syntax_edges` | 61,898,752 | 59.03 | 121,477 | Offloaded to Cloudflare |
-| `public` | `lexeme_identifiers` | 33,546,240 | 31.99 | 113,595 | Offloaded to Cloudflare |
-| `public` | `edition_passages` | 14,467,072 | 13.80 | 62,418 | Offloaded to Cloudflare |
-| `public` | `reader_rendering_groups` | 13,172,736 | 12.56 | 98,133 | Offloaded to Cloudflare |
-| `public` | `hebrew_lxx_verse_map` | 10,149,888 | 9.68 | 22,633 | Offloaded to Cloudflare |
-| `public` | `reader_english_verses` | 7,274,496 | 6.94 | 31,215 | Offloaded to Cloudflare |
-| `public` | `token_morphemes` | 851,968 | 0.81 | 2,321 | Offloaded to Cloudflare |
-| `bible_internal`| `macula_syntax_import_files` | 499,712 | 0.48 | 983 | Offloaded to Cloudflare |
-| `public` | `macula_gated_field_values` | 376,832 | 0.36 | 2,294 | 200 frame in private DB |
-| `public` | `cross_token_mappings` | 188,416 | 0.18 | 147 | Offloaded to Cloudflare |
-| `bible_internal`| `macula_syntax_unmapped_nodes`| 139,264 | 0.13 | 60 | Offloaded to Cloudflare |
-| **TOTAL** | **19 Target Tables** | **1,085,411,328**| **1,035.13** | **3,083,152** | **Reclaimable Storage** |
-
-### Projected Storage Balance:
-- **Current Database Size:** 1,397.73 MiB (1,465,625,747 bytes)
-- **Less Reclaimed Tables:** -1,035.13 MiB (-1,085,411,328 bytes)
-- **Projected Post-Reclamation Size:** **362.60 MiB** (380,214,419 bytes)
-- **Free Plan Limit:** 500.00 MiB (Projected buffer: 137.40 MiB)
-- **Target Goal:** < 400.00 MiB (**Goal met by 37.40 MiB**)
-
----
-
-## 6. Preflight & Test Suite Verification Results
-
-Every automated test and preflight check has been executed against live production endpoints and passed:
-
-1. **`node scripts/preflight-storage-reclamation.mjs`** -> **PASS**
-   - Syntax Tree Integrity: PASS (12/12 live shards SHA-256 verified)
-   - Referential Integrity: PASS (is_valid=true)
-   - Evidence Coverage Audit: PASS
-   - Reader Overview Place Anchors (Gen 2:14): PASS (3 anchors)
-   - 8 Hybrid RPCs: PASS
-   - Septuagint & Cross-Testament Greek: PASS
-   - Retained Dynamic Tables: PASS (`verses`=31,203, `words`=150,105, `lemmas`=22,171, `lexemes`=22,719, `lexical_senses`=26,179, `places`=1,344)
-2. **`node scripts/restore-supabase-storage.mjs`** -> **PASS**
-   - Track 1 (`backup_files_valid`): TRUE
-   - Track 2 (`database_restore_verified`): TRUE
-3. **`node scripts/verify-canonical-lexical-db.mjs`** -> **PASS**
-4. **`node scripts/verify-word-formation.mjs`** -> **PASS (8/8 suites)**
-5. **`node scripts/verify-greek-statistics.mjs`** -> **PASS (24/24 tests)**
-6. **`node scripts/verify-septuagint-layer.mjs`** -> **PASS**
-7. **`node scripts/verify-corpus-integrity.mjs`** -> **PASS (28/28 tests)**
-8. **`node scripts/verify-hybrid-equivalence.mjs`** -> **PASS**
-9. **`node scripts/notes-guard.mjs --compare`** -> **PASS**
-10. **`npm run check:types`** -> **PASS (0 errors)**
-11. **`npm run check:size`** -> **PASS (0 errors, all sections <= 80 lines, files <= 450 lines)**
-
----
-
-## 7. Execution Instructions (For User Execution)
-
-> [!CAUTION]
-> Storage reclamation permanently empties 19 static tables from PostgreSQL. While all data is completely preserved in backups and served via Cloudflare Workers, once committed, recovery requires restoring the backup.
-
-### Script Location:
-`scripts/reclaim-supabase-storage.sql`
-
-### Safety Properties Guaranteed:
-1. **Atomic Transaction:** Enclosed in `BEGIN ... COMMIT`.
-2. **Timeouts:** `SET LOCAL lock_timeout = '10s'`, `SET LOCAL statement_timeout = '60s'`.
-3. **In-Transaction Preflight:** 13 automated checks run inside the transaction. If any condition fails, the transaction rolls back automatically without touching any table.
-4. **Exact Pre-Truncation Row Counts:** Checks exact live row counts for all 19 tables before truncate.
-5. **NO CASCADE:** Truncates only the 19 explicitly named tables.
-6. **In-Transaction Post-Check:** Asserts that all 19 tables are 0 and core tables (`words`, `verses`, `macula_gated_restricted_frames`) are untouched before commit.
-
-### How to Execute:
-Open the **Supabase SQL Editor** for project `ejoperxiwxlcbsqrkrvb`:
-1. Copy the contents of `scripts/reclaim-supabase-storage.sql`.
-2. Paste into the SQL Editor and click **Run**.
-3. The script will execute in < 1 second.
-
----
-
-## 8. Post-Reclamation Verification Commands
-
-Immediately after running `scripts/reclaim-supabase-storage.sql`:
-
-1. **Verify Database Size in SQL Editor:**
-   ```sql
-   SELECT
-     pg_size_pretty(pg_database_size(current_database())) AS total_db_size,
-     round(pg_database_size(current_database()) / (1024.0 * 1024.0), 2) AS total_db_mib;
-   ```
-   *Expected Output: ~362.60 MiB (< 400 MiB).*
-
-2. **Run Post-Reclamation Verification:**
-   ```bash
-   node scripts/preflight-storage-reclamation.mjs
-   ```
-
-3. **Verify Hybrid Equivalence:**
-   ```bash
-   node scripts/verify-hybrid-equivalence.mjs
-   ```
-
----
-
-## 9. Rollback & Recovery Instructions
-
-If rollback is ever desired, the tables can be restored without affecting dynamic research:
-
-1. **Apply Schema DDL (if recreating from scratch):**
-   ```bash
-   # Schema DDL is preserved at .artifacts/db-backup/schema/02_reclamation_tables_schema.sql
-   ```
-2. **Execute Full Restore Pipeline:**
-   ```bash
-   node scripts/restore-supabase-storage.mjs
-   ```
-3. **Re-populate from Partitioned Shards:**
-   Each table's `.jsonl.gz` shards in `.artifacts/static-corpus/tables/` and `.artifacts/db-backup/tables/` can be streamed into PostgreSQL via PostgREST or `COPY`.
-
----
-
-## Conclusion
-
-# READY FOR USER APPROVAL
+**Required final confirmation: “Execute the verified TRUNCATE.”** Earlier approvals and “continue” messages do not authorize this destructive statement.

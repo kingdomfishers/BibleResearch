@@ -3,34 +3,38 @@
 -- STAGE G: Production Storage Reclamation (WITH MANDATORY IN-TRANSACTION PREFLIGHT)
 --
 -- IMPORTANT: DO NOT EXECUTE UNTIL EXPLICIT USER APPROVAL IS GRANTED.
+-- Generate the reviewable preservation wrapper with build-reclamation-approval.mjs.
+-- The wrapper pins five protected-table fingerprints and compares every retained
+-- public/bible_internal/auth/storage table before and after the transaction.
+-- This base SQL remains blocked by the deployed stage_g_release_gate triggers.
 --
 -- Live Storage Accounting (measured on Supabase `ejoperxiwxlcbsqrkrvb`):
---   Current total database size:           1,397.73 MiB (1,465,625,747 bytes)
---   19 static tables scheduled for offload: 1,035.13 MiB (1,085,411,328 bytes)
---   Projected post-reclamation DB size:      362.60 MiB   (380,214,419 bytes)
+--   Current total database size:           1,443.32 MiB (1,513,426,067 bytes)
+--   19 static tables scheduled for offload: 1,079.70 MiB (1,132,150,784 bytes)
+--   Projected post-reclamation DB size:      363.61 MiB   (381,275,283 bytes)
 --   Supabase Free limit:                     500.00 MiB
---   Preferred target:                      < 400.00 MiB (ACHIEVED: ~362.60 MiB)
+--   Preferred target:                      < 400.00 MiB (PROJECTED: ~363.61 MiB)
 --
--- 19 Reclaimed Static Tables (1,035.13 MiB total, 3,083,152 rows):
---   1. public.macula_hebrew_morphemes                  (200.30 MiB | 475,911 rows)
---   2. public.macula_greek_tokens                      (122.90 MiB | 275,520 rows)
---   3. public.word_form_lemmas                         (114.98 MiB | 270,447 rows)
---   4. public.lxx_swete_words                          (112.41 MiB | 588,579 rows)
---   5. public.morphhb_tokens                           (101.14 MiB | 306,786 rows)
---   6. public.syntax_nodes                              (97.06 MiB | 125,010 rows)
---   7. public.verse_translation_sources                 (86.48 MiB | 443,524 rows)
---   8. public.tagnt_tokens                              (63.91 MiB | 142,096 rows)
---   9. public.syntax_edges                              (59.03 MiB | 121,477 rows)
---  10. public.lexeme_identifiers                        (31.99 MiB | 113,595 rows)
---  11. public.edition_passages                          (13.80 MiB |  62,418 rows)
---  12. public.reader_rendering_groups                   (12.56 MiB |  98,133 rows)
---  13. public.hebrew_lxx_verse_map                       (9.68 MiB |  22,633 rows)
---  14. public.reader_english_verses                      (6.94 MiB |  31,215 rows)
---  15. public.token_morphemes                            (0.81 MiB |   2,321 rows)
---  16. bible_internal.macula_syntax_import_files         (0.48 MiB |     983 rows)
---  17. public.macula_gated_field_values                  (0.36 MiB |   2,294 rows)
---  18. public.cross_token_mappings                       (0.18 MiB |     147 rows)
---  19. bible_internal.macula_syntax_unmapped_nodes       (0.13 MiB |      60 rows)
+-- 19 Reclaimed Static Tables (1,079.70 MiB total, 3,083,555 rows):
+--   1. public.macula_hebrew_morphemes (475,911 rows)
+--   2. public.macula_greek_tokens (275,520 rows)
+--   3. public.word_form_lemmas (270,447 rows)
+--   4. public.lxx_swete_words (588,579 rows)
+--   5. public.morphhb_tokens (306,786 rows)
+--   6. public.syntax_nodes (125,010 rows)
+--   7. public.verse_translation_sources (443,524 rows)
+--   8. public.tagnt_tokens (142,096 rows)
+--   9. public.syntax_edges (121,477 rows)
+--  10. public.lexeme_identifiers (113,595 rows)
+--  11. public.edition_passages (62,418 rows)
+--  12. public.reader_rendering_groups (98,133 rows)
+--  13. public.hebrew_lxx_verse_map (23,039 rows)
+--  14. public.reader_english_verses (31,215 rows)
+--  15. public.token_morphemes (2,321 rows)
+--  16. bible_internal.macula_syntax_import_files (983 rows)
+--  17. public.macula_gated_field_values (2,294 rows)
+--  18. public.cross_token_mappings (147 rows)
+--  19. bible_internal.macula_syntax_unmapped_nodes (60 rows)
 --
 -- Safety Guarantees:
 -- 1. Explicit atomic transaction (BEGIN ... COMMIT).
@@ -209,7 +213,7 @@ BEGIN
   IF v_count <> 31215 THEN RAISE EXCEPTION 'PREFLIGHT BLOCKED: public.reader_english_verses has % rows (expected 31215)', v_count; END IF;
 
   SELECT count(*) INTO v_count FROM public.hebrew_lxx_verse_map;
-  IF v_count <> 22633 THEN RAISE EXCEPTION 'PREFLIGHT BLOCKED: public.hebrew_lxx_verse_map has % rows (expected 22633)', v_count; END IF;
+  IF v_count <> 23039 THEN RAISE EXCEPTION 'PREFLIGHT BLOCKED: public.hebrew_lxx_verse_map has % rows (expected 23039)', v_count; END IF;
 
   SELECT count(*) INTO v_count FROM public.token_morphemes;
   IF v_count <> 2321 THEN RAISE EXCEPTION 'PREFLIGHT BLOCKED: public.token_morphemes has % rows (expected 2321)', v_count; END IF;
@@ -261,7 +265,7 @@ END;
 $preflight$;
 
 -- ============================================================================
--- PHASE 1: RECLAIM 19 STATIC CORPUS TABLES (~1,035.13 MiB)
+-- PHASE 1: RECLAIM 19 STATIC CORPUS TABLES (~1,079.70 MiB)
 -- Preserves all table schemas, constraints, indexes, and RLS policies while
 -- releasing 100% of heap and index pages back to disk in < 1 second.
 -- NO CASCADE is used; all mutually-referencing tables are explicitly listed.

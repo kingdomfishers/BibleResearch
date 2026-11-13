@@ -12,7 +12,8 @@ import {RECLAMATION_TABLES} from './phase0-storage-scope.mjs';
 const root='.artifacts/phase0';
 const catalog=JSON.parse(fs.readFileSync('supabase/recovery/reclamation-catalog.json'));
 const inventory=JSON.parse(fs.readFileSync(root+'/backup-inventory.json'));
-const expected=JSON.parse(fs.readFileSync(root+'/live-table-digests.json'));
+const canonical=process.argv.includes('--canonical');
+const expected=JSON.parse(fs.readFileSync(root+(canonical?'/fresh-target-digests.json':'/live-table-digests.json')));
 const hash=x=>crypto.createHash('sha256').update(x).digest('hex');
 const secret=fs.readFileSync('ARCHITECTURE_INDEPENDENT_AUDIT.md','utf8').match(/'([^'\r\n]*private_macula_frame_vault[^'\r\n]*)'/)?.[1];
 assert.ok(secret,'Historical archive key evidence missing');
@@ -37,7 +38,8 @@ async function* records(table){
  for(const shard of table.encrypted)yield* decrypt(shard.path);
 }
 const failedOnly=process.argv.includes('--failed-only');
-const previous=failedOnly?JSON.parse(fs.readFileSync(root+'/backup-record-verification.json')):null;
+const reportFile=root+(canonical?'/backup-canonical-verification.json':'/backup-record-verification.json');
+const previous=failedOnly?JSON.parse(fs.readFileSync(reportFile)):null;
 const targets=failedOnly?previous.tables.filter(t=>!t.count_matches||!t.digest_matches).map(t=>t.relation):RECLAMATION_TABLES;
 const report={status:'RUNNING',full_restore_performed:false,tables:previous?previous.tables.filter(t=>!targets.includes(t.relation)):[]};
 let db;
@@ -56,16 +58,21 @@ try{
   }
   for await(const row of records(table)){batch.push(row);if(batch.length===1000)await check();}await check();
   // Let PostgreSQL order typed primary keys; JavaScript string ordering is not a SQL collation contract.
+  let actual;
+  if(canonical)actual=hash(digests.map(r=>r.digest).sort().join(''));
+  else {
   await db.exec(`DROP TABLE IF EXISTS digest_keys; CREATE TEMP TABLE digest_keys (${pk.map(k=>quoteIdentifier(k)+' '+descriptor.columns.find(c=>c.name===k).type).join(',')},digest text);`);
   for(let i=0;i<digests.length;i+=1000)await db.query(`INSERT INTO digest_keys SELECT ${pk.map((k,j)=>`(r->'pk'->>${j})::${descriptor.columns.find(c=>c.name===k).type}`).join(',')},r->>'digest' FROM jsonb_array_elements($1::jsonb)r`,[JSON.stringify(digests.slice(i,i+1000))]);
-  const actual=(await db.query(`SELECT encode(sha256(convert_to(coalesce(string_agg(digest,'' ORDER BY ${pk.map(quoteIdentifier).join(',')}),''),'UTF8')),'hex') AS digest FROM digest_keys`)).rows[0].digest,golden=expected.find(t=>t.relation===relation);
-  const result={relation,rows:digests.length,typed_rows_sha256:actual,count_matches:digests.length===Number(golden.rows),digest_matches:actual===golden.typed_rows_sha256};
+  actual=(await db.query(`SELECT encode(sha256(convert_to(coalesce(string_agg(digest,'' ORDER BY ${pk.map(quoteIdentifier).join(',')}),''),'UTF8')),'hex') AS digest FROM digest_keys`)).rows[0].digest;
+  }
+  const golden=expected.find(t=>t.relation===relation);
+  const result={relation,rows:digests.length,typed_rows_sha256:actual,count_matches:digests.length===Number(golden.rows),digest_matches:actual===(canonical?golden.canonical_sha256:golden.typed_rows_sha256)};
   report.tables.push(result);
-  fs.writeFileSync(root+'/backup-record-verification.json',JSON.stringify(report,null,2));
+  fs.writeFileSync(reportFile,JSON.stringify(report,null,2));
   fs.writeFileSync(root+'/backup-record-progress.json',JSON.stringify({relation,checked_tables:report.tables.length,rows:digests.length,pass:result.count_matches&&result.digest_matches}));
  }
  report.status=report.tables.every(t=>t.count_matches&&t.digest_matches)?'PASS_ALL_19_RECOVERY_DATASETS':'BACKUP_MISMATCH';
  console.log(JSON.stringify({status:report.status,tables:report.tables.length,mismatches:report.tables.filter(t=>!t.count_matches||!t.digest_matches).map(t=>t.relation)}));
  if(report.status!=='PASS_ALL_19_RECOVERY_DATASETS')process.exitCode=1;
 }catch(error){report.status='FAIL';report.message=error.message;console.log(JSON.stringify({status:report.status,message:error.message}));process.exitCode=1;}
-finally{fs.writeFileSync(root+'/backup-record-verification.json',JSON.stringify(report,null,2));if(db)await db.close();}
+finally{fs.writeFileSync(reportFile,JSON.stringify(report,null,2));if(db)await db.close();}

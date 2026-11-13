@@ -4,6 +4,8 @@ Updated: 2026-11-01. Companion docs: [CHRONOLOGY_ARCHITECTURE.md](CHRONOLOGY_ARC
 
 ## 1. System Overview & Core Principles
 
+Phase 0 storage cutover is verified and awaiting separate production approval: immutable corpus reads use Cloudflare Static Assets, while retained canonical and dynamic data remain in Supabase. The exact 19-table scope, recovery evidence, five protected-table fingerprints and transactional preservation controls are documented in [PHASE_0_CHECKPOINT.md](PHASE_0_CHECKPOINT.md) and [STAGE_G_FINAL_APPROVAL.md](STAGE_G_FINAL_APPROVAL.md). No production reclamation has been executed.
+
 A high-performance, database-first Bible research application built with **Vite**, **Vanilla TypeScript**, **MapLibre GL JS**, and **Supabase (PostgreSQL)**.
 
 1. **100% Database-Native Prompts & Context Resolvers (RPCs):** All 8 research RPCs and context resolvers, including `get_verse_research_v1`, execute directly inside PostgreSQL in a single round-trip.

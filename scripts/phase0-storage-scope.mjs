@@ -18,7 +18,12 @@ export const RETAINED_RELATIONS = Object.freeze([
   'public.hebrew_lxx_word_alignments', 'public.versification_mappings',
   'public.lxx_norm_word_summary', 'public.macula_greekstrong_morphemes',
 ]);
+export const PROTECTED_RELATIONS = Object.freeze([
+  'public.bol_events', 'public.bol_profiles', 'public.bol_years',
+  'public.content', 'public.pages',
+]);
 export function assertReclamationScope(sql = fs.readFileSync('scripts/reclaim-supabase-storage.sql', 'utf8')) {
+  if ([...RETAINED_RELATIONS,...PROTECTED_RELATIONS].some(t=>RECLAMATION_TABLES.includes(t))) throw Error('Protected relation overlaps reclamation scope');
   const statements = sql.replace(/--[^\n]*/g, '').match(/\bTRUNCATE\s+TABLE\s+([^;]+);/gi) ?? [];
   if (statements.length !== 1) throw Error('Expected exactly one reclamation TRUNCATE statement');
   const targets = statements[0].replace(/^TRUNCATE\s+TABLE\s+/i, '').replace(/;$/, '').split(',').map(s => s.trim()).sort();
