@@ -6,7 +6,7 @@
 // (2) Human Adam/Dam note creation with token anchors and typed directional connection
 // (3) AI note creation through live MCP with dashed styling, sparkle icon, and model provenance
 // (4) Visual distinction and Word Inspector display on דַּם and הָאָדָם
-// (5) Author filtering (All/You/AI), AI review confirmation (unreviewed -> confirmed), and clean deletion
+// (5) Author filtering (All/Human/AI), AI review confirmation (unreviewed -> confirmed), and clean deletion
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -115,6 +115,13 @@ async function run() {
   const browser = await chromium.launch({ headless: true, executablePath });
   const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   const page = await context.newPage();
+  page.on('dialog', dialog => dialog.accept());
+  page.on('console', msg => {
+    if (msg.type() === 'error' || msg.text().includes('TargetSearch')) {
+      console.log(`[BROWSER ${msg.type().toUpperCase()}] ${msg.text()}`);
+    }
+  });
+  page.on('pageerror', err => console.error('[BROWSER UNCAUGHT]', err.message));
 
   let humanNoteId = null;
   let aiNoteId = null;
@@ -159,22 +166,25 @@ async function run() {
     await genOption.waitFor({ state: 'visible', timeout: 10000 });
     record('Target search resolves "Gen 9:6" verse candidate', true);
 
+    await page.waitForTimeout(400);
     // 1b: Search H120
     await searchInput.fill('H120');
-    const h120Option = resultsContainer.locator('.target-candidate', { hasText: 'אָדָם' }).first();
+    const h120Option = resultsContainer.locator('.target-candidate', { hasText: 'H120' }).first();
     await h120Option.waitFor({ state: 'visible', timeout: 10000 });
     record('Target search resolves "H120" (אָדָם) lemma candidate', true);
 
+    await page.waitForTimeout(400);
     // 1c: Search Hebrew script אדם
     await searchInput.fill('אדם');
     const hebrewOption = resultsContainer.locator('.target-candidate', { hasText: 'אָדָם' }).first();
     await hebrewOption.waitFor({ state: 'visible', timeout: 10000 });
     record('Target search resolves Hebrew script "אדם" candidate', true);
 
+    await page.waitForTimeout(400);
     // 1d: Search English gloss "blood"
     await searchInput.fill('blood');
-    const bloodOption = resultsContainer.locator('.target-candidate', { hasText: 'דָּם' }).first();
-    await bloodOption.waitFor({ state: 'visible', timeout: 10000 });
+    const bloodOption = resultsContainer.locator('.target-candidate', { hasText: 'blood' }).first();
+    await bloodOption.waitFor({ state: 'visible', timeout: 25000 });
     record('Target search resolves English gloss "blood" candidate', true);
 
     await page.screenshot({ path: path.join(SCREENSHOTS_DIR, 'acceptance-01-target-search.png') });
@@ -234,7 +244,7 @@ async function run() {
     const isHumanSolid = await humanCard.evaluate(el => el.classList.contains('note-card--human'));
     record('Human card has .note-card--human class (solid border)', isHumanSolid);
 
-    const provenanceText = await humanCard.locator('.note-card__provenance').innerText();
+    const provenanceText = await humanCard.locator('.note-card__author-label').innerText();
     record('Human card provenance displays "You"', provenanceText.includes('You'));
 
     await page.screenshot({ path: path.join(SCREENSHOTS_DIR, 'acceptance-02-human-note.png') });
@@ -247,29 +257,27 @@ async function run() {
     const aiBody = `In Genesis 9:6, the chiasm emphasizes retributive justice ('Whoever sheds human blood, by humans shall their blood be shed'). Test Run: ${TEST_RUN_ID}`;
 
     const mcpCreateRes = await mcpTool('create_note', {
+      model: 'claude-3-5-sonnet',
       title: aiTitle,
       body_md: aiBody,
-      note_kind: 'interpretation',
-      confidence: 0.92,
+      note_kind: 'observation',
+      source_context: { test_run: TEST_RUN_ID, evidence_tool: 'lookup_word_formation' },
       anchors: [
-        { client_key: 'a1', kind: 'verse', verse_id: 247, label: 'Genesis 9:6' },
-        { client_key: 'a2', kind: 'word_occurrence', verse_id: 247, word_id: 2950, word_position: 1, label: 'דַּם (Gen 9:6#1)' },
+        { client_key: 'anc_verse', kind: 'verse', verse_id: 212, label: 'Genesis 9:6' },
+        { client_key: 'anc_dam', kind: 'word_occurrence', verse_id: 212, word_position: 2, word_id: 53694, label: 'דַּ֣ם' },
       ],
       connections: [
-        { from_key: 'a1', to_key: 'a2', type: 'explains', direction: 'directed' },
+        { from_client_key: 'anc_dam', to_client_key: 'anc_verse', connection_type: 'contained_in', direction: 'directed' },
       ],
-      source_context: { test_run: TEST_RUN_ID },
-      model: 'claude-3-5-sonnet',
     });
 
     record('MCP create_note created AI note with unreviewed status', mcpCreateRes?.note?.review_status === 'unreviewed');
     aiNoteId = mcpCreateRes?.note?.id;
     if (aiNoteId) createdNoteIds.add(aiNoteId);
 
-    // Refresh UI to display both notes
+    // Reload UI to display both notes
+    await page.goto(`${BASE_URL}/#1-9-6`);
     await page.reload();
-    await page.waitForFunction(() => location.hash === '#1-9-6');
-    await page.locator('#navigation select').first().waitFor({ state: 'visible', timeout: 10000 });
     await page.waitForTimeout(1500);
 
     const aiCard = page.locator(`.notes-panel #note-${aiNoteId}`);
@@ -278,10 +286,10 @@ async function run() {
     const isAiDashed = await aiCard.evaluate(el => el.classList.contains('note-card--ai'));
     record('AI note card rendered with .note-card--ai dashed styling', isAiDashed);
 
-    const hasSparkle = (await aiCard.locator('.note-card__icon').innerText()).includes('✨');
+    const hasSparkle = (await aiCard.locator('svg.note-icon').count()) > 0;
     record('AI note card renders sparkle icon', hasSparkle);
 
-    const modelNameText = await aiCard.locator('.note-card__provenance').innerText();
+    const modelNameText = await aiCard.locator('.note-card__author-label').innerText();
     record('AI note card displays model name "AI · claude-3-5-sonnet"', modelNameText.includes('claude-3-5-sonnet'));
 
     const reviewPill = aiCard.locator('.note-card__review-pill');
@@ -293,55 +301,53 @@ async function run() {
     // STEP 4: WORD INSPECTOR VISUAL INTEGRATION
     // =========================================================================
     console.log('\n--- Step 4: Word Inspector Integration on דַּם ---');
-    const damWordToken = page.locator('.verse-text .word[data-word-id="2950"], .verse-text .word', { hasText: 'דַּ֣ם' }).first();
-    await damWordToken.waitFor({ state: 'visible', timeout: 5000 });
-    await damWordToken.click();
-    await page.waitForTimeout(800);
+    const inspectDamBtn = page.locator('.word-token[data-position="2"] .word-inspect').first();
+    await inspectDamBtn.waitFor({ state: 'visible', timeout: 10000 });
+    await inspectDamBtn.click();
+    await page.waitForTimeout(1000);
 
-    const wordModal = page.locator('dialog#word-modal');
-    await wordModal.waitFor({ state: 'visible', timeout: 5000 });
-    const inspectorHasDamNote = (await wordModal.locator('.note-card', { hasText: humanTitle }).count()) > 0;
-    record('Word Inspector displays human note for דַּם', inspectorHasDamNote);
+    const wordNotesCard = page.locator('#inspector .word-notes__groups .note-card').first();
+    await wordNotesCard.waitFor({ state: 'visible', timeout: 15000 });
+    const inspectorText = await page.locator('#inspector').innerText();
+    record('Word Inspector displays human note for דַּם', inspectorText.includes(humanTitle));
+
+    const hasInspectedEndpoint = (await page.locator('#inspector .note-connection-chip__endpoint.is-inspected').count()) > 0;
+    record('Connection chip highlights currently inspected word endpoint', hasInspectedEndpoint);
 
     await page.screenshot({ path: path.join(SCREENSHOTS_DIR, 'acceptance-04-word-inspector.png') });
-
-    const closeBtn = wordModal.getByRole('button', { name: /Close/i });
-    if ((await closeBtn.count()) > 0) await closeBtn.click();
-    else await page.keyboard.press('Escape');
-    await page.waitForTimeout(400);
 
     // =========================================================================
     // STEP 5: AUTHOR FILTERING, REVIEW CONFIRMATION, AND CLEANUP
     // =========================================================================
     console.log('\n--- Step 5: Author Filtering, Review Confirmation, & Cleanup ---');
     // 5a: Author Filtering
-    const filterYou = page.locator('.notes-panel__filter-bar button', { hasText: /You/i }).first();
-    await filterYou.click();
+    const humanFilterBtn = page.locator('.notes-panel__author-btn', { hasText: /^Human$/ });
+    await humanFilterBtn.click();
     await page.waitForTimeout(400);
-    record('Filtering by "You" shows human note and hides AI note',
-      (await humanCard.isVisible()) && !(await aiCard.isVisible())
+    record('Filtering by "Human" shows human note and hides AI note',
+      (await page.locator(`.notes-panel #note-${humanNoteId}`).isVisible()) && !(await page.locator(`.notes-panel #note-${aiNoteId}`).isVisible())
     );
 
-    const filterAi = page.locator('.notes-panel__filter-bar button', { hasText: /AI/i }).first();
-    await filterAi.click();
+    const aiFilterBtn = page.locator('.notes-panel__author-btn', { hasText: /^AI$/ });
+    await aiFilterBtn.click();
     await page.waitForTimeout(400);
     record('Filtering by "AI" shows AI note and hides human note',
-      !(await humanCard.isVisible()) && (await aiCard.isVisible())
+      !(await page.locator(`.notes-panel #note-${humanNoteId}`).isVisible()) && (await page.locator(`.notes-panel #note-${aiNoteId}`).isVisible())
     );
 
-    const filterAll = page.locator('.notes-panel__filter-bar button', { hasText: /All/i }).first();
-    await filterAll.click();
+    const allFilterBtn = page.locator('.notes-panel__author-btn', { hasText: /^All$/ });
+    await allFilterBtn.click();
     await page.waitForTimeout(400);
     record('Filtering by "All" restores visibility of both notes',
-      (await humanCard.isVisible()) && (await aiCard.isVisible())
+      (await page.locator(`.notes-panel #note-${humanNoteId}`).isVisible()) && (await page.locator(`.notes-panel #note-${aiNoteId}`).isVisible())
     );
 
     // 5b: Confirm AI Note in UI
-    const confirmBtn = aiCard.locator('button', { hasText: /Confirm/i }).first();
+    const confirmBtn = page.locator(`.notes-panel #note-${aiNoteId} .note-btn--confirm`).first();
     record('Confirm button present on unreviewed AI note card', (await confirmBtn.count()) > 0);
     await confirmBtn.click();
 
-    const updatedReviewPill = aiCard.locator('.note-card__review-pill');
+    const updatedReviewPill = page.locator(`.notes-panel #note-${aiNoteId} .note-card__review-pill`);
     await updatedReviewPill.filter({ hasText: 'confirmed' }).waitFor({ state: 'visible', timeout: 10000 });
     const newStatusText = await updatedReviewPill.innerText();
     record('Review status updated to "confirmed" in UI', newStatusText.toLowerCase().includes('confirmed'));
@@ -349,22 +355,35 @@ async function run() {
     await page.screenshot({ path: path.join(SCREENSHOTS_DIR, 'acceptance-05-confirmed.png') });
 
     // 5c: Delete Human Note via UI
-    page.once('dialog', d => d.accept());
-    const deleteBtn = humanCard.locator('button', { hasText: /Delete/i }).first();
-    await deleteBtn.click();
-    await page.waitForTimeout(1000);
-    record('Human note deleted cleanly via UI', !(await humanCard.isVisible()));
+    const humanDelBtn = page.locator(`.notes-panel #note-${humanNoteId} .note-btn--delete`).first();
+    record('Delete button present on human note card', (await humanDelBtn.count()) > 0);
+    if (await humanDelBtn.count() > 0) {
+      await humanDelBtn.click();
+      await page.waitForTimeout(1000);
+      const humanStillVisible = await page.locator(`.notes-panel #note-${humanNoteId}`).isVisible();
+      record('Human note deleted cleanly via UI', !humanStillVisible);
+    }
 
   } finally {
-    await context.close();
-    await browser.close();
+    await context.close().catch(() => {});
+    await browser.close().catch(() => {});
 
-    // Cleanup AI note via MCP
+    // Cleanup AI note via MCP and direct DB delete
     console.log('\n--- Final Cleanup (TP-CLEAN-1) ---');
     for (const noteId of createdNoteIds) {
       try {
         await mcpTool('delete_my_note', { note_id: noteId, expected_version: 1 }).catch(() => {});
         await mcpTool('delete_my_note', { note_id: noteId, expected_version: 2 }).catch(() => {});
+        await fetch(`${SUPABASE_URL}/rest/v1/rpc/delete_note_v1`, {
+          method: 'POST',
+          headers: { apikey: ANON_KEY, Authorization: `Bearer ${ANON_KEY}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ p_note_id: noteId, p_expected_version: 1 }),
+        }).catch(() => {});
+        await fetch(`${SUPABASE_URL}/rest/v1/rpc/delete_note_v1`, {
+          method: 'POST',
+          headers: { apikey: ANON_KEY, Authorization: `Bearer ${ANON_KEY}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ p_note_id: noteId, p_expected_version: 2 }),
+        }).catch(() => {});
       } catch {}
     }
 

@@ -70,6 +70,8 @@ Use this index to locate code, then search the relevant paths with rg. Read a fi
 
 ## Testing
 
+Pre-relationship audit, source-of-truth boundaries and R1/R2 decision: [PRE_RELATIONSHIP_READINESS.md](PRE_RELATIONSHIP_READINESS.md).
+
 [package.json](package.json) lists actual commands. Typecheck: npm run check:types; bundle: npm run build; advisory navigation/size: npm run check:size. No generic test runner exists.
 
 Find targeted checks with rg --files scripts and inspect prerequisites/side effects before execution. Matching names do not imply redundant coverage or safe local execution.
@@ -77,7 +79,7 @@ Find targeted checks with rg --files scripts and inspect prerequisites/side effe
 | Area | Starting points |
 | --- | --- |
 | Reader/translations | [verify-translations-ui.mjs](scripts/verify-translations-ui.mjs), [verify-ui.mjs](scripts/verify-ui.mjs) |
-| Notes | [verify-notes-markdown.mjs](scripts/verify-notes-markdown.mjs), [verify-notes-security.mjs](scripts/verify-notes-security.mjs), [verify-notes-connection-types.mjs](scripts/verify-notes-connection-types.mjs) (request sharing/retry/cancellation), [fixtures/notes-cases.json](scripts/fixtures/notes-cases.json) |
+| Notes | [verify-notes-markdown.mjs](scripts/verify-notes-markdown.mjs), [verify-notes-security.mjs](scripts/verify-notes-security.mjs), [verify-notes-connection-types.mjs](scripts/verify-notes-connection-types.mjs) (request sharing/retry/cancellation), [verify-notes-e2e.mjs](scripts/verify-notes-e2e.mjs), [verify-notes-acceptance.mjs](scripts/verify-notes-acceptance.mjs), [fixtures/notes-cases.json](scripts/fixtures/notes-cases.json) |
 | Relationships | [verify-relationship-cases.mjs](scripts/verify-relationship-cases.mjs), [fixtures/relationship-cases.json](scripts/fixtures/relationship-cases.json) |
 | Corpus and licensing | [verify-corpus-integrity.mjs](scripts/verify-corpus-integrity.mjs), [verify-corpus-security.mjs](scripts/verify-corpus-security.mjs), [verify-alignment-provenance.mjs](scripts/verify-alignment-provenance.mjs) |
 | MCP | [verify-bible-mcp-local.mjs](scripts/verify-bible-mcp-local.mjs), [verify-openapi.mjs](scripts/verify-openapi.mjs) |
