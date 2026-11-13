@@ -14,11 +14,13 @@
 
 ## Recovery blocker
 
-[Backup verification](scripts/verify-phase0-backup-records.mjs) checked the captured **3,083,555** typed records without inserting the full datasets. All 19 row counts match. Initially 17 table hashes matched; `public.syntax_nodes` and `public.reader_rendering_groups` differed. A focused PostgreSQL-ordering recheck is recorded in `.artifacts/phase0/backup-record-verification.json`; do not treat matching counts as complete recoverability.
+[Backup verification](scripts/verify-phase0-backup-records.mjs) checked the captured **3,083,555** typed records without inserting the full datasets. All 19 row counts match. **17 table hashes match; `public.syntax_nodes` (125,010 rows) and `public.reader_rendering_groups` (98,133 rows) differ.** A focused recheck using PostgreSQL primary-key ordering confirmed both mismatches: `BACKUP_MISMATCH` in `.artifacts/phase0/backup-record-verification.json`. This rules out the initial JavaScript sorting implementation as the cause in the isolated engine; live collation and changed records still require authenticated comparison. Do not treat matching counts as complete recoverability.
 
 The three historical encrypted archives decrypt and match their plaintext digests. Their historical key risk is explicitly accepted by the user; no new encryption system or full restoration is required. Internal recovery data is selected from the actual encrypted 983-file/60-unmapped-row archives, rather than the expanded public synthetic metadata.
 
-The authenticated SQL connector is unavailable in the current session. Anonymous requests correctly deny raw target-table reads. If digest differences persist after the ordering recheck, authenticated, bounded live comparisons are required to identify and recover changed records; do not loosen permissions or bypass this gate.
+The authenticated SQL connector is unavailable in the current session. Anonymous requests correctly deny raw target-table reads. Authenticated, bounded live comparisons are required to identify the cause and recover changed records where necessary; do not loosen permissions or bypass this gate.
+
+Implementation commit `da44e41` and isolated-verification report commit `d6dd87f` are published on [the dedicated GitHub branch](https://github.com/kingdomfishers/BibleResearch/tree/phase0/reconcile-and-verify). Unrelated working-tree changes were not included.
 
 ## Scope, size and production proposal
 
