@@ -77,7 +77,7 @@ Find targeted checks with rg --files scripts and inspect prerequisites/side effe
 | Area | Starting points |
 | --- | --- |
 | Reader/translations | [verify-translations-ui.mjs](scripts/verify-translations-ui.mjs), [verify-ui.mjs](scripts/verify-ui.mjs) |
-| Notes | [verify-notes-markdown.mjs](scripts/verify-notes-markdown.mjs), [verify-notes-security.mjs](scripts/verify-notes-security.mjs), [fixtures/notes-cases.json](scripts/fixtures/notes-cases.json) |
+| Notes | [verify-notes-markdown.mjs](scripts/verify-notes-markdown.mjs), [verify-notes-security.mjs](scripts/verify-notes-security.mjs), [verify-notes-connection-types.mjs](scripts/verify-notes-connection-types.mjs) (request sharing/retry/cancellation), [fixtures/notes-cases.json](scripts/fixtures/notes-cases.json) |
 | Relationships | [verify-relationship-cases.mjs](scripts/verify-relationship-cases.mjs), [fixtures/relationship-cases.json](scripts/fixtures/relationship-cases.json) |
 | Corpus and licensing | [verify-corpus-integrity.mjs](scripts/verify-corpus-integrity.mjs), [verify-corpus-security.mjs](scripts/verify-corpus-security.mjs), [verify-alignment-provenance.mjs](scripts/verify-alignment-provenance.mjs) |
 | MCP | [verify-bible-mcp-local.mjs](scripts/verify-bible-mcp-local.mjs), [verify-openapi.mjs](scripts/verify-openapi.mjs) |

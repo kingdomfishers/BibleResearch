@@ -91,6 +91,7 @@ async function callWrite<T extends { ok: boolean; error?: NoteWriteError }>(
 
 // === @section:logic:passage-word-reads ===
 let cachedConnectionTypes: ConnectionTypesResponse | null = null;
+let pendingConnectionTypes: Promise<DataResult<ConnectionTypesResponse | null>> | null = null;
 
 async function connectionTypes(
   opts?: { signal?: AbortSignal }
@@ -98,11 +99,16 @@ async function connectionTypes(
   if (cachedConnectionTypes) {
     return { data: cachedConnectionTypes, source: 'live', error: null };
   }
-  const res = await call<ConnectionTypesResponse>('list_note_connection_types_v1', {}, 10000, opts?.signal);
-  if (res.data) {
-    cachedConnectionTypes = res.data;
-  }
-  return res;
+  // Share startup reads, but keep explicitly cancellable callers independent.
+  if (!opts?.signal && pendingConnectionTypes) return pendingConnectionTypes;
+  const request = call<ConnectionTypesResponse>('list_note_connection_types_v1', {}, 10000, opts?.signal)
+    .then(res => {
+      if (res.data) cachedConnectionTypes = res.data;
+      return res;
+    });
+  if (opts?.signal) return request;
+  pendingConnectionTypes = request.finally(() => { pendingConnectionTypes = null; });
+  return pendingConnectionTypes;
 }
 
 async function getForPassage(
