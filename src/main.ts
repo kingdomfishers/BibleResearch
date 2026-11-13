@@ -72,6 +72,11 @@ const notesPanel = createNotesPanel({
     await BibleRPC.notes.remove(noteId);
     notesPanel.refresh();
   },
+  onReview: async (noteId, status) => {
+    await BibleRPC.notes.setReview(noteId, status);
+    notesPanel.refresh();
+    notesBrowser.refresh();
+  },
   onTokenCounts: counts => reader.setNoteCounts(counts),
 });
 const nav = createNavSelector(navigate);
@@ -108,6 +113,11 @@ const notesBrowser = createNotesBrowser({
   onDeleteNote: async id => {
     await BibleRPC.notes.remove(id);
     notesPanel.refresh();
+  },
+  onReviewNote: async (id, status) => {
+    await BibleRPC.notes.setReview(id, status);
+    notesPanel.refresh();
+    notesBrowser.refresh();
   },
 });
 app.querySelector('#notes-browser-slot')!.append(notesBrowser.returnBar, notesBrowser.element);

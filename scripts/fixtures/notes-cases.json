@@ -155,5 +155,45 @@
     "emoji": "📖🕊️✨✡️✝️",
     "rtl_ltr_mixed": "In Genesis 1:1, the Hebrew word בְּרֵאשִׁית (b'reshit) is translated as 'In the beginning'.",
     "long_unbroken_string": "SupercalifragilisticexpialidociousWithExtremelyLongUnbrokenCharacterSequencesDesignedToTestWordWrappingBehaviorAndTextBreakageAcrossSmallScreenFormFactors"
+  },
+  "e2e_journeys": {
+    "human_journey": {
+      "passage": { "book": 1, "chapter": 9, "verse": 6, "verse_id": 212 },
+      "title_prefix": "[TEST] Human Adam/Dam Reflection",
+      "body_md": "Reflecting on דָּם (blood) and אָדָם (man) in Genesis 9:6: the root pairing reveals an intrinsic linguistic containment.",
+      "words": [
+        { "word_id": 53694, "position": 2, "original": "דַּ֣ם", "strongs": "H1818" },
+        { "word_id": 28013, "position": 3, "original": "הָאָדָם", "strongs": "H0120" }
+      ],
+      "connection": {
+        "type": "contained_in",
+        "direction": "directed",
+        "explanation": "The word dam is contained within ha-adam."
+      }
+    },
+    "ai_journey": {
+      "passage": { "book": 1, "chapter": 9, "verse": 6, "verse_id": 212 },
+      "model": "claude-3-5-sonnet",
+      "title_prefix": "[TEST] AI Exegetical Synthesis Gen 9:6",
+      "body_md": "AI exegetical observation: דָּם (blood) in Gen 9:6 emphasizes sanctity of life through morphological echo with אָדָם.",
+      "note_kind": "observation",
+      "anchors": [
+        { "client_key": "anc_verse", "kind": "verse", "verse_id": 212, "label": "Genesis 9:6" },
+        { "client_key": "anc_dam", "kind": "word_occurrence", "verse_id": 212, "word_position": 2, "word_id": 53694, "label": "דַּ֣ם" }
+      ],
+      "connection": {
+        "from_key": "anc_dam",
+        "to_key": "anc_verse",
+        "type": "contained_in",
+        "direction": "directed",
+        "explanation": "Word occurrence anchor connected to verse context."
+      }
+    },
+    "tp_int_3_samples": {
+      "dam": "דַּ֣ם",
+      "ha_adam": "הָאָדָם",
+      "adam_lemma": "אָדָם",
+      "greek_logos": "λόγος"
+    }
   }
 }

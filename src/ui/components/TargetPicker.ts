@@ -189,11 +189,18 @@ export function createTokenPicker(
   const element = document.createElement('div');
   element.className = 'token-picker';
   let tokenRequestId = 0;
+  let currentPassageKey = '';
+  let currentVerseId: number | null = null;
 
   function update(passage: ActivePassage | null, verseId: number | null): void {
-    element.replaceChildren();
-    if (!passage) { element.hidden = true; return; }
+    currentVerseId = verseId;
+    if (!passage) { element.hidden = true; currentPassageKey = ''; element.replaceChildren(); return; }
     element.hidden = false;
+    const passageKey = `${passage.book}:${passage.chapter}:${passage.verse}`;
+    if (passageKey === currentPassageKey) return;
+    currentPassageKey = passageKey;
+
+    element.replaceChildren();
     const header = document.createElement('div'); header.className = 'target-picker__section-title';
     header.textContent = `Select word occurrence (${formatVerseRef(passage)}):`;
     const list = document.createElement('div'); list.className = 'token-picker__list';
@@ -221,7 +228,7 @@ export function createTokenPicker(
         btn.addEventListener('click', () => {
           btn.classList.toggle('is-selected');
           onPick({
-            kind: 'word_occurrence', verse_id: verseId ?? 0, word_position: tok.word_position,
+            kind: 'word_occurrence', verse_id: currentVerseId ?? 0, word_position: tok.word_position,
             word_id: tok.word_id, label: `${tok.original_word} (${tok.transliteration})`,
           });
         });

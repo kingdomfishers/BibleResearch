@@ -5,7 +5,7 @@
 // @toc: imports | types | logic:load | logic:fetch | ui:author-filters | ui:type-filters | ui:list | ui:return-bar | ui:main
 
 // === @section:imports ===
-import type { ActivePassage, AuthorKind, Note, NoteAnchor, NoteKind } from '../../api/types';
+import type { ActivePassage, AuthorKind, Note, NoteAnchor, NoteKind, NoteReviewStatus } from '../../api/types';
 import type { KeysetCursor, NoteListResponse } from '../../api/notes-api-types';
 import { BibleRPC } from '../../api/rpc';
 import { notesState } from '../notes-state';
@@ -18,6 +18,7 @@ export interface NotesBrowserProps {
   onInspectWord?: (wordId: number) => void;
   onEditNote?: (note: Note) => void;
   onDeleteNote?: (noteId: string) => Promise<void>;
+  onReviewNote?: (noteId: string, status: NoteReviewStatus) => Promise<void>;
   onClose?: () => void;
 }
 
@@ -210,6 +211,7 @@ export function createNotesList(
     onAnchorClick: (anchor: NoteAnchor) => void;
     onEditNote?: (note: Note) => void;
     onDeleteNote?: (id: string) => Promise<void>;
+    onReviewNote?: (id: string, status: NoteReviewStatus) => Promise<void>;
     onLoadMore: () => Promise<void>;
   }
 ): { container: HTMLElement; render: () => void } {
@@ -251,6 +253,7 @@ export function createNotesList(
         onAnchor: handlers.onAnchorClick,
         onEdit: handlers.onEditNote,
         onDelete: handlers.onDeleteNote,
+        onReview: handlers.onReviewNote,
       });
       card.classList.add('note-card--compact');
       cardsContainer.append(card);
@@ -343,6 +346,10 @@ export function createNotesBrowser(props: NotesBrowserProps = {}): NotesBrowserH
       if (props.onDeleteNote) await props.onDeleteNote(id);
       await executeNotesFetch(mgr, filters, () => listView.render(), true);
     },
+    onReviewNote: async (id, status) => {
+      if (props.onReviewNote) await props.onReviewNote(id, status);
+      await executeNotesFetch(mgr, filters, () => listView.render(), true);
+    },
     onLoadMore: () => executeNotesFetch(mgr, filters, () => listView.render(), false),
   });
 
@@ -356,15 +363,9 @@ export function createNotesBrowser(props: NotesBrowserProps = {}): NotesBrowserH
   async function openDeepLink(noteId: string): Promise<boolean> {
     banner.hidden = true;
     const res = await BibleRPC.notes.getNote(noteId);
-    if (res.data) {
-      open();
-      if (props.onEditNote) props.onEditNote(res.data);
-      return true;
-    }
+    if (res.data) { open(); if (props.onEditNote) props.onEditNote(res.data); return true; }
     banner.textContent = 'Note not found or has been removed.';
-    banner.hidden = false;
-    open();
-    return false;
+    banner.hidden = false; open(); return false;
   }
 
   return {

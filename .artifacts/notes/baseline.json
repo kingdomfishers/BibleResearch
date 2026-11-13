@@ -1,5 +1,5 @@
 {
-  "captured_at": "2026-11-07T01:01:30.236Z",
+  "captured_at": "2026-11-13T05:16:26.389Z",
   "row_counts": {
     "verses": 31203,
     "words": 150105,
@@ -21,9 +21,9 @@
   },
   "mcp_health": {
     "name": "BibleResearch",
-    "version": "1.4.0",
+    "version": "1.9.0",
     "status": "ok",
-    "tools": 19,
-    "prompts": 18
+    "tools": 33,
+    "prompts": 22
   }
 }

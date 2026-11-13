@@ -398,7 +398,7 @@ export const BibleRPC = {
     return sample[`${p.book}-${p.chapter}-${p.verse}`] ?? [];
   },
   async getVerseWords(book: number, chapter: number, verse: number) {
-    const live = await rpc<VerseWordToken>('prompt_verse_words', { p_book: book, p_chapter: chapter, p_verse: verse });
+    const live = await rpc<VerseWordToken>('prompt_verse_words', { p_book: book, p_chapter: chapter, p_verse: verse }, 8000);
     if (live.data.length) return live;
     const fixture = this.getSampleVerse({ book, chapter, verse });
     return fixture.length ? result(fixture, 'sample') : live;

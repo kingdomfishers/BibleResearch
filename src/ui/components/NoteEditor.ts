@@ -419,5 +419,9 @@ export function createNoteEditor(props: NoteEditorProps): NoteEditorComponent {
     openDialog(); formView.titleInput.focus();
   }
 
+  (dialog as any).__setSourceContext = (ctx: Record<string, unknown>) => {
+    draft.source_context = { ...draft.source_context, ...ctx };
+  };
+
   return { element: dialog, openNew, openEdit, close: handleClose };
 }
