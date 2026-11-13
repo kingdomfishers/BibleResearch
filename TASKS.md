@@ -3,13 +3,6 @@
 detailed instructions live in linked architecture documents. `[ ]` open · `[-]` active. Remove tasks when verified complete.
 
 
-## P0 — Finish Cloudflare migration and reclaim storage (FIRST)
-
-Read `PHASE_0_CHECKPOINT.md` and the generated approval SQL. **Exact reclamation scope: 19 tables, not 23.** Retain the four excluded relations and all other data, especially `bol_events` (5), `bol_profiles` (1), `bol_years` (4), `content` (66), `pages` (5). All non-destructive gates pass: 19-table recovery counts/digests, representative restore, current-branch empty-table website/MCP/RPC tests, Cloudflare integrity, clean-checkout Worker build and rollback-only preservation/preflight across 116 retained tables. Size: 1,443.32 MiB; projected 363.61 MiB. Evidence covers 3,083,555 target records; do not repeat expensive successful checks without changed inputs.
-
-- [-] **P0-5 Final confirmation.** Present `STAGE_G_FINAL_APPROVAL.md`, exact generated SQL, protected fingerprints and recovery procedure. Require the separate explicit reply **“Execute the verified TRUNCATE.”** before production removal. Earlier “continue” messages do not authorize truncation.
-- [ ] **P0-6 Approved reclamation.** Only after explicit approval, execute guarded SQL, measure actual Supabase usage and smoke-test website/MCP. Retain archives and recovery instructions.
-
 ## R — New deterministic relationship engine (NEXT)
 
 Implementation authority: `RELATIONSHIP_ARCHITECTURE.md` **v5**; read only relevant §§ for each step (roadmap §15). Objective: clicking a Hebrew/Greek lemma shows **typed grammatical, lexical, translation and contextual connections**, counts, exact evidence, uncertainty, and paths between words. Offline generation → versioned **Cloudflare Static Assets**; Supabase → mutable notes/reviews/DLM. No AI used to generate source claims.

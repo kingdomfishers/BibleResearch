@@ -1,6 +1,6 @@
 # Phase 0: final production reclamation approval
 
-**Status: VERIFIED AND AWAITING SEPARATE USER CONFIRMATION. Production reclamation has not run; Phase 0 is not complete.**
+**Status: EXECUTED AND VERIFIED — 2026-11-13.** Explicit user approval: “TRUNCATE”. All 19 targets are empty; 116 retained-table transaction fingerprints and five post-commit protected snapshots match. Actual storage: **382,364,819 bytes / 364.65 MiB**. Production website/MCP/research checks pass. See [actual results](PHASE_0_CHECKPOINT.md#production-completion--2026-11-13). The approval evidence and recovery procedure below are retained as the historical execution record.
 
 ## Verified gates
 

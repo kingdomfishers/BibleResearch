@@ -1,8 +1,20 @@
 # Phase 0 checkpoint — 2026-11-13
 
-## Current verified update — supersedes the historical checkpoint below
+## Production completion — 2026-11-13
 
-**Reclamation has not been executed. Phase 0 is not complete. Separate confirmation “Execute the verified TRUNCATE.” remains mandatory.**
+**Phase 0 COMPLETE.** The user explicitly approved with “TRUNCATE”. The reviewed guarded transaction committed successfully; all 19 targets contain zero rows. Executed artifact SHA-256: `4e3088eb91559d069ded21c905dd78715c8eb0230ece3ee9f00e9d6cd8cf4ad7`.
+
+- **Storage:** 1,513,426,067 → **382,364,819 bytes / 364.65 MiB**, below both 500 MiB and the preferred 400 MiB target. Actual reduction: 1,131,061,248 bytes / 1,078.66 MiB.
+- **Preservation: PASS.** Transactional full-content/schema comparisons passed for all **116 retained tables** before COMMIT. Fresh post-commit comparisons exactly match all five protected content/schema fingerprints: bol_events **5**, bol_profiles **1**, bol_years **4**, content **66**, pages **5**. The four excluded relations remain intact. All **23** release guards are enabled. Retained words **150,105**, verses **31,203**, private frames **200**.
+- **Recovery: PASS.** All **19** recovery datasets / **3,083,555 records** match authoritative canonical digests; historical encrypted archives and corrected syntax recovery shards remain untouched. Representative restoration passed; no unnecessary full restore was performed. Recovery instructions below remain applicable; no restore was needed.
+- **Production regression: PASS.** Five exact research RPC goldens, **12 actual website gateway checks** (including notes retrieval, geography and chronology), MCP initialization and **five deployed research tools**, hybrid lexical/translation/reader/LXX checks and retained core counts passed with the targets empty. Existing isolated accountless-write and explicit-source-error tests remain valid.
+- **Cloudflare: PASS.** Unchanged Worker/assets retain **1,890/1,890** full integrity evidence; post-commit syntax/referential/coverage probes verified live shard SHA-256 results. Restricted backup endpoints remain private.
+- A post-commit Greek comparison probe exposed a pre-existing invoker permission failure: disabled restricted-source queries still caused relation permission checks. Migration [20261113165439_skip_disabled_restricted_greek_reads.sql](supabase/migrations/20261113165439_skip_disabled_restricted_greek_reads.sql) skips those queries when disabled. Rollback-only testing and production anon calls match the original privileged contract digest `d24646babea7255c68ddf43ddc2c4c84`; signatures, SECURITY INVOKER, table ACL/RLS and restricted-field gates are preserved. No restricted SELECT grant was added.
+- Detailed receipts, protected snapshots and focused results are retained locally under `.artifacts/phase0/` (including `post-reclamation-result.json`). Type checking passed. No DROP, CASCADE, reset, identity reset, unrelated data deletion or recovery execution occurred.
+
+## Historical pre-execution verification — retained as evidence
+
+**Historical state before the explicit approval and successful production execution recorded above.**
 
 - Supabase OAuth is authenticated. Fresh local Codex processes successfully listed tables and executed read-only SQL. Other remote environments need their own configured/authenticated connection.
 - **Backup verification: PASS, all 19 tables / 3,083,555 rows**, against fresh production counts and canonical SHA-256 digests. Row hashes include all typed columns and primary keys; sorting hexadecimal row hashes avoids locale differences. The rendering-group discrepancy was ICU/en-US versus C ordering. Syntax copies were corrected from authenticated production: 8,014 semantic-frame records and 7,710 records with stale verse/word/mapping-status fields. Original shards and all three encrypted archives are preserved. Production was not changed.
