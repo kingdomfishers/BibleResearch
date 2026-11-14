@@ -7,6 +7,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import zlib from 'node:zlib';
 import { runPilotBuild } from './build-relationship-pilot.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -14,6 +15,8 @@ const __dirname = path.dirname(__filename);
 const REPO_ROOT = path.resolve(__dirname, '..');
 const ARTIFACTS_DIR = path.join(REPO_ROOT, '.artifacts', 'relationships-v2');
 const FIXTURES_PATH = path.join(__dirname, 'fixtures', 'relationship-pilot-cases.json');
+const MCP_REL_PATH = path.join(REPO_ROOT, 'supabase', 'functions', 'bible-mcp', 'relationships-v2.ts');
+const SYNTAX_NODES_DIR = path.join(REPO_ROOT, '.artifacts', 'static-corpus', 'tables', 'syntax_nodes');
 
 const RESTRICTED_KEYS = new Set([
   'sdbh',
@@ -393,17 +396,197 @@ function runSuite() {
     );
   }
 
+  // Invariant 11: Stratified scale (200-500 clauses) and resolvable clause_node_id matching syntax_nodes.
+  {
+    const badNodeIds = [];
+    const nodeKeyRe = /^macula_tree:(macula-hebrew-wlc|macula-greek-nestle1904|macula-greek-sblgnt):.+#s\d+(\.\d+)*$/;
+    for (const f of frames) {
+      if (!nodeKeyRe.test(f.source.clause_node_id || '')) {
+        badNodeIds.push(`${f.frame_id}:${f.source.clause_node_id}`);
+      }
+      for (const r of relsByFrameId.get(f.frame_id) || []) {
+        if (r.evidence.source_clause_id !== f.source.clause_node_id) {
+          badNodeIds.push(`${r.relation_id}:clause_node_mismatch`);
+        }
+      }
+    }
+    let shardChecked = 0;
+    let shardMissing = [];
+    if (fs.existsSync(SYNTAX_NODES_DIR)) {
+      const canonicalKeys = new Set(
+        frames.filter((f) => f.source.alignment_status !== 'not_in_canonical_verse').map((f) => f.source.clause_node_id),
+      );
+      shardChecked = canonicalKeys.size;
+      const foundKeys = new Set();
+      const shardFiles = fs.readdirSync(SYNTAX_NODES_DIR).filter((n) => n.endsWith('.jsonl.gz')).sort();
+      for (const sf of shardFiles) {
+        const text = zlib.gunzipSync(fs.readFileSync(path.join(SYNTAX_NODES_DIR, sf))).toString('utf8');
+        for (const ln of text.split(/\r?\n/)) {
+          if (!ln) continue;
+          const m = /"node_key":"([^"]+)"/.exec(ln);
+          if (m && canonicalKeys.has(m[1])) {
+            foundKeys.add(m[1]);
+          }
+        }
+      }
+      shardMissing = [...canonicalKeys].filter((k) => !foundKeys.has(k));
+    }
+    const scaleOk = frames.length >= 200 && frames.length <= 500;
+    recordCheck(
+      'invariant_11_scale_and_clause_node_ids',
+      scaleOk && badNodeIds.length === 0 && shardMissing.length === 0,
+      `frames=${frames.length}, bad_node_ids=${badNodeIds.length}, syntax_node_shard_matches=${shardChecked - shardMissing.length}/${shardChecked}`,
+    );
+  }
+
+  // Invariant 12: R2.1 confirmed defect regressions and non-orphan include_candidates=false filtering.
+  {
+    const baseH0776Hits = [];
+    for (const f of frames) {
+      if (f.predicate?.lemma_id === 'lemma:H0776') baseH0776Hits.push(`${f.frame_id}:pred`);
+      for (const role of f.roles) {
+        if (role.lemma_id === 'lemma:H0776') baseH0776Hits.push(`${f.frame_id}:${role.head_token_id}`);
+      }
+    }
+    for (const r of relations) {
+      if (r.subject_lemma_id === 'lemma:H0776' || r.object_lemma_id === 'lemma:H0776') {
+        baseH0776Hits.push(r.relation_id);
+      }
+    }
+    const jhn13 = frameById.get('frame:macula-greek-nestle1904:JHN 1:3#cl0:svov1');
+    const badUnresolvedQuot = frames.filter((f) => f.context.speaker_scope === 'unknown' && f.context.quotation === 'none');
+    const psa30 = frameById.get('frame:macula-hebrew-wlc:PSA 3:0#cl2:svov1');
+    const psa31 = frameById.get('frame:macula-hebrew-wlc:PSA 3:1#cl1:svov1');
+
+    // Simulate include_candidates=false across every (edition, reference) group.
+    const orphanErrors = [];
+    const byPassage = new Map();
+    for (const f of frames) {
+      const k = `${f.source.edition}::${f.source.reference}`;
+      if (!byPassage.has(k)) byPassage.set(k, []);
+      byPassage.get(k).push(f);
+    }
+    for (const [k, pFrames] of byPassage.entries()) {
+      const pFrameIds = new Set(pFrames.map((f) => f.frame_id));
+      const pRels = relations.filter((r) => pFrameIds.has(r.frame_id));
+      const retainedRels = pRels.filter((r) => r.quality !== 'candidate');
+      const supportedIds = new Set(retainedRels.map((r) => r.frame_id));
+      const retainedFrames = pFrames.filter((f) => f.extraction.quality !== 'candidate' || supportedIds.has(f.frame_id));
+      const retainedFrameSet = new Set(retainedFrames.map((f) => f.frame_id));
+      for (const r of retainedRels) {
+        if (!retainedFrameSet.has(r.frame_id)) orphanErrors.push(`${k}:${r.relation_id}`);
+      }
+    }
+
+    const ok =
+      baseH0776Hits.length === 0 &&
+      jhn13?.context.modality === 'indicative' &&
+      jhn13?.context.quotation === 'unknown' &&
+      badUnresolvedQuot.length === 0 &&
+      Boolean(psa30 && psa31) &&
+      orphanErrors.length === 0;
+    recordCheck(
+      'invariant_12_r2_1_defect_regressions',
+      ok,
+      `baseH0776=${baseH0776Hits.length}, jhn1_3_mod=${jhn13?.context.modality}, unresolved_none_quot=${badUnresolvedQuot.length}, orphans=${orphanErrors.length}`,
+    );
+  }
+
+  // Invariant 13: Offline-vs-served parity and elimination of live parsing duplication in MCP.
+  {
+    const mcpSource = fs.readFileSync(MCP_REL_PATH, 'utf8');
+    const forbiddenLiveTokens = ['extractLiveFromSyntaxPayload', 'live_syntax_fallback', 'HeadRuleSet', 'resolvePhraseHead'];
+    const foundDup = forbiddenLiveTokens.filter((tok) => mcpSource.includes(tok));
+    const b64Match = /const PILOT_B64 = (?:"([^"]*)"|`([^`]*)`);/.exec(mcpSource);
+    let parityOk = false;
+    let parityDetail = 'missing_PILOT_B64';
+    if (b64Match) {
+      const b64Str = (b64Match[1] ?? b64Match[2] ?? '').replace(/\s+/g, '');
+      const bundle = JSON.parse(zlib.inflateRawSync(Buffer.from(b64Str, 'base64')).toString('utf8'));
+      const framesSame = JSON.stringify(bundle.pf) === JSON.stringify(frames);
+      const relsSame = JSON.stringify(bundle.pr) === JSON.stringify(relations);
+      const covSame = JSON.stringify(bundle.pc) === JSON.stringify(coverage);
+      parityOk = framesSame && relsSame && covSame;
+      parityDetail = `frames=${framesSame}, relations=${relsSame}, coverage=${covSame}, dup=${foundDup.length}`;
+    }
+    recordCheck('invariant_13_mcp_bundle_parity_and_no_live_duplication', foundDup.length === 0 && parityOk, parityDetail);
+  }
+
+  // Invariant 14: Precision and recall on independently inspected Hebrew & Greek gold clauses.
+  const evalLanguageGold = (langKey, items) => {
+    let tp = 0;
+    let fp = 0;
+    let fn = 0;
+    const fpDetails = [];
+    const fnDetails = [];
+    const unsupportedCounts = {};
+    for (const item of items) {
+      if (item.unsupported_kind) {
+        unsupportedCounts[item.unsupported_kind] = (unsupportedCounts[item.unsupported_kind] || 0) + 1;
+      }
+      const frame = frameById.get(item.frame_id);
+      if (!frame) {
+        fnDetails.push(`${item.frame_id}:missing_frame`);
+        fn += item.expected_high_quality_relation_ids.length || 1;
+        continue;
+      }
+      const actualHigh = new Set(
+        (relsByFrameId.get(item.frame_id) || []).filter((r) => r.quality !== 'candidate').map((r) => r.relation_id),
+      );
+      const expected = new Set(item.expected_high_quality_relation_ids);
+      for (const aid of actualHigh) {
+        if (expected.has(aid)) tp += 1;
+        else {
+          fp += 1;
+          fpDetails.push(aid);
+        }
+      }
+      for (const eid of expected) {
+        if (!actualHigh.has(eid)) {
+          fn += 1;
+          fnDetails.push(eid);
+        }
+      }
+    }
+    const precision = tp + fp > 0 ? tp / (tp + fp) : 1;
+    const recall = tp + fn > 0 ? tp / (tp + fn) : 1;
+    return {
+      language: langKey,
+      clauses_inspected: items.length,
+      tp,
+      fp,
+      fn,
+      precision: Number(precision.toFixed(4)),
+      recall: Number(recall.toFixed(4)),
+      unsupported_counts: unsupportedCounts,
+      fp_details: fpDetails,
+      fn_details: fnDetails,
+    };
+  };
+
+  const hebrewMetrics = evalLanguageGold('hebrew', fixtures.gold_inspected_clauses.hebrew);
+  const greekMetrics = evalLanguageGold('greek', fixtures.gold_inspected_clauses.greek);
+  recordCheck(
+    'invariant_14_gold_precision_and_recall',
+    hebrewMetrics.fp === 0 && greekMetrics.fp === 0 && hebrewMetrics.tp > 0 && greekMetrics.tp > 0,
+    `hebrew P=${hebrewMetrics.precision} R=${hebrewMetrics.recall} (tp=${hebrewMetrics.tp},fp=${hebrewMetrics.fp},fn=${hebrewMetrics.fn}); greek P=${greekMetrics.precision} R=${greekMetrics.recall} (tp=${greekMetrics.tp},fp=${greekMetrics.fp},fn=${greekMetrics.fn})`,
+  );
+
   const passedCount = checks.filter((c) => c.passed).length;
   const failedCount = checks.filter((c) => !c.passed).length;
 
   const report = {
-    schema_version: '1.0',
+    schema_version: '2.0',
     summary: {
       total_checks: checks.length,
       passed: passedCount,
       failed: failedCount,
       fixtures_passed: fixturePassed,
       fixtures_failed: fixtureFailed,
+    },
+    precision_and_recall: {
+      hebrew: hebrewMetrics,
+      greek: greekMetrics,
     },
     coverage_snapshot: coverage.languages,
     checks,
@@ -415,7 +598,7 @@ function runSuite() {
     'utf8',
   );
 
-  console.log(JSON.stringify(report.summary, null, 2));
+  console.log(JSON.stringify({ summary: report.summary, precision_and_recall: report.precision_and_recall }, null, 2));
   if (failedCount > 0) {
     for (const c of checks.filter((x) => !x.passed)) {
       console.error(`FAIL [${c.name}]: ${c.detail}`);

@@ -209,6 +209,18 @@ def extract_s0_words(root: ET.Element, lang: str) -> dict[str, dict[str, Any]]:
     return out
 
 
+def _get_rule(elem: ET.Element) -> str:
+    return elem.get("rule") or elem.get("Rule") or ""
+
+
+def _is_v2cl_word(elem: ET.Element) -> bool:
+    return (
+        elem.tag == "w"
+        and elem.get("role") in ("v", "vc")
+        and _get_rule(elem) in ("v2cl", "vc2cl")
+    )
+
+
 class S1ClauseExtractor:
     """Adapted S1 + S2 + S4 clause and phrase-head extractor with strict fallback guards."""
 
@@ -239,12 +251,32 @@ class S1ClauseExtractor:
         if elem.tag != "wg" or elem.get("class") not in (None, "cl"):
             return False
         kids = list(elem)
+        rule = _get_rule(elem)
+        complex_rules = ("ClCl", "ClCl2", "Conj-CL", "CLaCL", "aCLaCL")
         if any(ch.get("role") for ch in kids):
-            return False
+            # MACULA Greek <wg Rule="ClCl"> can wrap 2+ flattened clauses (wg.cl or w[rule=v2cl])
+            # without any non-clausal role constituents (e.g., MAT 28:9!6-7).
+            if rule not in complex_rules:
+                return False
+            clause_unit_count = 0
+            for ch in kids:
+                if _is_v2cl_word(ch):
+                    clause_unit_count += 1
+                elif ch.tag == "wg" and (ch.get("class") == "cl" or self.is_complex(ch)):
+                    clause_unit_count += 1
+                elif ch.tag == "w" and self._is_fn(ch, OPENER_CLASSES + ("adv",)):
+                    continue
+                elif ch.tag == "wg" and ch.get("class") == "cjp":
+                    continue
+                else:
+                    return False
+            return clause_unit_count >= 2
         has_clause = False
         for ch in kids:
             if ch.tag == "w":
-                if not self._is_fn(ch, OPENER_CLASSES + ("adv",)):
+                if _is_v2cl_word(ch):
+                    has_clause = True
+                elif not self._is_fn(ch, OPENER_CLASSES + ("adv",)):
                     return False
             elif ch.get("class") == "cl" or self.is_complex(ch):
                 has_clause = True
@@ -260,7 +292,7 @@ class S1ClauseExtractor:
         return any((vref, pos + k) in self._neg_only_positions for k in range(1, 5))
 
     def _unwrap_conjunct(self, elem: ET.Element) -> ET.Element:
-        if elem.tag != "wg" or elem.get("type") != "group" or elem.get("rule"):
+        if elem.tag != "wg" or elem.get("type") != "group" or _get_rule(elem):
             return elem
         rest = [
             x
@@ -348,7 +380,7 @@ class S1ClauseExtractor:
             ]
 
         kids = list(elem)
-        rule = elem.get("rule") or ""
+        rule = _get_rule(elem)
         if not kids:
             return [
                 {
@@ -465,18 +497,51 @@ class S1ClauseExtractor:
         return res
 
     def _compute_sentence_clauses(
-        self, root: ET.Element
+        self,
+        root: ET.Element,
+        edition: str = "",
+        source_path: str = "",
     ) -> list[dict[str, Any]]:
         """Walk all sentences and return clause descriptors in document order."""
         clauses_out: list[dict[str, Any]] = []
         clause_counters: dict[str, int] = {}
 
-        def collect_direct_words(cl_elem: ET.Element) -> list[dict[str, Any]]:
-            """Words belonging to this clause outside any nested <wg class='cl'> or complex."""
+        # Precompute deterministic syntax_nodes.node_key paths matching scripts/export-static-corpus.py:
+        # macula_tree:{edition}:{source_path}#s{s_idx}.{child_ord}...
+        node_key_map: dict[int, str] = {}
+        sentences = [ch for ch in root if ch.tag == "sentence"]
+        if not sentences:
+            sentences = root.findall(".//sentence")
+
+        def _index_element(el: ET.Element, prefix: str) -> None:
+            ord_idx = 0
+            for ch in el:
+                if ch.tag not in ("wg", "w", "c"):
+                    continue
+                ord_idx += 1
+                k = f"{prefix}.{ord_idx}"
+                node_key_map[id(ch)] = k
+                _index_element(ch, k)
+
+        for s_idx, sent_el in enumerate(sentences, start=1):
+            base = f"macula_tree:{edition}:{source_path}#s{s_idx}"
+            node_key_map[id(sent_el)] = base
+            _index_element(sent_el, base)
+
+        seen_speech_in_file = False
+
+        def collect_direct_words(
+            cl_elem: ET.Element,
+            excluded_ids: set[int] | None = None,
+        ) -> list[dict[str, Any]]:
+            """Words belonging to this clause outside any nested <wg class='cl'>, complex, or excluded v2cl."""
             direct: list[dict[str, Any]] = []
+            skip = excluded_ids or set()
 
             def walk(node: ET.Element) -> None:
                 for ch in node:
+                    if id(ch) in skip:
+                        continue
                     if ch.tag == "w":
                         rec = self._rec(ch)
                         if rec:
@@ -489,7 +554,115 @@ class S1ClauseExtractor:
             walk(cl_elem)
             return direct
 
-        def walk_sentence(sent: ET.Element) -> None:
+        def build_v2cl_record(
+            w_elem: ET.Element,
+            parent_cid: str | None,
+            pending_openers: list[dict[str, Any]],
+            wrapping_neg: bool,
+            role_in_parent: str | None,
+            sent_clauses: list[dict[str, Any]],
+        ) -> None:
+            rec = self._rec(w_elem)
+            if not rec:
+                return
+            vref = rec["verse_ref"]
+            k = clause_counters.get(vref, 0)
+            clause_counters[vref] = k + 1
+            cid = f"{vref}#cl{k}"
+            raw_role = w_elem.get("role") or "v"
+            v_head = {
+                "word": rec,
+                "resolution_kind": "direct_role_word",
+                "is_verified_head": True,
+                "applied_rules": [],
+                "unlisted_rules": [],
+                "is_clausal": False,
+                "is_coordinated": False,
+                "token_span": [rec["id"]],
+                "diagnostics": [],
+            }
+            resolved_roles = {raw_role: [v_head]}
+            neg_signals: list[str] = []
+            if wrapping_neg:
+                neg_signals.append("wrapping_complex_negator")
+            if self.lex.is_negative(rec) and not self._is_not_only(rec):
+                neg_signals.append(f"{rec['id']}:{rec.get('lemma')}")
+            negated = len(neg_signals) > 0
+
+            vt = rec.get("type")
+            if vt in NOT_A_VERB_FORM:
+                vt = None
+            force = self.lex.force.get(vt or "", self.lex.force["_default"])
+            if (
+                vt == "subjunctive"
+                and self.lex.subjunctive_main
+                and parent_cid is None
+                and not ({norm(o.get("lemma")) for o in pending_openers} & self.lex.subordinators)
+            ):
+                force = self.lex.subjunctive_main
+
+            q_signals: list[str] = []
+            for o in pending_openers:
+                if o.get("type") in self.lex.q_types or norm(o.get("lemma")) in self.lex.q_lemmas:
+                    q_signals.append(f"opener:{o['id']}:{o.get('lemma')}")
+            if rec.get("type") in self.lex.q_types or norm(rec.get("lemma")) in self.lex.q_lemmas:
+                q_signals.append(f"word:{rec['id']}:{rec.get('lemma')}")
+            if self.lex.q_punct and self.lex.q_punct in (rec.get("after") or ""):
+                q_signals.append("punct:;")
+
+            if vt and vt.startswith("participle"):
+                modality = "participle"
+            elif vt and vt.startswith("infinitive"):
+                modality = "infinitive"
+            elif force != "directive" and q_signals:
+                modality = "interrogative"
+            elif vt in ("imperative", "jussive", "cohortative", "subjunctive", "optative"):
+                modality = vt
+            elif force == "directive":
+                modality = "imperative"
+            else:
+                modality = "indicative"
+
+            raw_voice = rec.get("voice")
+            voice = raw_voice if raw_voice in ("active", "passive", "middle", "middlepassive") else "unknown"
+            conj_lemmas = [o.get("lemma") for o in pending_openers if o.get("class") == "cj" and o.get("lemma")]
+            cl_rec = {
+                "source_clause_id": cid,
+                "syntax_node_key": node_key_map.get(id(w_elem), ""),
+                "verse_ref": vref,
+                "all_verse_refs": [vref],
+                "clause_index_in_verse": k,
+                "clause_rule": _get_rule(w_elem),
+                "role_in_parent": role_in_parent or "v2cl",
+                "parent_clause_id": parent_cid,
+                "clause_kind": "verbal" if raw_role == "v" else "copular",
+                "direct_role_keys": [raw_role],
+                "resolved_roles": resolved_roles,
+                "predicate_heads": [v_head] if raw_role == "v" else [],
+                "copular_heads": [v_head] if raw_role == "vc" else [],
+                "predicate_word": rec,
+                "predicate_ambiguous": False,
+                "verb_form": vt,
+                "verb_stem": rec.get("stem"),
+                "voice": voice,
+                "modality": modality,
+                "negated": negated,
+                "negation_signals": neg_signals,
+                "question_signals": q_signals,
+                "coord_conjunction": " ".join(conj_lemmas) if conj_lemmas else None,
+                "opener_lemmas": [o.get("lemma") for o in pending_openers if o.get("lemma")],
+                "token_ids": [rec["id"]],
+                "direct_token_ids": [rec["id"]],
+                "speech_quoted": False,
+                "speech_parent_clause_id": None,
+                "quotation_status": "unknown",
+                "speaker_scope": "unknown",
+                "relativized": role_in_parent == "rel" or any(o.get("class") == "rel" for o in pending_openers),
+            }
+            sent_clauses.append(cl_rec)
+
+        def walk_sentence(sent: ET.Element, sent_idx: int) -> None:
+            nonlocal seen_speech_in_file
             sent_clauses: list[dict[str, Any]] = []
 
             CONTRAST_LEMMAS = ("αλλα", "πλην", "ברם", "להן")
@@ -508,7 +681,19 @@ class S1ClauseExtractor:
                 local_openers = list(inherited)
                 local_neg = wrapping_neg
                 for ch in container:
-                    if ch.tag == "w":
+                    if _is_v2cl_word(ch):
+                        child_role = ch.get("role") or role_in_parent or "v2cl"
+                        build_v2cl_record(
+                            ch,
+                            parent_cid,
+                            local_openers,
+                            local_neg,
+                            child_role,
+                            sent_clauses,
+                        )
+                        local_openers = list(inherited) if keep_inherited_openers else []
+                        local_neg = wrapping_neg
+                    elif ch.tag == "w":
                         r = self._rec(ch)
                         if r and self.lex.is_negative(r) and not self._is_not_only(r):
                             local_neg = True
@@ -573,11 +758,21 @@ class S1ClauseExtractor:
                     clause_counters[first_vref] = k + 1
                     cid = f"{first_vref}#cl{k}"
 
-                    direct_words = collect_direct_words(node)
+                    # Separate subordinate 1-word verbal clauses (<w role="v" rule="v2cl">)
+                    # when a clause also has a primary governing predicate (e.g. MAT 28:18, 28:19, JHN 6:67).
+                    direct_v_or_vc = [ch for ch in node if ch.get("role") in ("v", "vc")]
+                    sub_v2cl_kids = [ch for ch in direct_v_or_vc if _is_v2cl_word(ch)]
+                    primary_v_kids = [ch for ch in direct_v_or_vc if not _is_v2cl_word(ch)]
+                    detached_v2cl = sub_v2cl_kids if (primary_v_kids and sub_v2cl_kids) else []
+                    excluded_ids = {id(ch) for ch in detached_v2cl}
+
+                    direct_words = collect_direct_words(node, excluded_ids)
                     # Determine roles on direct children
                     role_children: list[tuple[str, ET.Element]] = []
                     child_openers = list(pending_openers)
                     for ch in node:
+                        if id(ch) in excluded_ids:
+                            continue
                         r_attr = ch.get("role")
                         if ch.tag == "w" and not r_attr and self._is_fn(ch, OPENER_CLASSES):
                             rec = self._rec(ch)
@@ -595,7 +790,6 @@ class S1ClauseExtractor:
 
                     resolved_roles: dict[str, list[dict[str, Any]]] = {}
                     for r_attr, ch in role_children:
-                        # Map adv PP in Greek as pp? Keep raw role preserved and mark pp hint
                         heads = self.resolve_heads(ch)
                         resolved_roles.setdefault(r_attr, []).extend(heads)
 
@@ -612,7 +806,20 @@ class S1ClauseExtractor:
                     v_heads = [h for h in resolved_roles.get("v", []) if h["word"] is not None]
                     vc_heads = [h for h in resolved_roles.get("vc", []) if h["word"] is not None]
                     p_heads = resolved_roles.get("p", [])
-                    pred_word = v_heads[0]["word"] if v_heads else (vc_heads[0]["word"] if vc_heads else None)
+                    predicate_ambiguous = False
+                    pred_word: dict[str, Any] | None = None
+                    if len(v_heads) == 1:
+                        pred_word = v_heads[0]["word"]
+                    elif len(v_heads) > 1:
+                        finite_v = [h for h in v_heads if (h["word"].get("type") or "") in FINITE_VERB_FORMS]
+                        if len(finite_v) == 1:
+                            pred_word = finite_v[0]["word"]
+                            v_heads = finite_v
+                        else:
+                            pred_word = (finite_v[0] if finite_v else v_heads[0])["word"]
+                            predicate_ambiguous = True
+                    elif vc_heads:
+                        pred_word = vc_heads[0]["word"]
 
                     if v_heads:
                         clause_kind = "verbal"
@@ -674,10 +881,11 @@ class S1ClauseExtractor:
 
                     cl_rec = {
                         "source_clause_id": cid,
+                        "syntax_node_key": node_key_map.get(id(node), ""),
                         "verse_ref": first_vref,
                         "all_verse_refs": sorted({w["verse_ref"] for w in ws}),
                         "clause_index_in_verse": k,
-                        "clause_rule": node.get("rule") or "",
+                        "clause_rule": _get_rule(node),
                         "role_in_parent": role_in_parent,
                         "parent_clause_id": parent_cid,
                         "clause_kind": clause_kind,
@@ -686,6 +894,7 @@ class S1ClauseExtractor:
                         "predicate_heads": v_heads,
                         "copular_heads": vc_heads,
                         "predicate_word": pred_word,
+                        "predicate_ambiguous": predicate_ambiguous,
                         "verb_form": vt,
                         "verb_stem": (pred_word or {}).get("stem"),
                         "voice": voice,
@@ -699,9 +908,15 @@ class S1ClauseExtractor:
                         "direct_token_ids": [w["id"] for w in direct_words],
                         "speech_quoted": False,
                         "speech_parent_clause_id": None,
+                        "quotation_status": "unknown",
+                        "speaker_scope": "unknown",
                         "relativized": role_in_parent == "rel" or any(o.get("class") == "rel" for o in child_openers),
                     }
                     sent_clauses.append(cl_rec)
+
+                    # Emit detached subordinate 1-word v2cl clauses nested under cid
+                    for w_ch in detached_v2cl:
+                        build_v2cl_record(w_ch, cid, [], False, "v2cl", sent_clauses)
 
                     # Recurse into child elements that contain nested clauses
                     for ch in node:
@@ -777,6 +992,58 @@ class S1ClauseExtractor:
                     c["speech_quoted"] = True
                     c["speech_parent_clause_id"] = parent["speech_parent_clause_id"]
 
+            # Assign quotation_status & speaker_scope conservatively:
+            # Never claim "none" unless narrative absence of quotation is structurally verified
+            # (speech-framing clause, Hebrew 3rd-person wayyiqtol narrative chain & its 3rd-person
+            # nested clauses, or chapter-initial 3rd-person Hebrew prose before any speech turn).
+            sent_words = [self.words[tid] for c in sent_clauses for tid in c["direct_token_ids"] if tid in self.words]
+            sent_has_1st_2nd = any((w.get("person") or "") in ("first", "second") for w in sent_words)
+            sent_has_speech_verb = any(
+                norm((c["predicate_word"] or {}).get("lemma")) in speech_lemmas
+                for c in sent_clauses
+            )
+
+            for c in sent_clauses:
+                if c["speech_quoted"]:
+                    c["quotation_status"] = (
+                        "nested_speech_object" if c.get("role_in_parent") == "o" else "direct_speech_turn"
+                    )
+                    c["speaker_scope"] = "quoted_speaker"
+                    continue
+
+                pw = c["predicate_word"]
+                pw_person = (pw or {}).get("person")
+                pw_is_speech = pw is not None and norm(pw.get("lemma")) in speech_lemmas and pw_person not in ("first", "second")
+                is_top = c["parent_clause_id"] is None
+                is_heb_wayyiqtol_3 = self.lang == "hebrew" and c["verb_form"] == "wayyiqtol" and pw_person == "third"
+                parent = by_cid.get(c["parent_clause_id"] or "")
+                parent_is_verified_narrator = bool(parent and parent["quotation_status"] == "none")
+
+                if pw_is_speech and is_top and not sent_has_1st_2nd:
+                    c["quotation_status"] = "none"
+                    c["speaker_scope"] = "narrator"
+                elif is_heb_wayyiqtol_3 and is_top:
+                    c["quotation_status"] = "none"
+                    c["speaker_scope"] = "narrator"
+                elif parent_is_verified_narrator and pw_person not in ("first", "second"):
+                    c["quotation_status"] = "none"
+                    c["speaker_scope"] = "narrator"
+                elif (
+                    self.lang == "hebrew"
+                    and not seen_speech_in_file
+                    and not sent_has_1st_2nd
+                    and pw_person not in ("first", "second")
+                    and sent_idx <= 2
+                ):
+                    c["quotation_status"] = "none"
+                    c["speaker_scope"] = "narrator"
+                else:
+                    c["quotation_status"] = "unknown"
+                    c["speaker_scope"] = "unknown"
+
+            if sent_has_speech_verb:
+                seen_speech_in_file = True
+
             # Propagate inherited negation or speech quotation from wrapping parent only when
             # clause is nested inside a quoted clause (already done above) and re-check question
             # punctuation on top-level sentence containing nested questions.
@@ -799,9 +1066,9 @@ class S1ClauseExtractor:
 
             clauses_out.extend(sent_clauses)
 
-        for sent in root.findall("sentence"):
-            walk_sentence(sent)
+        for sent_idx, sent in enumerate(sentences, start=1):
+            walk_sentence(sent, sent_idx)
         return clauses_out
 
-    def extract_file(self, root: ET.Element) -> list[dict[str, Any]]:
-        return self._compute_sentence_clauses(root)
+    def extract_file(self, root: ET.Element, edition: str = "", source_path: str = "") -> list[dict[str, Any]]:
+        return self._compute_sentence_clauses(root, edition=edition, source_path=source_path)

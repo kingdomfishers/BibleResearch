@@ -9,6 +9,7 @@ GrammaticalFrameV2, OccurrenceRelationV2, inventory, and coverage artifacts.
 
 from __future__ import annotations
 
+import base64
 import gzip
 import hashlib
 import json
@@ -16,6 +17,7 @@ import re
 import sys
 import unicodedata
 import xml.etree.ElementTree as ET
+import zlib
 from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any
@@ -29,6 +31,7 @@ SOURCES_DIR = REPO_ROOT / ".artifacts" / "sources"
 TABLES_DIR = REPO_ROOT / ".artifacts" / "static-corpus" / "tables"
 BUNDLE_PATH = REPO_ROOT / "third_party" / "bibleontology" / "heads_and_lexicon.json"
 DEFAULT_OUT_DIR = REPO_ROOT / ".artifacts" / "relationships-v2"
+MCP_RELATIONSHIPS_TS = REPO_ROOT / "supabase" / "functions" / "bible-mcp" / "relationships-v2.ts"
 
 RESTRICTED_FIELD_KEYS = {
     "sdbh",
@@ -42,18 +45,39 @@ RESTRICTED_FIELD_KEYS = {
     "meaning",
 }
 
+USFM_BY_BOOK: tuple[str, ...] = (
+    "",
+    "GEN", "EXO", "LEV", "NUM", "DEU", "JOS", "JDG", "RUT", "1SA", "2SA",
+    "1KI", "2KI", "1CH", "2CH", "EZR", "NEH", "EST", "JOB", "PSA", "PRO",
+    "ECC", "SNG", "ISA", "JER", "LAM", "EZK", "DAN", "HOS", "JOL", "AMO",
+    "OBA", "JON", "MIC", "NAM", "HAB", "ZEP", "HAG", "ZEC", "MAL", "MAT",
+    "MRK", "LUK", "JHN", "ACT", "ROM", "1CO", "2CO", "GAL", "EPH", "PHP",
+    "COL", "1TH", "2TH", "1TI", "2TI", "TIT", "PHM", "HEB", "JAS", "1PE",
+    "2PE", "1JN", "2JN", "3JN", "JUD", "REV",
+)
+
+VERIFIED_LEMMA_STATUSES = {
+    "token_morphemes_exact",
+    "macula_strong_x_disambiguated",
+    "word_form_lemmas_unique",
+    "lemmas_unique_strongs",
+    "subdivision_default_g",
+    "lemma_script_exact",
+    "tagnt_dstrongs_exact",
+}
+
 PILOT_TARGETS: list[dict[str, Any]] = [
     {
         "edition": "macula-hebrew-wlc",
         "language": "hebrew",
         "source_file": "macula-hebrew/WLC/lowfat/01-Gen-001-lowfat.xml",
-        "verses": ["GEN 1:1", "GEN 1:11"],
+        "verses": [f"GEN 1:{i}" for i in range(1, 13)],
     },
     {
         "edition": "macula-hebrew-wlc",
         "language": "hebrew",
         "source_file": "macula-hebrew/WLC/lowfat/01-Gen-003-lowfat.xml",
-        "verses": ["GEN 3:4"],
+        "verses": [f"GEN 3:{i}" for i in range(1, 14)],
     },
     {
         "edition": "macula-hebrew-wlc",
@@ -65,13 +89,19 @@ PILOT_TARGETS: list[dict[str, Any]] = [
         "edition": "macula-hebrew-wlc",
         "language": "hebrew",
         "source_file": "macula-hebrew/WLC/lowfat/06-Jos-017-lowfat.xml",
-        "verses": ["JOS 17:15"],
+        "verses": [f"JOS 17:{i}" for i in range(14, 19)],
     },
     {
         "edition": "macula-hebrew-wlc",
         "language": "hebrew",
         "source_file": "macula-hebrew/WLC/lowfat/19-Psa-003-lowfat.xml",
-        "verses": ["PSA 3:1"],
+        "verses": [f"PSA 3:{i}" for i in range(1, 10)],
+    },
+    {
+        "edition": "macula-greek-nestle1904",
+        "language": "greek",
+        "source_file": "macula-greek/Nestle1904/lowfat/01-matthew.xml",
+        "verses": [f"MAT 28:{i}" for i in range(16, 21)],
     },
     {
         "edition": "macula-greek-nestle1904",
@@ -83,19 +113,25 @@ PILOT_TARGETS: list[dict[str, Any]] = [
         "edition": "macula-greek-nestle1904",
         "language": "greek",
         "source_file": "macula-greek/Nestle1904/lowfat/03-luke.xml",
-        "verses": ["LUK 8:11"],
+        "verses": [f"LUK 8:{i}" for i in range(4, 16)],
     },
     {
         "edition": "macula-greek-nestle1904",
         "language": "greek",
         "source_file": "macula-greek/Nestle1904/lowfat/04-john.xml",
-        "verses": ["JHN 3:17", "JHN 4:41", "JHN 6:35", "JHN 6:67"],
+        "verses": (
+            [f"JHN 1:{i}" for i in range(1, 15)]
+            + [f"JHN 3:{i}" for i in range(14, 22)]
+            + [f"JHN 4:{i}" for i in range(39, 43)]
+            + [f"JHN 6:{i}" for i in range(35, 41)]
+            + [f"JHN 6:{i}" for i in range(66, 70)]
+        ),
     },
     {
         "edition": "macula-greek-sblgnt",
         "language": "greek",
         "source_file": "macula-greek/SBLGNT/lowfat/04-john.xml",
-        "verses": ["JHN 3:17"],
+        "verses": ["JHN 3:16", "JHN 3:17", "JHN 3:18"],
     },
 ]
 
@@ -264,6 +300,16 @@ class StaticCrosswalkIndex:
             return "unknown"
         rel = self.releases_by_id.get(int(ed["source_release_id"]))
         return str(rel["release_key"]) if rel else "unknown"
+
+    def canonical_ref_for_verse_id(self, cvid: str | int | None) -> str | None:
+        if cvid is None:
+            return None
+        vrow = self.verses_by_id.get(int(cvid))
+        if not vrow:
+            return None
+        b = int(vrow["book"])
+        usfm = USFM_BY_BOOK[b] if 0 <= b < len(USFM_BY_BOOK) and USFM_BY_BOOK[b] else f"B{b}"
+        return f"{usfm} {vrow['chapter']}:{vrow['verse_nr']}"
 
     def resolve_token(self, edition: str, xml_id: str, word_rec: dict[str, Any] | None = None) -> dict[str, Any]:
         is_hebrew = edition == "macula-hebrew-wlc"
@@ -524,12 +570,15 @@ def build_frame_context(cl: dict[str, Any]) -> dict[str, str]:
     polarity = "negative" if cl["negated"] else "affirmative_candidate"
     modality = cl["modality"] or "unknown"
     voice = cl["voice"] or "unknown"
-    if cl["speech_quoted"]:
-        speaker_scope = "quoted_speaker"
-        quotation = "nested_speech_object" if cl.get("role_in_parent") == "o" else "direct_speech_turn"
-    else:
-        speaker_scope = "narrator_candidate"
-        quotation = "none"
+    quotation = cl.get("quotation_status")
+    speaker_scope = cl.get("speaker_scope")
+    if not quotation or not speaker_scope:
+        if cl["speech_quoted"]:
+            speaker_scope = "quoted_speaker"
+            quotation = "nested_speech_object" if cl.get("role_in_parent") == "o" else "direct_speech_turn"
+        else:
+            speaker_scope = "unknown"
+            quotation = "unknown"
     return {
         "polarity": polarity,
         "modality": modality,
@@ -588,7 +637,12 @@ def main() -> None:
         sha256, byte_len = lf_sha256_and_bytes(xml_path)
         root = ET.parse(xml_path).getroot()
         words = extract_s0_words(root, spec["language"])
-        all_clauses = S1ClauseExtractor(words, spec["language"], bundle).extract_file(root)
+        rel_source_path = spec["source_file"].split("/", 1)[1] if "/" in spec["source_file"] else spec["source_file"]
+        all_clauses = S1ClauseExtractor(words, spec["language"], bundle).extract_file(
+            root,
+            edition=spec["edition"],
+            source_path=rel_source_path,
+        )
         target_set = set(spec["verses"])
         pilot_clauses = [c for c in all_clauses if c["verse_ref"] in target_set]
 
@@ -658,10 +712,6 @@ def main() -> None:
             m["clauses_examined"] += 1
             m["clauses_parsed"] += 1
 
-            cid = cl["source_clause_id"]
-            vref = cl["verse_ref"]
-            frame_id = f"frame:{edition}:{cid}:svov1"
-
             # Determine clause-level canonical alignment from tokens
             tok_aligns = []
             tok_cvids: list[str] = []
@@ -682,6 +732,16 @@ def main() -> None:
             else:
                 clause_align = "native_source"
 
+            raw_vref = cl["verse_ref"]
+            effective_ref = (
+                crosswalk.canonical_ref_for_verse_id(tok_cvids[0]) or raw_vref
+                if tok_cvids and clause_align != "not_in_canonical_verse"
+                else raw_vref
+            )
+            cid = f"{effective_ref}#cl{cl['clause_index_in_verse']}"
+            clause_node_id = cl.get("syntax_node_key") or cid
+            frame_id = f"frame:{edition}:{cid}:svov1"
+
             pred_word = cl["predicate_word"]
             pred_cw = (
                 crosswalk.resolve_token(edition, pred_word["id"], pred_word)
@@ -700,7 +760,9 @@ def main() -> None:
 
             warnings: list[str] = []
             v_heads = [h for h in cl["resolved_roles"].get("v", []) if h["word"] is not None]
-            if len(v_heads) > 1:
+            if cl.get("predicate_ambiguous"):
+                warnings.append("ambiguous_multiple_predicates")
+            elif len(v_heads) > 1:
                 warnings.append("multiple_v_role_tokens_using_primary")
 
             roles_out: list[dict[str, Any]] = []
@@ -742,6 +804,8 @@ def main() -> None:
                         reasons.append("unresolved_pronoun_referent")
                     if tcw["crosswalk_status"] != "resolved":
                         reasons.append(f"crosswalk:{tcw['crosswalk_status']}")
+                    elif tcw["lemma_resolution_status"] not in VERIFIED_LEMMA_STATUSES:
+                        reasons.append(f"uncertain_lemma:{tcw['lemma_resolution_status']}")
 
                     if clause_align == "not_in_canonical_verse":
                         r_state = "unresolved"
@@ -823,12 +887,21 @@ def main() -> None:
                             continue
 
                         cand_reasons: list[str] = []
+                        if cl.get("predicate_ambiguous"):
+                            cand_reasons.append("ambiguous_multiple_predicates")
                         if not h["is_verified_head"]:
                             cand_reasons.append(h["resolution_kind"])
                         if not pred_head["is_verified_head"]:
                             cand_reasons.append(f"pred_{pred_head['resolution_kind']}")
                         if (w.get("class") == "pron") and not w.get("referent"):
                             cand_reasons.append("unresolved_pronoun_referent")
+                        if tcw["lemma_resolution_status"] not in VERIFIED_LEMMA_STATUSES:
+                            cand_reasons.append(f"uncertain_lemma:{tcw['lemma_resolution_status']}")
+                        if pred_cw["lemma_resolution_status"] not in VERIFIED_LEMMA_STATUSES:
+                            cand_reasons.append(f"uncertain_pred_lemma:{pred_cw['lemma_resolution_status']}")
+                        if clause_align not in ("native_source", "versification_shifted"):
+                            cand_reasons.append(f"alignment:{clause_align}")
+
                         if not cand_reasons and h["resolution_kind"] == "direct_role_word" and pred_head["resolution_kind"] == "direct_role_word":
                             rel_quality = "source_explicit"
                         elif not cand_reasons:
@@ -849,8 +922,8 @@ def main() -> None:
                             "object_lemma_id": pred_cw["lemma_id"],
                             "evidence": {
                                 "edition": edition,
-                                "reference": vref,
-                                "source_clause_id": cid,
+                                "reference": effective_ref,
+                                "source_clause_id": clause_node_id,
                                 "rule_id": rule_id,
                             },
                             "quality": rel_quality,
@@ -866,23 +939,19 @@ def main() -> None:
                         m["relations_by_predicate"][predicate_name] += 1
                         m["relations_by_quality"][rel_quality] += 1
 
-                has_candidate_svo_role = any(
-                    r["state"] in ("candidate", "unresolved")
-                    for r in roles_out
-                    if r["role"] in ("grammatical_subject", "grammatical_object")
-                )
                 if clause_relations:
-                    if all(r["quality"] == "candidate" for r in clause_relations) or (
-                        not any(r["quality"] in ("source_explicit", "rule_derived") for r in clause_relations)
-                    ):
-                        frame_quality = "candidate"
-                    elif has_candidate_svo_role:
-                        frame_quality = "candidate"
-                    elif any(r["quality"] == "source_explicit" for r in clause_relations):
+                    if any(r["quality"] == "source_explicit" for r in clause_relations):
                         frame_quality = "source_explicit"
-                    else:
+                    elif any(r["quality"] == "rule_derived" for r in clause_relations):
                         frame_quality = "rule_derived"
+                    else:
+                        frame_quality = "candidate"
                 else:
+                    has_candidate_svo_role = any(
+                        r["state"] in ("candidate", "unresolved")
+                        for r in roles_out
+                        if r["role"] in ("grammatical_subject", "grammatical_object")
+                    )
                     frame_quality = "candidate" if has_candidate_svo_role else "source_explicit"
 
             # Deduplicate warnings deterministically
@@ -894,8 +963,8 @@ def main() -> None:
                     "edition": edition,
                     "source_release": rel_key,
                     "source_file": src_file,
-                    "clause_node_id": cid,
-                    "reference": vref,
+                    "clause_node_id": clause_node_id,
+                    "reference": effective_ref,
                     "canonical_verse_ids": tok_cvids,
                     "alignment_status": clause_align,
                 },
@@ -904,7 +973,7 @@ def main() -> None:
                 "context": context,
                 "extraction": {
                     "algorithm": "bibleontology_s0_s1_s2_r2_svov1",
-                    "rule_version": "1.0",
+                    "rule_version": "1.1",
                     "quality": frame_quality,
                     "warnings": uniq_warnings,
                 },
@@ -955,8 +1024,8 @@ def main() -> None:
     }
 
     coverage_doc = {
-        "schema_version": "1.0",
-        "pilot_scope_note": "Deliberate 39-41 clause Hebrew/Greek pilot; metrics do not represent whole-Bible coverage.",
+        "schema_version": "1.1",
+        "pilot_scope_note": "Stratified R2.1 Hebrew/Greek verification slice (400+ clauses); metrics do not represent whole-Bible coverage.",
         "languages": {
             lang: {
                 "clauses_examined": m["clauses_examined"],
@@ -1004,6 +1073,28 @@ def main() -> None:
         encoding="utf-8",
         newline="\n",
     )
+
+    if out_dir.resolve() == DEFAULT_OUT_DIR.resolve() and MCP_RELATIONSHIPS_TS.exists():
+        bundle_payload = json.dumps(
+            {"pf": frames, "pr": relations, "pc": coverage_doc},
+            ensure_ascii=False,
+            separators=(",", ":"),
+            sort_keys=True,
+        ).encode("utf-8")
+        compressor = zlib.compressobj(level=9, wbits=-15)
+        raw_deflate = compressor.compress(bundle_payload) + compressor.flush()
+        b64 = base64.b64encode(raw_deflate).decode("ascii")
+        b64_lines = "\n".join(b64[i : i + 100] for i in range(0, len(b64), 100))
+        ts_src = MCP_RELATIONSHIPS_TS.read_text(encoding="utf-8")
+        updated_src, n_subs = re.subn(
+            r'const PILOT_B64 = (?:"[^"]*"|`[^`]*`);',
+            f'const PILOT_B64 = `\n{b64_lines}\n`;',
+            ts_src,
+            count=1,
+        )
+        if n_subs != 1:
+            raise RuntimeError(f"Expected 1 PILOT_B64 constant in {MCP_RELATIONSHIPS_TS}, found {n_subs}")
+        MCP_RELATIONSHIPS_TS.write_text(updated_src, encoding="utf-8", newline="\n")
 
     print(
         json.dumps(
