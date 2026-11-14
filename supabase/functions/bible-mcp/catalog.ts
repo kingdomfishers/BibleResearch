@@ -10,6 +10,7 @@ import * as z from 'zod';
 import { registerNoteReadTools, attachNotesToResearchPacket } from './notes-tools.ts';
 import { registerVerseHydratedTool } from './verse-hydrated.ts';
 import { registerMaculaSyntaxTool } from './syntax-research.ts';
+import { registerRelationshipV2Tools } from './relationships-v2.ts';
 import { registerResearchLenses } from './research-lenses.ts';
 import { registerDlmReadTools } from './dlm-notes.ts';
 import { PATTERN_PROMPTS } from './pattern-prompts.ts';
@@ -479,6 +480,7 @@ export function createResearchServer(read: DatabaseReader): McpServer {
   registerHydratedTool(server, read);
   registerVerseHydratedTool(server, read);
   registerMaculaSyntaxTool(server, read);
+  registerRelationshipV2Tools(server, read);
   registerNoteReadTools(server, read);
   registerPrompts(server);
   return server;
