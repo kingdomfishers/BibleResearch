@@ -1,0 +1,314 @@
+{
+  "schema_version": "1.0",
+  "description": "Independently inspected MACULA Hebrew & Greek source fixtures for R1/R2 extraction verification.",
+  "positive_relations": [
+    {
+      "name": "GEN 1:1 subject Elohim -> bara (source_explicit)",
+      "relation_id": "rel:macula-hebrew-wlc:GEN 1:1#cl0:grammatical_subject_of:o010010010031:o010010010021",
+      "predicate": "grammatical_subject_of",
+      "subject_token_id": "o010010010031",
+      "subject_lemma_id": "lemma:H0430G",
+      "object_token_id": "o010010010021",
+      "object_lemma_id": "lemma:H1254a",
+      "quality": "source_explicit",
+      "qualifiers": {
+        "polarity": "affirmative_candidate",
+        "modality": "indicative",
+        "voice": "unknown",
+        "quotation": "none"
+      }
+    },
+    {
+      "name": "GEN 1:1 coordinated object 1 shamayim -> bara (rule_derived)",
+      "relation_id": "rel:macula-hebrew-wlc:GEN 1:1#cl0:grammatical_object_of:o010010010052:o010010010021",
+      "predicate": "grammatical_object_of",
+      "subject_token_id": "o010010010052",
+      "subject_lemma_id": "lemma:H8064",
+      "object_token_id": "o010010010021",
+      "object_lemma_id": "lemma:H1254a",
+      "quality": "rule_derived",
+      "qualifiers": {
+        "polarity": "affirmative_candidate",
+        "modality": "indicative",
+        "voice": "unknown",
+        "quotation": "none"
+      }
+    },
+    {
+      "name": "GEN 1:1 coordinated object 2 erets -> bara (rule_derived)",
+      "relation_id": "rel:macula-hebrew-wlc:GEN 1:1#cl0:grammatical_object_of:o010010010072:o010010010021",
+      "predicate": "grammatical_object_of",
+      "subject_token_id": "o010010010072",
+      "subject_lemma_id": "lemma:H0776G",
+      "object_token_id": "o010010010021",
+      "object_lemma_id": "lemma:H1254a",
+      "quality": "rule_derived",
+      "qualifiers": {
+        "polarity": "affirmative_candidate",
+        "modality": "indicative",
+        "voice": "unknown",
+        "quotation": "none"
+      }
+    },
+    {
+      "name": "GEN 1:11 jussive quoted command subject erets -> tadsha",
+      "relation_id": "rel:macula-hebrew-wlc:GEN 1:11#cl1:grammatical_subject_of:o010010110042:o010010110031",
+      "predicate": "grammatical_subject_of",
+      "subject_token_id": "o010010110042",
+      "subject_lemma_id": "lemma:H0776G",
+      "object_token_id": "o010010110031",
+      "object_lemma_id": "lemma:H1876",
+      "quality": "rule_derived",
+      "qualifiers": {
+        "polarity": "affirmative_candidate",
+        "modality": "jussive",
+        "voice": "unknown",
+        "quotation": "direct_speech_turn"
+      }
+    },
+    {
+      "name": "GEN 1:11 jussive coordinated object 1 deshe -> tadsha",
+      "relation_id": "rel:macula-hebrew-wlc:GEN 1:11#cl1:grammatical_object_of:o010010110051:o010010110031",
+      "predicate": "grammatical_object_of",
+      "subject_token_id": "o010010110051",
+      "subject_lemma_id": "lemma:H1877",
+      "object_token_id": "o010010110031",
+      "object_lemma_id": "lemma:H1876",
+      "quality": "rule_derived",
+      "qualifiers": {
+        "modality": "jussive",
+        "quotation": "direct_speech_turn"
+      }
+    },
+    {
+      "name": "GEN 1:11 jussive coordinated object 2 esev -> tadsha",
+      "relation_id": "rel:macula-hebrew-wlc:GEN 1:11#cl1:grammatical_object_of:o010010110061:o010010110031",
+      "predicate": "grammatical_object_of",
+      "subject_token_id": "o010010110061",
+      "subject_lemma_id": "lemma:H6212",
+      "object_token_id": "o010010110031",
+      "object_lemma_id": "lemma:H1876",
+      "quality": "rule_derived",
+      "qualifiers": {
+        "modality": "jussive",
+        "quotation": "direct_speech_turn"
+      }
+    },
+    {
+      "name": "GEN 1:11 jussive coordinated object 3 ets -> tadsha",
+      "relation_id": "rel:macula-hebrew-wlc:GEN 1:11#cl1:grammatical_object_of:o010010110091:o010010110031",
+      "predicate": "grammatical_object_of",
+      "subject_token_id": "o010010110091",
+      "subject_lemma_id": "lemma:H6086G",
+      "object_token_id": "o010010110031",
+      "object_lemma_id": "lemma:H1876",
+      "quality": "rule_derived",
+      "qualifiers": {
+        "modality": "jussive",
+        "quotation": "direct_speech_turn"
+      }
+    },
+    {
+      "name": "GEN 1:11 nested participle object zera -> mazria",
+      "relation_id": "rel:macula-hebrew-wlc:GEN 1:11#cl2:grammatical_object_of:o010010110081:o010010110071",
+      "predicate": "grammatical_object_of",
+      "subject_token_id": "o010010110081",
+      "subject_lemma_id": "lemma:H2233G",
+      "object_token_id": "o010010110071",
+      "object_lemma_id": "lemma:H2232",
+      "quality": "source_explicit",
+      "qualifiers": {
+        "modality": "participle",
+        "quotation": "nested_speech_object"
+      }
+    },
+    {
+      "name": "JHN 3:17 Nestle1904 negated active subject theos -> apesteilen",
+      "relation_id": "rel:macula-greek-nestle1904:JHN 3:17#cl0:grammatical_subject_of:n43003017005:n43003017003",
+      "predicate": "grammatical_subject_of",
+      "subject_token_id": "n43003017005",
+      "subject_lemma_id": "lemma:G2316",
+      "object_token_id": "n43003017003",
+      "object_lemma_id": "lemma:G0649",
+      "quality": "rule_derived",
+      "qualifiers": {
+        "polarity": "negative",
+        "modality": "indicative",
+        "voice": "active",
+        "quotation": "none"
+      }
+    },
+    {
+      "name": "JHN 3:17 Nestle1904 negated active object huion -> apesteilen",
+      "relation_id": "rel:macula-greek-nestle1904:JHN 3:17#cl0:grammatical_object_of:n43003017007:n43003017003",
+      "predicate": "grammatical_object_of",
+      "subject_token_id": "n43003017007",
+      "subject_lemma_id": "lemma:G5207",
+      "object_token_id": "n43003017003",
+      "object_lemma_id": "lemma:G0649",
+      "quality": "rule_derived",
+      "qualifiers": {
+        "polarity": "negative",
+        "modality": "indicative",
+        "voice": "active"
+      }
+    },
+    {
+      "name": "JHN 3:17 Nestle1904 passive subject kosmos -> sothe (contrast negation cleared)",
+      "relation_id": "rel:macula-greek-nestle1904:JHN 3:17#cl2:grammatical_subject_of:n43003017019:n43003017017",
+      "predicate": "grammatical_subject_of",
+      "subject_token_id": "n43003017019",
+      "subject_lemma_id": "lemma:G2889",
+      "object_token_id": "n43003017017",
+      "object_lemma_id": "lemma:G4982",
+      "quality": "rule_derived",
+      "qualifiers": {
+        "polarity": "affirmative_candidate",
+        "modality": "subjunctive",
+        "voice": "passive"
+      }
+    },
+    {
+      "name": "JHN 3:17 SBLGNT separate edition passive subject kosmos -> sothe",
+      "relation_id": "rel:macula-greek-sblgnt:JHN 3:17#cl2:grammatical_subject_of:n43003017019:n43003017017",
+      "predicate": "grammatical_subject_of",
+      "subject_token_id": "n43003017019",
+      "subject_lemma_id": "lemma:G2889",
+      "object_token_id": "n43003017017",
+      "object_lemma_id": "lemma:G4982",
+      "quality": "rule_derived",
+      "qualifiers": {
+        "polarity": "affirmative_candidate",
+        "modality": "subjunctive",
+        "voice": "passive"
+      }
+    },
+    {
+      "name": "JHN 6:67 quoted negative question subject humeis -> thelete (primary finite verb only)",
+      "relation_id": "rel:macula-greek-nestle1904:JHN 6:67#cl1:grammatical_subject_of:n43006067009:n43006067010",
+      "predicate": "grammatical_subject_of",
+      "subject_token_id": "n43006067009",
+      "subject_lemma_id": "lemma:G4771",
+      "object_token_id": "n43006067010",
+      "object_lemma_id": "lemma:G2309",
+      "quality": "rule_derived",
+      "qualifiers": {
+        "polarity": "negative",
+        "modality": "interrogative",
+        "voice": "active",
+        "quotation": "nested_speech_object"
+      }
+    }
+  ],
+  "ambiguous_or_candidate_relations": [
+    {
+      "name": "JHN 4:41 unlisted AdjpAdjp2 fallback must downgrade to candidate",
+      "relation_id": "rel:macula-greek-nestle1904:JHN 4:41#cl0:grammatical_subject_of:n43004041002:n43004041004",
+      "expected_quality": "candidate",
+      "expected_warning": "unlisted_rule_fallback"
+    }
+  ],
+  "negative_scope_frames": [
+    {
+      "name": "GEN 1:11#cl4 verbless clause must emit 0 relations",
+      "frame_id": "frame:macula-hebrew-wlc:GEN 1:11#cl4:svov1",
+      "expected_relation_count": 0,
+      "expected_quotation": "nested_speech_object"
+    },
+    {
+      "name": "GEN 1:11#cl5 wayyiqtol closes speech turn (quotation=none)",
+      "frame_id": "frame:macula-hebrew-wlc:GEN 1:11#cl5:svov1",
+      "expected_relation_count": 0,
+      "expected_quotation": "none"
+    },
+    {
+      "name": "GEN 3:4#cl1 quoted negated Hebrew speech retains negative polarity and quotation",
+      "frame_id": "frame:macula-hebrew-wlc:GEN 3:4#cl1:svov1",
+      "expected_relation_count": 0,
+      "expected_polarity": "negative",
+      "expected_quotation": "direct_speech_turn",
+      "expected_predicate_token_id": "o010030040071",
+      "expected_predicate_lemma_id": "lemma:H4191"
+    },
+    {
+      "name": "GEN 9:19#cl0 verbless + unlisted NumpAdjp + ambiguous homograph must emit 0 relations",
+      "frame_id": "frame:macula-hebrew-wlc:GEN 9:19#cl0:svov1",
+      "expected_relation_count": 0,
+      "expected_frame_quality": "candidate"
+    },
+    {
+      "name": "JOS 17:15#cl3 homograph H1254b distinct from GEN 1:1 H1254a",
+      "frame_id": "frame:macula-hebrew-wlc:JOS 17:15#cl3:svov1",
+      "expected_predicate_token_id": "o060170150112",
+      "expected_predicate_lemma_id": "lemma:H1254b",
+      "must_differ_from_lemma": "lemma:H1254a"
+    },
+    {
+      "name": "PSA 3:1#cl2 psalm heading shifts to canonical_verse_id 13959 and skips unmapped pronoun suffix H2050c",
+      "frame_id": "frame:macula-hebrew-wlc:PSA 3:1#cl2:svov1",
+      "expected_relation_count": 0,
+      "expected_alignment_status": "versification_shifted",
+      "expected_canonical_verse_ids": ["13959"],
+      "expected_modality": "infinitive",
+      "expected_frame_quality": "candidate",
+      "must_not_contain_lemma_ids": ["lemma:H2050"]
+    },
+    {
+      "name": "LUK 8:11#cl0 copular scope control must emit 0 relations",
+      "frame_id": "frame:macula-greek-nestle1904:LUK 8:11#cl0:svov1",
+      "expected_relation_count": 0
+    },
+    {
+      "name": "LUK 8:11#cl1 copular scope control preserves G4703 sporos and emits 0 relations",
+      "frame_id": "frame:macula-greek-nestle1904:LUK 8:11#cl1:svov1",
+      "expected_relation_count": 0,
+      "expected_role_token_lemma": {
+        "token_id": "n42008011007",
+        "lemma_id": "lemma:G4703"
+      }
+    },
+    {
+      "name": "JHN 6:35#cl1 quoted S-VC-P copular Ego eimi must emit 0 relations and preserve nested_speech_object",
+      "frame_id": "frame:macula-greek-nestle1904:JHN 6:35#cl1:svov1",
+      "expected_relation_count": 0,
+      "expected_quotation": "nested_speech_object",
+      "expected_speaker_scope": "quoted_speaker"
+    },
+    {
+      "name": "JHN 6:35#cl2 negated DetCL subject clause excludes clausal nominal SVO edge",
+      "frame_id": "frame:macula-greek-nestle1904:JHN 6:35#cl2:svov1",
+      "expected_relation_count": 0,
+      "expected_polarity": "negative",
+      "expected_modality": "subjunctive"
+    },
+    {
+      "name": "MRK 16:99#cl0 unmapped source-only ending marked not_in_canonical_verse and emits 0 relations",
+      "frame_id": "frame:macula-greek-nestle1904:MRK 16:99#cl0:svov1",
+      "expected_relation_count": 0,
+      "expected_alignment_status": "not_in_canonical_verse",
+      "expected_canonical_verse_ids": [],
+      "expected_frame_quality": "not_covered"
+    },
+    {
+      "name": "MRK 16:99#cl2 unmapped source-only clause must emit 0 relations",
+      "frame_id": "frame:macula-greek-nestle1904:MRK 16:99#cl2:svov1",
+      "expected_relation_count": 0,
+      "expected_alignment_status": "not_in_canonical_verse",
+      "expected_frame_quality": "not_covered"
+    }
+  ],
+  "forbidden_relations": [
+    {
+      "name": "Direct object markers et in GEN 1:1 must not emit grammatical_object_of",
+      "forbidden_subject_tokens": ["o010010010041", "o010010010061", "o010010010062"]
+    },
+    {
+      "name": "JHN 6:67#cl1 infinitive hypagein must not receive duplicate subject edge",
+      "forbidden_object_tokens": ["n43006067011"]
+    },
+    {
+      "name": "Cross-clause leak: GEN 1:11#cl2 zera must not point to cl1 tadsha",
+      "forbidden_pair": ["o010010110081", "o010010110031"]
+    }
+  ]
+}

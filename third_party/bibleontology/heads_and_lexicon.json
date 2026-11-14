@@ -1,0 +1,595 @@
+{
+  "_provenance": {
+    "upstream_repo": "https://github.com/bibleontology/bibleontology",
+    "upstream_commit": "62d6bc0fba5f84dfad245e546e87c6212b35fa75",
+    "license_data": "CC-BY-4.0",
+    "attribution": "Bible Ontology by Doug Egge (bibleontology.org); MACULA (c) 2022-2024 Biblica, Inc. CC BY 4.0",
+    "sha256_lf": {
+      "tables/hebrew/heads.json": "43214eb0fc79e8592cd6e8f787ea159d1e18dd8b1b49defc9b97973498c657dc",
+      "tables/greek/heads.json": "ed25499615bbb8020a43a12944974ef600a5a5c0f33e0ddc263c344f69954492",
+      "tables/hebrew/lexicon.json": "8973e773a48cb41bccced9f4d73fe6100e06800385c348b7bc9beeaf252ec87b",
+      "tables/greek/lexicon.json": "693348fa6974ea9dd827602e784c9a46b4d5ba2ade8efb8032b08ff56dd4225f"
+    }
+  },
+  "hebrew": {
+    "heads": {
+      "_what": "How each MACULA phrase rule is read by the clean builder (stage S1). Data, not code (docs/BUILDER-DESIGN.md). Each rule is one KIND: coord (every conjunct is a member of a composite), head_first / head_last (the head, with the other children as its dependents under the named relation), prep (a preposition and its object: the object is the filler, the preposition goes on the edge), wrap (one child, transparent). A rule not listed: MACULA's explicit head mark if it has one, else the first child. Surveyed 2026-09-27: 210 phrase rules; the ones below cover the great majority of groups.",
+      "coord": [
+        "NpaNp",
+        "Conj3Np",
+        "Conj4Np",
+        "Conj5Np",
+        "Conj3Pp",
+        "Conj4Pp",
+        "PPandPP",
+        "2PpaPp",
+        "AdjpaAdjp",
+        "VPandVP",
+        "NumpAndNump",
+        "NumpNumpaNump",
+        "AdvpandAdvp",
+        "RelpandRelp",
+        "NP3NP",
+        "NpNpNp",
+        "NpNpNpNp",
+        "PpPpPp",
+        "CjpCjp"
+      ],
+      "head_first": {
+        "NPofNP": "of",
+        "AdjpofNp": "of",
+        "Np-Appos": "apposition",
+        "NpAdjp": "attribute",
+        "NpRelp": "relative",
+        "NpPp": "pp",
+        "NpNump": "number",
+        "NpCL": "clause",
+        "NpInf": "clause",
+        "NpAdvp": "adverb",
+        "AdjpPp": "pp",
+        "AdjpAdvp": "adverb",
+        "PpAdvp": "adverb",
+        "NumpPp": "pp",
+        "2Pp": "pp",
+        "NPDet": "determiner"
+      },
+      "head_last": {
+        "DetNP": null,
+        "DetAdjp": null,
+        "DetNump": null,
+        "OmpNP": null,
+        "OmpRelp": null,
+        "QuanNP": "quantity",
+        "NumpNP": "number",
+        "NumpNump": "number",
+        "AdvpNp": "focus",
+        "AdjpNp": "attribute",
+        "cjpNp": "connective",
+        "cjpPp": "connective",
+        "relNp": "relative",
+        "PpNump": "number",
+        "2Np": "apposition",
+        "AdvpPp": "adverb",
+        "PpNp2Np": "pp"
+      },
+      "prep": [
+        "PrepNp",
+        "PrepCL",
+        "PpRelp",
+        "PpPp"
+      ],
+      "wrap": [
+        "CL2NP",
+        "CL2Adjp",
+        "Relp2Np",
+        "Nump2NP",
+        "Pp2Cjp",
+        "Np2Pp",
+        "Pp2Np",
+        "advp2np"
+      ],
+      "_null": "A null relation (the article, the object marker) makes no edge: the word is structural, and its morpheme is claimed by the head it marks."
+    },
+    "lexicon": {
+      "_what": "Function words for the clean builder (stages S2 and S3). Data, not code. Keys are consonants only (points and accents removed).",
+      "force_by_verb_type": {
+        "imperative": "directive",
+        "jussive": "directive",
+        "cohortative": "directive",
+        "infinitive construct": "nonfinite",
+        "infinitive absolute": "nonfinite",
+        "_default": "assertion"
+      },
+      "question_types": [
+        "interrogative"
+      ],
+      "question_lemmas": [
+        "מי",
+        "מה",
+        "איך",
+        "איכה",
+        "איה",
+        "אן",
+        "מדוע",
+        "אי",
+        "למה"
+      ],
+      "negative_types": [
+        "negative"
+      ],
+      "connectives": {
+        "כי": {
+          "mid": "because",
+          "verse_initial": {
+            "undecided": [
+              "because",
+              "when_if_though"
+            ]
+          }
+        },
+        "אם": {
+          "any": "if",
+          "forward": true
+        },
+        "פן": {
+          "any": "lest"
+        },
+        "למען": {
+          "any": "purpose"
+        },
+        "כי אם": {
+          "any": "but_rather"
+        },
+        "אולם": {
+          "any": "contrast"
+        },
+        "אפס כי": {
+          "any": "contrast"
+        },
+        "גם כי": {
+          "any": "though"
+        },
+        "או": {
+          "any": "or"
+        },
+        "ו": {
+          "fused": "then",
+          "any": "and"
+        },
+        "הן": {
+          "any": "if",
+          "forward": true
+        },
+        "להן": {
+          "any": "contrast",
+          "after_negative": "but_rather"
+        },
+        "ברם": {
+          "any": "contrast",
+          "after_negative": "but_rather"
+        },
+        "לכן כן": {
+          "any": "therefore"
+        },
+        "לכן": {
+          "any": "therefore"
+        },
+        "על כן": {
+          "any": "therefore"
+        },
+        "כי על כן": {
+          "any": "because"
+        },
+        "עקב כי": {
+          "any": "because"
+        },
+        "כ ל קבל דנה": {
+          "any": "therefore"
+        },
+        "ב אדין": {
+          "any": "then"
+        },
+        "אדין": {
+          "any": "then"
+        },
+        "באדין": {
+          "any": "then"
+        }
+      },
+      "_phrases": "Keys with spaces are MACULA's connective phrases (class cjp), keyed by every word including a preposition, so עַל־כֵּן 'therefore' is not read as a lone כֵּן 'so'. A phrase with no key of its own falls back to its last word that has one (וְגַם, וְעַתָּה -> the waw's 'and'). וְעַתָּה is left 'and': MACULA glosses it 'therefore' 144 times and 'now' 125, and the form does not decide which.",
+      "speech_verbs": [
+        "אמר",
+        "דבר",
+        "צוה",
+        "קרא",
+        "ענה",
+        "שאל",
+        "נגד",
+        "שבע",
+        "מלל",
+        "חוה"
+      ],
+      "perceive_verbs": [
+        "ידע",
+        "ראה",
+        "שמע",
+        "אמר",
+        "זכר",
+        "נגד",
+        "בין",
+        "שבע",
+        "חזה"
+      ],
+      "addressee_preps": [
+        "אל",
+        "ל"
+      ],
+      "heading_words": [
+        "מזמור",
+        "שיר",
+        "משכיל",
+        "מכתם",
+        "תפלה",
+        "תהלה",
+        "שגיון",
+        "נצח"
+      ],
+      "_speech": "speech_verbs frame a speech turn (S4); after perceive_verbs a כִּי is 'that' (content), not 'because' (S3). Lists from the old builder, where each was checked against the corpus's own lemma spellings.",
+      "within_by_prep": {
+        "ל": "purpose",
+        "למען": "purpose",
+        "בעבור": "purpose",
+        "לבעבור": "purpose",
+        "כ": "as",
+        "עד": "until_limit",
+        "כדי": "when_if_though",
+        "כל קבל די": "because",
+        "מן די": "when_if_though"
+      },
+      "_notes": "fused: a waw on a wayyiqtol or weqatal is inside the verb ('and then'). verse_initial: a כִּי that opens a verse is 'for' OR 'when' by form, so the link is written as undecided with both candidates (2026-09-27: marked undecided). within_by_prep: a clause nested under a preposition takes the relation the preposition carries; the rest stay 'within'.",
+      "sequence_adverbs": [],
+      "that_after_perceive": [
+        "כי",
+        "די"
+      ],
+      "_aramaic": "The Aramaic of Daniel, Ezra and Jer 10:11 is in MACULA's Hebrew files and read with this table (2026-09-27). Its verb forms share the Hebrew names (qatal, yiqtol, participle), its negatives and questions the same marks. Its own words land on the shared kinds: הֵן 'if', לָהֵן and בְּרַם 'but', כְּדִי 'when', כָּל־קֳבֵל דִּי 'because', דִּי 'that' after a verb of perceiving, and the narrative's אֱדַיִן / בֵּאדַיִן 'then' as the same `then` the Hebrew wayyiqtol carries."
+    }
+  },
+  "greek": {
+    "heads": {
+      "_what": "How each MACULA GREEK phrase rule is read by the clean builder (stage S1): the same kinds as tables/hebrew/heads.json, so the two languages build the same structure. MACULA marks NO heads in the Greek (surveyed 2026-09-27: 168 rules, 0 head marks), so every convention is here. Clause COMPLEXES (Conj-CL, sub-CL, that-VP, CLaCL, ClCl, aCLaCL, notCLbutCL2CL ...) need no entry: a group holding only connectives and clauses is read as a complex whatever its rule. `2Advp_h1` / `2Advp_h2` name their own head.",
+      "coord": [
+        "NpaNp",
+        "Conj3Np",
+        "Conj4Np",
+        "Conj5Np",
+        "Conj6Np",
+        "Conj7Np",
+        "Conj2Pp",
+        "Conj3Pp",
+        "Conj4Pp",
+        "AdjpaAdjp",
+        "Conj3Adjp",
+        "aNpaNp",
+        "aNpaNpaNp",
+        "aPpaPp",
+        "EitherOrVp",
+        "EitherOr4Np",
+        "NpNpNp",
+        "NpNpNpNp",
+        "NpNpNpNpNp",
+        "2Np",
+        "ADVaADV",
+        "AdvpaAdvp",
+        "3Adjp",
+        "Conj2VP",
+        "2Pp",
+        "notNPbutNP",
+        "notPPbutPP",
+        "notADVbutADV"
+      ],
+      "head_first": {
+        "NPofNP": "of",
+        "Np-Appos": "apposition",
+        "NpAdjp": "attribute",
+        "NP-CL": "relative",
+        "NpPp": "pp",
+        "NP-Demo": "demonstrative",
+        "NPDetAdj": "attribute",
+        "NpNump": "number",
+        "NP-all": "quantity",
+        "AdjpAdvp": "of",
+        "NpAdvp": "of",
+        "AdjpPp": "pp",
+        "AdjpDative": "qualifier",
+        "NpPron": "apposition",
+        "2Advp_h1": "adverb",
+        "VerbBe": "periphrastic",
+        "AdjpAdjp": "attribute",
+        "NP-Prep": null,
+        "AdvAdv": "adverb"
+      },
+      "head_last": {
+        "DetNP": null,
+        "DetAdj": null,
+        "DetNump": null,
+        "DetAdv": null,
+        "AdjpNp": "attribute",
+        "All-NP": "quantity",
+        "AdvpNp": "focus",
+        "ofNPNP": "of",
+        "Demo-NP": "demonstrative",
+        "NumpNP": "number",
+        "NumpNump": "number",
+        "NumpAdjp": "number",
+        "PronNP": "apposition",
+        "PpNp2Np": "pp",
+        "AdvPp": "adverb",
+        "AdvpAdjp": "adverb",
+        "2Advp_h2": "adverb",
+        "BeVerb": "periphrastic",
+        "intjNP": "interjection",
+        "CL-NP": "relative"
+      },
+      "prep": [
+        "PrepNp"
+      ],
+      "wrap": [
+        "Np2CL",
+        "Intj2CL"
+      ],
+      "_greek_only": "Kept, not dropped: `periphrastic` (a form of εἰμί with a participle, BeVerb / VerbBe) and `demonstrative`; the article (DetNP) is structural like the Hebrew article."
+    },
+    "lexicon": {
+      "_what": "Greek function words for the clean builder (stages S2-S4): the SAME kinds as tables/hebrew/lexicon.json, so a Greek purpose link is the same `purpose` as a Hebrew one. Keys are accent-free lower case. What Greek marks that Hebrew does not is kept as an attribute on the shared kind (2026-09-27: where Greek does things that Hebrew cannot, it is good to show it, but in a way that the core structures align).",
+      "mood_field": "mood",
+      "force_by_verb_type": {
+        "imperative": "directive",
+        "optative": "directive",
+        "infinitive": "nonfinite",
+        "participle": "nonfinite",
+        "_default": "assertion"
+      },
+      "subjunctive_main": "directive",
+      "_subjunctive": "A subjunctive in a main clause, with no subordinating connective, is hortatory or prohibitive ('let us go', 'do not ...'): directive, like the Hebrew cohortative and jussive. Under ἵνα, ἐάν, ὅταν and the like it is dependent, and the clause's force is set by its host.",
+      "question_types": [
+        "interrogative"
+      ],
+      "question_lemmas": [
+        "πως",
+        "που",
+        "ποτε",
+        "ποθεν",
+        "ποσος",
+        "ποιος",
+        "μητι",
+        "αρα"
+      ],
+      "question_punctuation": ";",
+      "_question": "Nestle 1904 prints the Greek question mark (;). Like the BSB's quotation marks it is an editor's structure, not the text's words (PRINCIPLES 44): used, and recorded as its source.",
+      "negative_types": [
+        "negative"
+      ],
+      "negative_lemmas": [
+        "ου",
+        "ουκ",
+        "ουχ",
+        "ουχι",
+        "μη",
+        "μηδε",
+        "ουδε",
+        "ουκετι",
+        "μηκετι",
+        "ουδεποτε",
+        "μηδεποτε",
+        "μηπω",
+        "ουπω"
+      ],
+      "subordinators": [
+        "ινα",
+        "οπως",
+        "εαν",
+        "ει",
+        "οταν",
+        "οτε",
+        "εως",
+        "ωστε",
+        "οτι",
+        "διοτι",
+        "επει",
+        "επειδη",
+        "καθως",
+        "ως",
+        "ωσπερ",
+        "μηποτε",
+        "μη",
+        "πριν",
+        "αχρι",
+        "μεχρι",
+        "εαν μη",
+        "ει μη"
+      ],
+      "connectives": {
+        "και": {
+          "any": "and"
+        },
+        "δε": {
+          "any": "and",
+          "after_men": "contrast"
+        },
+        "τε": {
+          "any": "and"
+        },
+        "ουδε": {
+          "any": "and",
+          "negative": true
+        },
+        "μηδε": {
+          "any": "and",
+          "negative": true
+        },
+        "ουτε": {
+          "any": "and",
+          "negative": true
+        },
+        "μητε": {
+          "any": "and",
+          "negative": true
+        },
+        "αλλα": {
+          "any": "contrast",
+          "after_negative": "but_rather"
+        },
+        "πλην": {
+          "any": "contrast"
+        },
+        "γαρ": {
+          "any": "because"
+        },
+        "οτι": {
+          "any": "because"
+        },
+        "διοτι": {
+          "any": "because"
+        },
+        "επει": {
+          "any": "because"
+        },
+        "ουν": {
+          "any": "therefore"
+        },
+        "διο": {
+          "any": "therefore"
+        },
+        "αρα": {
+          "any": "therefore"
+        },
+        "η": {
+          "any": "or"
+        },
+        "ειτε": {
+          "any": "or"
+        },
+        "ει": {
+          "any": "if",
+          "forward": true
+        },
+        "εαν": {
+          "any": "if",
+          "forward": true
+        }
+      },
+      "within_by_prep": {
+        "ινα": "purpose",
+        "οπως": "purpose",
+        "ωστε": "result",
+        "οτι": "because",
+        "διοτι": "because",
+        "επει": "because",
+        "επειδη": "because",
+        "ει": "if",
+        "εαν": "if",
+        "οταν": "when_if_though",
+        "οτε": "when_if_though",
+        "επαν": "when_if_though",
+        "ηνικα": "when_if_though",
+        "ως": "as",
+        "καθως": "as",
+        "ωσπερ": "as",
+        "καθαπερ": "as",
+        "εως": "until_limit",
+        "αχρι": "until_limit",
+        "μεχρι": "until_limit",
+        "μηποτε": "lest",
+        "μηπως": "lest",
+        "εις ο": "purpose",
+        "προς ο": "purpose",
+        "δια ο": "because",
+        "εν ο": "when_if_though"
+      },
+      "_within": "A clause nested under a connective or a preposition takes the relation it carries; 'εἰς τό' + infinitive is purpose, 'διὰ τό' + infinitive reason, 'ἐν τῷ' + infinitive the time (the articular infinitive, which Hebrew has no form for, lands on the shared kinds). `if` is written condition -> consequence, as the Hebrew is. πρίν ('before') and μετὰ τό ('after') have no kind yet and stay `within`.",
+      "reverse": [
+        "if"
+      ],
+      "speech_verbs": [
+        "λεγω",
+        "λαλεω",
+        "αποκρινομαι",
+        "φημι",
+        "κραζω",
+        "φωνεω",
+        "ερωταω",
+        "επερωταω",
+        "κηρυσσω",
+        "διαμαρτυρομαι"
+      ],
+      "perceive_verbs": [
+        "οιδα",
+        "γινωσκω",
+        "οραω",
+        "ακουω",
+        "βλεπω",
+        "θεωρεω",
+        "πιστευω",
+        "νοεω",
+        "μανθανω",
+        "επιγινωσκω",
+        "ευρισκω",
+        "λεγω",
+        "ομολογεω",
+        "μαρτυρεω",
+        "γραφω"
+      ],
+      "addressee_preps": [
+        "προς"
+      ],
+      "addressee_role": "io",
+      "narrative_moods": [],
+      "heading_words": [],
+      "letters": [
+        "Rom",
+        "1Co",
+        "2Co",
+        "Gal",
+        "Eph",
+        "Php",
+        "Col",
+        "1Th",
+        "2Th",
+        "1Ti",
+        "2Ti",
+        "Tit",
+        "Phm",
+        "Jas",
+        "1Pe",
+        "2Pe",
+        "Jud"
+      ],
+      "_letters": "A letter is a Writing, as a psalm is: its opening names its writer in the nominative (Paul, James, Peter, Jude). The writer is the letter's voice, as the psalmist is the psalm's.",
+      "that_after_perceive": [
+        "οτι"
+      ],
+      "sequence_adverbs": [
+        "τοτε"
+      ],
+      "reflexive_marked": true,
+      "narrative_then": [
+        "και",
+        "δε"
+      ],
+      "_narrative_then": "Between two past-tense indicatives, καί and δέ carry the narrative's sequence: the same `then` the Hebrew wayyiqtol carries inside its verb (2026-09-28: 121 Greek `then` links against 20,177 Hebrew, so no sequence pattern could reach the New Testament).",
+      "_reflexive": "Greek has reflexive pronouns of its own (ἑαυτοῦ, σεαυτοῦ, ἐμαυτοῦ), so a plain αὐτός in a clause is not that clause's subject (S5). Hebrew uses the plain pronoun reflexively and has no such entry."
+    }
+  },
+  "compatibility_extensions": {
+    "hebrew": {
+      "head_first": {
+        "VerbX": "paragogic_suffix"
+      },
+      "_note": "VerbX wraps a Hebrew verb stem and a trailing paragogic/cohortative suffix <w class='x'> (e.g. Gen 3:4 תְּמֻתֽוּן)."
+    },
+    "greek": {
+      "head_first": {}
+    }
+  }
+}
