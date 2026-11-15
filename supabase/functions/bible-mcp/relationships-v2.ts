@@ -145,7 +145,7 @@ export function registerRelationshipV2Tools(server: McpServer, read: DatabaseRea
   server.registerTool('get_word_relationships_v2', {
     title: 'Query R3 grammatical lemma relationships & occurrence evidence',
     description:
-      'Query verified Hebrew/Greek grammatical relationships from the Cloudflare R5 graph gateway across all 6 R3 predicates (subject, object, indirect object, second object, modifies, possessive/construct construction) in both outgoing and incoming directions. Preserves Hebrew homographs (returns needs_disambiguation for multi-homograph base Strongs unless suffix or passage position is provided) and supports summary_id evidence drill-down.',
+      'Query verified Hebrew/Greek grammatical relationships across all 6 R3 predicates (subject, object, indirect object, second object, modifies, possessive/construct construction) in both directions. Preserves Hebrew homographs (returns needs_disambiguation for ambiguous bases unless suffix or passage position is provided) and supports summary_id exact occurrence evidence drill-down.',
     inputSchema: z.strictObject({
       query: z.string().trim().min(1).max(128).optional().describe('Disambiguated lemma ID (lemma:H1254a, lemma:H0430G), Strongs ID, token ID, or surface form.'),
       lemma_id: z.string().trim().min(1).max(64).optional().describe('Explicit canonical lemma_id (e.g. lemma:H0776G).'),
@@ -216,9 +216,9 @@ export function registerRelationshipV2Tools(server: McpServer, read: DatabaseRea
   });
 
   server.registerTool('get_relationship_coverage_v2', {
-    title: 'Inspect Cloudflare R5 relationship graph release & coverage',
+    title: 'Inspect relationship graph release & coverage',
     description:
-      'Return the active Cloudflare R5 relationship graph release manifest, pinned upstream commits, supported R3 predicates, quality/coverage statistics, and optional passage coverage status.',
+      'Return the active v2 relationship graph release manifest (r9b-v1.0 default: grammatical, lexical, contextual, and LXX layers), pinned upstream commits, supported R3 predicates, quality/coverage statistics, and optional passage coverage status.',
     inputSchema: z.strictObject({
       edition_key: z.enum(EDITIONS_V2).optional(),
       predicate: z.enum(R3_PREDICATES).optional(),

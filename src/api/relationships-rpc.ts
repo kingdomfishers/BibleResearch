@@ -629,9 +629,10 @@ export interface UnifiedWordRelationshipsResponse extends GrammaticalRelationshi
   lxx_translation?: R9BLxxLayerResult | null;
 }
 
+const DEFAULT_RELATIONSHIPS_RELEASE = 'r9b-v1.0';
 const PREVIEW_STORAGE_KEY = 'bibleresearch_rel_preview';
 
-/** Resolves opt-in relationship graph preview release (`?preview=r9b`, `?release=...`, or `VITE_RELATIONSHIPS_RELEASE`). */
+/** Resolves relationship graph release (defaults to `r9b-v1.0`; supports `?release=...` or `?preview=off`). */
 export function getConfiguredRelationshipsRelease(): string | undefined {
   if (typeof window !== 'undefined') {
     try {
@@ -639,28 +640,28 @@ export function getConfiguredRelationshipsRelease(): string | undefined {
       const preview = params.get('preview')?.trim().toLowerCase();
       const rel = params.get('release')?.trim();
       if (preview === 'off' || preview === '0' || preview === 'false') {
-        window.sessionStorage?.removeItem(PREVIEW_STORAGE_KEY);
-        return undefined;
+        window.sessionStorage?.setItem(PREVIEW_STORAGE_KEY, 'r8-v1.1');
+        return 'r8-v1.1';
       }
       if (rel && /^[A-Za-z0-9._-]+$/.test(rel)) {
         window.sessionStorage?.setItem(PREVIEW_STORAGE_KEY, rel);
         return rel;
       }
       if (preview === 'r9b' || preview === 'r9c' || preview === 'r9b-v1.0' || preview === '1' || preview === 'true') {
-        window.sessionStorage?.setItem(PREVIEW_STORAGE_KEY, 'r9b-v1.0');
-        return 'r9b-v1.0';
+        window.sessionStorage?.setItem(PREVIEW_STORAGE_KEY, DEFAULT_RELATIONSHIPS_RELEASE);
+        return DEFAULT_RELATIONSHIPS_RELEASE;
       }
       const stored = window.sessionStorage?.getItem(PREVIEW_STORAGE_KEY);
       if (stored && /^[A-Za-z0-9._-]+$/.test(stored)) return stored;
     } catch { /* ignore storage errors */ }
   }
   const envRel = (import.meta.env?.VITE_RELATIONSHIPS_RELEASE as string | undefined)?.trim();
-  return envRel && envRel.length > 0 ? envRel : undefined;
+  return envRel && envRel.length > 0 ? envRel : DEFAULT_RELATIONSHIPS_RELEASE;
 }
 
 export function isRelationshipPreviewEnabled(): boolean {
   const rel = getConfiguredRelationshipsRelease();
-  return Boolean(rel && rel !== 'r8-v1.1');
+  return rel !== 'r8-v1.1';
 }
 
 export type { ConceptResolutionResult, GraphLayer, MultiHopPath, MultiHopQuery, MultiHopResult };

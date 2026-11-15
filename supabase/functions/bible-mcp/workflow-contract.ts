@@ -16,7 +16,7 @@ export const WORKFLOW_ROUTES = {
   passage: { prompt: 'study_verse', starting_tools: ['get_verse_research'], purpose: 'Passage context, grammar, translation and setting' },
   word: { prompt: 'study_word', starting_tools: ['research_word_lens'], purpose: 'Compact lemma, senses, frequencies and sampling' },
   compare_words: { prompt: 'compare_words', starting_tools: ['resolve_word_id', 'prompt_word_relationships'], purpose: 'Word comparison and shared verses' },
-  relationships: { prompt: 'trace_connection_evidence', starting_tools: ['research_word_lens', 'trace_biblical_bridge', 'research_passage_lens'], purpose: 'Evidence-first lexical connections; curated motifs remain in research_relationships' },
+  relationships: { prompt: 'trace_connection_evidence', starting_tools: ['get_unified_word_relationships_v2', 'resolve_research_concept_v1', 'discover_relationship_paths_v1', 'get_passage_grammatical_frames_v2'], purpose: 'Unified 4-layer original-language relationships (grammatical R3, lexical roots/cognates/senses, lossless contextual neighbors, LXX bridge) and bounded 1-3 hop path discovery' },
   word_formation: { prompt: 'trace_word_formation', starting_tools: ['inspect_word_formation', 'suggest_word_connections'], purpose: 'Lexical compounds, theophoric names, roots, relatives, and orthographic candidates' },
   chronology: { prompt: 'study_chronology', starting_tools: ['get_verse_chronology_v1'], purpose: 'Multi-model dating and historical evidence' },
   geography: { prompt: 'study_geography', starting_tools: ['get_verse_geography'], purpose: 'Context-aware coordinates and disputed sites' },

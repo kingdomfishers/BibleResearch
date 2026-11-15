@@ -123,12 +123,21 @@ export function createDatabaseReader(config: DatabaseConfig, fetcher: typeof fet
     const corpusBase = (config.corpusUrl || DEFAULT_CORPUS_URL).replace(/\/+$/, '');
     if (corpusRpcs.has(name)) {
       try {
-        const corpRes = await fetcher(`${corpusBase}/v1/rpc/${name}`, {
+        const corpReq: RequestInit = {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
           body: JSON.stringify(args ?? {}),
           signal: AbortSignal.timeout(8000),
-        });
+        };
+        const corpUrl = `${corpusBase}/v1/rpc/${name}`;
+        let corpRes = await fetcher(corpUrl, corpReq);
+        if ([500, 502, 503, 504].includes(corpRes.status)) {
+          await corpRes.body?.cancel();
+          corpRes = await fetcher(corpUrl, {
+            ...corpReq,
+            signal: AbortSignal.timeout(8000),
+          });
+        }
         if (corpRes.ok) {
           const corpData = await corpRes.json();
           if (corpData && typeof corpData === 'object' && !Array.isArray(corpData)) {
