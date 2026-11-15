@@ -559,6 +559,9 @@ async function resolveLemmaV2(params, resolver, loadUncovered) {
   const findExactLemmaKey = async (rawKey) => {
     if (!rawKey) return null;
     if (resolver.lemmas?.[rawKey]) return rawKey;
+    if (resolver.by_strongs_extended?.[rawKey.toUpperCase()]) return resolver.by_strongs_extended[rawKey.toUpperCase()];
+    const extRaw = rawKey.startsWith('lemma:') ? rawKey.slice('lemma:'.length) : rawKey;
+    if (resolver.by_strongs_extended?.[extRaw.toUpperCase()]) return resolver.by_strongs_extended[extRaw.toUpperCase()];
     const low = rawKey.toLowerCase();
     for (const k of Object.keys(resolver.lemmas || {})) {
       if (k.toLowerCase() === low) return k;
@@ -671,10 +674,11 @@ async function resolveLemmaV2(params, resolver, loadUncovered) {
 
   if (explicitExactId) {
     const profile = await getProfile(explicitExactId);
+    const targetLemmaId = profile?.canonical_lemma_id || explicitExactId;
     const sibProfiles = await Promise.all((profile?.homograph_siblings || [explicitExactId]).map(getProfile));
     return {
       status: 'ok',
-      lemma_id: explicitExactId,
+      lemma_id: targetLemmaId,
       profile,
       homograph_siblings: sibProfiles.filter(Boolean),
       homograph_candidates: [],
@@ -765,10 +769,11 @@ export async function handleQueryRelationshipsV2(ctx, params = {}) {
       const ref = canonicalRefV2(params.book, params.chapter, params.verse);
       const ed = params.edition_key || params.edition || defaultEditionForBook(params.book);
       const coveredSet = new Set(resolver?.covered_passages_by_edition?.[ed] || []);
+      const isCovered = Boolean(resolver?.whole_bible_covered || coveredSet.has(ref));
       passageCoverage = {
         reference: ref,
         edition: ed,
-        covered: coveredSet.has(ref),
+        covered: isCovered,
       };
     }
     return {
@@ -836,7 +841,11 @@ export async function handleQueryRelationshipsV2(ctx, params = {}) {
     }
 
     const includeCandidates = parseBoolParam(params.include_candidates ?? params.include_uncertain, true);
-    const passagesShard = await ctx.loadJsonShard(ctx.env, `${baseDir}/passages-by-ref.json.gz`);
+    const passagesShard = manifest.sharding?.passages_by_chapter
+      ? await ctx.loadJsonShard(ctx.env, `${baseDir}/passages/b${book}-c${chapter}.json.gz`)
+      : (manifest.sharding?.passages_by_book
+          ? await ctx.loadJsonShard(ctx.env, `${baseDir}/passages/b${book}.json.gz`)
+          : await ctx.loadJsonShard(ctx.env, `${baseDir}/passages-by-ref.json.gz`));
     const entry = passagesShard?.passages?.[`${edition}:${ref}`];
     if (!entry) {
       return {
@@ -849,7 +858,9 @@ export async function handleQueryRelationshipsV2(ctx, params = {}) {
         counts: { frames: 0, relations: 0, candidate_relations: 0 },
         frames: [],
         relations: [],
-        note: `Passage ${ref} (${edition}) is outside the current verified ${releaseVersion} pilot graph (${manifest.counts.frames_emitted} frames, ${manifest.counts.occurrence_relations_emitted} relations).`,
+        note: manifest.whole_bible
+          ? `Passage ${ref} (${edition}) has 0 extracted grammatical relations under current rules.`
+          : `Passage ${ref} (${edition}) is outside the current verified ${releaseVersion} pilot graph (${manifest.counts.frames_emitted} frames, ${manifest.counts.occurrence_relations_emitted} relations).`,
       };
     }
 
@@ -902,21 +913,38 @@ export async function handleQueryRelationshipsV2(ctx, params = {}) {
   }
 
   if (rawOp === 'evidence') {
-    const evShard = await ctx.loadJsonShard(ctx.env, `${baseDir}/evidence-by-id.json.gz`);
-    if (!evShard) return { ...baseEnvelope, status: 'unavailable', error_message: 'Missing evidence shard.' };
     const includeUncertain = parseBoolParam(params.include_uncertain ?? params.include_candidates, false);
     const limit = clampLimit(params.limit, 25);
     const offset = Math.max(0, Number(params.offset) || 0);
 
-    let relIds = [];
-    if (params.summary_id) {
-      relIds = evShard.by_summary_id?.[String(params.summary_id)] || [];
-    } else if (params.relation_id) {
-      relIds = [String(params.relation_id)];
-    } else if (Array.isArray(params.relation_ids)) {
-      relIds = params.relation_ids.map(String);
+    let records = [];
+    if (params.summary_id && manifest.sharding?.evidence_by_summary) {
+      const bCount = BigInt(manifest.sharding?.evidence_by_summary_buckets || 256);
+      const bucket = Number(BigInt('0x' + fnv1a64Hex(params.summary_id)) % bCount).toString(16).padStart(2, '0');
+      const sumShard = await ctx.loadJsonShard(ctx.env, `${baseDir}/evidence/by-summary/shard-${bucket}.json.gz`);
+      records = sumShard?.entries?.[String(params.summary_id)] || [];
+    } else if (params.relation_id && manifest.sharding?.evidence_by_book) {
+      const coords = parseRefCoords(String(params.relation_id).split(':')[2]?.split('#')[0]);
+      const bookNo = coords?.book;
+      if (bookNo) {
+        const bShard = await ctx.loadJsonShard(ctx.env, `${baseDir}/evidence/b${bookNo}.json.gz`);
+        const r = bShard?.by_relation_id?.[String(params.relation_id)];
+        if (r) records = [r];
+      }
+    } else {
+      const evShard = await ctx.loadJsonShard(ctx.env, `${baseDir}/evidence-by-id.json.gz`);
+      if (!evShard) return { ...baseEnvelope, status: 'unavailable', error_message: 'Missing evidence shard.' };
+      let relIds = [];
+      if (params.summary_id) {
+        relIds = evShard.by_summary_id?.[String(params.summary_id)] || [];
+      } else if (params.relation_id) {
+        relIds = [String(params.relation_id)];
+      } else if (Array.isArray(params.relation_ids)) {
+        relIds = params.relation_ids.map(String);
+      }
+      records = relIds.map(id => evShard.by_relation_id?.[id]).filter(Boolean);
     }
-    let records = relIds.map(id => evShard.by_relation_id?.[id]).filter(Boolean);
+
     if (!includeUncertain) {
       records = records.filter(r => r.quality !== 'candidate');
     }
@@ -997,8 +1025,9 @@ export async function handleQueryRelationshipsV2(ctx, params = {}) {
     const pRef = canonicalRefV2(filterBook, filterChapter, filterVerse);
     const pEd = editionFilter || defaultEditionForBook(filterBook);
     const coveredSet = new Set(resolver.covered_passages_by_edition?.[pEd] || []);
-    passageCoverageInfo = { reference: pRef, edition: pEd, covered: coveredSet.has(pRef) };
-    if (!coveredSet.has(pRef)) {
+    const isCovered = Boolean(resolver.whole_bible_covered || coveredSet.has(pRef));
+    passageCoverageInfo = { reference: pRef, edition: pEd, covered: isCovered };
+    if (!isCovered) {
       return {
         ...baseEnvelope,
         status: 'not_covered',
@@ -1010,19 +1039,32 @@ export async function handleQueryRelationshipsV2(ctx, params = {}) {
         summaries: [],
         relations: [],
         page: { limit, offset, returned: 0, total_available: 0, has_more: false, next_offset: null },
-        coverage_notice: `Passage ${pRef} (${pEd}) is outside the current verified ${releaseVersion} pilot graph.`,
+        coverage_notice: `Passage ${pRef} (${pEd}) is outside the current verified ${releaseVersion} graph.`,
       };
     }
   }
 
-  const [byLemmaShard, evShard] = await Promise.all([
-    ctx.loadJsonShard(ctx.env, `${baseDir}/by-lemma.json.gz`),
-    ctx.loadJsonShard(ctx.env, `${baseDir}/evidence-by-id.json.gz`),
-  ]);
+  let lemmaEntry = null;
+  let evShard = null;
+  if (manifest.sharding?.by_lemma_sharded) {
+    const bCount = BigInt(manifest.sharding?.by_lemma_buckets || 256);
+    const bucket = Number(BigInt('0x' + fnv1a64Hex(res.lemma_id)) % bCount).toString(16).padStart(2, '0');
+    const lemmaShard = await ctx.loadJsonShard(ctx.env, `${baseDir}/by-lemma/shard-${bucket}.json.gz`);
+    lemmaEntry = lemmaShard?.entries?.[res.lemma_id];
+  } else {
+    const [bShard, eShard] = await Promise.all([
+      ctx.loadJsonShard(ctx.env, `${baseDir}/by-lemma.json.gz`),
+      ctx.loadJsonShard(ctx.env, `${baseDir}/evidence-by-id.json.gz`),
+    ]);
+    lemmaEntry = bShard?.entries?.[res.lemma_id];
+    evShard = eShard;
+  }
 
-  const lemmaEntry = byLemmaShard?.entries?.[res.lemma_id];
   if (!lemmaEntry) {
-    const pCovered = hasPassageCoords && (resolver.covered_passages_by_edition?.[editionFilter || defaultEditionForBook(filterBook)] || []).includes(canonicalRefV2(filterBook, filterChapter, filterVerse));
+    const pCovered = hasPassageCoords && Boolean(
+      resolver.whole_bible_covered ||
+      (resolver.covered_passages_by_edition?.[editionFilter || defaultEditionForBook(filterBook)] || []).includes(canonicalRefV2(filterBook, filterChapter, filterVerse))
+    );
     return {
       ...baseEnvelope,
       status: pCovered ? 'no_evidence_in_covered_scope' : 'not_covered',
@@ -1035,8 +1077,8 @@ export async function handleQueryRelationshipsV2(ctx, params = {}) {
       relations: [],
       page: { limit, offset, returned: 0, total_available: 0, has_more: false, next_offset: null },
       coverage_notice: pCovered
-        ? `Passage is in ${releaseVersion} pilot scope, and ${res.lemma_id} has no extracted R3 grammatical relations under the current rules.`
-        : `${res.lemma_id} (${res.profile?.lemma_form || ''}) is not yet covered in the current verified ${releaseVersion} pilot graph (${manifest.counts.distinct_lemmas_in_graph} lemmas across ${manifest.counts.frames_emitted} frames). Absence here reflects pilot coverage limits, not absence in Scripture.`,
+        ? `Passage is in ${releaseVersion} scope, and ${res.lemma_id} has no extracted R3 grammatical relations under the current rules.`
+        : `${res.lemma_id} (${res.profile?.lemma_form || ''}) is not yet covered in the current verified ${releaseVersion} graph (${manifest.counts.distinct_lemmas_in_graph} lemmas across ${manifest.counts.frames_emitted} frames). Absence here reflects coverage limits, not absence in Scripture.`,
     };
   }
 
@@ -1058,26 +1100,72 @@ export async function handleQueryRelationshipsV2(ctx, params = {}) {
   const matchingRelations = [];
   const summaryIdsWithPassageMatch = new Set();
 
-  for (const s of filteredSummaries) {
-    const evIds = s.evidence_ids || evShard?.by_summary_id?.[s.summary_id] || [];
-    for (const eid of evIds) {
-      const ev = evShard?.by_relation_id?.[eid];
-      if (!ev) continue;
-      if (!includeUncertain && ev.quality === 'candidate') continue;
-      if (pFilterRef && ev.canonical_ref !== pFilterRef) continue;
-      summaryIdsWithPassageMatch.add(s.summary_id);
+  if (pFilterRef && (manifest.sharding?.passages_by_chapter || manifest.sharding?.passages_by_book)) {
+    const pShard = manifest.sharding?.passages_by_chapter
+      ? await ctx.loadJsonShard(ctx.env, `${baseDir}/passages/b${filterBook}-c${filterChapter}.json.gz`)
+      : await ctx.loadJsonShard(ctx.env, `${baseDir}/passages/b${filterBook}.json.gz`);
+    const pEd = editionFilter || defaultEditionForBook(filterBook);
+    const pEntry = pShard?.passages?.[`${pEd}:${pFilterRef}`];
+    for (const rel of pEntry?.relations || []) {
+      if (!includeUncertain && rel.quality === 'candidate') continue;
+      const isSubj = rel.subject?.lemma_id === res.lemma_id;
+      const isObj = rel.object?.lemma_id === res.lemma_id;
+      if (!isSubj && !isObj) continue;
+      if (predicateSet && !predicateSet.has(rel.predicate)) continue;
+      if (direction === 'outgoing' && !isSubj) continue;
+      if (direction === 'incoming' && !isObj) continue;
       matchingRelations.push({
-        ...ev,
-        direction: s.direction,
-        display_predicate: s.display_predicate,
-        display_label: s.display_label,
+        ...rel,
+        direction: isSubj ? 'outgoing' : 'incoming',
+        display_predicate: isSubj ? rel.predicate : (rel.inverse_predicate || PREDICATE_META[rel.predicate]?.inverse_predicate),
+        display_label: isSubj ? (PREDICATE_META[rel.predicate]?.forward_label || rel.predicate) : (PREDICATE_META[rel.predicate]?.inverse_label || rel.inverse_predicate),
       });
+      if (rel.summary_id) summaryIdsWithPassageMatch.add(rel.summary_id);
+    }
+  } else if (!manifest.sharding) {
+    for (const s of filteredSummaries) {
+      const evIds = s.evidence_ids || evShard?.by_summary_id?.[s.summary_id] || [];
+      for (const eid of evIds) {
+        const ev = evShard?.by_relation_id?.[eid];
+        if (!ev) continue;
+        if (!includeUncertain && ev.quality === 'candidate') continue;
+        if (pFilterRef && ev.canonical_ref !== pFilterRef) continue;
+        summaryIdsWithPassageMatch.add(s.summary_id);
+        matchingRelations.push({
+          ...ev,
+          direction: s.direction,
+          display_predicate: s.display_predicate,
+          display_label: s.display_label,
+        });
+      }
+    }
+  } else {
+    for (const s of filteredSummaries) {
+      for (const ev of s.sample_relations || []) {
+        if (!includeUncertain && ev.quality === 'candidate') continue;
+        matchingRelations.push({
+          ...ev,
+          direction: s.direction,
+          display_predicate: s.display_predicate,
+          display_label: s.display_label,
+        });
+        if (matchingRelations.length >= 50) break;
+      }
+      if (matchingRelations.length >= 50) break;
     }
   }
 
   if (pFilterRef) {
     filteredSummaries = filteredSummaries.filter(s => summaryIdsWithPassageMatch.has(s.summary_id));
   }
+
+  const scopeKey = `v2:${releaseVersion}:${res.lemma_id}:${direction}:${editionFilter || 'all'}:${includeUncertain ? '1' : '0'}:${pFilterRef || '*'}:${predicateList.join(',')}`;
+  const cursorRes = params.cursor ? decodeCursor(params.cursor, scopeKey) : { ok: true, offset };
+  const pageOffset = cursorRes.ok ? cursorRes.offset : offset;
+  const pagedSummaries = filteredSummaries.slice(pageOffset, pageOffset + limit);
+  const nextOffset = pageOffset + pagedSummaries.length;
+  const hasMore = nextOffset < filteredSummaries.length;
+  const pagedIdSet = new Set(pagedSummaries.map(s => s.summary_id));
 
   // Group into clear categories (forward and inverse separately)
   const groupMap = new Map();
@@ -1103,19 +1191,14 @@ export async function handleQueryRelationshipsV2(ctx, params = {}) {
     grp.total_occurrences += Number(s.stats?.occurrences || 0);
     grp.total_candidate_occurrences += Number(s.stats?.candidate || 0);
     grp.total_passages += Number(s.stats?.distinct_passages || 0);
-    grp.items.push(s);
+    if (pagedIdSet.has(s.summary_id)) {
+      grp.items.push(s);
+    }
   }
   for (const grp of groupMap.values()) {
     grp.items.sort((a, b) => (b.stats?.occurrences || 0) - (a.stats?.occurrences || 0) || String(a.related_lemma_id).localeCompare(String(b.related_lemma_id)));
   }
   const categoryGroups = [...groupMap.values()];
-
-  const scopeKey = `v2:${releaseVersion}:${res.lemma_id}:${direction}:${editionFilter || 'all'}:${includeUncertain ? '1' : '0'}:${pFilterRef || '*'}:${predicateList.join(',')}`;
-  const cursorRes = params.cursor ? decodeCursor(params.cursor, scopeKey) : { ok: true, offset };
-  const pageOffset = cursorRes.ok ? cursorRes.offset : offset;
-  const pagedSummaries = filteredSummaries.slice(pageOffset, pageOffset + limit);
-  const nextOffset = pageOffset + pagedSummaries.length;
-  const hasMore = nextOffset < filteredSummaries.length;
 
   const status = filteredSummaries.length > 0 ? 'ok' : 'no_evidence_in_covered_scope';
   return {

@@ -36,9 +36,10 @@ let cachedVerseByCoord = null;
 let cachedBooksById = null;
 let cachedLxxBooksByNo = null;
 const shardLru = new Map();
-const MAX_LRU_SHARDS = 32;
+const MAX_LRU_SHARDS = 8;
 
 function setLru(key, val) {
+  if (key.includes('/by-lemma/')) return;
   if (shardLru.has(key)) shardLru.delete(key);
   shardLru.set(key, val);
   if (shardLru.size > MAX_LRU_SHARDS) {
