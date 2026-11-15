@@ -4,6 +4,7 @@ dist/
 .env.*
 !.env.example
 .artifacts/
+.artifacts-r9a/
 __pycache__/
 *.pyc
 
