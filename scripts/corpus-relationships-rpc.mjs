@@ -2414,13 +2414,15 @@ export async function handleDiscoverRelationshipPathsV1(ctx, params = {}) {
     };
   }
 
+  const targetList = parseOptionalListParam(params.targets);
+  const hasExplicitTarget = Boolean((params.target && String(params.target).trim()) || (targetList && targetList.length > 0));
   const rawLimits = params.limits && typeof params.limits === 'object' ? params.limits : {};
   const workerLimits = {
     max_nodes_expanded: Math.min(60, Math.max(1, finiteOr(rawLimits.max_nodes_expanded, 35))),
     max_edges_examined: Math.min(4000, Math.max(1, finiteOr(rawLimits.max_edges_examined, 2500))),
     max_paths_returned: Math.min(50, Math.max(1, finiteOr(rawLimits.max_paths_returned ?? params.limit, 20))),
     max_per_node_edges: Math.min(300, Math.max(1, finiteOr(rawLimits.max_per_node_edges, 120))),
-    max_contextual_pages_per_node: Math.min(8, Math.max(0, finiteOr(rawLimits.max_contextual_pages_per_node, 2))),
+    max_contextual_pages_per_node: Math.min(8, Math.max(0, finiteOr(rawLimits.max_contextual_pages_per_node, hasExplicitTarget ? 0 : 1))),
     max_asset_requests: Math.min(70, Math.max(1, finiteOr(rawLimits.max_asset_requests, 55))),
     max_bytes_read: Math.min(20 * 1024 * 1024, Math.max(1024, finiteOr(rawLimits.max_bytes_read, 16 * 1024 * 1024))),
     max_execution_ms: Math.min(5000, Math.max(25, finiteOr(rawLimits.max_execution_ms, 3500))),
@@ -2430,7 +2432,7 @@ export async function handleDiscoverRelationshipPathsV1(ctx, params = {}) {
   return await discoverMultiHopPaths(loader, {
     source: String(params.source || params.from || '').trim(),
     target: params.target ? String(params.target).trim() : null,
-    targets: parseOptionalListParam(params.targets),
+    targets: targetList,
     max_hops: params.max_hops !== undefined ? finiteOr(params.max_hops, 2) : 2,
     layers: parseOptionalListParam(params.layers),
     predicates: parseOptionalListParam(params.predicates),

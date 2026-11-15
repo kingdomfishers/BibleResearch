@@ -588,9 +588,9 @@ async function enrichTopGrammaticalJoins(
   prelim.sort((a, b) => compareMultiHopPaths(a.path, b.path));
 
   const extraWitnesses = new Map<string, HopEvidenceWitness[]>();
-  const summaryBudget = 24;
+  const summaryBudget = 6;
   let fetched = 0;
-  for (const item of prelim.slice(0, 20)) {
+  for (const item of prelim.slice(0, 6)) {
     if (item.chain.length < 2) continue;
     if (!item.chain.every((e) => e.layer === 'grammatical')) continue;
     if (item.path.explanation.join_scope === 'same_frame') continue;
