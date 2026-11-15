@@ -124,7 +124,9 @@ function makeEndpointDisplayLabel(ep: R9BLexicalEndpoint | undefined): string {
   if (!ep) return 'Unknown endpoint';
   const script = ep.lemma_script || ep.original_script || ep.lemma_text || ep.canonical_key || ep.key || ep.endpoint_key || '';
   const translit = ep.transliteration ? ` (${ep.transliteration})` : '';
-  const code = ep.disambiguated_strongs || ep.extended_strongs || ep.base_strongs || ep.lemma_key || ep.canonical_key || ep.key || '';
+  const code = (ep.entity_kind === 'sense' && ep.canonical_key)
+    ? ep.canonical_key
+    : (ep.disambiguated_strongs || ep.extended_strongs || ep.base_strongs || ep.lemma_key || ep.canonical_key || ep.key || '');
   return code && code !== script ? `${script}${translit} [${code}]` : `${script}${translit}`;
 }
 
@@ -159,7 +161,7 @@ function createV2LexicalCard(
   const head = el('div', 'rel-card__head');
   const peer = item.peer;
   const peerKey = peer.canonical_key || peer.key || peer.endpoint_key || peer.lemma_key || (typeof peer.lemma_id === 'string' ? peer.lemma_id : null);
-  const peerWordId = peer.word_id ?? (typeof peer.lemma_id === 'number' ? peer.lemma_id : null);
+  const peerWordId = peer.word_id ?? null;
   head.append(
     makePeerButton(
       makeEndpointDisplayLabel(peer),
@@ -328,7 +330,8 @@ function createLxxCard(
   if (candidates && candidates.length > 0) {
     for (const c of candidates) {
       const code = c.extended_strongs || c.lemma_key || '';
-      const label = [c.original_script || code, c.transliteration ? `(${c.transliteration})` : '', code ? `[${code}]` : '']
+      const script = c.original_script || (c as unknown as { lemma_script?: string | null }).lemma_script || code;
+      const label = [script, c.transliteration ? `(${c.transliteration})` : '', code ? `[${code}]` : '']
         .filter(Boolean)
         .join(' ');
       head.append(makePeerButton(label, c.language, c.word_id, c.lemma_key, props));
@@ -349,7 +352,10 @@ function createLxxCard(
 
   if (candidates && candidates.length > 0) {
     const glosses = candidates
-      .map(c => c.primary_gloss ? `${c.extended_strongs || c.lemma_key}: ${c.primary_gloss}` : null)
+      .map(c => {
+        const g = c.primary_gloss || (c as unknown as { gloss?: string | null }).gloss;
+        return g ? `${c.extended_strongs || c.lemma_key}: ${g}` : null;
+      })
       .filter(Boolean)
       .join(' · ');
     if (glosses) card.append(el('p', 'study-muted', glosses));

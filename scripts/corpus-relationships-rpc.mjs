@@ -1067,7 +1067,80 @@ function buildLayerAssetPath(layerMeta, formatKey, keyOrVars) {
   return `${layerMeta.base_dir}/${rel}`;
 }
 
-async function fetchLexicalLayerData(ctx, manifest, lemmaKey, params = {}) {
+function lookupResolverWordMeta(resolver, lemmaKey) {
+  if (!resolver?.lemmas || !lemmaKey || typeof lemmaKey !== 'string') return null;
+  let profile = resolver.lemmas[lemmaKey] || null;
+  if (!profile && lemmaKey.startsWith('lemma:')) {
+    const parsed = parseStrongsInputV2(lemmaKey);
+    if (parsed.isStrongs) {
+      for (const cand of parsed.exactLemmaCandidates) {
+        if (resolver.lemmas[cand]) {
+          profile = resolver.lemmas[cand];
+          break;
+        }
+      }
+      if (!profile && !parsed.suffix && resolver.by_strongs_base) {
+        const sibs = resolver.by_strongs_base[parsed.baseCompact] || [];
+        if (sibs.length === 1 && resolver.lemmas[sibs[0]]) {
+          profile = resolver.lemmas[sibs[0]];
+        }
+      }
+    }
+  }
+  if (!profile) return null;
+  return {
+    word_id: typeof profile.primary_word_id === 'number' && profile.primary_word_id > 0 ? profile.primary_word_id : null,
+    gloss: profile.gloss || null,
+    lemma_form: profile.lemma_form || null,
+    transliteration: profile.transliteration || null,
+    extended_strongs: profile.extended_strongs || null,
+    language: profile.language || null,
+  };
+}
+
+function enrichLexicalEndpoint(ep, resolver) {
+  if (!ep || typeof ep !== 'object') return ep;
+  const key = ep.canonical_key || ep.key || ep.endpoint_key || ep.lemma_key || (typeof ep.lemma_id === 'string' ? ep.lemma_id : null);
+  const isLemmaEndpoint = Boolean(key && key.startsWith('lemma:')) && ep.entity_kind !== 'sense' && ep.entity_kind !== 'root';
+  if (!isLemmaEndpoint) {
+    return ep.word_id == null ? ep : { ...ep, word_id: null };
+  }
+  const meta = lookupResolverWordMeta(resolver, key);
+  const resolvedWordId = meta?.word_id ?? (typeof ep.word_id === 'number' && ep.word_id > 0 ? ep.word_id : null);
+  if (ep.word_id === resolvedWordId) return ep;
+  return { ...ep, word_id: resolvedWordId };
+}
+
+function enrichContextualSlice(items, resolver) {
+  if (!resolver || !Array.isArray(items) || items.length === 0) return items;
+  return items.map(item => {
+    const meta = lookupResolverWordMeta(resolver, item.target_lemma_key);
+    if (!meta) return item;
+    return {
+      ...item,
+      target_word_id: item.target_word_id ?? meta.word_id,
+      target_primary_gloss: item.target_primary_gloss ?? meta.gloss,
+    };
+  });
+}
+
+function enrichLxxCandidates(cands, resolver, defaultLang) {
+  if (!Array.isArray(cands) || cands.length === 0) return cands;
+  return cands.map(c => {
+    const meta = lookupResolverWordMeta(resolver, c.lemma_key);
+    const code = c.extended_strongs || meta?.extended_strongs || (c.lemma_key ? String(c.lemma_key).replace(/^lemma:/, '') : null);
+    return {
+      ...c,
+      word_id: c.word_id ?? meta?.word_id ?? null,
+      original_script: c.original_script || c.lemma_script || meta?.lemma_form || null,
+      primary_gloss: c.primary_gloss || meta?.gloss || c.gloss || null,
+      extended_strongs: code,
+      language: c.language || meta?.language || defaultLang,
+    };
+  });
+}
+
+async function fetchLexicalLayerData(ctx, manifest, lemmaKey, params = {}, resolver = null) {
   const lexLayer = manifest?.layers?.lexical;
   if (!lexLayer) {
     return { available: false, status: 'unavailable', items: [], counts: { total: 0 }, page: { limit: 25, offset: 0, returned: 0, total_available: 0, has_more: false, next_offset: null } };
@@ -1122,7 +1195,13 @@ async function fetchLexicalLayerData(ctx, manifest, lemmaKey, params = {}) {
     });
   }
 
-  const slice = fullRecords.slice(offset, offset + limit);
+  const rawSlice = fullRecords.slice(offset, offset + limit);
+  const slice = rawSlice.map(rec => ({
+    ...rec,
+    peer: enrichLexicalEndpoint(rec.peer, resolver),
+    subject: enrichLexicalEndpoint(rec.subject, resolver),
+    target: enrichLexicalEndpoint(rec.target, resolver),
+  }));
   const nextOffset = offset + slice.length;
   const hasMore = nextOffset < fullRecords.length;
   return {
@@ -1160,7 +1239,7 @@ async function fetchLexicalLayerData(ctx, manifest, lemmaKey, params = {}) {
   };
 }
 
-async function fetchContextualLayerData(ctx, manifest, lemmaKey, params = {}) {
+async function fetchContextualLayerData(ctx, manifest, lemmaKey, params = {}, resolver = null) {
   const ctxLayer = manifest?.layers?.contextual;
   if (!ctxLayer) {
     return { available: false, status: 'unavailable', items: [], counts: { total_neighbors: 0 }, page: { limit: 25, offset: 0, returned: 0, total_available: 0, has_more: false, next_offset: null } };
@@ -1200,7 +1279,7 @@ async function fetchContextualLayerData(ctx, manifest, lemmaKey, params = {}) {
 
   // Fast O(1)-shard path for unfiltered pagination within top-50 window
   if (!needsCustomFilter && offset + limit <= topItems.length) {
-    const slice = topItems.slice(offset, offset + limit);
+    const slice = enrichContextualSlice(topItems.slice(offset, offset + limit), resolver);
     const nextOffset = offset + slice.length;
     const hasMore = nextOffset < totalUnfiltered;
     return {
@@ -1260,7 +1339,8 @@ async function fetchContextualLayerData(ctx, manifest, lemmaKey, params = {}) {
         }
       }
     }
-    const nextOffset = offset + collected.length;
+    const enrichedCollected = enrichContextualSlice(collected, resolver);
+    const nextOffset = offset + enrichedCollected.length;
     const hasMore = nextOffset < totalUnfiltered;
     return {
       available: true,
@@ -1270,14 +1350,14 @@ async function fetchContextualLayerData(ctx, manifest, lemmaKey, params = {}) {
       counts: {
         total_neighbors: totalUnfiltered,
         filtered_total: totalUnfiltered,
-        returned: collected.length,
+        returned: enrichedCollected.length,
         lossless: true,
       },
-      items: collected,
+      items: enrichedCollected,
       page: {
         limit,
         offset,
-        returned: collected.length,
+        returned: enrichedCollected.length,
         total_available: totalUnfiltered,
         has_more: hasMore,
         next_offset: hasMore ? nextOffset : null,
@@ -1312,7 +1392,7 @@ async function fetchContextualLayerData(ctx, manifest, lemmaKey, params = {}) {
       if (matchesItem(item)) matching.push(item);
     }
   }
-  const slice = matching.slice(offset, offset + limit);
+  const slice = enrichContextualSlice(matching.slice(offset, offset + limit), resolver);
   const nextOffset = offset + slice.length;
   const hasMore = nextOffset < matching.length;
   return {
@@ -1346,7 +1426,7 @@ async function fetchContextualLayerData(ctx, manifest, lemmaKey, params = {}) {
   };
 }
 
-async function fetchLxxLayerData(ctx, manifest, lemmaKey, params = {}) {
+async function fetchLxxLayerData(ctx, manifest, lemmaKey, params = {}, resolver = null) {
   const lxxLayer = manifest?.layers?.lxx_translation;
   if (!lxxLayer) {
     return { available: false, status: 'unavailable', items: [], counts: { candidate_count: 0, total_attested_renderings: 0 }, page: { limit: 25, offset: 0, returned: 0, total_available: 0, has_more: false, next_offset: null } };
@@ -1381,7 +1461,12 @@ async function fetchLxxLayerData(ctx, manifest, lemmaKey, params = {}) {
   }
 
   const allCands = entry.candidates;
-  const slice = allCands.slice(offset, offset + limit);
+  const rawSlice = allCands.slice(offset, offset + limit);
+  const slice = rawSlice.map(item => ({
+    ...item,
+    ...(item.greek_candidates ? { greek_candidates: enrichLxxCandidates(item.greek_candidates, resolver, 'grc') } : {}),
+    ...(item.hebrew_candidates ? { hebrew_candidates: enrichLxxCandidates(item.hebrew_candidates, resolver, 'hbo') } : {}),
+  }));
   const nextOffset = offset + slice.length;
   const hasMore = nextOffset < allCands.length;
   return {
@@ -1514,7 +1599,7 @@ export async function handleQueryRelationshipsV2(ctx, params = {}) {
     (Boolean(params.endpoint_key) || directKeyCandidate.startsWith('root:') || directKeyCandidate.startsWith('sense:')) &&
     manifest.layers?.lexical
   ) {
-    const lexLayerData = await fetchLexicalLayerData(ctx, manifest, directKeyCandidate, params);
+    const lexLayerData = await fetchLexicalLayerData(ctx, manifest, directKeyCandidate, params, resolver);
     if (rawOp === 'lexical_relations') {
       return {
         ...baseEnvelope,
@@ -1545,7 +1630,7 @@ export async function handleQueryRelationshipsV2(ctx, params = {}) {
         contextual: null,
       };
     }
-    const ctxData = await fetchContextualLayerData(ctx, manifest, res.lemma_id, params);
+    const ctxData = await fetchContextualLayerData(ctx, manifest, res.lemma_id, params, resolver);
     return {
       ...baseEnvelope,
       status: ctxData.status,
@@ -1569,7 +1654,7 @@ export async function handleQueryRelationshipsV2(ctx, params = {}) {
         lexical: null,
       };
     }
-    const lexData = await fetchLexicalLayerData(ctx, manifest, res.lemma_id, params);
+    const lexData = await fetchLexicalLayerData(ctx, manifest, res.lemma_id, params, resolver);
     return {
       ...baseEnvelope,
       status: lexData.status,
@@ -1593,7 +1678,7 @@ export async function handleQueryRelationshipsV2(ctx, params = {}) {
         lxx_translation: null,
       };
     }
-    const lxxData = await fetchLxxLayerData(ctx, manifest, res.lemma_id, params);
+    const lxxData = await fetchLxxLayerData(ctx, manifest, res.lemma_id, params, resolver);
     return {
       ...baseEnvelope,
       status: lxxData.status,
@@ -2138,9 +2223,9 @@ export async function handleQueryRelationshipsV2(ctx, params = {}) {
 
   const [gramLayer, lexLayer, ctxLayer, lxxLayer] = await Promise.all([
     requestedLayers.has('grammatical') ? loadGrammaticalLayer() : Promise.resolve(null),
-    requestedLayers.has('lexical') ? fetchLexicalLayerData(ctx, manifest, res.lemma_id, params) : Promise.resolve(null),
-    requestedLayers.has('contextual') ? fetchContextualLayerData(ctx, manifest, res.lemma_id, params) : Promise.resolve(null),
-    requestedLayers.has('lxx_translation') ? fetchLxxLayerData(ctx, manifest, res.lemma_id, params) : Promise.resolve(null),
+    requestedLayers.has('lexical') ? fetchLexicalLayerData(ctx, manifest, res.lemma_id, params, resolver) : Promise.resolve(null),
+    requestedLayers.has('contextual') ? fetchContextualLayerData(ctx, manifest, res.lemma_id, params, resolver) : Promise.resolve(null),
+    requestedLayers.has('lxx_translation') ? fetchLxxLayerData(ctx, manifest, res.lemma_id, params, resolver) : Promise.resolve(null),
   ]);
 
   const anyOk = [gramLayer, lexLayer, ctxLayer, lxxLayer].some(l => l && l.status === 'ok');
