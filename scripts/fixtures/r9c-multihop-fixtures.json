@@ -1,0 +1,256 @@
+{
+  "description": "Controlled deterministic graph fixtures for R9C multi-hop relationship verification (Prompt §9).",
+  "lemmas": [
+    {
+      "lemma_id": "lemma:H9001",
+      "language": "hebrew",
+      "lemma_form": "רוּחַ_fixture",
+      "transliteration": "ruach_fx",
+      "gloss": "spirit; wind; breath",
+      "strongs_base": "H9001",
+      "extended_strongs": "H9001",
+      "pos": "H:N"
+    },
+    {
+      "lemma_id": "lemma:H9002",
+      "language": "hebrew",
+      "lemma_form": "אוֹר_fixture",
+      "transliteration": "or_fx",
+      "gloss": "light",
+      "strongs_base": "H9002",
+      "extended_strongs": "H9002",
+      "pos": "H:N"
+    },
+    {
+      "lemma_id": "lemma:H9003",
+      "language": "hebrew",
+      "lemma_form": "חַי_fixture",
+      "transliteration": "chay_fx",
+      "gloss": "living; life",
+      "strongs_base": "H9003",
+      "extended_strongs": "H9003",
+      "pos": "H:A"
+    },
+    {
+      "lemma_id": "lemma:H9004",
+      "language": "hebrew",
+      "lemma_form": "דֶּרֶךְ_fixture",
+      "transliteration": "derekh_fx",
+      "gloss": "way; road",
+      "strongs_base": "H9004",
+      "extended_strongs": "H9004",
+      "pos": "H:N"
+    },
+    {
+      "lemma_id": "lemma:H9005",
+      "language": "hebrew",
+      "lemma_form": "בָּרָא_a",
+      "transliteration": "bara_fx_a",
+      "gloss": "create",
+      "strongs_base": "H9005",
+      "extended_strongs": "H9005a",
+      "homograph_tag": "a",
+      "pos": "H:V"
+    },
+    {
+      "lemma_id": "lemma:H9005b",
+      "language": "hebrew",
+      "lemma_form": "בָּרָא_b",
+      "transliteration": "bara_fx_b",
+      "gloss": "cut down",
+      "strongs_base": "H9005",
+      "extended_strongs": "H9005b",
+      "homograph_tag": "b",
+      "pos": "H:V"
+    },
+    {
+      "lemma_id": "lemma:H9005a",
+      "language": "hebrew",
+      "lemma_form": "בָּרָא_a",
+      "transliteration": "bara_fx_a",
+      "gloss": "create",
+      "strongs_base": "H9005",
+      "extended_strongs": "H9005a",
+      "homograph_tag": "a",
+      "pos": "H:V"
+    },
+    {
+      "lemma_id": "lemma:H9009",
+      "language": "hebrew",
+      "lemma_form": "אֵת_hub",
+      "transliteration": "et_hub",
+      "gloss": "object marker particle",
+      "strongs_base": "H9009",
+      "extended_strongs": "H9009",
+      "pos": "H:Part"
+    },
+    {
+      "lemma_id": "lemma:G9001",
+      "language": "greek",
+      "lemma_form": "πνεῦμα_fx",
+      "transliteration": "pneuma_fx",
+      "gloss": "spirit; wind",
+      "strongs_base": "G9001",
+      "extended_strongs": "G9001",
+      "pos": "G:N"
+    },
+    {
+      "lemma_id": "lemma:G9002",
+      "language": "greek",
+      "lemma_form": "ζωή_fx",
+      "transliteration": "zoe_fx",
+      "gloss": "life",
+      "strongs_base": "G9002",
+      "extended_strongs": "G9002",
+      "pos": "G:N"
+    },
+    {
+      "lemma_id": "lemma:H9990",
+      "language": "hebrew",
+      "lemma_form": "נָתַק_isolated",
+      "transliteration": "nataq_iso",
+      "gloss": "isolated test lemma",
+      "strongs_base": "H9990",
+      "extended_strongs": "H9990",
+      "pos": "H:V"
+    }
+  ],
+  "grammatical_edges": [
+    {
+      "summary_id": "sum:fx:1",
+      "source": "lemma:H9001",
+      "target": "lemma:H9002",
+      "predicate": "grammatical_subject_of",
+      "edition": "macula-hebrew-wlc",
+      "quality_tier": "source_explicit",
+      "frame_id": "frame:fx:GEN:1:2#cl1",
+      "canonical_ref": "GEN 1:2"
+    },
+    {
+      "summary_id": "sum:fx:2",
+      "source": "lemma:H9002",
+      "target": "lemma:H9003",
+      "predicate": "grammatical_object_of",
+      "edition": "macula-hebrew-wlc",
+      "quality_tier": "source_explicit",
+      "frame_id": "frame:fx:GEN:1:2#cl1",
+      "canonical_ref": "GEN 1:2"
+    },
+    {
+      "summary_id": "sum:fx:3",
+      "source": "lemma:H9003",
+      "target": "lemma:H9004",
+      "predicate": "clause_head_governed_by",
+      "edition": "macula-hebrew-wlc",
+      "quality_tier": "rule_derived",
+      "frame_id": "frame:fx:GEN:1:3#cl2",
+      "canonical_ref": "GEN 1:3"
+    },
+    {
+      "summary_id": "sum:fx:hub1",
+      "source": "lemma:H9001",
+      "target": "lemma:H9009",
+      "predicate": "co_participates_in_clause_with",
+      "edition": "macula-hebrew-wlc",
+      "quality_tier": "rule_derived",
+      "frame_id": "frame:fx:GEN:1:4#cl1",
+      "canonical_ref": "GEN 1:4"
+    },
+    {
+      "summary_id": "sum:fx:hub2",
+      "source": "lemma:H9009",
+      "target": "lemma:H9003",
+      "predicate": "prepositional_complement_of",
+      "edition": "macula-hebrew-wlc",
+      "quality_tier": "rule_derived",
+      "frame_id": "frame:fx:GEN:1:4#cl1",
+      "canonical_ref": "GEN 1:4"
+    },
+    {
+      "summary_id": "sum:fx:grk1",
+      "source": "lemma:G9001",
+      "target": "lemma:G9002",
+      "predicate": "grammatical_subject_of",
+      "edition": "morphgnt-sblgnt",
+      "quality_tier": "source_explicit",
+      "frame_id": "frame:fx:JHN:6:63#cl1",
+      "canonical_ref": "JHN 6:63"
+    },
+    {
+      "summary_id": "sum:fx:grk2",
+      "source": "lemma:G9001",
+      "target": "lemma:G9002",
+      "predicate": "grammatical_subject_of",
+      "edition": "robinson-byzantine",
+      "quality_tier": "source_explicit",
+      "frame_id": "frame:fx:JHN:6:63#byz1",
+      "canonical_ref": "JHN 6:63"
+    }
+  ],
+  "lexical_edges": [
+    {
+      "relationship_id": "rel:lex:fx:root1",
+      "subject": "lemma:H9001",
+      "target": "root:H9001",
+      "raw_relation_code": "base_root_anchor",
+      "category": "root_anchor",
+      "direction": "directed"
+    },
+    {
+      "relationship_id": "rel:lex:fx:sense1",
+      "subject": "sense:H9001I:sub",
+      "target": "lemma:H9001",
+      "raw_relation_code": "sense_subdivision_of",
+      "category": "sense_subdivision",
+      "direction": "directed"
+    },
+    {
+      "relationship_id": "rel:lex:fx:cog1",
+      "subject": "lemma:H9005a",
+      "target": "lemma:H9001",
+      "raw_relation_code": "cognate_parallel",
+      "category": "cognate_parallel",
+      "direction": "symmetric"
+    }
+  ],
+  "contextual_pairs": [
+    {
+      "a": "lemma:H9001",
+      "b": "lemma:H9004",
+      "same_verse": 2,
+      "same_clause": 1,
+      "collocation_distance_le_3": 0,
+      "ref": "EXO 14:21",
+      "overflow": true
+    },
+    {
+      "a": "lemma:H9002",
+      "b": "lemma:H9003",
+      "same_verse": 5,
+      "same_clause": 2,
+      "collocation_distance_le_3": 1,
+      "ref": "PSA 36:9",
+      "overflow": false
+    }
+  ],
+  "lxx_edges": [
+    {
+      "edge_id": "rel:lxx:fx:H9001->G9001",
+      "hebrew": "lemma:H9001",
+      "greek": "lemma:G9001",
+      "homograph_ambiguity": false,
+      "mapping_status": "exact",
+      "published_count": 264,
+      "translation_share": 0.72
+    },
+    {
+      "edge_id": "rel:lxx:fx:H9005->G9002",
+      "hebrew": "lemma:H9005a",
+      "greek": "lemma:G9002",
+      "homograph_ambiguity": true,
+      "mapping_status": "hebrew_homograph_ambiguous",
+      "published_count": 12,
+      "translation_share": 0.15
+    }
+  ]
+}
