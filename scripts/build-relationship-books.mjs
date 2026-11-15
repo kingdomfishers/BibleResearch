@@ -34,6 +34,9 @@ export function runBooksBuild(options = {}) {
   if (options.noAggregate) {
     args.push('--no-aggregate');
   }
+  if (options.aggregateAll) {
+    args.push('--aggregate-all');
+  }
 
   const stdout = execFileSync(pythonBin, args, {
     cwd: REPO_ROOT,
@@ -53,8 +56,33 @@ const isDirectRun =
   process.argv[1] && path.resolve(process.argv[1]) === path.resolve(__filename);
 
 if (isDirectRun) {
-  const booksArg = process.argv[2] || 'RUT,PHP';
-  const forceRebuild = process.argv.includes('--force-rebuild');
-  const result = runBooksBuild({ books: booksArg, forceRebuild });
+  const rawArgs = process.argv.slice(2);
+  const options = {};
+  for (let i = 0; i < rawArgs.length; i++) {
+    const a = rawArgs[i];
+    if (a === '--testament' && rawArgs[i + 1]) {
+      options.testament = rawArgs[++i];
+    } else if (a === '--book' && rawArgs[i + 1]) {
+      options.books = rawArgs[++i];
+    } else if (a === '--edition' && rawArgs[i + 1]) {
+      options.edition = rawArgs[++i];
+    } else if (a === '--out-dir' && rawArgs[i + 1]) {
+      options.outDir = rawArgs[++i];
+    } else if (a === '--all') {
+      options.all = true;
+    } else if (a === '--force-rebuild') {
+      options.forceRebuild = true;
+    } else if (a === '--no-aggregate') {
+      options.noAggregate = true;
+    } else if (a === '--aggregate-all') {
+      options.aggregateAll = true;
+    } else if (!a.startsWith('-')) {
+      options.books = a;
+    }
+  }
+  if (!options.books && !options.testament && !options.all && !options.aggregateAll) {
+    options.books = 'RUT,PHP';
+  }
+  const result = runBooksBuild(options);
   console.log(JSON.stringify(result, null, 2));
 }

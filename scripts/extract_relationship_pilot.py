@@ -628,7 +628,14 @@ class StaticCrosswalkIndex:
             tms = self.token_morphemes_by_vw.get((cvid_int, word_no), [])
             tm_matched = []
             for tm in tms:
-                lrow = self.lemmas_by_id.get(int(tm["lemma_id"]))
+                raw_lid = tm.get("lemma_id")
+                if raw_lid is None:
+                    continue
+                try:
+                    lid_int = int(raw_lid)
+                except (ValueError, TypeError):
+                    continue
+                lrow = self.lemmas_by_id.get(lid_int)
                 if not lrow:
                     continue
                 lparts = parse_strongs_parts(lrow.get("base_strongs"), "H")
@@ -652,13 +659,25 @@ class StaticCrosswalkIndex:
         # 3. Consult word_form_lemmas candidates matching this base Strong's number
         wfl_candidates: list[dict[str, Any]] = []
         if word_id is not None:
-            for wfl in self.word_form_lemmas_by_word.get(int(word_id), []):
-                lrow = self.lemmas_by_id.get(int(wfl["lemma_id"]))
-                if not lrow:
-                    continue
-                lparts = parse_strongs_parts(lrow.get("base_strongs"), "H")
-                if lparts and lparts[1] == num:
-                    wfl_candidates.append(lrow)
+            try:
+                wid_int = int(word_id)
+            except (ValueError, TypeError):
+                wid_int = None
+            if wid_int is not None:
+                for wfl in self.word_form_lemmas_by_word.get(wid_int, []):
+                    raw_lid = wfl.get("lemma_id")
+                    if raw_lid is None:
+                        continue
+                    try:
+                        lid_int = int(raw_lid)
+                    except (ValueError, TypeError):
+                        continue
+                    lrow = self.lemmas_by_id.get(lid_int)
+                    if not lrow:
+                        continue
+                    lparts = parse_strongs_parts(lrow.get("base_strongs"), "H")
+                    if lparts and lparts[1] == num:
+                        wfl_candidates.append(lrow)
 
         if letter and not wfl_candidates:
             # Explicit extended Strong's code (e.g. suffix code 2050c) with no lemma_key or
@@ -732,7 +751,14 @@ class StaticCrosswalkIndex:
         # 2. Match word_form_lemmas for step_word_id filtered by base Strong's
         wfl_candidates: list[dict[str, Any]] = []
         for wfl in self.word_form_lemmas_by_word.get(swid, []):
-            lrow = self.lemmas_by_id.get(int(wfl["lemma_id"]))
+            raw_lid = wfl.get("lemma_id")
+            if raw_lid is None:
+                continue
+            try:
+                lid_int = int(raw_lid)
+            except (ValueError, TypeError):
+                continue
+            lrow = self.lemmas_by_id.get(lid_int)
             if not lrow:
                 continue
             lparts = parse_strongs_parts(lrow.get("base_strongs"), "G")
@@ -2231,6 +2257,23 @@ def run_books_extraction(
     }
 
 
+def discover_all_partitions(out_dir: Path) -> list[Path]:
+    partitions_dir = out_dir / "partitions"
+    if not partitions_dir.exists():
+        return []
+    pdirs = []
+    for ed_dir in sorted(partitions_dir.iterdir()):
+        if not ed_dir.is_dir():
+            continue
+        for b_dir in sorted(ed_dir.iterdir()):
+            if not b_dir.is_dir():
+                continue
+            manifest = b_dir / "partition-manifest.json"
+            if manifest.exists():
+                pdirs.append(b_dir)
+    return pdirs
+
+
 def main() -> None:
     import argparse
     parser = argparse.ArgumentParser(description="Deterministic Offline Relationship Extractor")
@@ -2242,10 +2285,19 @@ def main() -> None:
     parser.add_argument("--all", action="store_true", help="Extract all available books")
     parser.add_argument("--force-rebuild", action="store_true", help="Force rebuild partitions ignoring cache")
     parser.add_argument("--no-aggregate", action="store_true", help="Skip whole-graph aggregation step")
+    parser.add_argument("--aggregate-all", action="store_true", help="Aggregate all existing partitions in out_dir")
 
     args = parser.parse_args()
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
+
+    if args.aggregate_all:
+        pdirs = discover_all_partitions(out_dir)
+        print(f"\nAggregating all {len(pdirs)} partitions in {out_dir}...")
+        agg_result = aggregate_partitions(pdirs, out_dir, rule_version=RULE_VERSION)
+        print(f"Aggregation complete: {agg_result['totals']['relation_summaries_total']} lemma summaries.")
+        print(json.dumps({"status": "ok", "out_dir": str(out_dir), "partitions_aggregated": len(pdirs), "aggregation": agg_result}, indent=2))
+        return
 
     is_custom_run = bool(args.book or args.edition or args.testament or args.all)
 
