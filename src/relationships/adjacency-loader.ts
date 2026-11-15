@@ -635,9 +635,18 @@ async function loadLxxEdges(ctx: LayerContext, lxxMeta: Record<string, unknown>)
   if (!isGreek && directionFilter === 'incoming') return [];
   if (ctx.predicateSet && !ctx.predicateSet.has('lxx_translation_candidate') && !ctx.predicateSet.has('lxx_rendered_from')) return [];
 
-  const formatKey = isGreek ? 'by-greek-lemma' : 'by-hebrew-lemma';
-  const hex = computeBucketHex(String(lxxMeta.hash_algorithm || 'fnv1a64_hi32_mod64'), Number(lxxMeta.buckets || 64), ctx.entityKey);
-  const lxxShard = (await ctx.readShard(`${lxxMeta.base_dir}/${formatKey}/shard-${hex}.json.gz`)) as { entries?: Record<string, { candidates?: Array<Record<string, unknown>> }> } | null;
+  const ws = lxxMeta.worker_shards as Record<string, unknown> | undefined;
+  let lxxPath: string;
+  if (ws?.base_dir && (isGreek ? ws.greek_path : ws.hebrew_path)) {
+    const hexWs = computeBucketHex(String(ws.hash_algorithm || 'fnv1a64_mod256'), Number(ws.buckets || 256), ctx.entityKey);
+    const tpl = String(isGreek ? ws.greek_path : ws.hebrew_path);
+    lxxPath = `${String(ws.base_dir)}/${tpl.replace('{hex3}', hexWs).replace('{hex2}', hexWs)}`;
+  } else {
+    const formatKey = isGreek ? 'by-greek-lemma' : 'by-hebrew-lemma';
+    const hex = computeBucketHex(String(lxxMeta.hash_algorithm || 'fnv1a64_hi32_mod64'), Number(lxxMeta.buckets || 64), ctx.entityKey);
+    lxxPath = `${lxxMeta.base_dir}/${formatKey}/shard-${hex}.json.gz`;
+  }
+  const lxxShard = (await ctx.readShard(lxxPath)) as { entries?: Record<string, { candidates?: Array<Record<string, unknown>> }> } | null;
   const lxxEntry = lxxShard?.entries?.[ctx.entityKey];
   const minQuality = ctx.options.min_quality ?? 'all';
   const edges: GraphEdge[] = [];
@@ -828,8 +837,29 @@ export class ShardedAdjacencyLoader implements AdjacencyLoader {
     if (!resLayer?.base_dir) return null;
     const normKey = String(lookupKey || '').trim().toLowerCase();
     const hex = computeBucketHex(String(resLayer.hash_algorithm || 'fnv1a64_mod256'), Number(resLayer.buckets || 256), normKey);
-    const fmt = String((resLayer.shard_path_formats as Record<string, string> | undefined)?.by_key || 'by-key/shard-{hex2}.json.gz').replace('{hex2}', hex);
+    const fmt = String((resLayer.shard_path_formats as Record<string, string> | undefined)?.by_key || 'by-key/shard-{hex2}.json.gz')
+      .replace('{hex3}', hex)
+      .replace('{hex2}', hex);
     return this.readShard(`${resLayer.base_dir}/${fmt}`, undefined, budget) as Promise<ResolverByKeyShardData | null>;
+  }
+
+  async getEnglishTokenBucket(prefix: string, budget?: AssetBudgetContext): Promise<EnglishConceptsData['rows'] | null> {
+    const m = await this.getManifestSummary(budget);
+    const resLayer = (m?.layers as Record<string, Record<string, unknown>> | undefined)?.resolver;
+    const fmt = (resLayer?.shard_path_formats as Record<string, string> | undefined)?.english_tokens;
+    if (!resLayer?.base_dir || !fmt) return null;
+    const normPrefix = String(prefix || '').trim().toLowerCase();
+    if (!normPrefix) return [];
+    const hex = computeBucketHex(
+      String(resLayer.english_tokens_hash_algorithm || 'fnv1a64_mod256'),
+      Number(resLayer.english_tokens_buckets || 256),
+      normPrefix,
+    );
+    const pathStr = fmt.replace('{hex3}', hex).replace('{hex2}', hex);
+    const shard = (await this.readShard(`${resLayer.base_dir}/${pathStr}`, undefined, budget)) as {
+      by_prefix?: Record<string, EnglishConceptsData['rows']>;
+    } | null;
+    return shard?.by_prefix?.[normPrefix] || [];
   }
 
   async getEnglishConcepts(budget?: AssetBudgetContext): Promise<EnglishConceptsData | null> {

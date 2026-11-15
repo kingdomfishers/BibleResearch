@@ -44,6 +44,7 @@ export const DEFAULT_SEARCH_LIMITS: SearchLimits = {
   max_execution_ms: 4000,
   max_bytes_read: 32 * 1024 * 1024,
   max_candidate_paths: 500,
+  max_summary_hydrations: 6,
 };
 
 const ALL_LAYERS: GraphLayer[] = ['grammatical', 'lexical', 'contextual', 'lxx_translation'];
@@ -105,6 +106,7 @@ function clampLimits(raw?: Partial<SearchLimits>, reqLimit?: number): SearchLimi
     max_execution_ms: Math.max(25, Math.min(15000, raw?.max_execution_ms ?? DEFAULT_SEARCH_LIMITS.max_execution_ms)),
     max_bytes_read: Math.max(1024, Math.min(128 * 1024 * 1024, raw?.max_bytes_read ?? DEFAULT_SEARCH_LIMITS.max_bytes_read)),
     max_candidate_paths: Math.max(maxReturned, Math.min(2000, raw?.max_candidate_paths ?? DEFAULT_SEARCH_LIMITS.max_candidate_paths)),
+    max_summary_hydrations: Math.max(0, Math.min(20, raw?.max_summary_hydrations ?? DEFAULT_SEARCH_LIMITS.max_summary_hydrations ?? 6)),
   };
 }
 
@@ -588,9 +590,9 @@ async function enrichTopGrammaticalJoins(
   prelim.sort((a, b) => compareMultiHopPaths(a.path, b.path));
 
   const extraWitnesses = new Map<string, HopEvidenceWitness[]>();
-  const summaryBudget = 6;
+  const summaryBudget = Math.max(0, tracker.limits.max_summary_hydrations ?? 6);
   let fetched = 0;
-  for (const item of prelim.slice(0, 6)) {
+  for (const item of summaryBudget > 0 ? prelim.slice(0, 6) : []) {
     if (item.chain.length < 2) continue;
     if (!item.chain.every((e) => e.layer === 'grammatical')) continue;
     if (item.path.explanation.join_scope === 'same_frame') continue;

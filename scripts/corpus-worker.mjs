@@ -49,11 +49,14 @@ function setLru(key, val) {
     key.includes('/fast-by-lemma/') ||
     key.includes('/by-hebrew-lemma/') ||
     key.includes('/by-greek-lemma/') ||
+    key.includes('/fast-by-hebrew/') ||
+    key.includes('/fast-by-greek/') ||
     key.includes('/contextual/pages/') ||
     key.includes('/sharded-contextual/') ||
     key.includes('/sharded-edges/') ||
     key.includes('/fast-edges/') ||
-    key.includes('/resolver/by-key/')
+    key.includes('/resolver/by-key/') ||
+    key.includes('/resolver/english-tokens/')
   ) {
     return;
   }

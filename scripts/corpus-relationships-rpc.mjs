@@ -2440,6 +2440,7 @@ export async function handleDiscoverRelationshipPathsV1(ctx, params = {}) {
     max_bytes_read: Math.min(20 * 1024 * 1024, Math.max(1024, finiteOr(rawLimits.max_bytes_read, 16 * 1024 * 1024))),
     max_execution_ms: Math.min(5000, Math.max(25, finiteOr(rawLimits.max_execution_ms, 3500))),
     max_candidate_paths: Math.min(500, Math.max(1, finiteOr(rawLimits.max_candidate_paths, hasExplicitTarget ? 300 : 120))),
+    max_summary_hydrations: Math.min(6, Math.max(0, finiteOr(rawLimits.max_summary_hydrations, 0))),
   };
 
   return await discoverMultiHopPaths(loader, {

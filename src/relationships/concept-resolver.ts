@@ -31,6 +31,7 @@ type ResolverCapableLoader = AdjacencyLoader & {
   getUncoveredLemmas?: (budget?: AssetBudgetContext) => Promise<UncoveredLemmasData | null>;
   hasShardedResolver?: (budget?: AssetBudgetContext) => Promise<boolean>;
   getResolverBucket?: (lookupKey: string, budget?: AssetBudgetContext) => Promise<ResolverByKeyShardData | null>;
+  getEnglishTokenBucket?: (prefix: string, budget?: AssetBudgetContext) => Promise<EnglishConceptsData['rows'] | null>;
   getEnglishConcepts?: (budget?: AssetBudgetContext) => Promise<EnglishConceptsData | null>;
 };
 
@@ -220,14 +221,17 @@ function candidateFromByKeyEntry(
 
 function collectEnglishRowCandidates(
   rawQuery: string,
-  eng: EnglishConceptsData | null,
+  rows: EnglishConceptsData['rows'] | undefined,
   includeUncovered: boolean,
 ): ConceptCandidate[] {
   const qTokens = tokenizeEnglish(rawQuery);
-  if (!qTokens.length || !eng?.rows) return [];
+  if (!qTokens.length || !rows) return [];
+  const seenKeys = new Set<string>();
   const scored: Array<{ score: number; candidate: ConceptCandidate }> = [];
-  for (const row of eng.rows) {
+  for (const row of rows) {
     const [key, gloss, lemmaForm, translit, lang, pos, strongsBase, extStrongs, inGraphFlag, deg, isUncFlag] = row;
+    if (seenKeys.has(key)) continue;
+    seenKeys.add(key);
     if (!includeUncovered && isUncFlag) continue;
     if (!gloss) continue;
     const score = scoreGlossMatch(gloss, rawQuery, qTokens);
@@ -558,21 +562,34 @@ export async function resolveResearchConcept(
   // 4. English research concept -> candidate lemmas ONLY (never auto-select single lemma)
   let glossRaw: ConceptCandidate[] = [];
   if (useSharded) {
-    const eng = await cap.getEnglishConcepts!(options.budget);
-    if (!eng) {
-      return {
-        schema_version: '1.0',
-        query,
-        status: 'incomplete_coverage',
-        requires_explicit_selection: false,
-        candidates: [],
-        guardrails: GUARDRAILS,
-        guidance: options.budget?.budget_exceeded
-          ? `Concept resolution stopped by resource budget (${options.budget.exceeded_reason}).`
-          : 'English concept index unavailable; cannot resolve gloss candidates.',
-      };
+    const qTokens = tokenizeEnglish(query);
+    const prefixes = Array.from(new Set(qTokens.map((t) => t.slice(0, Math.min(3, t.length))))).slice(0, 3);
+    let tokenRows: NonNullable<EnglishConceptsData['rows']> | null = null;
+    if (cap.getEnglishTokenBucket && prefixes.length > 0) {
+      const chunks = await Promise.all(prefixes.map((p) => cap.getEnglishTokenBucket!(p, options.budget)));
+      if (chunks.some((c) => c !== null)) {
+        tokenRows = chunks.flatMap((c) => c || []);
+      }
     }
-    glossRaw = collectEnglishRowCandidates(query, eng, options.include_uncovered !== false);
+    if (tokenRows !== null) {
+      glossRaw = collectEnglishRowCandidates(query, tokenRows, options.include_uncovered !== false);
+    } else {
+      const eng = await cap.getEnglishConcepts!(options.budget);
+      if (!eng) {
+        return {
+          schema_version: '1.0',
+          query,
+          status: 'incomplete_coverage',
+          requires_explicit_selection: false,
+          candidates: [],
+          guardrails: GUARDRAILS,
+          guidance: options.budget?.budget_exceeded
+            ? `Concept resolution stopped by resource budget (${options.budget.exceeded_reason}).`
+            : 'English concept index unavailable; cannot resolve gloss candidates.',
+        };
+      }
+      glossRaw = collectEnglishRowCandidates(query, eng.rows, options.include_uncovered !== false);
+    }
   } else {
     glossRaw = collectGlossCandidates(query, resolver, uncovered, options.include_uncovered !== false);
   }

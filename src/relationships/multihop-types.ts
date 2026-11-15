@@ -172,6 +172,7 @@ export interface SearchLimits {
   max_execution_ms: number;
   max_bytes_read: number;
   max_candidate_paths: number;
+  max_summary_hydrations?: number;
 }
 
 export interface MultiHopQuery {
