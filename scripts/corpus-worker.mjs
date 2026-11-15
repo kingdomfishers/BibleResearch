@@ -39,7 +39,14 @@ const shardLru = new Map();
 const MAX_LRU_SHARDS = 8;
 
 function setLru(key, val) {
-  if (key.includes('/by-lemma/')) return;
+  if (
+    key.includes('/by-lemma/') ||
+    key.includes('/contextual/pages/') ||
+    key.includes('/sharded-contextual/') ||
+    key.includes('/sharded-edges/')
+  ) {
+    return;
+  }
   if (shardLru.has(key)) shardLru.delete(key);
   shardLru.set(key, val);
   if (shardLru.size > MAX_LRU_SHARDS) {

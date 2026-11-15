@@ -407,11 +407,284 @@ export async function lookupGrammaticalRelationships(
   };
 }
 
+export type R9BLayerKey = 'grammatical' | 'lexical' | 'contextual' | 'lxx_translation';
+export type ContextualScopeFilter = 'all' | 'same_clause' | 'collocation' | 'same_verse';
+export type LexicalDirectionFilter = 'both' | 'outgoing' | 'incoming' | 'symmetric';
+
+export interface R9BPageInfo {
+  limit: number;
+  offset: number;
+  returned: number;
+  total_available: number;
+  has_more: boolean;
+  next_offset: number | null;
+}
+
+export interface R9BProvenanceInfo {
+  source_key?: string;
+  source_title?: string;
+  dataset_url?: string;
+  license?: string;
+  attribution?: string;
+  pinned_commit?: string;
+  upstream_repo?: string;
+  excluded_restricted_fields?: string[];
+  [key: string]: unknown;
+}
+
+export interface R9BLexicalEndpoint {
+  entity_kind?: string;
+  canonical_key?: string;
+  key?: string;
+  endpoint_key?: string;
+  type?: string;
+  lemma_key?: string | null;
+  lemma_id?: string | number | null;
+  base_strongs?: string | null;
+  extended_strongs?: string | null;
+  disambiguated_strongs?: string | null;
+  homograph_tag?: string | null;
+  original_script?: string | null;
+  lemma_script?: string | null;
+  lemma_text?: string | null;
+  transliteration?: string | null;
+  primary_gloss?: string | null;
+  language?: string | null;
+  word_id?: number | null;
+}
+
+export interface R9BLexicalRelationItem {
+  relationship_id: string;
+  category: string;
+  raw_relation_code?: string | null;
+  epistemic_tier: string;
+  direction: string;
+  role: LexicalDirectionFilter | string;
+  peer: R9BLexicalEndpoint;
+  subject?: R9BLexicalEndpoint;
+  target?: R9BLexicalEndpoint;
+  explanation?: string | null;
+  provenance?: R9BProvenanceInfo | null;
+  guardrails?: Record<string, unknown>;
+}
+
+export interface R9BLexicalLayerResult {
+  available: boolean;
+  status: string;
+  dataset_version?: string | null;
+  sharding?: Record<string, unknown> | null;
+  lemma_summary?: Record<string, unknown> | null;
+  counts: {
+    total_unfiltered: number;
+    total_filtered: number;
+    returned: number;
+    by_direction?: { outgoing: number; incoming: number; symmetric: number };
+    by_category?: Record<string, number>;
+  };
+  items: R9BLexicalRelationItem[];
+  page: R9BPageInfo;
+  provenance?: R9BProvenanceInfo | null;
+  guardrails?: Record<string, unknown>;
+}
+
+export interface R9BContextualSamplePassage {
+  book: number;
+  chapter: number;
+  verse: number;
+  ref?: string;
+  in_same_clause?: boolean;
+  is_collocation?: boolean;
+  near_verse_window?: boolean;
+}
+
+export interface R9BContextualNeighborItem {
+  target_lemma_key: string;
+  target_lemma_script?: string | null;
+  target_transliteration?: string | null;
+  target_language?: string | null;
+  target_base_strongs?: string | null;
+  target_primary_gloss?: string | null;
+  target_word_id?: number | null;
+  counts: {
+    same_verse: number;
+    same_clause: number;
+    collocation_distance_le_3: number;
+    near_verse_window_distance_le_3: number;
+  };
+  occurrence_counts: {
+    same_clause_instances: number;
+    strict_collocation_token_pairs: number;
+    near_window_token_pairs: number;
+  };
+  sample_passages: R9BContextualSamplePassage[];
+  guardrails?: {
+    implies_synonymy?: boolean;
+    implies_causality?: boolean;
+    proximity_only?: boolean;
+    distinct_verse_units?: boolean;
+    [key: string]: unknown;
+  };
+}
+
+export interface R9BContextualLayerResult {
+  available: boolean;
+  status: string;
+  dataset_version?: string | null;
+  sharding?: Record<string, unknown> | null;
+  counts: {
+    total_neighbors: number;
+    filtered_total: number;
+    returned: number;
+    lossless: boolean;
+  };
+  items: R9BContextualNeighborItem[];
+  page: R9BPageInfo;
+  guardrails?: Record<string, unknown>;
+}
+
+export interface R9BLxxCandidateLemma {
+  lemma_key?: string;
+  original_script?: string | null;
+  transliteration?: string | null;
+  primary_gloss?: string | null;
+  extended_strongs?: string | null;
+  word_id?: number | null;
+  language?: string | null;
+}
+
+export interface R9BLxxTranslationItem {
+  edge_id: string;
+  published_count: number;
+  translation_share: number;
+  mapping_status?: string;
+  homograph_ambiguity?: boolean;
+  greek_strong?: string | null;
+  greek_candidate_count?: number;
+  greek_lemma_keys?: string[];
+  greek_candidates?: R9BLxxCandidateLemma[];
+  hebrew_strong?: string | null;
+  hebrew_candidate_count?: number;
+  hebrew_lemma_keys?: string[];
+  hebrew_candidates?: R9BLxxCandidateLemma[];
+}
+
+export interface R9BLxxLayerResult {
+  available: boolean;
+  status: string;
+  dataset_version?: string | null;
+  direction?: 'hebrew_to_greek' | 'greek_to_hebrew' | string | null;
+  sharding?: Record<string, unknown> | null;
+  counts: {
+    candidate_count: number;
+    total_attested_renderings: number;
+    returned: number;
+  };
+  items: R9BLxxTranslationItem[];
+  page: R9BPageInfo;
+  provenance?: R9BProvenanceInfo | null;
+  guardrails?: Record<string, unknown>;
+}
+
+export interface UnifiedWordRelationshipsQueryParams extends GrammaticalRelationshipQueryParams {
+  layers?: R9BLayerKey[];
+  lexical_direction?: LexicalDirectionFilter;
+  lexical_categories?: string[];
+  lexical_limit?: number;
+  lexical_offset?: number;
+  contextual_scope?: ContextualScopeFilter;
+  min_same_verse?: number;
+  min_same_clause?: number;
+  min_collocation?: number;
+  contextual_limit?: number;
+  contextual_offset?: number;
+  lxx_limit?: number;
+  lxx_offset?: number;
+  endpoint_key?: string;
+  release?: string;
+}
+
+export interface UnifiedWordRelationshipsResponse extends GrammaticalRelationshipsResponse {
+  layer_contracts?: Record<string, unknown>;
+  epistemic_guardrails?: Record<string, unknown>;
+  layers?: {
+    grammatical: (Partial<GrammaticalRelationshipsResponse> & {
+      dataset_version?: string | null;
+      sharding?: Record<string, unknown> | null;
+    }) | null;
+    lexical: R9BLexicalLayerResult | null;
+    contextual: R9BContextualLayerResult | null;
+    lxx_translation: R9BLxxLayerResult | null;
+  };
+  contextual?: R9BContextualLayerResult | null;
+  lexical?: R9BLexicalLayerResult | null;
+  lxx_translation?: R9BLxxLayerResult | null;
+}
+
+async function callV2RelationshipOp<T extends { status: string; error_message?: string | null }>(
+  op: string,
+  params: Record<string, unknown>,
+  opts: CorpusClientOptions = {}
+): Promise<DataResult<T>> {
+  const res = await callCorpusRpc<T>(
+    'query_relationships_v2',
+    { op, ...params },
+    opts
+  );
+  if (!res.data) {
+    return {
+      data: {
+        schema_version: '3.0',
+        status: 'unavailable',
+        error_message: res.error ?? 'Unified relationship gateway unavailable.',
+      } as unknown as T,
+      source: 'unavailable',
+      error: res.error ?? 'Unified relationship gateway unavailable.',
+    };
+  }
+  return { data: res.data, source: res.source, error: res.error };
+}
+
+/** Queries unified 4-layer word relationships (grammatical, lexical, contextual, LXX). */
+export function lookupUnifiedWordRelationships(
+  params: UnifiedWordRelationshipsQueryParams,
+  opts: CorpusClientOptions = {}
+): Promise<DataResult<UnifiedWordRelationshipsResponse>> {
+  return callV2RelationshipOp<UnifiedWordRelationshipsResponse>('unified_lemma', { ...params }, opts);
+}
+
+/** Pages through lossless R9B contextual co-occurrence neighbors beyond the initial slice. */
+export function lookupContextualNeighborsPage(
+  params: UnifiedWordRelationshipsQueryParams,
+  opts: CorpusClientOptions = {}
+): Promise<DataResult<UnifiedWordRelationshipsResponse>> {
+  return callV2RelationshipOp<UnifiedWordRelationshipsResponse>('contextual_neighbors', { ...params }, opts);
+}
+
+/** Queries bidirectional R9B lexical relations for a lemma or non-lemma root/sense endpoint. */
+export function lookupLexicalRelationsV2(
+  params: UnifiedWordRelationshipsQueryParams,
+  opts: CorpusClientOptions = {}
+): Promise<DataResult<UnifiedWordRelationshipsResponse>> {
+  return callV2RelationshipOp<UnifiedWordRelationshipsResponse>('lexical_relations', { ...params }, opts);
+}
+
+/** Queries Hebrew-Greek Septuagint translation candidates and published source counts. */
+export function lookupLxxTranslations(
+  params: UnifiedWordRelationshipsQueryParams,
+  opts: CorpusClientOptions = {}
+): Promise<DataResult<UnifiedWordRelationshipsResponse>> {
+  return callV2RelationshipOp<UnifiedWordRelationshipsResponse>('lxx_translations', { ...params }, opts);
+}
+
 // === @section:logic:gateway ===
 export const RelationshipsRPC = {
   lookupCrossReferences,
   lookupLexicalRelationships,
   lookupGrammaticalRelationships,
+  lookupUnifiedWordRelationships,
+  lookupContextualNeighborsPage,
+  lookupLexicalRelationsV2,
+  lookupLxxTranslations,
   buildNotePrefillFromCrossReference,
   buildNotePrefillFromLexicalEdge,
   extractRelationshipEvaluation,

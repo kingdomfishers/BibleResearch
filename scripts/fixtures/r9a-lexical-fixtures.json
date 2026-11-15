@@ -193,5 +193,77 @@
     "restricted_s21_fields_excluded": true,
     "permitted_license": "CC BY 4.0",
     "attribution_required": true
+  },
+  "bidirectional_lexical_fixtures": [
+    {
+      "name": "ruach_aramaic_cognate_reverse",
+      "subject_key": "lemma:H7307",
+      "target_key": "lemma:H7308",
+      "expected_role_from_subject": "symmetric",
+      "expected_role_from_target": "symmetric",
+      "category": "cognate"
+    },
+    {
+      "name": "derivation_reverse_root_anchor",
+      "subject_key": "lemma:G1815",
+      "target_key": "lemma:G1817",
+      "expected_role_from_subject": "outgoing",
+      "expected_role_from_target": "incoming",
+      "category": "derivation"
+    },
+    {
+      "name": "compound_component_reverse",
+      "subject_key": "lemma:H3069",
+      "target_key": "lemma:H0430G",
+      "expected_role_from_subject": "outgoing",
+      "expected_role_from_target": "incoming",
+      "category": "morphological_relationship"
+    },
+    {
+      "name": "sense_subdivision_reverse",
+      "subject_key": "lemma:H7307",
+      "target_key": "sense:H7307H:sub",
+      "expected_role_from_subject": "outgoing",
+      "expected_role_from_target": "incoming",
+      "category": "same_lemma"
+    },
+    {
+      "name": "root_anchor_reverse",
+      "subject_key": "lemma:H7307",
+      "target_key": "root:H7307",
+      "expected_role_from_subject": "outgoing",
+      "expected_role_from_target": "incoming",
+      "category": "same_documented_root"
+    }
+  ],
+  "contextual_scope_fixtures": {
+    "positive_same_clause": [
+      {
+        "anchor_key": "lemma:H7307",
+        "target_key": "lemma:H0430G",
+        "min_same_verse": 46,
+        "exact_same_clause": 26,
+        "exact_strict_collocation": 26,
+        "min_near_window": 31,
+        "sample_ref": "GEN 1:2"
+      }
+    ],
+    "negative_cross_clause_boundary": [
+      {
+        "anchor_key": "lemma:H7307",
+        "target_key": "lemma:H8415",
+        "expected_same_verse": 2,
+        "expected_same_clause": 0,
+        "expected_strict_collocation": 0,
+        "expected_near_window": 1,
+        "boundary_sample_ref": "GEN 1:2",
+        "reason": "tehom (pos 8, clause 4303) and ruach (pos 9, clause 4311) sit 1 word apart across a clause boundary and must not count as same-clause collocation."
+      }
+    ],
+    "lossless_pagination_target": {
+      "anchor_key": "lemma:H7307",
+      "expected_total_neighbors": 1097,
+      "top_page_limit": 50
+    }
   }
 }

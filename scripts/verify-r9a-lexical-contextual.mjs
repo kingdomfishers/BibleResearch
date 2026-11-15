@@ -22,7 +22,7 @@ import path from 'node:path';
 import readline from 'node:readline';
 import { fileURLToPath } from 'node:url';
 import zlib from 'node:zlib';
-import { buildLexicalRelationshipId } from './build-r9a-lexical-contextual.mjs';
+import { buildLexicalRelationshipId, bucket64 } from './build-r9a-lexical-contextual.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -345,6 +345,79 @@ export async function runVerificationR9A() {
   assert(totalLemmasInShards === Object.keys(lemmaIndex).length, `Total lemmas across shards (${totalLemmasInShards}) must equal full index (${Object.keys(lemmaIndex).length})`);
   testsPassed += 2;
   console.log(`✓ 64-bucket sharding verified: exactly 64 buckets across indexes, edges, and contextual partitions covering all ${totalLemmasInShards} lemmas.`);
+
+  // 8. Bidirectional Lexical Serialized Shard Discoverability (R9B-1A)
+  console.log('\n--- 8. Bidirectional Serialized Lexical Shard Lookup (R9B-1A) ---');
+  const lexShardCache = new Map();
+  const loadEdgeShardForKey = key => {
+    const b = bucket64(key);
+    if (!lexShardCache.has(b)) {
+      lexShardCache.set(b, readGzipJson(path.join(ARTIFACTS_DIR, 'edges', 'sharded-edges', `shard-${b}.json.gz`)));
+    }
+    return lexShardCache.get(b);
+  };
+  for (const fx of fixtures.bidirectional_lexical_fixtures || []) {
+    const subShard = loadEdgeShardForKey(fx.subject_key);
+    const tgtShard = loadEdgeShardForKey(fx.target_key);
+    const subLinks = subShard.endpoint_index?.[fx.subject_key] || [];
+    const tgtLinks = tgtShard.endpoint_index?.[fx.target_key] || [];
+    const subMatch = subLinks.find(l => l.peer_key === fx.target_key && l.category === fx.category && l.role === fx.expected_role_from_subject);
+    const tgtMatch = tgtLinks.find(l => l.peer_key === fx.subject_key && l.category === fx.category && l.role === fx.expected_role_from_target);
+    assert(Boolean(subMatch), `${fx.name}: subject shard (${fx.subject_key}) must index ${fx.expected_role_from_subject} -> ${fx.target_key}`);
+    assert(Boolean(tgtMatch), `${fx.name}: target shard (${fx.target_key}) must index ${fx.expected_role_from_target} -> ${fx.subject_key}`);
+    assert(subMatch.relationship_id === tgtMatch.relationship_id, `${fx.name}: bidirectional lookups must resolve to single canonical relationship_id`);
+    const canonicalSubEdge = subShard.edges_by_id?.[subMatch.relationship_id];
+    const canonicalTgtEdge = tgtShard.edges_by_id?.[tgtMatch.relationship_id];
+    assert(Boolean(canonicalSubEdge) && Boolean(canonicalTgtEdge), `${fx.name}: canonical edge must be stored in both touching endpoint shards`);
+    assert(canonicalSubEdge.subject.canonical_key === canonicalTgtEdge.subject.canonical_key && canonicalSubEdge.target.canonical_key === canonicalTgtEdge.target.canonical_key, `${fx.name}: endpoint directionality must not be mutated/reversed`);
+  }
+  testsPassed += 1;
+  console.log(`✓ Bidirectional serialized shard lookup verified across ${fixtures.bidirectional_lexical_fixtures.length} symmetric & directed edge fixtures.`);
+
+  // 9. Lossless Contextual Pagination Beyond Top 50 (R9B-1B)
+  console.log('\n--- 9. Lossless Contextual Adjacency & Overflow Pagination (R9B-1B) ---');
+  const pagTarget = fixtures.contextual_scope_fixtures.lossless_pagination_target;
+  const ctxTopShard = readGzipJson(path.join(ARTIFACTS_DIR, 'contextual', 'sharded-contextual', `shard-${bucket64(pagTarget.anchor_key)}.json.gz`));
+  const ctxEntry = ctxTopShard[pagTarget.anchor_key];
+  assert(Boolean(ctxEntry), `Contextual entry must exist for ${pagTarget.anchor_key}`);
+  assert(ctxEntry.total_neighbors === pagTarget.expected_total_neighbors, `Expected ${pagTarget.expected_total_neighbors} total lossless neighbors for ${pagTarget.anchor_key}, got ${ctxEntry.total_neighbors}`);
+  assert(ctxEntry.neighbors.length === pagTarget.top_page_limit, `Top slice must retain ${pagTarget.top_page_limit} neighbors`);
+  const allReconstructed = [...ctxEntry.neighbors];
+  for (const pageMeta of ctxEntry.overflow_pages || []) {
+    const pageShard = readGzipJson(path.join(ARTIFACTS_DIR, pageMeta.path));
+    for (const seg of pageShard.entries?.[pagTarget.anchor_key] || []) {
+      if (seg.offset_start === pageMeta.offset_start) {
+        allReconstructed.push(...seg.items);
+      }
+    }
+  }
+  assert(allReconstructed.length === ctxEntry.total_neighbors, `Reconstructed top + overflow pages (${allReconstructed.length}) must equal total_neighbors (${ctxEntry.total_neighbors})`);
+  assert(ctxReport.totals.lossless_directed_neighbor_records === ctxReport.totals.distinct_co_occurring_pairs * 2, 'Total directed contextual records must strictly equal 2x distinct co-occurring pairs');
+  testsPassed += 1;
+  console.log(`✓ Lossless contextual pagination verified: ${pagTarget.anchor_key} reconstructs all ${allReconstructed.length} neighbors cleanly across top shard + ${(ctxEntry.overflow_pages || []).length} overflow pages.`);
+
+  // 10. Strict Same-Clause Boundary & Occurrence Separation Fixtures (R9B-1C)
+  console.log('\n--- 10. Strict Leaf-Clause Scope & Positive/Negative Fixtures (R9B-1C) ---');
+  for (const pos of fixtures.contextual_scope_fixtures.positive_same_clause) {
+    const hit = allReconstructed.find(n => n.target_lemma_key === pos.target_key);
+    assert(Boolean(hit), `Positive same-clause target ${pos.target_key} must exist`);
+    assert(hit.counts.same_verse >= pos.min_same_verse, `Positive ${pos.target_key} same_verse (${hit.counts.same_verse}) >= ${pos.min_same_verse}`);
+    assert(hit.counts.same_clause === pos.exact_same_clause, `Positive ${pos.target_key} strict same_clause expected ${pos.exact_same_clause}, got ${hit.counts.same_clause}`);
+    assert(hit.counts.collocation_distance_le_3 === pos.exact_strict_collocation, `Positive ${pos.target_key} strict collocation expected ${pos.exact_strict_collocation}, got ${hit.counts.collocation_distance_le_3}`);
+    assert(hit.counts.near_verse_window_distance_le_3 >= pos.min_near_window, `Positive ${pos.target_key} near_verse_window >= ${pos.min_near_window}`);
+    assert(hit.counts.same_clause >= hit.counts.collocation_distance_le_3, 'same_clause distinct verses >= strict collocation distinct verses');
+    assert(hit.occurrence_counts && typeof hit.occurrence_counts.same_clause_instances === 'number', 'occurrence_counts must be tracked separately from distinct-verse counts');
+  }
+  for (const neg of fixtures.contextual_scope_fixtures.negative_cross_clause_boundary) {
+    const hit = allReconstructed.find(n => n.target_lemma_key === neg.target_key);
+    assert(Boolean(hit), `Negative boundary fixture ${neg.target_key} must exist in co-occurrence table`);
+    assert(hit.counts.same_verse === neg.expected_same_verse, `Negative ${neg.target_key} same_verse expected ${neg.expected_same_verse}, got ${hit.counts.same_verse}`);
+    assert(hit.counts.same_clause === neg.expected_same_clause, `Negative ${neg.target_key} same_clause must be ${neg.expected_same_clause} (got ${hit.counts.same_clause}): ${neg.reason}`);
+    assert(hit.counts.collocation_distance_le_3 === neg.expected_strict_collocation, `Negative ${neg.target_key} strict collocation must be ${neg.expected_strict_collocation} (got ${hit.counts.collocation_distance_le_3})`);
+    assert(hit.counts.near_verse_window_distance_le_3 === neg.expected_near_window, `Negative ${neg.target_key} verse-window distance<=3 expected ${neg.expected_near_window}, got ${hit.counts.near_verse_window_distance_le_3}`);
+  }
+  testsPassed += 1;
+  console.log('✓ Strict clause boundary fixtures verified: cross-clause adjacent tokens excluded from same_clause & strict collocations.');
 
   const duration = Date.now() - start;
   console.log(`\n======================================================`);

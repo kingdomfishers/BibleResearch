@@ -333,7 +333,27 @@ export async function runBuildR9A(options = {}) {
   console.log('[R9A] 4/7 Assembling deterministic lexical relationship edges...');
   const lexicalEdges = [];
   const lexicalEdgesBySubjectLemma = new Map();
+  const lexicalEndpointIndex = new Map();
+  const lexicalSeenEndpointLinks = new Set();
   const seenEdgeIds = new Set();
+
+  function indexEndpointLink(canonicalKey, edge, role, peerKey) {
+    if (!canonicalKey) return;
+    const dedupKey = `${canonicalKey}|${edge.relationship_id}|${role}`;
+    if (lexicalSeenEndpointLinks.has(dedupKey)) return;
+    lexicalSeenEndpointLinks.add(dedupKey);
+    let list = lexicalEndpointIndex.get(canonicalKey);
+    if (!list) {
+      list = [];
+      lexicalEndpointIndex.set(canonicalKey, list);
+    }
+    list.push({
+      relationship_id: edge.relationship_id,
+      role,
+      peer_key: peerKey,
+      category: edge.category,
+    });
+  }
 
   function addLexicalEdge(edge) {
     if (seenEdgeIds.has(edge.relationship_id)) return;
@@ -341,10 +361,19 @@ export async function runBuildR9A(options = {}) {
     lexicalEdges.push(edge);
 
     const subKey = edge.subject.canonical_key;
+    const tgtKey = edge.target?.canonical_key || null;
     if (!lexicalEdgesBySubjectLemma.has(subKey)) {
       lexicalEdgesBySubjectLemma.set(subKey, []);
     }
     lexicalEdgesBySubjectLemma.get(subKey).push(edge);
+
+    if (edge.direction === 'symmetric') {
+      indexEndpointLink(subKey, edge, 'symmetric', tgtKey);
+      if (tgtKey) indexEndpointLink(tgtKey, edge, 'symmetric', subKey);
+    } else {
+      indexEndpointLink(subKey, edge, 'outgoing', tgtKey);
+      if (tgtKey) indexEndpointLink(tgtKey, edge, 'incoming', subKey);
+    }
   }
 
   function makeEndpoint(lemma, entityKind = 'lemma', overrideKey = null) {
@@ -750,28 +779,88 @@ export async function runBuildR9A(options = {}) {
   }
   console.log(`[R9A] Mapped ${wordToStemLemmaId.size} word forms to canonical lemmas.`);
 
-  // Load syntax clause ranges by verse_id
-  const clausesByVerseId = new Map();
+  // Load verified MACULA tree syntax nodes (OT WLC ed 11 + primary NT Nestle1904 ed 18 only)
+  // Filtering to node_key.startsWith('macula_tree:') excludes legacy whole-verse 'macula:wlc:' wrappers
+  // and keeps each verse anchored to nearest leaf clause IDs via parent_node_id ancestry.
+  const nodesByVerse = new Map();
+  const crossVerseNodeById = new Map();
   for await (const row of readTableRows('syntax_nodes')) {
-    if (row.node_type === 'clause') {
-      const vid = row.verse_id;
-      let list = clausesByVerseId.get(vid);
-      if (!list) {
-        list = [];
-        clausesByVerseId.set(vid, list);
-      }
-      list.push({
-        start: row.start_word_position,
-        end: row.end_word_position,
-        edition: row.edition_id,
-      });
+    if (!row.node_key?.startsWith('macula_tree:')) continue;
+    if (row.edition_id !== 11 && row.edition_id !== 18) continue;
+    const tuple = [
+      row.id,
+      row.parent_node_id || 0,
+      row.node_type === 'clause' ? 1 : 0,
+      row.is_cross_verse ? 1 : 0,
+      row.terminal_word_id || 0,
+    ];
+    let list = nodesByVerse.get(row.verse_id);
+    if (!list) {
+      list = [];
+      nodesByVerse.set(row.verse_id, list);
+    }
+    list.push(tuple);
+    if (row.is_cross_verse) {
+      crossVerseNodeById.set(row.id, tuple);
     }
   }
-  console.log(`[R9A] Loaded ${clausesByVerseId.size} verses with syntax clause annotations.`);
+  console.log(`[R9A] Loaded macula_tree syntax for ${nodesByVerse.size} canonical verses (cross-verse nodes: ${crossVerseNodeById.size}).`);
 
-  // Stream canonical verses and compute co-occurrences
+  function resolveVersePosToClause(verseId, wordIds) {
+    const posToClause = new Array(wordIds.length + 1).fill(0);
+    const nodes = nodesByVerse.get(verseId);
+    if (!nodes || nodes.length === 0) return posToClause;
+    nodes.sort((a, b) => a[0] - b[0]);
+    const byId = new Map();
+    for (const n of nodes) byId.set(n[0], n);
+
+    const wPos = new Map();
+    for (let i = 0; i < wordIds.length; i++) {
+      let arr = wPos.get(wordIds[i]);
+      if (!arr) {
+        arr = [];
+        wPos.set(wordIds[i], arr);
+      }
+      arr.push(i + 1);
+    }
+
+    const seen = new Map();
+    let lastWid = 0;
+    let lastPos = 0;
+    for (const n of nodes) {
+      const wid = n[4];
+      if (!wid) continue;
+      let pos = lastPos;
+      if (wid !== lastWid) {
+        const occ = seen.get(wid) || 0;
+        const arr = wPos.get(wid);
+        pos = arr && occ < arr.length ? arr[occ] : 0;
+        seen.set(wid, occ + 1);
+        lastWid = wid;
+        lastPos = pos;
+      }
+      if (!pos || posToClause[pos]) continue;
+      let cur = n;
+      let clauseId = 0;
+      const visited = new Set();
+      while (cur && !visited.has(cur[0])) {
+        visited.add(cur[0]);
+        if (cur[2] === 1) {
+          clauseId = cur[0];
+          break;
+        }
+        const pid = cur[1];
+        cur = pid ? (byId.get(pid) || crossVerseNodeById.get(pid) || null) : null;
+      }
+      posToClause[pos] = clauseId;
+    }
+    return posToClause;
+  }
+
+  // Stream canonical verses and compute strictly scoped co-occurrences
   const pairStats = new Map();
   let versesProcessed = 0;
+  let versesWithClausesCount = 0;
   let otVersesCount = 0;
   let ntVersesCount = 0;
 
@@ -782,6 +871,9 @@ export async function runBuildR9A(options = {}) {
 
     const wordIds = verse.word_ids || [];
     if (wordIds.length === 0) continue;
+
+    const posToClause = resolveVersePosToClause(verse.id, wordIds);
+    if (posToClause.some(c => c > 0)) versesWithClausesCount++;
 
     // Collect positions and distinct lemmas
     const lemmaPositions = new Map();
@@ -794,7 +886,6 @@ export async function runBuildR9A(options = {}) {
     }
 
     const distinctLemmas = Array.from(lemmaPositions.keys()).sort((a, b) => a - b);
-    const clauses = clausesByVerseId.get(verse.id) || [];
 
     for (let i = 0; i < distinctLemmas.length; i++) {
       const l1 = distinctLemmas[i];
@@ -811,39 +902,55 @@ export async function runBuildR9A(options = {}) {
             l1,
             l2,
             verse_count: 0,
-            clause_count: 0,
-            collocation_count: 0,
+            clause_verse_count: 0,
+            strict_colloc_verse_count: 0,
+            near_window_verse_count: 0,
+            clause_occurrence_count: 0,
+            strict_colloc_pair_count: 0,
+            near_window_pair_count: 0,
             sample_passages: [],
           };
           pairStats.set(pairKey, stat);
         }
 
+        // Distinct canonical verse count
         stat.verse_count++;
 
-        // Clause check
-        let inSameClause = false;
-        for (const c of clauses) {
-          const has1 = posList1.some(p => p >= c.start && p <= c.end);
-          const has2 = posList2.some(p => p >= c.start && p <= c.end);
-          if (has1 && has2) {
-            inSameClause = true;
-            break;
-          }
-        }
-        if (inSameClause) stat.clause_count++;
-
-        // Collocation check (distance <= 3)
-        let isColloc = false;
+        // Strict same-leaf-clause check + clause-occurrence counting
+        const clauses1 = new Set();
         for (const p1 of posList1) {
+          const cid = posToClause[p1];
+          if (cid > 0) clauses1.add(cid);
+        }
+        const sharedClauses = new Set();
+        for (const p2 of posList2) {
+          const cid = posToClause[p2];
+          if (cid > 0 && clauses1.has(cid)) sharedClauses.add(cid);
+        }
+        const inSameClause = sharedClauses.size > 0;
+        if (inSameClause) {
+          stat.clause_verse_count++;
+          stat.clause_occurrence_count += sharedClauses.size;
+        }
+
+        // Token-pair distance checks (strict same-clause collocation vs verse-level window)
+        let verseHasStrictColloc = false;
+        let verseHasNearWindow = false;
+        for (const p1 of posList1) {
+          const c1 = posToClause[p1];
           for (const p2 of posList2) {
             if (Math.abs(p1 - p2) <= 3) {
-              isColloc = true;
-              break;
+              verseHasNearWindow = true;
+              stat.near_window_pair_count++;
+              if (c1 > 0 && c1 === posToClause[p2]) {
+                verseHasStrictColloc = true;
+                stat.strict_colloc_pair_count++;
+              }
             }
           }
-          if (isColloc) break;
         }
-        if (isColloc) stat.collocation_count++;
+        if (verseHasNearWindow) stat.near_window_verse_count++;
+        if (verseHasStrictColloc) stat.strict_colloc_verse_count++;
 
         if (stat.sample_passages.length < 5) {
           stat.sample_passages.push({
@@ -852,95 +959,98 @@ export async function runBuildR9A(options = {}) {
             verse: verse.verse_nr,
             ref: formatRef(verse.book, verse.chapter, verse.verse_nr),
             in_same_clause: inSameClause,
-            is_collocation: isColloc,
+            is_collocation: verseHasStrictColloc,
+            near_verse_window: verseHasNearWindow,
           });
         }
       }
     }
   }
 
-  console.log(`[R9A] Verses processed: ${versesProcessed} (OT: ${otVersesCount}, NT: ${ntVersesCount}).`);
+  nodesByVerse.clear();
+  crossVerseNodeById.clear();
+
+  console.log(`[R9A] Verses processed: ${versesProcessed} (OT: ${otVersesCount}, NT: ${ntVersesCount}, with leaf clauses: ${versesWithClausesCount}).`);
   console.log(`[R9A] Distinct contextual lemma pairs recorded: ${pairStats.size}.`);
 
-  // Build per-lemma contextual neighbor index (bounded to top 50 per lemma for memory safety)
+  // Build lossless per-lemma contextual neighbor index (no truncation)
   const contextualByLemmaId = new Map();
-  for (const stat of pairStats.values()) {
-    const { l1, l2 } = stat;
-    if (!contextualByLemmaId.has(l1)) contextualByLemmaId.set(l1, []);
-    if (!contextualByLemmaId.has(l2)) contextualByLemmaId.set(l2, []);
-
-    const target2 = lemmasById.get(l2);
-    if (target2) {
-      contextualByLemmaId.get(l1).push({
-        target_lemma_key: target2.lemma_key,
-        target_lemma_script: target2.lemma_script,
-        target_transliteration: target2.transliteration,
-        target_language: target2.language,
-        target_base_strongs: target2.base_strongs,
-        counts: {
-          same_verse: stat.verse_count,
-          same_clause: stat.clause_count,
-          collocation_distance_le_3: stat.collocation_count,
-        },
-        sample_passages: stat.sample_passages,
-        guardrails: {
-          implies_synonymy: false,
-          implies_causality: false,
-          proximity_only: true,
-        },
-      });
+  function pushNeighborRecord(targetLemmaId, targetLemma, stat) {
+    if (!targetLemma) return;
+    let list = contextualByLemmaId.get(targetLemmaId);
+    if (!list) {
+      list = [];
+      contextualByLemmaId.set(targetLemmaId, list);
     }
-
-    const target1 = lemmasById.get(l1);
-    if (target1) {
-      contextualByLemmaId.get(l2).push({
-        target_lemma_key: target1.lemma_key,
-        target_lemma_script: target1.lemma_script,
-        target_transliteration: target1.transliteration,
-        target_language: target1.language,
-        target_base_strongs: target1.base_strongs,
-        counts: {
-          same_verse: stat.verse_count,
-          same_clause: stat.clause_count,
-          collocation_distance_le_3: stat.collocation_count,
-        },
-        sample_passages: stat.sample_passages,
-        guardrails: {
-          implies_synonymy: false,
-          implies_causality: false,
-          proximity_only: true,
-        },
-      });
-    }
+    list.push({
+      target_lemma_key: targetLemma.lemma_key,
+      target_lemma_script: targetLemma.lemma_script,
+      target_transliteration: targetLemma.transliteration,
+      target_language: targetLemma.language,
+      target_base_strongs: targetLemma.base_strongs,
+      counts: {
+        same_verse: stat.verse_count,
+        same_clause: stat.clause_verse_count,
+        collocation_distance_le_3: stat.strict_colloc_verse_count,
+        near_verse_window_distance_le_3: stat.near_window_verse_count,
+      },
+      occurrence_counts: {
+        same_clause_instances: stat.clause_occurrence_count,
+        strict_collocation_token_pairs: stat.strict_colloc_pair_count,
+        near_window_token_pairs: stat.near_window_pair_count,
+      },
+      sample_passages: stat.sample_passages,
+      guardrails: {
+        implies_synonymy: false,
+        implies_causality: false,
+        proximity_only: true,
+        distinct_verse_units: true,
+      },
+    });
   }
 
-  // Sort and bound top 50 neighbors per lemma
-  for (const [lid, neighbors] of contextualByLemmaId.entries()) {
-    neighbors.sort((a, b) => b.counts.same_verse - a.counts.same_verse || b.counts.same_clause - a.counts.same_clause);
-    if (neighbors.length > 50) {
-      contextualByLemmaId.set(lid, neighbors.slice(0, 50));
-    }
+  for (const stat of pairStats.values()) {
+    pushNeighborRecord(stat.l1, lemmasById.get(stat.l2), stat);
+    pushNeighborRecord(stat.l2, lemmasById.get(stat.l1), stat);
+  }
+
+  // Deterministic ranking across ALL neighbors (preserving full adjacency list)
+  for (const neighbors of contextualByLemmaId.values()) {
+    neighbors.sort(
+      (a, b) =>
+        b.counts.same_verse - a.counts.same_verse ||
+        b.counts.same_clause - a.counts.same_clause ||
+        b.counts.collocation_distance_le_3 - a.counts.collocation_distance_le_3 ||
+        a.target_lemma_key.localeCompare(b.target_lemma_key)
+    );
   }
 
   // 7. Write Sharded Artifacts & Reports
   console.log('[R9A] 6/7 Writing versioned, partitioned offline artifacts to .artifacts-r9a/...');
+  fs.rmSync(path.join(OUT_DIR, 'contextual', 'pages'), { recursive: true, force: true });
   fs.mkdirSync(OUT_DIR, { recursive: true });
 
+  const TOP_CONTEXTUAL_LIMIT = 50;
+  const OVERFLOW_PAGE_CHUNK_SIZE = 600;
+
   const manifest = {
-    schema_version: '2.0',
+    schema_version: '2.1',
     release_version: RELEASE_VERSION,
     rule_version: RULE_VERSION,
     source_git_commit: SOURCE_GIT_COMMIT,
     build_timestamp: new Date().toISOString(),
     sharding: {
-      schema_version: '2.0',
+      schema_version: '2.1',
       hash_algorithm: 'fnv1a64_hi32_mod64',
       hash_input_normalization: 'canonical_lemma_key_utf16_exact',
       buckets: 64,
+      contextual_top_limit: TOP_CONTEXTUAL_LIMIT,
+      contextual_page_chunk_size: OVERFLOW_PAGE_CHUNK_SIZE,
       shard_path_formats: {
         lemma_index: 'indexes/sharded-lemma-index/shard-{hex2}.json.gz',
         lexical_edges: 'edges/sharded-edges/shard-{hex2}.json.gz',
         contextual_neighbors: 'contextual/sharded-contextual/shard-{hex2}.json.gz',
+        contextual_overflow_pages: 'contextual/pages/shard-{hex2}-p{pad3}.json.gz',
       },
     },
     files: {},
@@ -960,8 +1070,14 @@ export async function runBuildR9A(options = {}) {
   const shardedLemmaBuckets = Array.from({ length: 64 }, () => ({}));
 
   for (const [lk, lemma] of lemmasByKey.entries()) {
-    const lexEdges = lexicalEdgesBySubjectLemma.get(lk) || [];
+    const endpointLinks = lexicalEndpointIndex.get(lk) || [];
     const ctxNeighbors = contextualByLemmaId.get(lemma.id) || [];
+    const dirCounts = { outgoing: 0, incoming: 0, symmetric: 0 };
+    for (const link of endpointLinks) {
+      if (link.role === 'outgoing') dirCounts.outgoing++;
+      else if (link.role === 'incoming') dirCounts.incoming++;
+      else dirCounts.symmetric++;
+    }
 
     const summary = {
       lemma_key: lk,
@@ -973,7 +1089,8 @@ export async function runBuildR9A(options = {}) {
       primary_pos: lemma.primary_pos,
       homograph_tag: lemma.homograph_tag,
       base_strongs: lemma.base_strongs,
-      lexical_edge_count: lexEdges.length,
+      lexical_edge_count: endpointLinks.length,
+      lexical_direction_counts: dirCounts,
       contextual_neighbor_count: ctxNeighbors.length,
       sharding_bucket: bucket64(lk),
     };
@@ -991,14 +1108,29 @@ export async function runBuildR9A(options = {}) {
     trackFile(`indexes/sharded-lemma-index/shard-${hex}.json.gz`, bRes);
   }
 
-  // B. Lexical Edges (full JSONL + sharded 64 buckets)
+  // B. Lexical Edges (full JSONL + bidirectional endpoint-indexed 64 shards without edge duplication)
   const fullEdgeRes = writeGzipJsonl(path.join(OUT_DIR, 'edges', 'lexical-edges.jsonl.gz'), lexicalEdges);
   trackFile('edges/lexical-edges.jsonl.gz', fullEdgeRes);
 
-  const shardedEdges = Array.from({ length: 64 }, () => []);
+  const shardedEdges = Array.from({ length: 64 }, (_, idx) => ({
+    schema_version: '2.1',
+    bucket: idx.toString(16).padStart(2, '0'),
+    edges_by_id: {},
+    endpoint_index: {},
+  }));
   for (const edge of lexicalEdges) {
-    const b = Number.parseInt(bucket64(edge.subject.canonical_key), 16);
-    shardedEdges[b].push(edge);
+    const bSub = Number.parseInt(bucket64(edge.subject.canonical_key), 16);
+    shardedEdges[bSub].edges_by_id[edge.relationship_id] = edge;
+    if (edge.target?.canonical_key) {
+      const bTgt = Number.parseInt(bucket64(edge.target.canonical_key), 16);
+      shardedEdges[bTgt].edges_by_id[edge.relationship_id] = edge;
+    }
+  }
+  for (const [key, refs] of lexicalEndpointIndex.entries()) {
+    const bKey = Number.parseInt(bucket64(key), 16);
+    shardedEdges[bKey].endpoint_index[key] = [...refs].sort((a, b) =>
+      a.relationship_id.localeCompare(b.relationship_id)
+    );
   }
   for (let b = 0; b < 64; b++) {
     const hex = b.toString(16).padStart(2, '0');
@@ -1006,24 +1138,102 @@ export async function runBuildR9A(options = {}) {
     trackFile(`edges/sharded-edges/shard-${hex}.json.gz`, bRes);
   }
 
-  // C. Contextual Neighbors (sharded 64 buckets)
+  // C. Contextual Neighbors (lossless sharded index: fast top-50 shard + bounded overflow pages)
   const shardedContextual = Array.from({ length: 64 }, () => ({}));
+  const contextualBucketEntries = Array.from({ length: 64 }, () => []);
+  let totalDirectedContextualNeighbors = 0;
+  let totalOverflowPageFiles = 0;
+
   for (const [lid, neighbors] of contextualByLemmaId.entries()) {
     const lemma = lemmasById.get(lid);
     if (!lemma) continue;
+    totalDirectedContextualNeighbors += neighbors.length;
     const b = Number.parseInt(bucket64(lemma.lemma_key), 16);
-    shardedContextual[b][lemma.lemma_key] = {
-      anchor_lemma_key: lemma.lemma_key,
-      anchor_lemma_script: lemma.lemma_script,
-      language: lemma.language,
-      neighbors,
-    };
+    contextualBucketEntries[b].push({ lemma, neighbors });
   }
+
   for (let b = 0; b < 64; b++) {
     const hex = b.toString(16).padStart(2, '0');
+    contextualBucketEntries[b].sort((x, y) => x.lemma.lemma_key.localeCompare(y.lemma.lemma_key));
+
+    let pageSeq = 1;
+    let currentPage = { schema_version: '2.1', bucket: hex, page_index: pageSeq, entries: {} };
+    let currentPageCount = 0;
+
+    const flushPage = () => {
+      if (currentPageCount === 0) return null;
+      const pagePath = `contextual/pages/shard-${hex}-p${String(pageSeq).padStart(3, '0')}.json.gz`;
+      const pRes = writeGzipJson(path.join(OUT_DIR, pagePath), currentPage);
+      trackFile(pagePath, pRes);
+      totalOverflowPageFiles++;
+      pageSeq++;
+      currentPage = { schema_version: '2.1', bucket: hex, page_index: pageSeq, entries: {} };
+      currentPageCount = 0;
+      return pagePath;
+    };
+
+    for (const { lemma, neighbors } of contextualBucketEntries[b]) {
+      const topSlice = neighbors.slice(0, TOP_CONTEXTUAL_LIMIT);
+      const overflowPages = [];
+
+      let pos = TOP_CONTEXTUAL_LIMIT;
+      while (pos < neighbors.length) {
+        if (currentPageCount >= OVERFLOW_PAGE_CHUNK_SIZE) {
+          flushPage();
+        }
+        const room = Math.max(1, OVERFLOW_PAGE_CHUNK_SIZE - currentPageCount);
+        const take = Math.min(room, OVERFLOW_PAGE_CHUNK_SIZE, neighbors.length - pos);
+        const chunk = neighbors.slice(pos, pos + take);
+        const relPagePath = `contextual/pages/shard-${hex}-p${String(pageSeq).padStart(3, '0')}.json.gz`;
+
+        if (!currentPage.entries[lemma.lemma_key]) {
+          currentPage.entries[lemma.lemma_key] = [];
+        }
+        currentPage.entries[lemma.lemma_key].push({
+          offset_start: pos,
+          count: chunk.length,
+          items: chunk,
+        });
+        currentPageCount += chunk.length;
+
+        let maxClause = 0;
+        let maxColloc = 0;
+        for (const item of chunk) {
+          if (item.counts.same_clause > maxClause) maxClause = item.counts.same_clause;
+          if (item.counts.collocation_distance_le_3 > maxColloc) maxColloc = item.counts.collocation_distance_le_3;
+        }
+        overflowPages.push({
+          path: relPagePath,
+          offset_start: pos,
+          count: chunk.length,
+          max_same_verse: chunk[0].counts.same_verse,
+          min_same_verse: chunk[chunk.length - 1].counts.same_verse,
+          max_same_clause: maxClause,
+          max_collocation: maxColloc,
+        });
+
+        pos += chunk.length;
+        if (currentPageCount >= OVERFLOW_PAGE_CHUNK_SIZE) {
+          flushPage();
+        }
+      }
+
+      shardedContextual[b][lemma.lemma_key] = {
+        anchor_lemma_key: lemma.lemma_key,
+        anchor_lemma_script: lemma.lemma_script,
+        language: lemma.language,
+        total_neighbors: neighbors.length,
+        top_limit: TOP_CONTEXTUAL_LIMIT,
+        neighbors: topSlice,
+        overflow_pages: overflowPages,
+      };
+    }
+    flushPage();
+
     const bRes = writeGzipJson(path.join(OUT_DIR, 'contextual', 'sharded-contextual', `shard-${hex}.json.gz`), shardedContextual[b]);
     trackFile(`contextual/sharded-contextual/shard-${hex}.json.gz`, bRes);
   }
+  console.log(`[R9A] Wrote lossless contextual adjacency: ${totalDirectedContextualNeighbors} directed entries across 64 top shards + ${totalOverflowPageFiles} bounded overflow page shards.`);
 
   // D. Coverage & Quality Reports
   console.log('[R9A] 7/7 Generating coverage reports & Ruach (H7307) research dossier...');
@@ -1036,7 +1246,7 @@ export async function runBuildR9A(options = {}) {
   }
 
   const lexicalCoverageReport = {
-    schema_version: '2.0',
+    schema_version: '2.1',
     release_version: RELEASE_VERSION,
     rule_version: RULE_VERSION,
     totals: {
@@ -1046,6 +1256,7 @@ export async function runBuildR9A(options = {}) {
       lexical_roots: rootsById.size,
       lexical_formations: formationsById.size,
       lexical_edges_total: lexicalEdges.length,
+      indexed_endpoints_total: lexicalEndpointIndex.size,
     },
     edges_by_category: edgesByCategory,
     edges_by_tier: edgesByTier,
@@ -1062,17 +1273,21 @@ export async function runBuildR9A(options = {}) {
   };
 
   const contextualCoverageReport = {
-    schema_version: '2.0',
+    schema_version: '2.1',
     release_version: RELEASE_VERSION,
     rule_version: RULE_VERSION,
     corpus_scope: {
       total_canonical_verses: versesProcessed,
       ot_verses: otVersesCount,
       nt_verses: ntVersesCount,
-      verses_with_clauses: clausesByVerseId.size,
+      verses_with_clauses: versesWithClausesCount,
+      syntax_source_editions: ['macula-hebrew-wlc (11)', 'macula-greek-nestle1904 (18)'],
+      legacy_macula_wlc_wrappers_excluded: true,
     },
     totals: {
       distinct_co_occurring_pairs: pairStats.size,
+      lossless_directed_neighbor_records: totalDirectedContextualNeighbors,
+      overflow_page_shards: totalOverflowPageFiles,
       lemmas_with_contextual_neighbors: contextualByLemmaId.size,
     },
     greek_edition_deduplication: {
@@ -1191,8 +1406,8 @@ export async function runBuildR9A(options = {}) {
   };
 }
 
-const isDirectRun = process.argv[1] && path.resolve(process.argv[1]) === path.resolve(import.meta.url.replace('file:///', '').replace('file://', ''));
-if (isDirectRun || process.argv.includes('--run')) {
+const isDirectRun = process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url));
+if (isDirectRun) {
   runBuildR9A().catch(err => {
     console.error('[R9A] FATAL BUILD ERROR:', err);
     process.exit(1);

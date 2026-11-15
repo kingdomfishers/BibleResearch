@@ -30,6 +30,27 @@ export const EDITIONS_V2 = [
   'macula-greek-sblgnt',
 ] as const;
 
+export const R9B_LAYERS = [
+  'grammatical',
+  'lexical',
+  'contextual',
+  'lxx_translation',
+] as const;
+
+export const CONTEXTUAL_SCOPES = [
+  'all',
+  'same_clause',
+  'collocation',
+  'same_verse',
+] as const;
+
+export const LEXICAL_DIRECTIONS = [
+  'both',
+  'outgoing',
+  'incoming',
+  'symmetric',
+] as const;
+
 export const UPSTREAM_PIN = {
   upstream_repo: 'bibleontology/bibleontology',
   upstream_commit: '62d6bc0fba5f84dfad245e546e87c6212b35fa75',
@@ -37,7 +58,8 @@ export const UPSTREAM_PIN = {
   macula_greek_commit: '8423afe47b9e8f24b7772e808af45c7159a6fe7e',
   stepbible_commit: 'be4191f0082aeedddb0eff0c02c966292b2bd641',
   rule_version: '1.2',
-  release_version: 'r3-v1.2',
+  release_version: 'r9b-v1.0',
+  grammatical_release_version: 'r8-v1.1',
   license: 'CC BY 4.0 / Apache-2.0',
 };
 
@@ -50,6 +72,36 @@ const asObj = (x: unknown): Record<string, unknown> =>
   x && typeof x === 'object' && !Array.isArray(x) ? (x as Record<string, unknown>) : {};
 
 const jsonContent = (obj: unknown) => [{ type: 'text' as const, text: JSON.stringify(obj) }];
+
+const invalidTargetReply = (message: string) => {
+  const payload = {
+    schema_version: '3.0',
+    status: 'invalid_request',
+    error_message: message,
+  };
+  return { content: jsonContent(payload), structuredContent: payload, isError: true };
+};
+
+const lemmaLookupShape = {
+  query: z.string().trim().min(1).max(128).optional().describe('Canonical lemma ID (lemma:H7307, lemma:H0430G), Strongs ID, transliteration, token ID, or surface script.'),
+  lemma_id: z.string().trim().min(1).max(64).optional().describe('Explicit canonical lemma_id (e.g. lemma:H7307, lemma:G3056).'),
+  extended_strongs: z.string().trim().min(1).max(32).optional().describe('Disambiguated extended Strongs ID (e.g. H0430G, H7307H).'),
+  word_id: z.number().int().positive().optional().describe('Canonical STEP database word_id.'),
+  edition_key: z.enum(EDITIONS_V2).optional().describe('Source edition filter (macula-hebrew-wlc, macula-greek-nestle1904, macula-greek-sblgnt).'),
+  book: z.number().int().min(1).max(66).optional(),
+  chapter: z.number().int().min(1).max(150).optional(),
+  verse: z.number().int().min(0).max(176).optional(),
+  position: z.number().int().min(1).max(200).optional().describe('1-based word position in passage to disambiguate clicked homographs.'),
+  release: z.string().trim().min(1).max(32).optional().describe('Optional relationship release override (e.g. r9b-v1.0).'),
+};
+
+function compactDefined(obj: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(obj)) {
+    if (v !== undefined) out[k] = v;
+  }
+  return out;
+}
 
 async function queryGatewayV2(
   read: DatabaseReader,
@@ -173,22 +225,202 @@ export function registerRelationshipV2Tools(server: McpServer, read: DatabaseRea
       book: z.number().int().min(1).max(66).optional(),
       chapter: z.number().int().min(1).max(150).optional(),
       verse: z.number().int().min(0).max(176).optional(),
+      release: z.string().trim().min(1).max(32).optional(),
     }),
     outputSchema: z.record(z.string(), z.unknown()),
     ...readOnlyMeta,
-  }, async ({ edition_key, predicate, book, chapter, verse }) => {
-    const gateway = await queryGatewayV2(read, {
+  }, async ({ edition_key, predicate, book, chapter, verse, release }) => {
+    const gateway = await queryGatewayV2(read, compactDefined({
       op: 'coverage',
-      ...(edition_key ? { edition_key } : {}),
-      ...(book !== undefined ? { book } : {}),
-      ...(chapter !== undefined ? { chapter } : {}),
-      ...(verse !== undefined ? { verse } : {}),
-    });
+      edition_key,
+      book,
+      chapter,
+      verse,
+      release,
+    }));
     const payload = {
       ...gateway,
       provenance: UPSTREAM_PIN,
       ...(predicate ? { requested_predicate: predicate } : {}),
     };
+    return { content: jsonContent(payload), structuredContent: payload };
+  });
+
+  server.registerTool('get_unified_word_relationships_v2', {
+    title: 'Query unified R9B 4-layer word relationships (Grammatical, Lexical, Contextual, LXX)',
+    description:
+      'Retrieve all four distinct evidence layers for an original-language word from the Cloudflare corpus gateway: (1) grammatical R3 relations, (2) bidirectional lexical roots/senses/cognates/formations, (3) lossless contextual co-occurrences separated into distinct-verse and clause-occurrence units, and (4) Hebrew-Greek Septuagint translation candidates. Never flattens layers into one score or equates translation/proximity with synonymy.',
+    inputSchema: z.strictObject({
+      ...lemmaLookupShape,
+      layers: z.array(z.enum(R9B_LAYERS)).optional().describe('Subset of layers to return; defaults to all 4.'),
+      relation_types: z.array(z.enum(R3_PREDICATES)).optional(),
+      direction: z.enum(['both', 'outgoing', 'incoming']).default('both'),
+      include_uncertain: z.boolean().default(false),
+      limit: z.number().int().min(1).max(50).default(15).describe('Bounded grammatical summary page size.'),
+      offset: z.number().int().min(0).max(5000).default(0),
+      lexical_direction: z.enum(LEXICAL_DIRECTIONS).default('both'),
+      lexical_categories: z.array(z.string().trim().min(1).max(64)).optional(),
+      lexical_limit: z.number().int().min(1).max(50).default(20),
+      lexical_offset: z.number().int().min(0).max(5000).default(0),
+      contextual_scope: z.enum(CONTEXTUAL_SCOPES).default('all'),
+      min_same_verse: z.number().int().min(0).optional(),
+      min_same_clause: z.number().int().min(0).optional(),
+      min_collocation: z.number().int().min(0).optional(),
+      contextual_limit: z.number().int().min(1).max(50).default(20),
+      contextual_offset: z.number().int().min(0).max(50000).default(0),
+      lxx_limit: z.number().int().min(1).max(50).default(20),
+      lxx_offset: z.number().int().min(0).max(5000).default(0),
+    }),
+    outputSchema: z.record(z.string(), z.unknown()),
+    ...readOnlyMeta,
+  }, async (input) => {
+    if (!input.query && !input.lemma_id && !input.extended_strongs && input.word_id === undefined && input.position === undefined) {
+      return invalidTargetReply('Provide query, lemma_id, extended_strongs, word_id, or passage position.');
+    }
+    const payload = await queryGatewayV2(read, compactDefined({
+      op: 'unified_lemma',
+      query: input.query,
+      lemma_id: input.lemma_id,
+      extended_strongs: input.extended_strongs,
+      word_id: input.word_id,
+      edition_key: input.edition_key,
+      book: input.book,
+      chapter: input.chapter,
+      verse: input.verse,
+      position: input.position,
+      release: input.release,
+      layers: input.layers,
+      predicates: input.relation_types,
+      direction: input.direction,
+      include_uncertain: input.include_uncertain,
+      limit: input.limit,
+      offset: input.offset,
+      lexical_direction: input.lexical_direction,
+      lexical_categories: input.lexical_categories,
+      lexical_limit: input.lexical_limit,
+      lexical_offset: input.lexical_offset,
+      contextual_scope: input.contextual_scope,
+      min_same_verse: input.min_same_verse,
+      min_same_clause: input.min_same_clause,
+      min_collocation: input.min_collocation,
+      contextual_limit: input.contextual_limit,
+      contextual_offset: input.contextual_offset,
+      lxx_limit: input.lxx_limit,
+      lxx_offset: input.lxx_offset,
+    }));
+    return { content: jsonContent(payload), structuredContent: payload };
+  });
+
+  server.registerTool('page_contextual_neighbors_v2', {
+    title: 'Page through lossless R9B contextual neighbors beyond the top 50',
+    description:
+      'Retrieve paginated contextual co-occurrence partners from R9B partitioned contextual shards, supporting filters by verified same-clause scope, token-distance <= 3 collocation, and minimum frequency thresholds.',
+    inputSchema: z.strictObject({
+      ...lemmaLookupShape,
+      contextual_scope: z.enum(CONTEXTUAL_SCOPES).default('all'),
+      min_same_verse: z.number().int().min(0).optional(),
+      min_same_clause: z.number().int().min(0).optional(),
+      min_collocation: z.number().int().min(0).optional(),
+      limit: z.number().int().min(1).max(100).default(25),
+      offset: z.number().int().min(0).max(50000).default(0),
+    }),
+    outputSchema: z.record(z.string(), z.unknown()),
+    ...readOnlyMeta,
+  }, async (input) => {
+    if (!input.query && !input.lemma_id && !input.extended_strongs && input.word_id === undefined && input.position === undefined) {
+      return invalidTargetReply('Provide query, lemma_id, extended_strongs, word_id, or passage position.');
+    }
+    const payload = await queryGatewayV2(read, compactDefined({
+      op: 'contextual_neighbors',
+      query: input.query,
+      lemma_id: input.lemma_id,
+      extended_strongs: input.extended_strongs,
+      word_id: input.word_id,
+      edition_key: input.edition_key,
+      book: input.book,
+      chapter: input.chapter,
+      verse: input.verse,
+      position: input.position,
+      release: input.release,
+      contextual_scope: input.contextual_scope,
+      min_same_verse: input.min_same_verse,
+      min_same_clause: input.min_same_clause,
+      min_collocation: input.min_collocation,
+      limit: input.limit,
+      offset: input.offset,
+    }));
+    return { content: jsonContent(payload), structuredContent: payload };
+  });
+
+  server.registerTool('lookup_lexical_relations_v2', {
+    title: 'Query bidirectional R9B lexical relations (roots, cognates, subdivisions, formations)',
+    description:
+      'Retrieve bidirectional lexical relations (outgoing, incoming, symmetric) from R9B serialized lexical shards without duplicating edges or equating shared roots with synonymy. Also accepts non-lemma endpoint_key such as root:H7307 or sense:H7307H:sub.',
+    inputSchema: z.strictObject({
+      ...lemmaLookupShape,
+      endpoint_key: z.string().trim().min(1).max(96).optional().describe('Non-lemma endpoint key such as root:H7307 or sense:H7307H:sub.'),
+      lexical_direction: z.enum(LEXICAL_DIRECTIONS).default('both'),
+      lexical_categories: z.array(z.string().trim().min(1).max(64)).optional(),
+      limit: z.number().int().min(1).max(100).default(25),
+      offset: z.number().int().min(0).max(5000).default(0),
+    }),
+    outputSchema: z.record(z.string(), z.unknown()),
+    ...readOnlyMeta,
+  }, async (input) => {
+    if (!input.endpoint_key && !input.query && !input.lemma_id && !input.extended_strongs && input.word_id === undefined && input.position === undefined) {
+      return invalidTargetReply('Provide endpoint_key, query, lemma_id, extended_strongs, word_id, or passage position.');
+    }
+    const payload = await queryGatewayV2(read, compactDefined({
+      op: 'lexical_relations',
+      endpoint_key: input.endpoint_key,
+      query: input.query,
+      lemma_id: input.lemma_id,
+      extended_strongs: input.extended_strongs,
+      word_id: input.word_id,
+      edition_key: input.edition_key,
+      book: input.book,
+      chapter: input.chapter,
+      verse: input.verse,
+      position: input.position,
+      release: input.release,
+      lexical_direction: input.lexical_direction,
+      lexical_categories: input.lexical_categories,
+      limit: input.limit,
+      offset: input.offset,
+    }));
+    return { content: jsonContent(payload), structuredContent: payload };
+  });
+
+  server.registerTool('lookup_lxx_translations_v2', {
+    title: 'Query Hebrew-Greek Septuagint (LXX) translation candidates & published counts',
+    description:
+      'Retrieve Hebrew->Greek or Greek->Hebrew LXX translation bridge candidates with published source counts, homograph ambiguity flags, and canonical candidate lists. Translation correspondence is corpus attestation, not semantic identity.',
+    inputSchema: z.strictObject({
+      ...lemmaLookupShape,
+      limit: z.number().int().min(1).max(100).default(25),
+      offset: z.number().int().min(0).max(5000).default(0),
+    }),
+    outputSchema: z.record(z.string(), z.unknown()),
+    ...readOnlyMeta,
+  }, async (input) => {
+    if (!input.query && !input.lemma_id && !input.extended_strongs && input.word_id === undefined && input.position === undefined) {
+      return invalidTargetReply('Provide query, lemma_id, extended_strongs, word_id, or passage position.');
+    }
+    const payload = await queryGatewayV2(read, compactDefined({
+      op: 'lxx_translations',
+      query: input.query,
+      lemma_id: input.lemma_id,
+      extended_strongs: input.extended_strongs,
+      word_id: input.word_id,
+      edition_key: input.edition_key,
+      book: input.book,
+      chapter: input.chapter,
+      verse: input.verse,
+      position: input.position,
+      release: input.release,
+      limit: input.limit,
+      offset: input.offset,
+    }));
     return { content: jsonContent(payload), structuredContent: payload };
   });
 }

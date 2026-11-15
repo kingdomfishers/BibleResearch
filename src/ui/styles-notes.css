@@ -1844,3 +1844,60 @@
   position: relative;
 }
 
+.r9b-layer-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.r9b-tab,
+.r9b-pill {
+  background: var(--soft);
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  line-height: 1.3;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.r9b-tab:hover,
+.r9b-pill:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+.r9b-tab.is-active,
+.r9b-pill.is-active {
+  background: var(--accent);
+  color: var(--text);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+.r9b-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 8px 0 10px;
+}
+
+.r9b-filter-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.r9b-sample-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+
