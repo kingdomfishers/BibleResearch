@@ -737,3 +737,237 @@ def build_r3_graph_artifacts(
     }
     _write_json(out_dir / "manifest.json", manifest_doc)
     return r3_quality_report
+
+
+def aggregate_partitions(
+    partition_dirs: list[Path],
+    out_dir: Path,
+    rule_version: str = "1.2",
+    write_combined_streams: bool = True,
+) -> dict[str, Any]:
+    """Aggregate independently verified book partitions into unified lemma summaries and indexes."""
+    out_dir.mkdir(parents=True, exist_ok=True)
+    all_frames: list[dict[str, Any]] = []
+    all_relations: list[dict[str, Any]] = []
+    seen_frame_ids: set[str] = set()
+    seen_rel_ids: set[str] = set()
+    clause_lemma_presence: dict[tuple[str, str], set[str]] = defaultdict(set)
+
+    combined_lang_metrics: dict[str, dict[str, Any]] = {
+        "hebrew": {
+            "clauses_examined": 0,
+            "clauses_parsed": 0,
+            "clauses_eligible_grammatical_subject_of": 0,
+            "clauses_eligible_grammatical_object_of": 0,
+            "clauses_eligible_grammatical_indirect_object_of": 0,
+            "clauses_eligible_grammatical_second_object_of": 0,
+            "clauses_eligible_modifies": 0,
+            "clauses_eligible_possessive_construction_with": 0,
+            "frames_emitted": 0,
+            "relations_emitted_total": 0,
+            "relations_by_predicate": Counter(),
+            "relations_by_quality": Counter(),
+            "candidate_reasons": Counter(),
+            "skip_reasons": Counter(),
+            "unsupported_constructions": Counter(),
+            "missing_mappings": [],
+        },
+        "greek": {
+            "clauses_examined": 0,
+            "clauses_parsed": 0,
+            "clauses_eligible_grammatical_subject_of": 0,
+            "clauses_eligible_grammatical_object_of": 0,
+            "clauses_eligible_grammatical_indirect_object_of": 0,
+            "clauses_eligible_grammatical_second_object_of": 0,
+            "clauses_eligible_modifies": 0,
+            "clauses_eligible_possessive_construction_with": 0,
+            "frames_emitted": 0,
+            "relations_emitted_total": 0,
+            "relations_by_predicate": Counter(),
+            "relations_by_quality": Counter(),
+            "candidate_reasons": Counter(),
+            "skip_reasons": Counter(),
+            "unsupported_constructions": Counter(),
+            "missing_mappings": [],
+        },
+    }
+
+    combined_inventory_files: list[dict[str, Any]] = []
+    combined_unmapped_tokens: list[dict[str, Any]] = []
+    seen_unmapped_keys: set[tuple[str, str]] = set()
+    upstream_commit = "62d6bc0fba5f84dfad245e546e87c6212b35fa75"
+    source_releases: dict[str, Any] = {}
+    license_disabled: dict[str, list[str]] = {}
+
+    for pdir in partition_dirs:
+        pdir = Path(pdir)
+        if not pdir.is_dir():
+            continue
+        frames_file = pdir / "frames.jsonl"
+        rels_file = pdir / "occurrence-relations.jsonl"
+        cov_file = pdir / "coverage-report.json"
+        inv_file = pdir / "source-crosswalk-inventory.json"
+
+        if frames_file.exists():
+            with frames_file.open("rt", encoding="utf-8") as f:
+                for line in f:
+                    if not line.strip():
+                        continue
+                    fr = json.loads(line)
+                    fid = fr["frame_id"]
+                    if fid not in seen_frame_ids:
+                        seen_frame_ids.add(fid)
+                        all_frames.append(fr)
+
+        if rels_file.exists():
+            with rels_file.open("rt", encoding="utf-8") as f:
+                for line in f:
+                    if not line.strip():
+                        continue
+                    rel = json.loads(line)
+                    rid = rel["relation_id"]
+                    if rid not in seen_rel_ids:
+                        seen_rel_ids.add(rid)
+                        all_relations.append(rel)
+                        ed = rel["evidence"]["edition"]
+                        cid = rel["evidence"].get("source_clause_id")
+                        s_lid = rel.get("subject_lemma_id")
+                        o_lid = rel.get("object_lemma_id")
+                        if s_lid and cid:
+                            clause_lemma_presence[(ed, s_lid)].add(cid)
+                        if o_lid and cid:
+                            clause_lemma_presence[(ed, o_lid)].add(cid)
+
+        if cov_file.exists():
+            cov_doc = json.loads(cov_file.read_text(encoding="utf-8"))
+            for lang, lm in cov_doc.get("languages", {}).items():
+                if lang not in combined_lang_metrics:
+                    continue
+                target = combined_lang_metrics[lang]
+                for k in (
+                    "clauses_examined",
+                    "clauses_parsed",
+                    "clauses_eligible_grammatical_subject_of",
+                    "clauses_eligible_grammatical_object_of",
+                    "clauses_eligible_grammatical_indirect_object_of",
+                    "clauses_eligible_grammatical_second_object_of",
+                    "clauses_eligible_modifies",
+                    "clauses_eligible_possessive_construction_with",
+                    "frames_emitted",
+                    "relations_emitted_total",
+                ):
+                    target[k] += lm.get(k, 0)
+                for pk, pv in lm.get("relations_by_predicate", {}).items():
+                    target["relations_by_predicate"][pk] += pv
+                for qk, qv in lm.get("relations_by_quality", {}).items():
+                    target["relations_by_quality"][qk] += qv
+                for rk, rv in lm.get("candidate_reasons", {}).items():
+                    target["candidate_reasons"][rk] += rv
+                for sk, sv in lm.get("skip_reasons", {}).items():
+                    target["skip_reasons"][sk] += sv
+                for uk, uv in lm.get("unsupported_constructions", {}).items():
+                    target["unsupported_constructions"][uk] += uv
+                target["missing_mappings"].extend(lm.get("missing_mappings", []))
+
+        if inv_file.exists():
+            inv_doc = json.loads(inv_file.read_text(encoding="utf-8"))
+            upstream_commit = inv_doc.get("upstream_bibleontology_commit", upstream_commit)
+            source_releases.update(inv_doc.get("source_releases", {}))
+            license_disabled.update(inv_doc.get("field_license_registry_disabled", {}))
+            combined_inventory_files.extend(inv_doc.get("files", []))
+            for ut in inv_doc.get("unmapped_tokens", []):
+                ukey = (ut.get("edition"), ut.get("token_id"))
+                if ukey not in seen_unmapped_keys:
+                    seen_unmapped_keys.add(ukey)
+                    combined_unmapped_tokens.append(ut)
+
+    all_frames.sort(key=lambda f: f["frame_id"])
+    all_relations.sort(key=lambda r: (r["frame_id"], r["predicate"], r["subject_token_id"], r["object_token_id"]))
+    combined_inventory_files.sort(key=lambda x: (x.get("edition", ""), x.get("source_file", "")))
+    combined_unmapped_tokens.sort(key=lambda x: (x.get("edition", ""), x.get("token_id", "")))
+
+    combined_coverage_doc = {
+        "schema_version": "1.2",
+        "pilot_scope_note": "Aggregated book partition relationship graph.",
+        "languages": {
+            lang: {
+                "clauses_examined": m["clauses_examined"],
+                "clauses_parsed": m["clauses_parsed"],
+                "clauses_eligible_grammatical_subject_of": m["clauses_eligible_grammatical_subject_of"],
+                "clauses_eligible_grammatical_object_of": m["clauses_eligible_grammatical_object_of"],
+                "clauses_eligible_grammatical_indirect_object_of": m["clauses_eligible_grammatical_indirect_object_of"],
+                "clauses_eligible_grammatical_second_object_of": m["clauses_eligible_grammatical_second_object_of"],
+                "clauses_eligible_modifies": m["clauses_eligible_modifies"],
+                "clauses_eligible_possessive_construction_with": m["clauses_eligible_possessive_construction_with"],
+                "frames_emitted": m["frames_emitted"],
+                "relations_emitted_total": m["relations_emitted_total"],
+                "relations_by_predicate": dict(sorted(m["relations_by_predicate"].items())),
+                "relations_by_quality": dict(sorted(m["relations_by_quality"].items())),
+                "candidate_reasons": dict(sorted(m["candidate_reasons"].items())),
+                "skip_reasons": dict(sorted(m["skip_reasons"].items())),
+                "unsupported_constructions": dict(sorted(m["unsupported_constructions"].items())),
+                "missing_mappings": m["missing_mappings"],
+            }
+            for lang, m in combined_lang_metrics.items()
+        },
+        "totals": {
+            "frames_emitted": len(all_frames),
+            "relations_emitted": len(all_relations),
+        },
+    }
+
+    combined_inventory_doc = {
+        "schema_version": "1.0",
+        "upstream_bibleontology_commit": upstream_commit,
+        "excluded_restricted_fields": sorted(RESTRICTED_FIELD_KEYS),
+        "field_license_registry_disabled": license_disabled,
+        "source_releases": source_releases,
+        "files": combined_inventory_files,
+        "unmapped_tokens": combined_unmapped_tokens,
+    }
+
+    _assert_no_restricted(all_frames, "frames")
+    _assert_no_restricted(all_relations, "relations")
+    _assert_no_restricted(combined_inventory_doc, "inventory")
+
+    if write_combined_streams:
+        (out_dir / "frames.jsonl").write_text(
+            "".join(json.dumps(f, ensure_ascii=False, sort_keys=True) + "\n" for f in all_frames),
+            encoding="utf-8",
+            newline="\n",
+        )
+        (out_dir / "occurrence-relations.jsonl").write_text(
+            "".join(json.dumps(r, ensure_ascii=False, sort_keys=True) + "\n" for r in all_relations),
+            encoding="utf-8",
+            newline="\n",
+        )
+        (out_dir / "coverage-report.json").write_text(
+            json.dumps(combined_coverage_doc, ensure_ascii=False, sort_keys=True, indent=2) + "\n",
+            encoding="utf-8",
+            newline="\n",
+        )
+        (out_dir / "source-crosswalk-inventory.json").write_text(
+            json.dumps(combined_inventory_doc, ensure_ascii=False, sort_keys=True, indent=2) + "\n",
+            encoding="utf-8",
+            newline="\n",
+        )
+
+    return build_r3_graph_artifacts(
+        out_dir=out_dir,
+        frames=all_frames,
+        relations=all_relations,
+        coverage_doc=combined_coverage_doc,
+        inventory_doc=combined_inventory_doc,
+        clause_lemma_presence=clause_lemma_presence,
+        rule_version=rule_version,
+    )
+
+
+if __name__ == "__main__":
+    import sys
+    if len(sys.argv) > 1 and sys.argv[1] == "--aggregate":
+        target_out = Path(sys.argv[2])
+        pdirs = [Path(p) for p in sys.argv[3:]]
+        report = aggregate_partitions(pdirs, target_out)
+        print(json.dumps({"status": "ok", "out_dir": str(target_out), "totals": report["totals"]}, indent=2))
+

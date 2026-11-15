@@ -1,0 +1,1124 @@
+{
+  "schema_version": "2.0",
+  "description": "Gold verification cases for R8A complete-book scaling on Ruth (Hebrew) and Philippians (Greek).",
+  "positive_relations": [
+    {
+      "name": "RUT 1:1 shoftim subject of shafat",
+      "book": "RUT",
+      "language": "hebrew",
+      "relation_id": "rel:macula-hebrew-wlc:RUT 1:1#cl1:grammatical_subject_of:o080010010042:o080010010031",
+      "frame_id": "frame:macula-hebrew-wlc:RUT 1:1#cl1:svov1",
+      "predicate": "grammatical_subject_of",
+      "subject_token_id": "o080010010042",
+      "subject_lemma_id": "lemma:H8199",
+      "object_token_id": "o080010010031",
+      "object_lemma_id": "lemma:H8199",
+      "quality": "rule_derived",
+      "qualifiers": {
+        "polarity": "affirmative_candidate",
+        "modality": "infinitive",
+        "voice": "unknown",
+        "quotation": "none"
+      }
+    },
+    {
+      "name": "RUT 1:1 raav subject of hayah",
+      "book": "RUT",
+      "language": "hebrew",
+      "relation_id": "rel:macula-hebrew-wlc:RUT 1:1#cl2:grammatical_subject_of:o080010010061:o080010010052",
+      "frame_id": "frame:macula-hebrew-wlc:RUT 1:1#cl2:svov1",
+      "predicate": "grammatical_subject_of",
+      "subject_token_id": "o080010010061",
+      "subject_lemma_id": "lemma:H7458",
+      "object_token_id": "o080010010052",
+      "object_lemma_id": "lemma:H1961",
+      "quality": "source_explicit",
+      "qualifiers": {
+        "polarity": "affirmative_candidate",
+        "modality": "indicative",
+        "voice": "unknown",
+        "quotation": "none"
+      }
+    },
+    {
+      "name": "RUT 1:1 ish subject of halakh",
+      "book": "RUT",
+      "language": "hebrew",
+      "relation_id": "rel:macula-hebrew-wlc:RUT 1:1#cl3:grammatical_subject_of:o080010010091:o080010010082",
+      "frame_id": "frame:macula-hebrew-wlc:RUT 1:1#cl3:svov1",
+      "predicate": "grammatical_subject_of",
+      "subject_token_id": "o080010010091",
+      "subject_lemma_id": "lemma:H0376G",
+      "object_token_id": "o080010010082",
+      "object_lemma_id": "lemma:H1980I",
+      "quality": "rule_derived",
+      "qualifiers": {
+        "polarity": "affirmative_candidate",
+        "modality": "indicative",
+        "voice": "unknown",
+        "quotation": "none"
+      }
+    },
+    {
+      "name": "RUT 1:1 ishto coordinated subject of halakh",
+      "book": "RUT",
+      "language": "hebrew",
+      "relation_id": "rel:macula-hebrew-wlc:RUT 1:1#cl3:grammatical_subject_of:o080010010172:o080010010082",
+      "frame_id": "frame:macula-hebrew-wlc:RUT 1:1#cl3:svov1",
+      "predicate": "grammatical_subject_of",
+      "subject_token_id": "o080010010172",
+      "subject_lemma_id": "lemma:H0802G",
+      "object_token_id": "o080010010082",
+      "object_lemma_id": "lemma:H1980I",
+      "quality": "rule_derived",
+      "qualifiers": {
+        "polarity": "affirmative_candidate",
+        "modality": "indicative",
+        "voice": "unknown",
+        "quotation": "none"
+      }
+    },
+    {
+      "name": "RUT 1:3 Elimelech subject of mut",
+      "book": "RUT",
+      "language": "hebrew",
+      "relation_id": "rel:macula-hebrew-wlc:RUT 1:3#cl0:grammatical_subject_of:o080010030021:o080010030012",
+      "frame_id": "frame:macula-hebrew-wlc:RUT 1:3#cl0:svov1",
+      "predicate": "grammatical_subject_of",
+      "subject_token_id": "o080010030021",
+      "subject_lemma_id": "lemma:H0458",
+      "object_token_id": "o080010030012",
+      "object_lemma_id": "lemma:H4191",
+      "quality": "rule_derived",
+      "qualifiers": {
+        "polarity": "affirmative_candidate",
+        "modality": "indicative",
+        "voice": "unknown",
+        "quotation": "none"
+      }
+    },
+    {
+      "name": "RUT 1:3 Naomi possessive with ish",
+      "book": "RUT",
+      "language": "hebrew",
+      "relation_id": "rel:macula-hebrew-wlc:RUT 1:3#cl0:possessive_construction_with:o080010030041:o080010030031",
+      "frame_id": "frame:macula-hebrew-wlc:RUT 1:3#cl0:svov1",
+      "predicate": "possessive_construction_with",
+      "subject_token_id": "o080010030041",
+      "subject_lemma_id": "lemma:H5281",
+      "object_token_id": "o080010030031",
+      "object_lemma_id": "lemma:H0376G",
+      "quality": "rule_derived",
+      "qualifiers": {
+        "polarity": "affirmative_candidate",
+        "modality": "indicative",
+        "voice": "unknown",
+        "quotation": "none"
+      }
+    },
+    {
+      "name": "RUT 1:8 Naomi subject of amar",
+      "book": "RUT",
+      "language": "hebrew",
+      "relation_id": "rel:macula-hebrew-wlc:RUT 1:8#cl0:grammatical_subject_of:o080010080021:o080010080012",
+      "frame_id": "frame:macula-hebrew-wlc:RUT 1:8#cl0:svov1",
+      "predicate": "grammatical_subject_of",
+      "subject_token_id": "o080010080021",
+      "subject_lemma_id": "lemma:H5281",
+      "object_token_id": "o080010080012",
+      "object_lemma_id": "lemma:H0559",
+      "quality": "source_explicit",
+      "qualifiers": {
+        "polarity": "affirmative_candidate",
+        "modality": "indicative",
+        "voice": "unknown",
+        "quotation": "none"
+      }
+    },
+    {
+      "name": "RUT 1:8 kallot speech indirect object of amar",
+      "book": "RUT",
+      "language": "hebrew",
+      "relation_id": "rel:macula-hebrew-wlc:RUT 1:8#cl0:grammatical_indirect_object_of:o080010080041:o080010080012",
+      "frame_id": "frame:macula-hebrew-wlc:RUT 1:8#cl0:svov1",
+      "predicate": "grammatical_indirect_object_of",
+      "subject_token_id": "o080010080041",
+      "subject_lemma_id": "lemma:H3618G",
+      "object_token_id": "o080010080012",
+      "object_lemma_id": "lemma:H0559",
+      "quality": "rule_derived",
+      "qualifiers": {
+        "polarity": "affirmative_candidate",
+        "modality": "indicative",
+        "voice": "unknown",
+        "quotation": "none"
+      }
+    },
+    {
+      "name": "RUT 2:2 Ruth subject of amar",
+      "book": "RUT",
+      "language": "hebrew",
+      "relation_id": "rel:macula-hebrew-wlc:RUT 2:2#cl0:grammatical_subject_of:o080020020021:o080020020012",
+      "frame_id": "frame:macula-hebrew-wlc:RUT 2:2#cl0:svov1",
+      "predicate": "grammatical_subject_of",
+      "subject_token_id": "o080020020021",
+      "subject_lemma_id": "lemma:H7327",
+      "object_token_id": "o080020020012",
+      "object_lemma_id": "lemma:H0559",
+      "quality": "rule_derived",
+      "qualifiers": {
+        "polarity": "affirmative_candidate",
+        "modality": "indicative",
+        "voice": "unknown",
+        "quotation": "none"
+      }
+    },
+    {
+      "name": "RUT 2:2 Naomi speech indirect object of amar",
+      "book": "RUT",
+      "language": "hebrew",
+      "relation_id": "rel:macula-hebrew-wlc:RUT 2:2#cl0:grammatical_indirect_object_of:o080020020051:o080020020012",
+      "frame_id": "frame:macula-hebrew-wlc:RUT 2:2#cl0:svov1",
+      "predicate": "grammatical_indirect_object_of",
+      "subject_token_id": "o080020020051",
+      "subject_lemma_id": "lemma:H5281",
+      "object_token_id": "o080020020012",
+      "object_lemma_id": "lemma:H0559",
+      "quality": "rule_derived",
+      "qualifiers": {
+        "polarity": "affirmative_candidate",
+        "modality": "indicative",
+        "voice": "unknown",
+        "quotation": "none"
+      }
+    },
+    {
+      "name": "RUT 2:2 chen object of matsa",
+      "book": "RUT",
+      "language": "hebrew",
+      "relation_id": "rel:macula-hebrew-wlc:RUT 2:2#cl3:grammatical_object_of:o080020020141:o080020020131",
+      "frame_id": "frame:macula-hebrew-wlc:RUT 2:2#cl3:svov1",
+      "predicate": "grammatical_object_of",
+      "subject_token_id": "o080020020141",
+      "subject_lemma_id": "lemma:H2580",
+      "object_token_id": "o080020020131",
+      "object_lemma_id": "lemma:H4672",
+      "quality": "source_explicit",
+      "qualifiers": {
+        "polarity": "affirmative_candidate",
+        "modality": "indicative",
+        "voice": "unknown",
+        "quotation": "direct_speech_turn"
+      }
+    },
+    {
+      "name": "RUT 4:13 Boaz subject of laqach",
+      "book": "RUT",
+      "language": "hebrew",
+      "relation_id": "rel:macula-hebrew-wlc:RUT 4:13#cl0:grammatical_subject_of:o080040130021:o080040130012",
+      "frame_id": "frame:macula-hebrew-wlc:RUT 4:13#cl0:svov1",
+      "predicate": "grammatical_subject_of",
+      "subject_token_id": "o080040130021",
+      "subject_lemma_id": "lemma:H1162G",
+      "object_token_id": "o080040130012",
+      "object_lemma_id": "lemma:H3947G",
+      "quality": "source_explicit",
+      "qualifiers": {
+        "polarity": "affirmative_candidate",
+        "modality": "indicative",
+        "voice": "unknown",
+        "quotation": "none"
+      }
+    },
+    {
+      "name": "RUT 4:13 Ruth object of laqach",
+      "book": "RUT",
+      "language": "hebrew",
+      "relation_id": "rel:macula-hebrew-wlc:RUT 4:13#cl0:grammatical_object_of:o080040130041:o080040130012",
+      "frame_id": "frame:macula-hebrew-wlc:RUT 4:13#cl0:svov1",
+      "predicate": "grammatical_object_of",
+      "subject_token_id": "o080040130041",
+      "subject_lemma_id": "lemma:H7327",
+      "object_token_id": "o080040130012",
+      "object_lemma_id": "lemma:H3947G",
+      "quality": "rule_derived",
+      "qualifiers": {
+        "polarity": "affirmative_candidate",
+        "modality": "indicative",
+        "voice": "unknown",
+        "quotation": "none"
+      }
+    },
+    {
+      "name": "RUT 4:13 YHWH subject of natan",
+      "book": "RUT",
+      "language": "hebrew",
+      "relation_id": "rel:macula-hebrew-wlc:RUT 4:13#cl3:grammatical_subject_of:o080040130111:o080040130102",
+      "frame_id": "frame:macula-hebrew-wlc:RUT 4:13#cl3:svov1",
+      "predicate": "grammatical_subject_of",
+      "subject_token_id": "o080040130111",
+      "subject_lemma_id": "lemma:H3068G",
+      "object_token_id": "o080040130102",
+      "object_lemma_id": "lemma:H5414G",
+      "quality": "source_explicit",
+      "qualifiers": {
+        "polarity": "affirmative_candidate",
+        "modality": "indicative",
+        "voice": "unknown",
+        "quotation": "none"
+      }
+    },
+    {
+      "name": "RUT 4:13 herayon object of natan",
+      "book": "RUT",
+      "language": "hebrew",
+      "relation_id": "rel:macula-hebrew-wlc:RUT 4:13#cl3:grammatical_object_of:o080040130131:o080040130102",
+      "frame_id": "frame:macula-hebrew-wlc:RUT 4:13#cl3:svov1",
+      "predicate": "grammatical_object_of",
+      "subject_token_id": "o080040130131",
+      "subject_lemma_id": "lemma:H2032",
+      "object_token_id": "o080040130102",
+      "object_lemma_id": "lemma:H5414G",
+      "quality": "source_explicit",
+      "qualifiers": {
+        "polarity": "affirmative_candidate",
+        "modality": "indicative",
+        "voice": "unknown",
+        "quotation": "none"
+      }
+    },
+    {
+      "name": "RUT 4:13 ben object of yalad",
+      "book": "RUT",
+      "language": "hebrew",
+      "relation_id": "rel:macula-hebrew-wlc:RUT 4:13#cl4:grammatical_object_of:o080040130151:o080040130142",
+      "frame_id": "frame:macula-hebrew-wlc:RUT 4:13#cl4:svov1",
+      "predicate": "grammatical_object_of",
+      "subject_token_id": "o080040130151",
+      "subject_lemma_id": "lemma:H1121A",
+      "object_token_id": "o080040130142",
+      "object_lemma_id": "lemma:H3205",
+      "quality": "source_explicit",
+      "qualifiers": {
+        "polarity": "affirmative_candidate",
+        "modality": "indicative",
+        "voice": "unknown",
+        "quotation": "none"
+      }
+    },
+    {
+      "name": "RUT 4:21 Salmon subject of holid",
+      "book": "RUT",
+      "language": "hebrew",
+      "relation_id": "rel:macula-hebrew-wlc:RUT 4:21#cl0:grammatical_subject_of:o080040210012:o080040210021",
+      "frame_id": "frame:macula-hebrew-wlc:RUT 4:21#cl0:svov1",
+      "predicate": "grammatical_subject_of",
+      "subject_token_id": "o080040210012",
+      "subject_lemma_id": "lemma:H8012",
+      "object_token_id": "o080040210021",
+      "object_lemma_id": "lemma:H3205",
+      "quality": "source_explicit",
+      "qualifiers": {
+        "polarity": "affirmative_candidate",
+        "modality": "indicative",
+        "voice": "unknown",
+        "quotation": "unknown"
+      }
+    },
+    {
+      "name": "RUT 4:21 Boaz object of holid",
+      "book": "RUT",
+      "language": "hebrew",
+      "relation_id": "rel:macula-hebrew-wlc:RUT 4:21#cl0:grammatical_object_of:o080040210041:o080040210021",
+      "frame_id": "frame:macula-hebrew-wlc:RUT 4:21#cl0:svov1",
+      "predicate": "grammatical_object_of",
+      "subject_token_id": "o080040210041",
+      "subject_lemma_id": "lemma:H1162G",
+      "object_token_id": "o080040210021",
+      "object_lemma_id": "lemma:H3205",
+      "quality": "rule_derived",
+      "qualifiers": {
+        "polarity": "affirmative_candidate",
+        "modality": "indicative",
+        "voice": "unknown",
+        "quotation": "unknown"
+      }
+    },
+    {
+      "name": "RUT 4:21 Boaz subject of holid",
+      "book": "RUT",
+      "language": "hebrew",
+      "relation_id": "rel:macula-hebrew-wlc:RUT 4:21#cl1:grammatical_subject_of:o080040210052:o080040210061",
+      "frame_id": "frame:macula-hebrew-wlc:RUT 4:21#cl1:svov1",
+      "predicate": "grammatical_subject_of",
+      "subject_token_id": "o080040210052",
+      "subject_lemma_id": "lemma:H1162G",
+      "object_token_id": "o080040210061",
+      "object_lemma_id": "lemma:H3205",
+      "quality": "source_explicit",
+      "qualifiers": {
+        "polarity": "affirmative_candidate",
+        "modality": "indicative",
+        "voice": "unknown",
+        "quotation": "unknown"
+      }
+    },
+    {
+      "name": "RUT 4:21 Oved object of holid",
+      "book": "RUT",
+      "language": "hebrew",
+      "relation_id": "rel:macula-hebrew-wlc:RUT 4:21#cl1:grammatical_object_of:o080040210081:o080040210061",
+      "frame_id": "frame:macula-hebrew-wlc:RUT 4:21#cl1:svov1",
+      "predicate": "grammatical_object_of",
+      "subject_token_id": "o080040210081",
+      "subject_lemma_id": "lemma:H5744G",
+      "object_token_id": "o080040210061",
+      "object_lemma_id": "lemma:H3205",
+      "quality": "rule_derived",
+      "qualifiers": {
+        "polarity": "affirmative_candidate",
+        "modality": "indicative",
+        "voice": "unknown",
+        "quotation": "unknown"
+      }
+    },
+    {
+      "name": "RUT 4:22 Oved subject of holid",
+      "book": "RUT",
+      "language": "hebrew",
+      "relation_id": "rel:macula-hebrew-wlc:RUT 4:22#cl0:grammatical_subject_of:o080040220012:o080040220021",
+      "frame_id": "frame:macula-hebrew-wlc:RUT 4:22#cl0:svov1",
+      "predicate": "grammatical_subject_of",
+      "subject_token_id": "o080040220012",
+      "subject_lemma_id": "lemma:H5744G",
+      "object_token_id": "o080040220021",
+      "object_lemma_id": "lemma:H3205",
+      "quality": "source_explicit",
+      "qualifiers": {
+        "polarity": "affirmative_candidate",
+        "modality": "indicative",
+        "voice": "unknown",
+        "quotation": "unknown"
+      }
+    },
+    {
+      "name": "RUT 4:22 Yishai object of holid",
+      "book": "RUT",
+      "language": "hebrew",
+      "relation_id": "rel:macula-hebrew-wlc:RUT 4:22#cl0:grammatical_object_of:o080040220041:o080040220021",
+      "frame_id": "frame:macula-hebrew-wlc:RUT 4:22#cl0:svov1",
+      "predicate": "grammatical_object_of",
+      "subject_token_id": "o080040220041",
+      "subject_lemma_id": "lemma:H3448",
+      "object_token_id": "o080040220021",
+      "object_lemma_id": "lemma:H3205",
+      "quality": "rule_derived",
+      "qualifiers": {
+        "polarity": "affirmative_candidate",
+        "modality": "indicative",
+        "voice": "unknown",
+        "quotation": "unknown"
+      }
+    },
+    {
+      "name": "RUT 4:22 Yishai subject of holid",
+      "book": "RUT",
+      "language": "hebrew",
+      "relation_id": "rel:macula-hebrew-wlc:RUT 4:22#cl1:grammatical_subject_of:o080040220052:o080040220061",
+      "frame_id": "frame:macula-hebrew-wlc:RUT 4:22#cl1:svov1",
+      "predicate": "grammatical_subject_of",
+      "subject_token_id": "o080040220052",
+      "subject_lemma_id": "lemma:H3448",
+      "object_token_id": "o080040220061",
+      "object_lemma_id": "lemma:H3205",
+      "quality": "source_explicit",
+      "qualifiers": {
+        "polarity": "affirmative_candidate",
+        "modality": "indicative",
+        "voice": "unknown",
+        "quotation": "unknown"
+      }
+    },
+    {
+      "name": "RUT 4:22 David object of holid",
+      "book": "RUT",
+      "language": "hebrew",
+      "relation_id": "rel:macula-hebrew-wlc:RUT 4:22#cl1:grammatical_object_of:o080040220081:o080040220061",
+      "frame_id": "frame:macula-hebrew-wlc:RUT 4:22#cl1:svov1",
+      "predicate": "grammatical_object_of",
+      "subject_token_id": "o080040220081",
+      "subject_lemma_id": "lemma:H1732",
+      "object_token_id": "o080040220061",
+      "object_lemma_id": "lemma:H3205",
+      "quality": "rule_derived",
+      "qualifiers": {
+        "polarity": "affirmative_candidate",
+        "modality": "indicative",
+        "voice": "unknown",
+        "quotation": "unknown"
+      }
+    },
+    {
+      "name": "PHP 1:1 Christou Iesou possessive with douloi",
+      "book": "PHP",
+      "language": "greek",
+      "relation_id": "rel:macula-greek-nestle1904:PHP 1:1#cl0:possessive_construction_with:n50001001005:n50001001004",
+      "frame_id": "frame:macula-greek-nestle1904:PHP 1:1#cl0:svov1",
+      "predicate": "possessive_construction_with",
+      "subject_token_id": "n50001001005",
+      "subject_lemma_id": "lemma:G5547",
+      "object_token_id": "n50001001004",
+      "object_lemma_id": "lemma:G1401",
+      "quality": "rule_derived",
+      "qualifiers": {
+        "polarity": "affirmative_candidate",
+        "modality": "unknown",
+        "voice": "unknown",
+        "quotation": "unknown"
+      }
+    },
+    {
+      "name": "PHP 1:3 theo complement object of eucharisto",
+      "book": "PHP",
+      "language": "greek",
+      "relation_id": "rel:macula-greek-nestle1904:PHP 1:3#cl0:grammatical_object_of:n50001003003:n50001003001",
+      "frame_id": "frame:macula-greek-nestle1904:PHP 1:3#cl0:svov1",
+      "predicate": "grammatical_object_of",
+      "subject_token_id": "n50001003003",
+      "subject_lemma_id": "lemma:G2316",
+      "object_token_id": "n50001003001",
+      "object_lemma_id": "lemma:G2168",
+      "quality": "rule_derived",
+      "qualifiers": {
+        "polarity": "affirmative_candidate",
+        "modality": "indicative",
+        "voice": "active",
+        "quotation": "unknown"
+      }
+    },
+    {
+      "name": "PHP 1:3 mou possessive with theo",
+      "book": "PHP",
+      "language": "greek",
+      "relation_id": "rel:macula-greek-nestle1904:PHP 1:3#cl0:possessive_construction_with:n50001003004:n50001003003",
+      "frame_id": "frame:macula-greek-nestle1904:PHP 1:3#cl0:svov1",
+      "predicate": "possessive_construction_with",
+      "subject_token_id": "n50001003004",
+      "subject_lemma_id": "lemma:G3165",
+      "object_token_id": "n50001003003",
+      "object_lemma_id": "lemma:G2316",
+      "quality": "rule_derived",
+      "qualifiers": {
+        "polarity": "affirmative_candidate",
+        "modality": "indicative",
+        "voice": "active",
+        "quotation": "unknown"
+      }
+    },
+    {
+      "name": "PHP 1:9 touto object of proseuchomai",
+      "book": "PHP",
+      "language": "greek",
+      "relation_id": "rel:macula-greek-nestle1904:PHP 1:9#cl0:grammatical_object_of:n50001009002:n50001009003",
+      "frame_id": "frame:macula-greek-nestle1904:PHP 1:9#cl0:svov1",
+      "predicate": "grammatical_object_of",
+      "subject_token_id": "n50001009002",
+      "subject_lemma_id": "lemma:G3778",
+      "object_token_id": "n50001009003",
+      "object_lemma_id": "lemma:G4336",
+      "quality": "source_explicit",
+      "qualifiers": {
+        "polarity": "affirmative_candidate",
+        "modality": "indicative",
+        "voice": "middlepassive",
+        "quotation": "unknown"
+      }
+    },
+    {
+      "name": "PHP 1:9 he agape subject of perisseue",
+      "book": "PHP",
+      "language": "greek",
+      "relation_id": "rel:macula-greek-nestle1904:PHP 1:9#cl1:grammatical_subject_of:n50001009006:n50001009012",
+      "frame_id": "frame:macula-greek-nestle1904:PHP 1:9#cl1:svov1",
+      "predicate": "grammatical_subject_of",
+      "subject_token_id": "n50001009006",
+      "subject_lemma_id": "lemma:G0026",
+      "object_token_id": "n50001009012",
+      "object_lemma_id": "lemma:G4052",
+      "quality": "rule_derived",
+      "qualifiers": {
+        "polarity": "affirmative_candidate",
+        "modality": "subjunctive",
+        "voice": "active",
+        "quotation": "unknown"
+      }
+    },
+    {
+      "name": "PHP 1:9 hymon possessive with agape",
+      "book": "PHP",
+      "language": "greek",
+      "relation_id": "rel:macula-greek-nestle1904:PHP 1:9#cl1:possessive_construction_with:n50001009007:n50001009006",
+      "frame_id": "frame:macula-greek-nestle1904:PHP 1:9#cl1:svov1",
+      "predicate": "possessive_construction_with",
+      "subject_token_id": "n50001009007",
+      "subject_lemma_id": "lemma:G4771",
+      "object_token_id": "n50001009006",
+      "object_lemma_id": "lemma:G0026",
+      "quality": "rule_derived",
+      "qualifiers": {
+        "polarity": "affirmative_candidate",
+        "modality": "subjunctive",
+        "voice": "active",
+        "quotation": "unknown"
+      }
+    },
+    {
+      "name": "PHP 2:5 touto object of phroneite",
+      "book": "PHP",
+      "language": "greek",
+      "relation_id": "rel:macula-greek-nestle1904:PHP 2:5#cl0:grammatical_object_of:n50002005001:n50002005002",
+      "frame_id": "frame:macula-greek-nestle1904:PHP 2:5#cl0:svov1",
+      "predicate": "grammatical_object_of",
+      "subject_token_id": "n50002005001",
+      "subject_lemma_id": "lemma:G3778",
+      "object_token_id": "n50002005002",
+      "object_lemma_id": "lemma:G5426",
+      "quality": "source_explicit",
+      "qualifiers": {
+        "polarity": "affirmative_candidate",
+        "modality": "imperative",
+        "voice": "active",
+        "quotation": "unknown"
+      }
+    },
+    {
+      "name": "PHP 2:11 glossa subject of exomologesetai",
+      "book": "PHP",
+      "language": "greek",
+      "relation_id": "rel:macula-greek-nestle1904:PHP 2:11#cl0:grammatical_subject_of:n50002011003:n50002011004",
+      "frame_id": "frame:macula-greek-nestle1904:PHP 2:11#cl0:svov1",
+      "predicate": "grammatical_subject_of",
+      "subject_token_id": "n50002011003",
+      "subject_lemma_id": "lemma:G1100",
+      "object_token_id": "n50002011004",
+      "object_lemma_id": "lemma:G1843",
+      "quality": "rule_derived",
+      "qualifiers": {
+        "polarity": "affirmative_candidate",
+        "modality": "subjunctive",
+        "voice": "middle",
+        "quotation": "unknown"
+      }
+    },
+    {
+      "name": "PHP 2:11 theou possessive with doxan",
+      "book": "PHP",
+      "language": "greek",
+      "relation_id": "rel:macula-greek-nestle1904:PHP 2:11#cl0:possessive_construction_with:n50002011011:n50002011010",
+      "frame_id": "frame:macula-greek-nestle1904:PHP 2:11#cl0:svov1",
+      "predicate": "possessive_construction_with",
+      "subject_token_id": "n50002011011",
+      "subject_lemma_id": "lemma:G2316",
+      "object_token_id": "n50002011010",
+      "object_lemma_id": "lemma:G1391",
+      "quality": "rule_derived",
+      "qualifiers": {
+        "polarity": "affirmative_candidate",
+        "modality": "subjunctive",
+        "voice": "middle",
+        "quotation": "unknown"
+      }
+    },
+    {
+      "name": "PHP 4:13 panta object of ischyō",
+      "book": "PHP",
+      "language": "greek",
+      "relation_id": "rel:macula-greek-nestle1904:PHP 4:13#cl0:grammatical_object_of:n50004013001:n50004013002",
+      "frame_id": "frame:macula-greek-nestle1904:PHP 4:13#cl0:svov1",
+      "predicate": "grammatical_object_of",
+      "subject_token_id": "n50004013001",
+      "subject_lemma_id": "lemma:G3956",
+      "object_token_id": "n50004013002",
+      "object_lemma_id": "lemma:G2480",
+      "quality": "source_explicit",
+      "qualifiers": {
+        "polarity": "affirmative_candidate",
+        "modality": "indicative",
+        "voice": "active",
+        "quotation": "unknown"
+      }
+    },
+    {
+      "name": "PHP 4:19 theos subject of plerōsei",
+      "book": "PHP",
+      "language": "greek",
+      "relation_id": "rel:macula-greek-nestle1904:PHP 4:19#cl0:grammatical_subject_of:n50004019003:n50004019005",
+      "frame_id": "frame:macula-greek-nestle1904:PHP 4:19#cl0:svov1",
+      "predicate": "grammatical_subject_of",
+      "subject_token_id": "n50004019003",
+      "subject_lemma_id": "lemma:G2316",
+      "object_token_id": "n50004019005",
+      "object_lemma_id": "lemma:G4137",
+      "quality": "rule_derived",
+      "qualifiers": {
+        "polarity": "affirmative_candidate",
+        "modality": "indicative",
+        "voice": "active",
+        "quotation": "unknown"
+      }
+    },
+    {
+      "name": "PHP 4:19 chreian object of plerōsei",
+      "book": "PHP",
+      "language": "greek",
+      "relation_id": "rel:macula-greek-nestle1904:PHP 4:19#cl0:grammatical_object_of:n50004019007:n50004019005",
+      "frame_id": "frame:macula-greek-nestle1904:PHP 4:19#cl0:svov1",
+      "predicate": "grammatical_object_of",
+      "subject_token_id": "n50004019007",
+      "subject_lemma_id": "lemma:G5532",
+      "object_token_id": "n50004019005",
+      "object_lemma_id": "lemma:G4137",
+      "quality": "rule_derived",
+      "qualifiers": {
+        "polarity": "affirmative_candidate",
+        "modality": "indicative",
+        "voice": "active",
+        "quotation": "unknown"
+      }
+    },
+    {
+      "name": "PHP 4:19 mou possessive with theos",
+      "book": "PHP",
+      "language": "greek",
+      "relation_id": "rel:macula-greek-nestle1904:PHP 4:19#cl0:possessive_construction_with:n50004019004:n50004019003",
+      "frame_id": "frame:macula-greek-nestle1904:PHP 4:19#cl0:svov1",
+      "predicate": "possessive_construction_with",
+      "subject_token_id": "n50004019004",
+      "subject_lemma_id": "lemma:G3165",
+      "object_token_id": "n50004019003",
+      "object_lemma_id": "lemma:G2316",
+      "quality": "rule_derived",
+      "qualifiers": {
+        "polarity": "affirmative_candidate",
+        "modality": "indicative",
+        "voice": "active",
+        "quotation": "unknown"
+      }
+    },
+    {
+      "name": "PHP 4:19 hymon possessive with chreian",
+      "book": "PHP",
+      "language": "greek",
+      "relation_id": "rel:macula-greek-nestle1904:PHP 4:19#cl0:possessive_construction_with:n50004019008:n50004019007",
+      "frame_id": "frame:macula-greek-nestle1904:PHP 4:19#cl0:svov1",
+      "predicate": "possessive_construction_with",
+      "subject_token_id": "n50004019008",
+      "subject_lemma_id": "lemma:G4771",
+      "object_token_id": "n50004019007",
+      "object_lemma_id": "lemma:G5532",
+      "quality": "rule_derived",
+      "qualifiers": {
+        "polarity": "affirmative_candidate",
+        "modality": "indicative",
+        "voice": "active",
+        "quotation": "unknown"
+      }
+    }
+  ],
+  "negative_and_ambiguous_cases": [
+    {
+      "name": "RUT 1:2 verbless naming clauses emit 0 false verbal relations",
+      "book": "RUT",
+      "clause_id": "RUT 1:2#cl0",
+      "expected_skip_reason": "non_verbal_clause:verbless",
+      "forbidden_predicates": [
+        "grammatical_subject_of",
+        "grammatical_object_of"
+      ]
+    },
+    {
+      "name": "RUT 1:3 pronoun subject hi is candidate with unresolved_pronoun_referent",
+      "book": "RUT",
+      "relation_id": "rel:macula-hebrew-wlc:RUT 1:3#cl1:grammatical_subject_of:o080010030061:o080010030052",
+      "expected_quality": "candidate",
+      "forbidden_quality": "source_explicit"
+    },
+    {
+      "name": "RUT 1:16 negative prohibition al-tifge'i preserves polarity=negative",
+      "book": "RUT",
+      "clause_id": "RUT 1:16#cl1",
+      "expected_polarity": "negative",
+      "expected_modality": "jussive"
+    },
+    {
+      "name": "RUT 2:2 non-verbal phrase other_role_clause skipped without false verbal relation",
+      "book": "RUT",
+      "clause_id": "RUT 2:2#cl6",
+      "expected_skip_reason": "non_verbal_clause:other_role_clause"
+    },
+    {
+      "name": "PHP 1:1 salutation verbless clause emits 0 false verbal relations",
+      "book": "PHP",
+      "clause_id": "PHP 1:1#cl0",
+      "expected_clause_kind": "verbless",
+      "forbidden_predicates": [
+        "grammatical_subject_of",
+        "grammatical_object_of"
+      ]
+    },
+    {
+      "name": "PHP 1:8 copular clause esti skipped from transitive SVO relations",
+      "book": "PHP",
+      "clause_id": "PHP 1:8#cl0",
+      "expected_skip_reason": "non_verbal_clause:copular",
+      "forbidden_predicates": [
+        "grammatical_object_of"
+      ]
+    },
+    {
+      "name": "PHP 1:21 copular to zen Christos emits 0 false transitive object relations",
+      "book": "PHP",
+      "clause_id": "PHP 1:21#cl0",
+      "expected_clause_kind": "copular",
+      "forbidden_predicates": [
+        "grammatical_object_of"
+      ]
+    },
+    {
+      "name": "PHP 1:19 demonstrative pronoun touto is candidate referent",
+      "book": "PHP",
+      "relation_id": "rel:macula-greek-nestle1904:PHP 1:19#cl1:grammatical_subject_of:n50001019004:n50001019006",
+      "expected_quality": "candidate"
+    },
+    {
+      "name": "PHP 4:23 subscript marked not_in_canonical_verse skipped cleanly",
+      "book": "PHP",
+      "clause_id": "PHP 4:23#cl1",
+      "expected_skip_reason": "not_in_canonical_verse"
+    }
+  ],
+  "gold_inspected_clauses": {
+    "hebrew_ruth": [
+      {
+        "frame_id": "frame:macula-hebrew-wlc:RUT 1:1#cl1:svov1",
+        "expected_high_quality_relation_ids": [
+          "rel:macula-hebrew-wlc:RUT 1:1#cl1:grammatical_subject_of:o080010010042:o080010010031"
+        ]
+      },
+      {
+        "frame_id": "frame:macula-hebrew-wlc:RUT 1:1#cl2:svov1",
+        "expected_high_quality_relation_ids": [
+          "rel:macula-hebrew-wlc:RUT 1:1#cl2:grammatical_subject_of:o080010010061:o080010010052"
+        ]
+      },
+      {
+        "frame_id": "frame:macula-hebrew-wlc:RUT 1:1#cl3:svov1",
+        "expected_high_quality_relation_ids": [
+          "rel:macula-hebrew-wlc:RUT 1:1#cl3:grammatical_subject_of:o080010010091:o080010010082",
+          "rel:macula-hebrew-wlc:RUT 1:1#cl3:grammatical_subject_of:o080010010172:o080010010082"
+        ]
+      },
+      {
+        "frame_id": "frame:macula-hebrew-wlc:RUT 1:3#cl0:svov1",
+        "expected_high_quality_relation_ids": [
+          "rel:macula-hebrew-wlc:RUT 1:3#cl0:grammatical_subject_of:o080010030021:o080010030012",
+          "rel:macula-hebrew-wlc:RUT 1:3#cl0:possessive_construction_with:o080010030041:o080010030031"
+        ]
+      },
+      {
+        "frame_id": "frame:macula-hebrew-wlc:RUT 1:4#cl0:svov1",
+        "expected_high_quality_relation_ids": [
+          "rel:macula-hebrew-wlc:RUT 1:4#cl0:grammatical_object_of:o080010040031:o080010040012"
+        ]
+      },
+      {
+        "frame_id": "frame:macula-hebrew-wlc:RUT 1:4#cl1:svov1",
+        "expected_high_quality_relation_ids": [
+          "rel:macula-hebrew-wlc:RUT 1:4#cl1:possessive_construction_with:o080010040062:o080010040051"
+        ]
+      },
+      {
+        "frame_id": "frame:macula-hebrew-wlc:RUT 1:5#cl0:svov1",
+        "expected_high_quality_relation_ids": []
+      },
+      {
+        "frame_id": "frame:macula-hebrew-wlc:RUT 1:5#cl1:svov1",
+        "expected_high_quality_relation_ids": [
+          "rel:macula-hebrew-wlc:RUT 1:5#cl1:grammatical_subject_of:o080010050072:o080010050062"
+        ]
+      },
+      {
+        "frame_id": "frame:macula-hebrew-wlc:RUT 1:6#cl0:svov1",
+        "expected_high_quality_relation_ids": [
+          "rel:macula-hebrew-wlc:RUT 1:6#cl0:grammatical_subject_of:o080010060032:o080010060012"
+        ]
+      },
+      {
+        "frame_id": "frame:macula-hebrew-wlc:RUT 1:6#cl1:svov1",
+        "expected_high_quality_relation_ids": []
+      },
+      {
+        "frame_id": "frame:macula-hebrew-wlc:RUT 1:6#cl2:svov1",
+        "expected_high_quality_relation_ids": [
+          "rel:macula-hebrew-wlc:RUT 1:6#cl2:possessive_construction_with:o080010060101:o080010060092"
+        ]
+      },
+      {
+        "frame_id": "frame:macula-hebrew-wlc:RUT 1:8#cl0:svov1",
+        "expected_high_quality_relation_ids": [
+          "rel:macula-hebrew-wlc:RUT 1:8#cl0:grammatical_subject_of:o080010080021:o080010080012",
+          "rel:macula-hebrew-wlc:RUT 1:8#cl0:grammatical_indirect_object_of:o080010080041:o080010080012"
+        ]
+      },
+      {
+        "frame_id": "frame:macula-hebrew-wlc:RUT 1:8#cl3:svov1",
+        "expected_high_quality_relation_ids": []
+      },
+      {
+        "frame_id": "frame:macula-hebrew-wlc:RUT 1:14#cl0:svov1",
+        "expected_high_quality_relation_ids": []
+      },
+      {
+        "frame_id": "frame:macula-hebrew-wlc:RUT 1:14#cl1:svov1",
+        "expected_high_quality_relation_ids": []
+      },
+      {
+        "frame_id": "frame:macula-hebrew-wlc:RUT 1:14#cl2:svov1",
+        "expected_high_quality_relation_ids": []
+      },
+      {
+        "frame_id": "frame:macula-hebrew-wlc:RUT 2:1#cl0:svov1",
+        "expected_high_quality_relation_ids": []
+      },
+      {
+        "frame_id": "frame:macula-hebrew-wlc:RUT 2:2#cl0:svov1",
+        "expected_high_quality_relation_ids": [
+          "rel:macula-hebrew-wlc:RUT 2:2#cl0:grammatical_subject_of:o080020020021:o080020020012",
+          "rel:macula-hebrew-wlc:RUT 2:2#cl0:grammatical_indirect_object_of:o080020020051:o080020020012"
+        ]
+      },
+      {
+        "frame_id": "frame:macula-hebrew-wlc:RUT 2:2#cl3:svov1",
+        "expected_high_quality_relation_ids": [
+          "rel:macula-hebrew-wlc:RUT 2:2#cl3:grammatical_object_of:o080020020141:o080020020131"
+        ]
+      },
+      {
+        "frame_id": "frame:macula-hebrew-wlc:RUT 4:9#cl0:svov1",
+        "expected_high_quality_relation_ids": [
+          "rel:macula-hebrew-wlc:RUT 4:9#cl0:grammatical_subject_of:o080040090021:o080040090012",
+          "rel:macula-hebrew-wlc:RUT 4:9#cl0:grammatical_indirect_object_of:o080040090032:o080040090012"
+        ]
+      },
+      {
+        "frame_id": "frame:macula-hebrew-wlc:RUT 4:13#cl0:svov1",
+        "expected_high_quality_relation_ids": [
+          "rel:macula-hebrew-wlc:RUT 4:13#cl0:grammatical_subject_of:o080040130021:o080040130012",
+          "rel:macula-hebrew-wlc:RUT 4:13#cl0:grammatical_object_of:o080040130041:o080040130012"
+        ]
+      },
+      {
+        "frame_id": "frame:macula-hebrew-wlc:RUT 4:13#cl3:svov1",
+        "expected_high_quality_relation_ids": [
+          "rel:macula-hebrew-wlc:RUT 4:13#cl3:grammatical_subject_of:o080040130111:o080040130102",
+          "rel:macula-hebrew-wlc:RUT 4:13#cl3:grammatical_object_of:o080040130131:o080040130102"
+        ]
+      },
+      {
+        "frame_id": "frame:macula-hebrew-wlc:RUT 4:13#cl4:svov1",
+        "expected_high_quality_relation_ids": [
+          "rel:macula-hebrew-wlc:RUT 4:13#cl4:grammatical_object_of:o080040130151:o080040130142"
+        ]
+      },
+      {
+        "frame_id": "frame:macula-hebrew-wlc:RUT 4:21#cl0:svov1",
+        "expected_high_quality_relation_ids": [
+          "rel:macula-hebrew-wlc:RUT 4:21#cl0:grammatical_subject_of:o080040210012:o080040210021",
+          "rel:macula-hebrew-wlc:RUT 4:21#cl0:grammatical_object_of:o080040210041:o080040210021"
+        ]
+      },
+      {
+        "frame_id": "frame:macula-hebrew-wlc:RUT 4:21#cl1:svov1",
+        "expected_high_quality_relation_ids": [
+          "rel:macula-hebrew-wlc:RUT 4:21#cl1:grammatical_subject_of:o080040210052:o080040210061",
+          "rel:macula-hebrew-wlc:RUT 4:21#cl1:grammatical_object_of:o080040210081:o080040210061"
+        ]
+      },
+      {
+        "frame_id": "frame:macula-hebrew-wlc:RUT 4:22#cl0:svov1",
+        "expected_high_quality_relation_ids": [
+          "rel:macula-hebrew-wlc:RUT 4:22#cl0:grammatical_subject_of:o080040220012:o080040220021",
+          "rel:macula-hebrew-wlc:RUT 4:22#cl0:grammatical_object_of:o080040220041:o080040220021"
+        ]
+      },
+      {
+        "frame_id": "frame:macula-hebrew-wlc:RUT 4:22#cl1:svov1",
+        "expected_high_quality_relation_ids": [
+          "rel:macula-hebrew-wlc:RUT 4:22#cl1:grammatical_subject_of:o080040220052:o080040220061",
+          "rel:macula-hebrew-wlc:RUT 4:22#cl1:grammatical_object_of:o080040220081:o080040220061"
+        ]
+      }
+    ],
+    "greek_philippians": [
+      {
+        "frame_id": "frame:macula-greek-nestle1904:PHP 1:1#cl0:svov1",
+        "expected_high_quality_relation_ids": [
+          "rel:macula-greek-nestle1904:PHP 1:1#cl0:possessive_construction_with:n50001001005:n50001001004"
+        ]
+      },
+      {
+        "frame_id": "frame:macula-greek-nestle1904:PHP 1:3#cl0:svov1",
+        "expected_high_quality_relation_ids": [
+          "rel:macula-greek-nestle1904:PHP 1:3#cl0:grammatical_object_of:n50001003003:n50001003001",
+          "rel:macula-greek-nestle1904:PHP 1:3#cl0:possessive_construction_with:n50001003004:n50001003003",
+          "rel:macula-greek-nestle1904:PHP 1:3#cl0:possessive_construction_with:n50001003009:n50001003008",
+          "rel:macula-greek-nestle1904:PHP 1:3#cl0:possessive_construction_with:n50001005004:n50001005003",
+          "rel:macula-greek-nestle1904:PHP 1:3#cl0:modifies:n50001005010:n50001005011"
+        ]
+      },
+      {
+        "frame_id": "frame:macula-greek-nestle1904:PHP 1:9#cl0:svov1",
+        "expected_high_quality_relation_ids": [
+          "rel:macula-greek-nestle1904:PHP 1:9#cl0:grammatical_object_of:n50001009002:n50001009003"
+        ]
+      },
+      {
+        "frame_id": "frame:macula-greek-nestle1904:PHP 1:9#cl1:svov1",
+        "expected_high_quality_relation_ids": [
+          "rel:macula-greek-nestle1904:PHP 1:9#cl1:grammatical_subject_of:n50001009006:n50001009012",
+          "rel:macula-greek-nestle1904:PHP 1:9#cl1:possessive_construction_with:n50001009007:n50001009006"
+        ]
+      },
+      {
+        "frame_id": "frame:macula-greek-nestle1904:PHP 1:12#cl0:svov1",
+        "expected_high_quality_relation_ids": []
+      },
+      {
+        "frame_id": "frame:macula-greek-nestle1904:PHP 1:13#cl0:svov1",
+        "expected_high_quality_relation_ids": [
+          "rel:macula-greek-nestle1904:PHP 1:13#cl0:possessive_construction_with:n50001013004:n50001013003"
+        ]
+      },
+      {
+        "frame_id": "frame:macula-greek-nestle1904:PHP 1:15#cl0:svov1",
+        "expected_high_quality_relation_ids": []
+      },
+      {
+        "frame_id": "frame:macula-greek-nestle1904:PHP 1:17#cl0:svov1",
+        "expected_high_quality_relation_ids": [
+          "rel:macula-greek-nestle1904:PHP 1:17#cl0:grammatical_subject_of:n50001017001:n50001017007",
+          "rel:macula-greek-nestle1904:PHP 1:17#cl0:grammatical_object_of:n50001017006:n50001017007"
+        ]
+      },
+      {
+        "frame_id": "frame:macula-greek-nestle1904:PHP 1:18#cl0:svov1",
+        "expected_high_quality_relation_ids": []
+      },
+      {
+        "frame_id": "frame:macula-greek-nestle1904:PHP 2:2#cl0:svov1",
+        "expected_high_quality_relation_ids": [
+          "rel:macula-greek-nestle1904:PHP 2:2#cl0:grammatical_object_of:n50002002004:n50002002001",
+          "rel:macula-greek-nestle1904:PHP 2:2#cl0:possessive_construction_with:n50002002002:n50002002004"
+        ]
+      },
+      {
+        "frame_id": "frame:macula-greek-nestle1904:PHP 2:5#cl0:svov1",
+        "expected_high_quality_relation_ids": [
+          "rel:macula-greek-nestle1904:PHP 2:5#cl0:grammatical_object_of:n50002005001:n50002005002"
+        ]
+      },
+      {
+        "frame_id": "frame:macula-greek-nestle1904:PHP 2:11#cl0:svov1",
+        "expected_high_quality_relation_ids": [
+          "rel:macula-greek-nestle1904:PHP 2:11#cl0:grammatical_subject_of:n50002011003:n50002011004",
+          "rel:macula-greek-nestle1904:PHP 2:11#cl0:possessive_construction_with:n50002011011:n50002011010"
+        ]
+      },
+      {
+        "frame_id": "frame:macula-greek-nestle1904:PHP 2:12#cl0:svov1",
+        "expected_high_quality_relation_ids": [
+          "rel:macula-greek-nestle1904:PHP 2:12#cl0:grammatical_object_of:n50002012028:n50002012029",
+          "rel:macula-greek-nestle1904:PHP 2:12#cl0:possessive_construction_with:n50002012003:n50002012002",
+          "rel:macula-greek-nestle1904:PHP 2:12#cl0:possessive_construction_with:n50002012027:n50002012028"
+        ]
+      },
+      {
+        "frame_id": "frame:macula-greek-nestle1904:PHP 2:13#cl0:svov1",
+        "expected_high_quality_relation_ids": []
+      },
+      {
+        "frame_id": "frame:macula-greek-nestle1904:PHP 2:14#cl0:svov1",
+        "expected_high_quality_relation_ids": [
+          "rel:macula-greek-nestle1904:PHP 2:14#cl0:grammatical_object_of:n50002014001:n50002014002"
+        ]
+      },
+      {
+        "frame_id": "frame:macula-greek-nestle1904:PHP 2:19#cl0:svov1",
+        "expected_high_quality_relation_ids": []
+      },
+      {
+        "frame_id": "frame:macula-greek-nestle1904:PHP 2:25#cl0:svov1",
+        "expected_high_quality_relation_ids": [
+          "rel:macula-greek-nestle1904:PHP 2:25#cl0:grammatical_second_object_of:n50002025001:n50002025003"
+        ]
+      },
+      {
+        "frame_id": "frame:macula-greek-nestle1904:PHP 3:1#cl0:svov1",
+        "expected_high_quality_relation_ids": [
+          "rel:macula-greek-nestle1904:PHP 3:1#cl0:possessive_construction_with:n50003001004:n50003001003"
+        ]
+      },
+      {
+        "frame_id": "frame:macula-greek-nestle1904:PHP 3:2#cl0:svov1",
+        "expected_high_quality_relation_ids": [
+          "rel:macula-greek-nestle1904:PHP 3:2#cl0:grammatical_object_of:n50003002003:n50003002001"
+        ]
+      },
+      {
+        "frame_id": "frame:macula-greek-nestle1904:PHP 3:8#cl0:svov1",
+        "expected_high_quality_relation_ids": [
+          "rel:macula-greek-nestle1904:PHP 3:8#cl0:possessive_construction_with:n50003008015:n50003008014",
+          "rel:macula-greek-nestle1904:PHP 3:8#cl0:possessive_construction_with:n50003008019:n50003008018"
+        ]
+      },
+      {
+        "frame_id": "frame:macula-greek-nestle1904:PHP 3:14#cl0:svov1",
+        "expected_high_quality_relation_ids": []
+      },
+      {
+        "frame_id": "frame:macula-greek-nestle1904:PHP 4:1#cl0:svov1",
+        "expected_high_quality_relation_ids": [
+          "rel:macula-greek-nestle1904:PHP 4:1#cl0:modifies:n50004001004:n50004001002",
+          "rel:macula-greek-nestle1904:PHP 4:1#cl0:modifies:n50004001006:n50004001002",
+          "rel:macula-greek-nestle1904:PHP 4:1#cl0:possessive_construction_with:n50004001003:n50004001002",
+          "rel:macula-greek-nestle1904:PHP 4:1#cl0:possessive_construction_with:n50004001010:n50004001007",
+          "rel:macula-greek-nestle1904:PHP 4:1#cl0:possessive_construction_with:n50004001010:n50004001009"
+        ]
+      },
+      {
+        "frame_id": "frame:macula-greek-nestle1904:PHP 4:4#cl0:svov1",
+        "expected_high_quality_relation_ids": []
+      },
+      {
+        "frame_id": "frame:macula-greek-nestle1904:PHP 4:13#cl0:svov1",
+        "expected_high_quality_relation_ids": [
+          "rel:macula-greek-nestle1904:PHP 4:13#cl0:grammatical_object_of:n50004013001:n50004013002"
+        ]
+      },
+      {
+        "frame_id": "frame:macula-greek-nestle1904:PHP 4:18#cl0:svov1",
+        "expected_high_quality_relation_ids": []
+      },
+      {
+        "frame_id": "frame:macula-greek-nestle1904:PHP 4:19#cl0:svov1",
+        "expected_high_quality_relation_ids": [
+          "rel:macula-greek-nestle1904:PHP 4:19#cl0:grammatical_subject_of:n50004019003:n50004019005",
+          "rel:macula-greek-nestle1904:PHP 4:19#cl0:grammatical_object_of:n50004019007:n50004019005",
+          "rel:macula-greek-nestle1904:PHP 4:19#cl0:possessive_construction_with:n50004019004:n50004019003",
+          "rel:macula-greek-nestle1904:PHP 4:19#cl0:possessive_construction_with:n50004019008:n50004019007",
+          "rel:macula-greek-nestle1904:PHP 4:19#cl0:possessive_construction_with:n50004019012:n50004019011"
+        ]
+      }
+    ]
+  }
+}
