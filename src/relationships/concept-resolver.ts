@@ -283,6 +283,59 @@ function lookupExactEntry(
   return null;
 }
 
+/** Looks up Strong's base homograph candidates checking both 4-digit padded and unpadded keys. */
+async function loadStrongsBaseCandidates(
+  cap: ResolverCapableLoader,
+  resolver: ResolverIndexData | null,
+  uncovered: UncoveredLemmasData | null,
+  paddedBase: string,
+  useSharded: boolean,
+  includeDirectLemmaFallback: boolean,
+  budget?: AssetBudgetContext,
+): Promise<ConceptCandidate[]> {
+  const unpaddedBase = `${paddedBase[0]}${Number(paddedBase.slice(1))}`;
+  const baseKeys = unpaddedBase !== paddedBase ? [paddedBase, unpaddedBase] : [paddedBase];
+  const baseCandidates: ConceptCandidate[] = [];
+
+  for (const baseKey of baseKeys) {
+    if (useSharded) {
+      const baseShard = await cap.getResolverBucket!(baseKey, budget);
+      for (const item of baseShard?.by_strongs_base?.[baseKey] || []) {
+        const c = candidateFromByKeyEntry(item, 'base_strongs_candidate');
+        if (c) baseCandidates.push(c);
+      }
+    } else {
+      for (const id of resolver?.by_strongs_base?.[baseKey] || []) {
+        const entry = resolver?.lemmas?.[id];
+        if (entry) baseCandidates.push(candidateFromResolverEntry(id, entry, 'base_strongs_candidate'));
+      }
+    }
+    if (baseCandidates.length > 0) break;
+  }
+
+  if (includeDirectLemmaFallback && baseCandidates.length === 0) {
+    for (const baseKey of baseKeys) {
+      const directKey = `lemma:${baseKey}`;
+      if (useSharded) {
+        const directShard = await cap.getResolverBucket!(directKey, budget);
+        const directBase = lookupExactEntry(
+          directKey,
+          directShard ? { lemmas: directShard.lemmas } : null,
+          directShard ? { entries: directShard.uncovered } : null,
+          'base_strongs_candidate',
+        );
+        if (directBase) baseCandidates.push(directBase);
+      } else {
+        const directBase = lookupExactEntry(directKey, resolver, uncovered, 'base_strongs_candidate');
+        if (directBase) baseCandidates.push(directBase);
+      }
+      if (baseCandidates.length > 0) break;
+    }
+  }
+
+  return baseCandidates;
+}
+
 export async function resolveResearchConcept(
   loader: AdjacencyLoader | ShardedAdjacencyLoader,
   rawQuery: string,
@@ -365,20 +418,7 @@ export async function resolveResearchConcept(
       const baseMatch = /^([HG]\d{1,4})$/i.exec(stripped);
       if (baseMatch) {
         const strongsBase = `${baseMatch[1][0].toUpperCase()}${baseMatch[1].slice(1).padStart(4, '0')}`;
-        const baseCandidates: ConceptCandidate[] = [];
-        if (useSharded) {
-          const baseShard = await cap.getResolverBucket!(strongsBase, options.budget);
-          for (const item of baseShard?.by_strongs_base?.[strongsBase] || []) {
-            const c = candidateFromByKeyEntry(item, 'base_strongs_candidate');
-            if (c) baseCandidates.push(c);
-          }
-        } else {
-          const baseIds = resolver?.by_strongs_base?.[strongsBase] || [];
-          for (const id of baseIds) {
-            const entry = resolver?.lemmas?.[id];
-            if (entry) baseCandidates.push(candidateFromResolverEntry(id, entry, 'base_strongs_candidate'));
-          }
-        }
+        const baseCandidates = await loadStrongsBaseCandidates(cap, resolver, uncovered, strongsBase, useSharded, false, options.budget);
         const deduped = filterAndDedupeCandidates(baseCandidates, options.language).slice(0, limit);
         if (deduped.length === 1) {
           return {
@@ -452,27 +492,7 @@ export async function resolveResearchConcept(
         };
       }
     }
-    const baseCandidates: ConceptCandidate[] = [];
-    if (useSharded) {
-      const baseShard = await cap.getResolverBucket!(strongs.base, options.budget);
-      for (const item of baseShard?.by_strongs_base?.[strongs.base] || []) {
-        const c = candidateFromByKeyEntry(item, 'base_strongs_candidate');
-        if (c) baseCandidates.push(c);
-      }
-      if (baseCandidates.length === 0) {
-        const directShard = await cap.getResolverBucket!(`lemma:${strongs.base}`, options.budget);
-        const directBase = lookupExactEntry(`lemma:${strongs.base}`, directShard ? { lemmas: directShard.lemmas } : null, directShard ? { entries: directShard.uncovered } : null, 'base_strongs_candidate');
-        if (directBase) baseCandidates.push(directBase);
-      }
-    } else {
-      const baseIds = resolver?.by_strongs_base?.[strongs.base] || [];
-      for (const id of baseIds) {
-        const entry = resolver?.lemmas?.[id];
-        if (entry) baseCandidates.push(candidateFromResolverEntry(id, entry, 'base_strongs_candidate'));
-      }
-      const directBase = lookupExactEntry(`lemma:${strongs.base}`, resolver, uncovered, 'base_strongs_candidate');
-      if (directBase) baseCandidates.push(directBase);
-    }
+    const baseCandidates = await loadStrongsBaseCandidates(cap, resolver, uncovered, strongs.base, useSharded, true, options.budget);
     const deduped = filterAndDedupeCandidates(baseCandidates, options.language).slice(0, limit);
     if (deduped.length === 1) {
       return {

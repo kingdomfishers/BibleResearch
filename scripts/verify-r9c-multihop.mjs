@@ -448,7 +448,7 @@ async function main() {
       const unkTgt = await discoverMultiHopPaths(realLoader, { source: 'lemma:H7307', target: fake, max_hops: 1 });
       assert.equal(unkTgt.status, 'unknown_entity', `Expected unknown_entity target for ${fake}, got ${unkTgt.status}`);
     }
-    for (const ambig of ['H1697', 'lemma:H1697', 'H1254', 'lemma:H1254']) {
+    for (const ambig of ['H1697', 'lemma:H1697', 'H1254', 'lemma:H1254', 'H0430', 'H430', 'lemma:H0430', 'H776', 'H0776']) {
       const rConcept = await resolveResearchConcept(realLoader, ambig);
       assert.equal(rConcept.status, 'needs_disambiguation', `${ambig} must require disambiguation`);
       assert.equal(rConcept.requires_explicit_selection, true);
