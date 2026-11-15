@@ -24,7 +24,8 @@ export function createWordInspector(
   preview: ContextPreview,
   navigate: (p: ActivePassage) => void,
   onAddNote?: (data: { word: WordRecord; position?: number }) => void,
-  onEvaluateRelationship?: (prefill: RelationshipNotePrefill) => void
+  onEvaluateRelationship?: (prefill: RelationshipNotePrefill) => void,
+  onDiscoverConnectionsForWord?: (term: string) => void
 ) {
   const element = el('aside', 'word-inspector'); element.setAttribute('aria-label', 'Word meaning and connections');
   let generation = 0, selection: Selection | null = null, overview: ReaderOverview | null = null;
@@ -55,13 +56,20 @@ export function createWordInspector(
     original.lang = word.strongs_nr.startsWith('H') ? 'he' : 'el';
     const gematria = word.gematria ?? calculateGematria(word.original_word);
     const metaRow = el('div', 'inspector-word-meta');
+    const discoverBtn = action('Discover Biblical Connections →', () => {
+      const seed = [word.transliteration, selected.english?.split('/')[0], word.strongs_nr].filter(Boolean).join(' ');
+      onDiscoverConnectionsForWord?.(seed);
+    }, 'study-button primary');
+    discoverBtn.style.marginTop = '8px';
+    discoverBtn.style.width = '100%';
     metaRow.append(
       el('span', 'meta-pill', `Gematria ${gematria}`),
       el('span', 'meta-pill', `Strong’s ${word.strongs_nr}`),
     );
     summary.append(original, el('p', 'inspector-transliteration', word.transliteration), metaRow,
       el('p', 'inspector-here', selected.english ? `Here: ${selected.english.replaceAll('/', ' ')}` : word.english_translations?.join(' · ') ?? ''),
-      el('p', 'inspector-definition', word.biblical_def || 'A sourced definition is not available for this word.'));
+      el('p', 'inspector-definition', word.biblical_def || 'A sourced definition is not available for this word.'),
+      discoverBtn);
     const grammar = selected.position ? overview?.grammar[selected.position] : null;
     if (grammar) summary.append(el('p', 'word-grammar', Object.entries(grammar)
       .filter(([, value]) => typeof value === 'string').map(([, value]) => value).join(' · ')));

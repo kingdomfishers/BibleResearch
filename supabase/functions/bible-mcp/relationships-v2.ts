@@ -532,4 +532,98 @@ export function registerRelationshipV2Tools(server: McpServer, read: DatabaseRea
     const isErr = payload.status === 'invalid_request' || payload.status === 'unknown_entity';
     return { content: jsonContent(payload), structuredContent: payload, ...(isErr ? { isError: false } : {}) };
   });
+
+  server.registerTool('discover_biblical_connections_v1', {
+    title: 'Discover Biblical Connections (R10)',
+    description:
+      'Discover deep biblical connections across books, Hebrew/Aramaic/Greek original languages, motifs, numbers, events, typology, and orthographic wordplay from natural language or concept lists. Separates explicit biblical identifications (Tier 1) and NT authorial comparisons (Tier 1-2) from lexical/LXX facts (Tier 3), CrossReferences.org links (Tier 4), shared imagery (Tier 5), candidate literary patterns, and non-etymological consonantal overlaps (Tier 7), with explicit subclusters, bridges, and negative controls.',
+    inputSchema: z.strictObject({
+      query: z.string().trim().min(1).max(400).describe('Natural language question, passage references, transliterations (e.g. ruach, adam, dam), or comma-separated concept list.'),
+      concepts: z.array(z.string().trim().min(1).max(64)).max(16).optional().describe('Optional explicit list of concepts to analyze alongside query.'),
+      filters: z.strictObject({
+        predicates: z.array(z.string().trim().min(1).max(64)).optional(),
+        max_tier: z.number().int().min(1).max(8).optional(),
+        include_orthographic: z.boolean().optional(),
+        include_candidate_patterns: z.boolean().optional(),
+        include_interpretive: z.boolean().optional(),
+        testaments: z.array(z.enum(['OT', 'NT'])).optional(),
+      }).optional(),
+      limit: z.number().int().min(1).max(25).optional(),
+      cursor: z.string().trim().max(128).nullable().optional(),
+      max_hops: z.number().int().min(1).max(3).optional(),
+      release_id: z.string().trim().min(1).max(32).optional(),
+    }),
+    outputSchema: z.record(z.string(), z.unknown()),
+    ...readOnlyMeta,
+  }, async (input) => {
+    const reply = await read({
+      name: 'discover_biblical_connections_v1',
+      args: compactDefined({
+        query: input.query,
+        concepts: input.concepts,
+        filters: input.filters,
+        limit: input.limit,
+        cursor: input.cursor ?? undefined,
+        max_hops: input.max_hops,
+        release_id: input.release_id,
+      }),
+      limit: 1,
+      offset: 0,
+    });
+    const payload = asObj(reply.rows[0]);
+    const isErr = payload.status === 'invalid_request';
+    return { content: jsonContent(payload), structuredContent: payload, ...(isErr ? { isError: false } : {}) };
+  });
+
+  server.registerTool('get_connection_evidence_v1', {
+    title: 'Inspect Biblical Connection Evidence (R10)',
+    description:
+      'Retrieve full original-language Greek/Hebrew tokens (Strong\'s, lemma, gloss, highlighted matches), public-domain English text, orthographic decomposition, number classification, and dataset provenance/license for any connection returned by discover_biblical_connections_v1.',
+    inputSchema: z.strictObject({
+      evidence_id: z.string().trim().min(1).max(160).describe('The evidence_id returned inside strongest_connections by discover_biblical_connections_v1.'),
+      release_id: z.string().trim().min(1).max(32).optional(),
+    }),
+    outputSchema: z.record(z.string(), z.unknown()),
+    ...readOnlyMeta,
+  }, async (input) => {
+    const reply = await read({
+      name: 'get_connection_evidence_v1',
+      args: compactDefined({
+        evidence_id: input.evidence_id,
+        release_id: input.release_id,
+      }),
+      limit: 1,
+      offset: 0,
+    });
+    const payload = asObj(reply.rows[0]);
+    return { content: jsonContent(payload), structuredContent: payload };
+  });
+
+  server.registerTool('expand_biblical_connection_v1', {
+    title: 'Expand Biblical Connection Node (R10)',
+    description:
+      'Expand a specific motif, Strong\'s lemma, passage, or concept node into its neighboring verified biblical connections, negative controls, and original-language links.',
+    inputSchema: z.strictObject({
+      node_id: z.string().trim().min(1).max(128).describe('Node identifier or label (e.g. motif:lampstand, lemma:H7307, passage:Zechariah 4:2).'),
+      limit: z.number().int().min(1).max(20).optional(),
+      cursor: z.string().trim().max(128).nullable().optional(),
+      release_id: z.string().trim().min(1).max(32).optional(),
+    }),
+    outputSchema: z.record(z.string(), z.unknown()),
+    ...readOnlyMeta,
+  }, async (input) => {
+    const reply = await read({
+      name: 'expand_biblical_connection_v1',
+      args: compactDefined({
+        node_id: input.node_id,
+        limit: input.limit,
+        cursor: input.cursor ?? undefined,
+        release_id: input.release_id,
+      }),
+      limit: 1,
+      offset: 0,
+    });
+    const payload = asObj(reply.rows[0]);
+    return { content: jsonContent(payload), structuredContent: payload };
+  });
 }

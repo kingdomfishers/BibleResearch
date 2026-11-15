@@ -10,6 +10,12 @@
 import { ShardedAdjacencyLoader } from '../src/relationships/adjacency-loader.ts';
 import { resolveResearchConcept } from '../src/relationships/concept-resolver.ts';
 import { discoverMultiHopPaths } from '../src/relationships/multihop-search.ts';
+import {
+  DEFAULT_R10_RELEASE,
+  discoverBiblicalConnections,
+  expandBiblicalConnection,
+  getConnectionEvidence,
+} from '../src/relationships/r10-discovery.ts';
 
 const FNV_OFFSET_64 = 0xcbf29ce484222325n;
 const FNV_PRIME_64 = 0x100000001b3n;
@@ -2315,6 +2321,9 @@ async function resolveR9cReleaseVersion(ctx, params = {}) {
   if (envDefault) return { error: null, releaseVersion: String(envDefault).trim() };
   const active = await ctx.loadJsonShard(ctx.env, '/v2/relationships/active.json.gz');
   const activeRel = active?.active_release ? String(active.active_release).trim() : null;
+  if (activeRel === 'r10-v1.0') {
+    return { error: null, releaseVersion: 'r9b-v1.0' };
+  }
   if (activeRel && !activeRel.startsWith('r8-')) {
     return { error: null, releaseVersion: activeRel };
   }
@@ -2464,6 +2473,68 @@ export async function handleDiscoverRelationshipPathsV1(ctx, params = {}) {
     limit: params.limit !== undefined ? finiteOr(params.limit, 20) : undefined,
     offset: params.offset !== undefined ? finiteOr(params.offset, 0) : undefined,
     cursor: params.cursor ? String(params.cursor) : null,
+  });
+}
+
+function createWorkerR10Reader(ctx) {
+  return {
+    async readJson(assetPath) {
+      if (typeof ctx.loadJsonShardWithBytes === 'function') {
+        return await ctx.loadJsonShardWithBytes(ctx.env, assetPath);
+      }
+      const data = await ctx.loadJsonShard(ctx.env, assetPath);
+      return data ? { data, bytes: 0 } : null;
+    },
+    async readBytes() {
+      return null;
+    },
+  };
+}
+
+export async function handleDiscoverBiblicalConnectionsV1(ctx, params = {}) {
+  const queryText = String(params.query || params.q || params.topic || '').trim();
+  const concepts = parseOptionalListParam(params.concepts);
+  if (!queryText && (!concepts || concepts.length === 0)) {
+    return {
+      schema_version: 1,
+      status: 'invalid_request',
+      error: 'Provide non-empty query or concepts for biblical connection discovery.',
+    };
+  }
+  const reader = createWorkerR10Reader(ctx);
+  const releaseId = params.release_id ? String(params.release_id).trim() : DEFAULT_R10_RELEASE;
+  return await discoverBiblicalConnections(reader, {
+    query: queryText || concepts.join(' '),
+    concepts,
+    filters: params.filters && typeof params.filters === 'object' ? params.filters : undefined,
+    limit: params.limit !== undefined ? finiteOr(params.limit, 10) : 10,
+    cursor: params.cursor ? String(params.cursor) : null,
+    max_hops: params.max_hops !== undefined ? finiteOr(params.max_hops, 3) : 3,
+    release_id: releaseId,
+  }, releaseId);
+}
+
+export async function handleGetConnectionEvidenceV1(ctx, params = {}) {
+  const evidenceId = String(params.evidence_id || params.connection_id || params.id || '').trim();
+  if (!evidenceId) {
+    return { schema_version: 1, status: 'invalid_request', error: 'evidence_id is required.' };
+  }
+  const reader = createWorkerR10Reader(ctx);
+  const releaseId = params.release_id ? String(params.release_id).trim() : DEFAULT_R10_RELEASE;
+  return await getConnectionEvidence(reader, evidenceId, releaseId);
+}
+
+export async function handleExpandBiblicalConnectionV1(ctx, params = {}) {
+  const nodeId = String(params.node_id || params.node || params.concept || '').trim();
+  if (!nodeId) {
+    return { schema_version: 1, status: 'invalid_request', error: 'node_id is required.' };
+  }
+  const reader = createWorkerR10Reader(ctx);
+  const releaseId = params.release_id ? String(params.release_id).trim() : DEFAULT_R10_RELEASE;
+  return await expandBiblicalConnection(reader, nodeId, {
+    limit: params.limit !== undefined ? finiteOr(params.limit, 8) : 8,
+    cursor: params.cursor ? String(params.cursor) : null,
+    release_id: releaseId,
   });
 }
 

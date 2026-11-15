@@ -9,6 +9,8 @@ import './ui/styles.css';
 import './ui/styles-mobile.css';
 import './ui/styles-workspace.css';
 import './ui/styles-notes.css';
+import './ui/styles-connections.css';
+import { DiscoverConnectionsPanel } from './ui/components/DiscoverConnections';
 import { BibleRPC } from './api/rpc';
 import type { ActivePassage } from './api/types';
 import { appState } from './ui/state';
@@ -34,6 +36,7 @@ const app = document.querySelector<HTMLDivElement>('#app')!;
 app.innerHTML = `<header class="study-header"><a class="study-brand" href="#1-1-1"><span class="study-brand-symbol" aria-hidden="true">א</span><span>BIBLE RESEARCH<small>WORDS. PLACES. CONNECTIONS.</small></span></a>
  <button class="study-button" id="all-notes-btn" type="button">All notes</button><button class="study-button" id="appearance" type="button">Appearance</button></header>
  <main class="study-main"><div class="study-intro"><div><p class="eyebrow">A CLOSER READING OF SCRIPTURE</p><h1>Ancient words. New connections.</h1></div><div id="study-search"></div></div>
+ <div id="discover-connections"></div>
  <div id="navigation"></div><div class="passage-stepper"><button class="text-action" id="previous-passage" type="button">← Previous verse</button><span>Read the English. Notice the original. Follow a connection.</span><button class="text-action" id="next-passage" type="button">Next verse →</button></div>
  <div id="notes-browser-slot"></div>
  <div class="study-workspace"><div><div id="reader"></div><div id="cross-references"></div><div id="notes"></div></div><div id="inspector"></div></div><div id="comparison"></div>
@@ -50,10 +53,20 @@ const noteEditor = createNoteEditor({
     notesState.setSelectedNoteId(note?.id ?? null);
   },
 });
+const discoverConnections = new DiscoverConnectionsPanel(
+  app.querySelector<HTMLElement>('#discover-connections')!,
+  {
+    onNavigatePassage: (book, chapter, verse) => {
+      navigate({ book, chapter, verse });
+      app.querySelector('#reader')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    },
+  }
+);
 const inspector = createWordInspector(
   preview, navigate,
   data => noteEditor.openNew({ passage: appState.getPassage(), selectedWord: data.word, selectedPosition: data.position }),
-  prefill => noteEditor.openNew({ passage: appState.getPassage(), prefill })
+  prefill => noteEditor.openNew({ passage: appState.getPassage(), prefill }),
+  term => discoverConnections.seedAndOpen(term)
 );
 const passageXrefs = createPassageCrossReferences({
   onNavigate: navigate,

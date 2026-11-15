@@ -31,6 +31,9 @@ const corpusRpcs = new Set([
   'query_relationships_v2',
   'resolve_research_concept_v1',
   'discover_relationship_paths_v1',
+  'discover_biblical_connections_v1',
+  'get_connection_evidence_v1',
+  'expand_biblical_connection_v1',
 ]);
 const allowedRpcs = new Set([
   'prompt_verse_words',
@@ -51,6 +54,9 @@ const allowedRpcs = new Set([
   'query_relationships_v2',
   'resolve_research_concept_v1',
   'discover_relationship_paths_v1',
+  'discover_biblical_connections_v1',
+  'get_connection_evidence_v1',
+  'expand_biblical_connection_v1',
   'get_word_formation_v1',
   'suggest_orthographic_candidates_v1',
   'get_verse_research_v2',
@@ -86,6 +92,9 @@ const singlePacketRpcs = new Set([
   'query_relationships_v2',
   'resolve_research_concept_v1',
   'discover_relationship_paths_v1',
+  'discover_biblical_connections_v1',
+  'get_connection_evidence_v1',
+  'expand_biblical_connection_v1',
   'get_word_formation_v1',
   'suggest_orthographic_candidates_v1',
   'get_notes_for_passage_v1',
@@ -148,11 +157,25 @@ export function createDatabaseReader(config: DatabaseConfig, fetcher: typeof fet
             };
           }
         }
-        if (name === 'query_relationships_v2' || name === 'resolve_research_concept_v1' || name === 'discover_relationship_paths_v1') {
+        if (
+          name === 'query_relationships_v2' ||
+          name === 'resolve_research_concept_v1' ||
+          name === 'discover_relationship_paths_v1' ||
+          name === 'discover_biblical_connections_v1' ||
+          name === 'get_connection_evidence_v1' ||
+          name === 'expand_biblical_connection_v1'
+        ) {
           throw new Error(`Cloudflare relationship graph gateway HTTP ${corpRes.status}`);
         }
       } catch (err) {
-        if (name === 'query_relationships_v2' || name === 'resolve_research_concept_v1' || name === 'discover_relationship_paths_v1') {
+        if (
+          name === 'query_relationships_v2' ||
+          name === 'resolve_research_concept_v1' ||
+          name === 'discover_relationship_paths_v1' ||
+          name === 'discover_biblical_connections_v1' ||
+          name === 'get_connection_evidence_v1' ||
+          name === 'expand_biblical_connection_v1'
+        ) {
           throw new Error(err instanceof Error ? err.message : 'Cloudflare relationship graph gateway unavailable.');
         }
         /* fall back to PostgREST RPC */

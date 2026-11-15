@@ -18,7 +18,10 @@
 
 import { withCorpusSecurity } from './corpus-security.mjs';
 import {
+  handleDiscoverBiblicalConnectionsV1,
   handleDiscoverRelationshipPathsV1,
+  handleExpandBiblicalConnectionV1,
+  handleGetConnectionEvidenceV1,
   handleLookupCrossReferencesV1,
   handleLookupLexicalRelationshipsV1,
   handleQueryRelationshipsV2,
@@ -56,7 +59,11 @@ function setLru(key, val) {
     key.includes('/sharded-edges/') ||
     key.includes('/fast-edges/') ||
     key.includes('/resolver/by-key/') ||
-    key.includes('/resolver/english-tokens/')
+    key.includes('/resolver/english-tokens/') ||
+    key.includes('/lemma-lookup/') ||
+    key.includes('/orthographic/') ||
+    key.includes('/xrefs/') ||
+    key.includes('/evidence-passages/')
   ) {
     return;
   }
@@ -2495,6 +2502,15 @@ const corpusWorker = {
         }
         if (op === 'discover_relationship_paths_v1') {
           return jsonResponse(await handleDiscoverRelationshipPathsV1({ env, loadJsonShard, loadJsonShardWithBytes }, params), 200, 'public, max-age=300');
+        }
+        if (op === 'discover_biblical_connections_v1') {
+          return jsonResponse(await handleDiscoverBiblicalConnectionsV1({ env, loadJsonShard, loadJsonShardWithBytes }, params), 200, 'public, max-age=300');
+        }
+        if (op === 'get_connection_evidence_v1') {
+          return jsonResponse(await handleGetConnectionEvidenceV1({ env, loadJsonShard, loadJsonShardWithBytes }, params), 200, 'public, max-age=300');
+        }
+        if (op === 'expand_biblical_connection_v1') {
+          return jsonResponse(await handleExpandBiblicalConnectionV1({ env, loadJsonShard, loadJsonShardWithBytes }, params), 200, 'public, max-age=300');
         }
 
         return jsonResponse({ error: 'unknown_rpc_operation', operation: op }, 404, 'no-store');

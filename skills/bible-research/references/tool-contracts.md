@@ -48,6 +48,11 @@ Word formation tools:
 - `inspect_word_formation(p_query, p_word_id?)`: Returns verified lexical formations, constituent components, documented roots, root relatives, and literary connections.
 - `suggest_word_connections(p_query, p_limit?, p_min_chars?)`: Returns exploratory consonantal candidate words. Never cite these as proven etymologies or shared roots.
 
+R10 Concept, Motif & Typology Discovery tools:
+- `discover_biblical_connections_v1(query, concepts?, filters?, limit?, cursor?, max_hops?)`: Multi-concept discovery across Hebrew/Greek lemmas, biblical passages, numbers, motifs, events, typology, and orthographic wordplay with ranked hierarchy (Tier 1 explicit identification/comparison -> Tier 7 orthographic resemblance), subclusters + bridges, and negative controls.
+- `get_connection_evidence_v1(evidence_id)`: Returns full original-language tokens, WEB public-domain text, orthographic decomposition, number classification, and source provenance for an R10 connection.
+- `expand_biblical_connection_v1(node_id, limit?, cursor?)`: Expands a node (motif, Strong's ID, passage, or concept) into its neighboring verified biblical connections and controls.
+
 Legacy database tools return `source`, `rows`, and `page`. Word IDs are real
 positive database IDs, not Strong's numeric suffixes. `get_verse_chronology_v1`
 uses p_book/p_chapter/p_verse and optional published model ID. Its run IDs are

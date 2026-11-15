@@ -1,0 +1,336 @@
+/* R10 Discover Connections Feature — Lightweight, Responsive, Mobile-First */
+
+.discover-panel {
+  margin: 0 0 22px;
+  padding: 20px 24px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.discover-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.discover-header h2 {
+  font: normal 24px/1.25 Georgia, serif;
+  margin: 0;
+}
+
+.discover-search-row {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.discover-input {
+  flex: 1 1 280px;
+  min-width: 0;
+  padding: 11px 14px;
+  font-size: 16px;
+  color: var(--text);
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.discover-autocomplete {
+  position: absolute;
+  top: 48px;
+  left: 0;
+  right: 0;
+  max-width: 560px;
+  z-index: 45;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 10px 28px #0003;
+  padding: 6px;
+}
+
+.discover-ac-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  font-size: 13px;
+}
+
+.discover-ac-item:hover {
+  background: var(--soft);
+}
+
+.discover-chips-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  margin-top: 10px;
+  align-items: center;
+}
+
+.discover-chip {
+  border: 1px solid var(--border);
+  background: var(--background);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 5px 11px;
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.discover-chip:hover,
+.discover-chip.is-active {
+  border-color: var(--gold);
+  background: var(--accent);
+}
+
+.discover-controls-bar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.discover-add-concept {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.discover-add-concept input {
+  width: 180px;
+  padding: 6px 10px;
+  font-size: 13px;
+  background: var(--background);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+}
+
+.discover-status-banner {
+  margin-top: 12px;
+  padding: 10px 14px;
+  border-radius: 6px;
+  background: var(--soft);
+  font-size: 13px;
+}
+
+.discover-resolved-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.discover-lemma-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--background);
+  font-size: 12px;
+}
+
+.discover-lemma-pill.is-unresolved {
+  border-style: dashed;
+  color: var(--muted);
+}
+
+.discover-section {
+  margin-top: 18px;
+}
+
+.discover-section h3 {
+  font: normal 18px Georgia, serif;
+  margin: 0 0 10px;
+  color: var(--gold);
+}
+
+.discover-clusters-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.discover-cluster-card {
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--background);
+}
+
+.discover-cluster-card h4 {
+  font: normal 16px/1.3 Georgia, serif;
+  margin: 0 0 6px;
+}
+
+.discover-bridge-banner {
+  margin-top: 10px;
+  padding: 10px 14px;
+  border-left: 3px solid var(--green);
+  background: var(--accent);
+  border-radius: 0 6px 6px 0;
+  font-size: 13px;
+}
+
+.discover-map-svg-wrap {
+  margin-top: 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--background);
+  padding: 10px;
+  overflow-x: auto;
+}
+
+.discover-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.discover-conn-card {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--background);
+}
+
+.discover-conn-card.tier-1,
+.discover-conn-card.tier-2 {
+  border-inline-start: 4px solid var(--green);
+}
+
+.discover-conn-card.tier-7,
+.discover-conn-card.tier-8 {
+  border-style: dashed;
+  border-inline-start: 4px solid var(--gold);
+}
+
+.discover-conn-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  align-items: center;
+  margin-bottom: 6px;
+  font-size: 11px;
+}
+
+.discover-badge {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: var(--soft);
+  color: var(--green);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 10px;
+}
+
+.discover-badge.is-caution {
+  color: var(--gold);
+}
+
+.discover-conn-title {
+  font: normal 17px/1.4 Georgia, serif;
+  margin: 0 0 6px;
+}
+
+.discover-conn-summary {
+  margin: 0 0 10px;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.discover-uncertainty {
+  margin: 6px 0 10px;
+  padding-left: 10px;
+  border-left: 2px solid var(--border);
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.discover-conn-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.discover-evidence-drawer {
+  margin-top: 12px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel);
+}
+
+.discover-token-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0;
+}
+
+.discover-token-chip {
+  padding: 4px 7px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--background);
+  font-size: 12px;
+  text-align: center;
+}
+
+.discover-token-chip.is-hit {
+  border-color: var(--green);
+  background: var(--accent);
+}
+
+.discover-control-item {
+  padding: 10px 12px;
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.discover-return-bar {
+  position: sticky;
+  top: 8px;
+  z-index: 30;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  border: 1px solid var(--gold);
+  border-radius: 6px;
+  background: var(--panel);
+  font-size: 13px;
+}
+
+@media (max-width: 720px) {
+  .discover-panel {
+    padding: 14px;
+  }
+  .discover-add-concept input {
+    width: 140px;
+  }
+}
