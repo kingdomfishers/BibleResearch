@@ -1002,6 +1002,17 @@ async function resolveLemmaV2(params, resolver, loadUncovered, ctx = null) {
   };
 }
 
+async function loadPassagesShardForRef(ctx, baseDir, manifest, book, chapter) {
+  if (!Number.isInteger(book) || !Number.isInteger(chapter)) return null;
+  if (manifest.sharding?.passages_by_chapter) {
+    return ctx.loadJsonShard(ctx.env, `${baseDir}/passages/b${book}-c${chapter}.json.gz`);
+  }
+  if (manifest.sharding?.passages_by_book) {
+    return ctx.loadJsonShard(ctx.env, `${baseDir}/passages/b${book}.json.gz`);
+  }
+  return ctx.loadJsonShard(ctx.env, `${baseDir}/passages-by-ref.json.gz`);
+}
+
 export async function handleQueryRelationshipsV2(ctx, params = {}) {
   const active = await ctx.loadJsonShard(ctx.env, '/v2/relationships/active.json.gz');
   if (!active || !active.active_release) {
@@ -1054,14 +1065,7 @@ export async function handleQueryRelationshipsV2(ctx, params = {}) {
       const verse = Number(params.verse);
       const ed = String(params.edition_key || params.edition || defaultEditionForBook(book));
       const ref = canonicalRefV2(book, chapter, verse);
-      let pShard = null;
-      if (Number.isInteger(book) && Number.isInteger(chapter)) {
-        pShard = manifest.sharding?.passages_by_chapter
-          ? await ctx.loadJsonShard(ctx.env, `${baseDir}/passages/b${book}-c${chapter}.json.gz`)
-          : (manifest.sharding?.passages_by_book
-              ? await ctx.loadJsonShard(ctx.env, `${baseDir}/passages/b${book}.json.gz`)
-              : await ctx.loadJsonShard(ctx.env, `${baseDir}/passages-by-ref.json.gz`));
-      }
+      const pShard = await loadPassagesShardForRef(ctx, baseDir, manifest, book, chapter);
       const covResult = classifyPassageCoverage(resolver, book, chapter, verse, ed, pShard);
       passageCoverage = {
         reference: ref,
@@ -1126,11 +1130,7 @@ export async function handleQueryRelationshipsV2(ctx, params = {}) {
     }
     const edition = String(params.edition_key || params.edition || defaultEditionForBook(book));
     const ref = canonicalRefV2(book, chapter, verse);
-    const passagesShard = manifest.sharding?.passages_by_chapter
-      ? await ctx.loadJsonShard(ctx.env, `${baseDir}/passages/b${book}-c${chapter}.json.gz`)
-      : (manifest.sharding?.passages_by_book
-          ? await ctx.loadJsonShard(ctx.env, `${baseDir}/passages/b${book}.json.gz`)
-          : await ctx.loadJsonShard(ctx.env, `${baseDir}/passages-by-ref.json.gz`));
+    const passagesShard = await loadPassagesShardForRef(ctx, baseDir, manifest, book, chapter);
 
     const covResult = classifyPassageCoverage(resolver, book, chapter, verse, edition, passagesShard);
 
@@ -1375,13 +1375,22 @@ export async function handleQueryRelationshipsV2(ctx, params = {}) {
   if (filterToPassage && hasPassageCoords) {
     const pRef = canonicalRefV2(filterBook, filterChapter, filterVerse);
     const pEd = editionFilter || defaultEditionForBook(filterBook);
-    const coveredSet = new Set(resolver.covered_passages_by_edition?.[pEd] || []);
-    const isCovered = Boolean(resolver.whole_bible_covered || coveredSet.has(pRef));
-    passageCoverageInfo = { reference: pRef, edition: pEd, covered: isCovered };
+    const pShard = await loadPassagesShardForRef(ctx, baseDir, manifest, filterBook, filterChapter);
+    const covResult = classifyPassageCoverage(resolver, filterBook, filterChapter, filterVerse, pEd, pShard);
+    const isCovered = covResult.classification === 'covered_with_evidence' || covResult.classification === 'covered_no_supported_relation';
+    passageCoverageInfo = {
+      reference: pRef,
+      edition: pEd,
+      covered: isCovered,
+      status: covResult.status,
+      classification: covResult.classification,
+      reason: covResult.reason,
+    };
     if (!isCovered) {
       return {
         ...baseEnvelope,
-        status: 'not_covered',
+        status: covResult.status,
+        coverage_classification: covResult.classification,
         focus: res.profile,
         homograph_siblings: res.homograph_siblings,
         resolved_occurrence: res.resolved_occurrence,
@@ -1390,7 +1399,7 @@ export async function handleQueryRelationshipsV2(ctx, params = {}) {
         summaries: [],
         relations: [],
         page: { limit, offset, returned: 0, total_available: 0, has_more: false, next_offset: null },
-        coverage_notice: `Passage ${pRef} (${pEd}) is outside the current verified ${releaseVersion} graph.`,
+        coverage_notice: covResult.reason,
       };
     }
   }
@@ -1412,10 +1421,17 @@ export async function handleQueryRelationshipsV2(ctx, params = {}) {
   }
 
   if (!lemmaEntry) {
-    const pCovered = hasPassageCoords && Boolean(
-      resolver.whole_bible_covered ||
-      (resolver.covered_passages_by_edition?.[editionFilter || defaultEditionForBook(filterBook)] || []).includes(canonicalRefV2(filterBook, filterChapter, filterVerse))
-    );
+    let pCovered = false;
+    if (hasPassageCoords) {
+      if (passageCoverageInfo) {
+        pCovered = passageCoverageInfo.covered;
+      } else {
+        const pEd = editionFilter || defaultEditionForBook(filterBook);
+        const pShard = await loadPassagesShardForRef(ctx, baseDir, manifest, filterBook, filterChapter);
+        const covResult = classifyPassageCoverage(resolver, filterBook, filterChapter, filterVerse, pEd, pShard);
+        pCovered = covResult.classification === 'covered_with_evidence' || covResult.classification === 'covered_no_supported_relation';
+      }
+    }
     return {
       ...baseEnvelope,
       status: pCovered ? 'no_evidence_in_covered_scope' : 'not_covered',

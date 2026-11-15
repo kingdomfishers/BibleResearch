@@ -343,6 +343,127 @@ async function verifyR8D() {
     assert.strictEqual(passageFiles.length, 1189, 'Should have exactly 1189 passage chapter shards on disk');
   });
 
+  // -------------------------------------------------------------
+  // SECTION 5: Lemma-Filtered Passage Coverage Consistency
+  // -------------------------------------------------------------
+  console.log('\n--- 5. Lemma-Filtered Passage Coverage Consistency ---');
+
+  await testAsync('5.1: Lemma query filtered to valid verse with relations (H7307 in GEN 1:2)', async () => {
+    const res = await handleQueryRelationshipsV2(ctx, {
+      op: 'lemma_relationships',
+      query: 'H7307',
+      book: 1,
+      chapter: 1,
+      verse: 2,
+      filter_to_passage: true,
+    });
+    assert.strictEqual(res.status, 'ok');
+    assert.strictEqual(res.passage_scope?.classification, 'covered_with_evidence');
+    assert.strictEqual(res.passage_scope?.covered, true);
+    assert.ok((res.relations?.length || 0) >= 1);
+  });
+
+  await testAsync('5.2: Lemma query filtered to valid verse with no supported relations (H7307 in GEN 10:16)', async () => {
+    const res = await handleQueryRelationshipsV2(ctx, {
+      op: 'lemma_relationships',
+      query: 'H7307',
+      book: 1,
+      chapter: 10,
+      verse: 16,
+      filter_to_passage: true,
+    });
+    assert.strictEqual(res.status, 'no_evidence_in_covered_scope');
+    assert.strictEqual(res.passage_scope?.classification, 'covered_no_supported_relation');
+    assert.strictEqual(res.passage_scope?.covered, true);
+    assert.strictEqual(res.relations?.length || 0, 0);
+  });
+
+  await testAsync('5.3: Lemma query filtered to verse with missing syntax evidence', async () => {
+    const mockCtx = {
+      ...ctx,
+      loadJsonShard: async (env, shardPath) => {
+        const data = await ctx.loadJsonShard(env, shardPath);
+        if (shardPath.endsWith('/passages/b1-c1.json.gz') && data?.passages) {
+          return { ...data, passages: { ...data.passages, 'macula-hebrew-wlc:GEN 1:2': undefined } };
+        }
+        return data;
+      },
+    };
+    const res = await handleQueryRelationshipsV2(mockCtx, {
+      op: 'lemma_relationships',
+      query: 'H7307',
+      book: 1,
+      chapter: 1,
+      verse: 2,
+      filter_to_passage: true,
+    });
+    assert.strictEqual(res.status, 'not_covered');
+    assert.strictEqual(res.coverage_classification, 'missing_syntax_evidence');
+    assert.strictEqual(res.passage_scope?.covered, false);
+    assert.strictEqual(res.relations?.length || 0, 0);
+  });
+
+  await testAsync('5.4: Lemma query filtered to nonexistent verse (GEN 99:99)', async () => {
+    const res = await handleQueryRelationshipsV2(ctx, {
+      op: 'lemma_relationships',
+      query: 'H7307',
+      book: 1,
+      chapter: 99,
+      verse: 99,
+      filter_to_passage: true,
+    });
+    assert.strictEqual(res.status, 'invalid_reference');
+    assert.strictEqual(res.coverage_classification, 'invalid_reference');
+    assert.strictEqual(res.passage_scope?.covered, false);
+    assert.strictEqual(res.relations?.length || 0, 0);
+  });
+
+  await testAsync('5.5: Lemma query filtered to omitted critical-edition verse (MAT 17:21)', async () => {
+    const res = await handleQueryRelationshipsV2(ctx, {
+      op: 'lemma_relationships',
+      query: 'G4151',
+      book: 40,
+      chapter: 17,
+      verse: 21,
+      filter_to_passage: true,
+    });
+    assert.strictEqual(res.status, 'not_in_canonical_verse');
+    assert.strictEqual(res.coverage_classification, 'not_in_canonical_verse');
+    assert.strictEqual(res.passage_scope?.covered, false);
+    assert.strictEqual(res.relations?.length || 0, 0);
+  });
+
+  await testAsync('5.6: Lemma query filtered to unsupported edition (vulgate)', async () => {
+    const res = await handleQueryRelationshipsV2(ctx, {
+      op: 'lemma_relationships',
+      query: 'H7307',
+      book: 1,
+      chapter: 1,
+      verse: 2,
+      edition: 'vulgate',
+      filter_to_passage: true,
+    });
+    assert.strictEqual(res.status, 'unsupported_edition');
+    assert.strictEqual(res.coverage_classification, 'unsupported_edition');
+    assert.strictEqual(res.passage_scope?.covered, false);
+    assert.strictEqual(res.relations?.length || 0, 0);
+  });
+
+  await testAsync('5.7: Lemma query filtered to invalid passage with non-existent book (book 99)', async () => {
+    const res = await handleQueryRelationshipsV2(ctx, {
+      op: 'lemma_relationships',
+      query: 'H7307',
+      book: 99,
+      chapter: 1,
+      verse: 1,
+      filter_to_passage: true,
+    });
+    assert.strictEqual(res.status, 'invalid_reference');
+    assert.strictEqual(res.coverage_classification, 'invalid_reference');
+    assert.strictEqual(res.passage_scope?.covered, false);
+    assert.strictEqual(res.relations?.length || 0, 0);
+  });
+
   console.log(`\n=== Verification Complete: ${passCount}/${totalCount} tests passed ===`);
 }
 
