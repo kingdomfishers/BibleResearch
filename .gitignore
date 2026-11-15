@@ -5,6 +5,9 @@ dist/
 !.env.example
 .artifacts/
 .artifacts-r9a/
+.artifacts-r4/
+.artifacts-r9b/
+scratch/
 __pycache__/
 *.pyc
 

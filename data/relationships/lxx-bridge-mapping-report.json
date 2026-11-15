@@ -1,0 +1,108 @@
+{
+  "schema_version": "2.0",
+  "release_version": "r4-lxx-v1.0",
+  "generated_at": "2026-11-15T12:50:53.318Z",
+  "source_dataset": "bcv-commons/hebrew-lexical-references",
+  "source_revision": "b3b135b24394aa4a8f4eaa59dbc59689735c2b46",
+  "source_sha256": "97c1c2a8df1f33069ecd88dab3a1b7ff179e900236ac41cd4d93f12ec5d40cff",
+  "license": "CC BY 4.0",
+  "total_source_pairs_examined": 3301,
+  "pairs_by_status": {
+    "exact": 2584,
+    "hebrew_homograph_ambiguous": 681,
+    "greek_homograph_ambiguous": 18,
+    "both_homographs_ambiguous": 12,
+    "crosswalk_resolved": 6,
+    "unmapped": 0
+  },
+  "distinct_counts": {
+    "hebrew_strongs": 1862,
+    "greek_strongs": 1571,
+    "hebrew_canonical_lemmas": 2482,
+    "greek_canonical_lemmas": 1608,
+    "materialized_edges": 3301
+  },
+  "frequency_distribution": {
+    "min_count": 3,
+    "max_count": 39240,
+    "top_10_pairs": [
+      {
+        "edge_id": "rel:lxx:trans:H2050->G2532",
+        "hebrew_strong": "H2050",
+        "greek_strong": "G2532",
+        "published_count": 39240,
+        "mapping_status": "exact"
+      },
+      {
+        "edge_id": "rel:lxx:trans:H1886->G3588",
+        "hebrew_strong": "H1886",
+        "greek_strong": "G3588",
+        "published_count": 18910,
+        "mapping_status": "exact"
+      },
+      {
+        "edge_id": "rel:lxx:trans:H0871->G1722",
+        "hebrew_strong": "H0871",
+        "greek_strong": "G1722",
+        "published_count": 8648,
+        "mapping_status": "exact"
+      },
+      {
+        "edge_id": "rel:lxx:trans:H2050->G0846",
+        "hebrew_strong": "H2050",
+        "greek_strong": "G0846",
+        "published_count": 8171,
+        "mapping_status": "exact"
+      },
+      {
+        "edge_id": "rel:lxx:trans:H3068->G2962",
+        "hebrew_strong": "H3068",
+        "greek_strong": "G2962",
+        "published_count": 5427,
+        "mapping_status": "hebrew_homograph_ambiguous"
+      },
+      {
+        "edge_id": "rel:lxx:trans:H3807->G3588",
+        "hebrew_strong": "H3807",
+        "greek_strong": "G3588",
+        "published_count": 4869,
+        "mapping_status": "exact"
+      },
+      {
+        "edge_id": "rel:lxx:trans:H3509->G4675",
+        "hebrew_strong": "H3509",
+        "greek_strong": "G4675",
+        "published_count": 4683,
+        "mapping_status": "exact"
+      },
+      {
+        "edge_id": "rel:lxx:trans:H3605->G3956",
+        "hebrew_strong": "H3605",
+        "greek_strong": "G3956",
+        "published_count": 4318,
+        "mapping_status": "exact"
+      },
+      {
+        "edge_id": "rel:lxx:trans:H1121->G5207",
+        "hebrew_strong": "H1121",
+        "greek_strong": "G5207",
+        "published_count": 3957,
+        "mapping_status": "hebrew_homograph_ambiguous"
+      },
+      {
+        "edge_id": "rel:lxx:trans:H3808->G3756",
+        "hebrew_strong": "H3808",
+        "greek_strong": "G3756",
+        "published_count": 3795,
+        "mapping_status": "exact"
+      }
+    ]
+  },
+  "uncertainty_principles": [
+    "Translation correspondence does not establish semantic synonymy.",
+    "Shared Strong's base codes never merge homographs; candidate sets are preserved.",
+    "Reported counts are third-party attestation frequencies from the Septuagint, distinct from verified occurrence alignments.",
+    "LXX translation usage must not be equated with NT Greek usage without textual grounding.",
+    "No lexical senses were assigned automatically."
+  ]
+}
