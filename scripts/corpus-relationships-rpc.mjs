@@ -455,6 +455,45 @@ const R3_PREDICATES = [
   'possessive_construction_with',
 ];
 
+export const PREDICATE_META = {
+  grammatical_subject_of: {
+    forward_label: 'Subject of',
+    inverse_predicate: 'has_grammatical_subject',
+    inverse_label: 'Has grammatical subject',
+    guardrail: 'Syntactic subject role in source clause; does not imply semantic agency.',
+  },
+  grammatical_object_of: {
+    forward_label: 'Direct object of',
+    inverse_predicate: 'has_grammatical_object',
+    inverse_label: 'Has direct object',
+    guardrail: 'Syntactic direct object in source clause.',
+  },
+  grammatical_indirect_object_of: {
+    forward_label: 'Indirect object of',
+    inverse_predicate: 'has_grammatical_indirect_object',
+    inverse_label: 'Has indirect object',
+    guardrail: 'Syntactic indirect object / dative recipient role in source clause.',
+  },
+  grammatical_second_object_of: {
+    forward_label: 'Second object of',
+    inverse_predicate: 'has_grammatical_second_object',
+    inverse_label: 'Has second object',
+    guardrail: 'Syntactic second object / object complement in source clause.',
+  },
+  modifies: {
+    forward_label: 'Modifies',
+    inverse_predicate: 'modified_by',
+    inverse_label: 'Modified by',
+    guardrail: 'Verified syntactic modifier attachment to phrase head.',
+  },
+  possessive_construction_with: {
+    forward_label: 'Genitive / construct connection',
+    inverse_predicate: 'possessive_head_of',
+    inverse_label: 'Head of genitive / construct',
+    guardrail: 'Syntactic Hebrew construct chain or Greek genitive modifier; does not imply legal ownership or theological equivalence.',
+  },
+};
+
 function parseBoolParam(val, fallback) {
   if (typeof val === 'boolean') return val;
   if (typeof val === 'string') {
@@ -479,6 +518,117 @@ function defaultEditionForBook(book) {
 
 function canonicalRefV2(book, chapter, verse) {
   return `${USFM_BY_BOOK_V2[Number(book)] || `B${book}`} ${Number(chapter)}:${Number(verse)}`;
+}
+
+export function parseTokenPosition(tokenId) {
+  if (!tokenId) return null;
+  const s = String(tokenId);
+  if ((s.startsWith('n') || s.startsWith('o')) && s.length >= 12) {
+    return Number(s.slice(9, 12)) || null;
+  }
+  return null;
+}
+
+export const BOOK_NUM_BY_USFM_V2 = Object.freeze(
+  Object.fromEntries(USFM_BY_BOOK_V2.map((u, i) => [u, i]).filter(([u]) => Boolean(u)))
+);
+
+export const RELATION_ID_REGEX = /^rel:([^:]+):([1-3]?[A-Za-z0-9]{2,3})\s+(\d+):(\d+)(?:#([^:]*))?:([a-z_]+):([^:]+):([^:]+)$/;
+
+export function parseRelationId(rawId) {
+  if (typeof rawId !== 'string') return { valid: false };
+  const m = RELATION_ID_REGEX.exec(rawId.trim());
+  if (!m) return { valid: false };
+  const edition = m[1];
+  const usfm = m[2].toUpperCase();
+  const book = BOOK_NUM_BY_USFM_V2[usfm] || null;
+  const chapter = Number(m[3]);
+  const verse = Number(m[4]);
+  const clause = m[5] || null;
+  const predicate = m[6];
+  const subjectToken = m[7];
+  const objectToken = m[8];
+  if (!book || !Number.isInteger(chapter) || !Number.isInteger(verse)) {
+    return { valid: false };
+  }
+  return {
+    valid: true,
+    edition,
+    usfm,
+    book,
+    chapter,
+    verse,
+    clause,
+    predicate,
+    subjectToken,
+    objectToken,
+  };
+}
+
+export function classifyPassageCoverage(resolver, book, chapter, verse, edition, passagesShard) {
+  if (!Number.isInteger(book) || book < 1 || book > 66) {
+    return {
+      status: 'invalid_reference',
+      classification: 'invalid_reference',
+      reason: `Book ${book} is outside the canonical 66-book Bible (1-66).`,
+    };
+  }
+  const usfm = USFM_BY_BOOK_V2[book] || `Book ${book}`;
+  const chList = resolver?.canonical_verses?.[`${book}:${chapter}`];
+  if (resolver?.canonical_verses && !chList) {
+    return {
+      status: 'invalid_reference',
+      classification: 'invalid_reference',
+      reason: `Chapter ${chapter} does not exist in canonical book ${usfm}.`,
+    };
+  }
+  if (chList && !chList.includes(verse)) {
+    return {
+      status: 'not_in_canonical_verse',
+      classification: 'not_in_canonical_verse',
+      reason: `Verse ${verse} is not a canonical verse in ${usfm} ${chapter} (may be omitted in critical editions or outside chapter bounds).`,
+    };
+  }
+  const isOT = book <= 39;
+  const isHebrewEd = edition === 'macula-hebrew-wlc';
+  const isGreekEd = edition === 'macula-greek-nestle1904' || edition === 'macula-greek-sblgnt';
+  if (!isHebrewEd && !isGreekEd) {
+    return {
+      status: 'unsupported_edition',
+      classification: 'unsupported_edition',
+      reason: `Edition '${edition}' is not supported in the active corpus release (supported: macula-hebrew-wlc, macula-greek-nestle1904, macula-greek-sblgnt).`,
+    };
+  }
+  if ((isOT && !isHebrewEd) || (!isOT && !isGreekEd)) {
+    return {
+      status: 'unsupported_edition',
+      classification: 'unsupported_edition',
+      reason: isOT
+        ? `Edition '${edition}' is a Greek New Testament edition, but book ${book} is Old Testament (requires macula-hebrew-wlc).`
+        : `Edition '${edition}' is a Hebrew Old Testament edition, but book ${book} is New Testament (requires macula-greek-nestle1904 or macula-greek-sblgnt).`,
+    };
+  }
+  const ref = canonicalRefV2(book, chapter, verse);
+  const entry = passagesShard?.passages?.[`${edition}:${ref}`];
+  if (!entry) {
+    return {
+      status: 'not_covered',
+      classification: 'missing_syntax_evidence',
+      reason: `Passage ${ref} (${edition}) has no parsed syntax clause trees in source release.`,
+    };
+  }
+  if ((entry.relations || []).length === 0) {
+    return {
+      status: 'no_evidence_in_covered_scope',
+      classification: 'covered_no_supported_relation',
+      reason: `Passage ${ref} (${edition}) parsed successfully, but 0 extracted relations matched the 6 R3 grammatical predicates.`,
+    };
+  }
+  return {
+    status: 'ok',
+    classification: 'covered_with_evidence',
+    reason: `Passage ${ref} (${edition}) has ${entry.relations.length} verified grammatical relations.`,
+  };
 }
 
 function parseStrongsInputV2(rawInput) {
@@ -540,7 +690,7 @@ function filterFrameRolesV2(frameObj, retainedRoleTokens, filteredOutCandidateTo
   };
 }
 
-async function resolveLemmaV2(params, resolver, loadUncovered) {
+async function resolveLemmaV2(params, resolver, loadUncovered, ctx = null) {
   const query = params.query != null ? String(params.query).trim() : (params.p_query != null ? String(params.p_query).trim() : '');
   const lemmaIdParam = params.lemma_id != null ? String(params.lemma_id).trim() : (params.p_lemma_key != null ? String(params.p_lemma_key).trim() : '');
   const extendedStrongsParam = params.extended_strongs != null ? String(params.extended_strongs).trim() : '';
@@ -581,6 +731,20 @@ async function resolveLemmaV2(params, resolver, loadUncovered) {
     return buildUncoveredProfile(lk, unc?.entries?.[lk], resolver.by_strongs_base);
   };
 
+  const canonicalizeCandidateIds = (ids) => {
+    const seen = new Set();
+    const result = [];
+    for (const id of ids || []) {
+      const prof = resolver.lemmas?.[id];
+      const targetId = prof?.canonical_lemma_id || id;
+      if (!seen.has(targetId)) {
+        seen.add(targetId);
+        result.push(targetId);
+      }
+    }
+    return result;
+  };
+
   // 1. Exact occurrence lookup by (book, chapter, verse, position)
   if (Number.isInteger(book) && Number.isInteger(chapter) && Number.isInteger(verse) && Number.isInteger(position) && position > 0) {
     const ref = canonicalRefV2(book, chapter, verse);
@@ -597,6 +761,42 @@ async function resolveLemmaV2(params, resolver, loadUncovered) {
         break;
       }
     }
+    if (!explicitExactId && ctx && ctx.loadJsonShard) {
+      const active = await ctx.loadJsonShard(ctx.env, '/v2/relationships/active.json.gz');
+      const baseDir = `/v2/relationships/${active.active_release}`;
+      const pShard = await ctx.loadJsonShard(ctx.env, `${baseDir}/passages/b${book}-c${chapter}.json.gz`);
+      for (const ed of edCandidates) {
+        const pEntry = pShard?.passages?.[`${ed}:${ref}`];
+        if (!pEntry) continue;
+        for (const rel of pEntry.relations || []) {
+          const sPos = parseTokenPosition(rel.subject?.token_id) ?? rel.subject?.word_position ?? rel.subject?.position;
+          const oPos = parseTokenPosition(rel.object?.token_id) ?? rel.object?.word_position ?? rel.object?.position;
+          if (sPos === position && rel.subject?.lemma_id) {
+            explicitExactId = rel.subject.lemma_id;
+            resolvedOccurrence = {
+              edition: ed,
+              reference: ref,
+              position,
+              word_id: rel.subject.word_id,
+              lemma_id: rel.subject.lemma_id,
+            };
+            break;
+          }
+          if (oPos === position && rel.object?.lemma_id) {
+            explicitExactId = rel.object.lemma_id;
+            resolvedOccurrence = {
+              edition: ed,
+              reference: ref,
+              position,
+              word_id: rel.object.word_id,
+              lemma_id: rel.object.lemma_id,
+            };
+            break;
+          }
+        }
+        if (explicitExactId) break;
+      }
+    }
   }
 
   // 2. Exact token_id lookup
@@ -604,7 +804,46 @@ async function resolveLemmaV2(params, resolver, loadUncovered) {
     const tid = tokenIdParam || query;
     const edPrefix = tid.startsWith('o') ? 'macula-hebrew-wlc' : (editionParam && editionParam !== 'all' ? editionParam : 'macula-greek-nestle1904');
     const lk = resolver.token_to_lemma?.[`${edPrefix}:${tid}`] || resolver.token_to_lemma?.[`macula-greek-sblgnt:${tid}`];
-    if (lk) explicitExactId = lk;
+    if (lk) {
+      explicitExactId = lk;
+    } else if (ctx && ctx.loadJsonShard) {
+      const b = Number(tid.slice(1, 3));
+      const c = Number(tid.slice(3, 6));
+      if (b >= 1 && b <= 66) {
+        const active = await ctx.loadJsonShard(ctx.env, '/v2/relationships/active.json.gz');
+        const baseDir = `/v2/relationships/${active.active_release}`;
+        const pShard = await ctx.loadJsonShard(ctx.env, `${baseDir}/passages/b${b}-c${c}.json.gz`);
+        if (pShard?.passages) {
+          for (const p of Object.values(pShard.passages)) {
+            for (const rel of p.relations || []) {
+              if (rel.subject?.token_id === tid) {
+                explicitExactId = rel.subject.lemma_id;
+                resolvedOccurrence = {
+                  edition: rel.edition,
+                  reference: rel.canonical_ref,
+                  position: parseTokenPosition(tid),
+                  word_id: rel.subject.word_id,
+                  lemma_id: rel.subject.lemma_id,
+                };
+                break;
+              }
+              if (rel.object?.token_id === tid) {
+                explicitExactId = rel.object.lemma_id;
+                resolvedOccurrence = {
+                  edition: rel.edition,
+                  reference: rel.canonical_ref,
+                  position: parseTokenPosition(tid),
+                  word_id: rel.object.word_id,
+                  lemma_id: rel.object.lemma_id,
+                };
+                break;
+              }
+            }
+            if (explicitExactId) break;
+          }
+        }
+      }
+    }
   }
 
   // 3. Explicit lemma_id / p_lemma_key
@@ -640,17 +879,28 @@ async function resolveLemmaV2(params, resolver, loadUncovered) {
   }
 
   // 6. Query string resolution (lemma:ID, extended Strong's, base Strong's, or surface form)
+  let queriedAlias = null;
   if (!explicitExactId && query) {
+    if (resolver.aliases?.[query]) {
+      queriedAlias = query;
+    }
     const direct = await findExactLemmaKey(query);
     if (direct) {
       explicitExactId = direct;
+      if (query !== direct && query !== direct.replace(/^lemma:/, '')) {
+        queriedAlias = query;
+      }
     } else {
       const parsed = parseStrongsInputV2(query);
       if (parsed.isStrongs) {
         if (parsed.suffix) {
           for (const c of parsed.exactLemmaCandidates) {
             const hit = await findExactLemmaKey(c);
-            if (hit) { explicitExactId = hit; break; }
+            if (hit) {
+              explicitExactId = hit;
+              if (c !== hit) queriedAlias = c;
+              break;
+            }
           }
         } else {
           const sibs = resolver.by_strongs_base?.[parsed.baseCompact] || [];
@@ -665,17 +915,44 @@ async function resolveLemmaV2(params, resolver, loadUncovered) {
           }
         }
       } else if (resolver.by_surface_form?.[query]) {
-        const hits = resolver.by_surface_form[query];
+        const hits = canonicalizeCandidateIds(resolver.by_surface_form[query]);
         if (hits.length === 1) explicitExactId = hits[0];
         else if (hits.length > 1) candidateIds = hits;
+      } else {
+        const cleanQ = query.toLowerCase().trim();
+        const stripQ = cleanQ.replace(/[^a-z0-9]/g, '');
+        const tlHits = resolver.by_transliteration?.[cleanQ] || resolver.by_transliteration?.[stripQ];
+        if (tlHits) {
+          const hits = canonicalizeCandidateIds(tlHits);
+          if (hits.length === 1) explicitExactId = hits[0];
+          else if (hits.length > 1) candidateIds = hits;
+        }
       }
     }
   }
 
+  if (!explicitExactId && candidateIds.length > 0) {
+    candidateIds = canonicalizeCandidateIds(candidateIds);
+    if (candidateIds.length === 1) {
+      explicitExactId = candidateIds[0];
+    }
+  }
+
   if (explicitExactId) {
-    const profile = await getProfile(explicitExactId);
+    let profile = await getProfile(explicitExactId);
     const targetLemmaId = profile?.canonical_lemma_id || explicitExactId;
-    const sibProfiles = await Promise.all((profile?.homograph_siblings || [explicitExactId]).map(getProfile));
+    if (profile?.canonical_lemma_id) {
+      const aliasName = queriedAlias || query || profile.extended_strongs || explicitExactId;
+      const canonicalProfile = await getProfile(profile.canonical_lemma_id);
+      if (canonicalProfile) {
+        profile = { ...canonicalProfile, queried_alias: aliasName };
+      } else {
+        profile = { ...profile, queried_alias: aliasName };
+      }
+    } else if (profile && queriedAlias) {
+      profile = { ...profile, queried_alias: queriedAlias };
+    }
+    const sibProfiles = await Promise.all((profile?.homograph_siblings || [targetLemmaId]).map(getProfile));
     return {
       status: 'ok',
       lemma_id: targetLemmaId,
@@ -699,11 +976,15 @@ async function resolveLemmaV2(params, resolver, loadUncovered) {
   }
 
   if (candidateIds.length === 1) {
-    const profile = await getProfile(candidateIds[0]);
+    let profile = await getProfile(candidateIds[0]);
+    if (profile && queriedAlias) {
+      profile = { ...profile, queried_alias: queriedAlias };
+    }
+    const targetLemmaId = profile?.canonical_lemma_id || candidateIds[0];
     const sibProfiles = await Promise.all((profile?.homograph_siblings || candidateIds).map(getProfile));
     return {
       status: 'ok',
-      lemma_id: candidateIds[0],
+      lemma_id: targetLemmaId,
       profile,
       homograph_siblings: sibProfiles.filter(Boolean),
       homograph_candidates: [],
@@ -743,9 +1024,11 @@ export async function handleQueryRelationshipsV2(ctx, params = {}) {
   }
 
   let rawOp = String(params.op || '').trim().toLowerCase();
-  if (!rawOp) {
-    if (params.summary_id || params.relation_id || params.relation_ids) rawOp = 'evidence';
-    else if (params.query || params.lemma_id || params.p_lemma_key || params.word_id || params.p_word_id || params.position != null || params.word_position != null) rawOp = 'lemma_relationships';
+  if (params.relation_id || (typeof params.query === 'string' && params.query.startsWith('rel:'))) {
+    rawOp = 'evidence';
+  } else if (!rawOp) {
+    if (params.summary_id || params.relation_ids) rawOp = 'evidence';
+    else if (params.query || params.lemma_id || params.p_lemma_key || params.token_id || params.word_id || params.p_word_id || params.position != null || params.word_position != null) rawOp = 'lemma_relationships';
     else if (params.book != null && params.chapter != null && params.verse != null) rawOp = 'passage_frames';
     else rawOp = 'coverage';
   }
@@ -766,14 +1049,27 @@ export async function handleQueryRelationshipsV2(ctx, params = {}) {
     ]);
     let passageCoverage = null;
     if (params.book != null && params.chapter != null && params.verse != null) {
-      const ref = canonicalRefV2(params.book, params.chapter, params.verse);
-      const ed = params.edition_key || params.edition || defaultEditionForBook(params.book);
-      const coveredSet = new Set(resolver?.covered_passages_by_edition?.[ed] || []);
-      const isCovered = Boolean(resolver?.whole_bible_covered || coveredSet.has(ref));
+      const book = Number(params.book);
+      const chapter = Number(params.chapter);
+      const verse = Number(params.verse);
+      const ed = String(params.edition_key || params.edition || defaultEditionForBook(book));
+      const ref = canonicalRefV2(book, chapter, verse);
+      let pShard = null;
+      if (Number.isInteger(book) && Number.isInteger(chapter)) {
+        pShard = manifest.sharding?.passages_by_chapter
+          ? await ctx.loadJsonShard(ctx.env, `${baseDir}/passages/b${book}-c${chapter}.json.gz`)
+          : (manifest.sharding?.passages_by_book
+              ? await ctx.loadJsonShard(ctx.env, `${baseDir}/passages/b${book}.json.gz`)
+              : await ctx.loadJsonShard(ctx.env, `${baseDir}/passages-by-ref.json.gz`));
+      }
+      const covResult = classifyPassageCoverage(resolver, book, chapter, verse, ed, pShard);
       passageCoverage = {
         reference: ref,
         edition: ed,
-        covered: isCovered,
+        covered: covResult.classification === 'covered_with_evidence' || covResult.classification === 'covered_no_supported_relation',
+        status: covResult.status,
+        classification: covResult.classification,
+        reason: covResult.reason,
       };
     }
     return {
@@ -799,7 +1095,7 @@ export async function handleQueryRelationshipsV2(ctx, params = {}) {
   const loadUncovered = () => ctx.loadJsonShard(ctx.env, `${baseDir}/uncovered-lemmas.json.gz`);
 
   if (rawOp === 'resolve') {
-    const res = await resolveLemmaV2(params, resolver, loadUncovered);
+    const res = await resolveLemmaV2(params, resolver, loadUncovered, ctx);
     return {
       ...baseEnvelope,
       status: res.status,
@@ -820,37 +1116,69 @@ export async function handleQueryRelationshipsV2(ctx, params = {}) {
     const book = Number(params.book);
     const chapter = Number(params.chapter);
     const verse = Number(params.verse);
-    if (!Number.isInteger(book) || book < 1 || book > 66 || !Number.isInteger(chapter) || chapter < 1 || !Number.isInteger(verse) || verse < 0) {
-      return { ...baseEnvelope, status: 'invalid_request', error_message: 'Valid book (1-66), chapter (>=1), and verse (>=0) are required.' };
+    if (!Number.isInteger(book) || !Number.isInteger(chapter) || !Number.isInteger(verse)) {
+      return {
+        ...baseEnvelope,
+        status: 'invalid_request',
+        coverage_classification: 'invalid_reference',
+        error_message: 'Valid book (1-66), chapter (>=1), and verse (>=0) are required.',
+      };
     }
     const edition = String(params.edition_key || params.edition || defaultEditionForBook(book));
     const ref = canonicalRefV2(book, chapter, verse);
-    if ((book <= 39) !== edition.startsWith('macula-hebrew-')) {
-      return {
-        ...baseEnvelope,
-        status: 'invalid_edition_for_testament',
-        source_mode: 'unavailable',
-        canonical_reference: { book, chapter, verse, ref },
-        edition,
-        supported_predicates: manifest.predicates || R3_PREDICATES,
-        counts: { frames: 0, relations: 0, candidate_relations: 0 },
-        frames: [],
-        relations: [],
-        note: 'Books 1-39 use macula-hebrew-wlc; books 40-66 use macula-greek-nestle1904 or macula-greek-sblgnt.',
-      };
-    }
-
-    const includeCandidates = parseBoolParam(params.include_candidates ?? params.include_uncertain, true);
     const passagesShard = manifest.sharding?.passages_by_chapter
       ? await ctx.loadJsonShard(ctx.env, `${baseDir}/passages/b${book}-c${chapter}.json.gz`)
       : (manifest.sharding?.passages_by_book
           ? await ctx.loadJsonShard(ctx.env, `${baseDir}/passages/b${book}.json.gz`)
           : await ctx.loadJsonShard(ctx.env, `${baseDir}/passages-by-ref.json.gz`));
+
+    const covResult = classifyPassageCoverage(resolver, book, chapter, verse, edition, passagesShard);
+
+    if (covResult.classification === 'invalid_reference') {
+      return {
+        ...baseEnvelope,
+        status: 'invalid_reference',
+        coverage_classification: 'invalid_reference',
+        canonical_reference: { book, chapter, verse, ref },
+        edition,
+        error_message: covResult.reason,
+        frames: [],
+        relations: [],
+      };
+    }
+    if (covResult.classification === 'not_in_canonical_verse') {
+      return {
+        ...baseEnvelope,
+        status: 'not_in_canonical_verse',
+        coverage_classification: 'not_in_canonical_verse',
+        canonical_reference: { book, chapter, verse, ref },
+        edition,
+        error_message: covResult.reason,
+        frames: [],
+        relations: [],
+      };
+    }
+    if (covResult.classification === 'unsupported_edition') {
+      return {
+        ...baseEnvelope,
+        status: 'unsupported_edition',
+        coverage_classification: 'unsupported_edition',
+        canonical_reference: { book, chapter, verse, ref },
+        edition,
+        supported_predicates: manifest.predicates || R3_PREDICATES,
+        counts: { frames: 0, relations: 0, candidate_relations: 0 },
+        frames: [],
+        relations: [],
+        note: covResult.reason,
+      };
+    }
+
     const entry = passagesShard?.passages?.[`${edition}:${ref}`];
-    if (!entry) {
+    if (covResult.classification === 'missing_syntax_evidence' || !entry) {
       return {
         ...baseEnvelope,
         status: 'not_covered',
+        coverage_classification: 'missing_syntax_evidence',
         source_mode: 'not_covered',
         canonical_reference: { book, chapter, verse, ref },
         edition,
@@ -858,29 +1186,30 @@ export async function handleQueryRelationshipsV2(ctx, params = {}) {
         counts: { frames: 0, relations: 0, candidate_relations: 0 },
         frames: [],
         relations: [],
-        note: manifest.whole_bible
-          ? `Passage ${ref} (${edition}) has 0 extracted grammatical relations under current rules.`
-          : `Passage ${ref} (${edition}) is outside the current verified ${releaseVersion} pilot graph (${manifest.counts.frames_emitted} frames, ${manifest.counts.occurrence_relations_emitted} relations).`,
+        note: covResult.reason,
       };
     }
 
     const allFrames = entry.frames || [];
     const allRelations = entry.relations || [];
-    if (allFrames.length > 0 && allFrames.every(f => f.source?.alignment_status === 'not_in_canonical_verse')) {
+
+    if (covResult.classification === 'covered_no_supported_relation' || allRelations.length === 0) {
       return {
         ...baseEnvelope,
-        status: 'not_in_canonical_verse',
-        source_mode: 'not_covered',
+        status: 'no_evidence_in_covered_scope',
+        coverage_classification: 'covered_no_supported_relation',
+        source_mode: 'covered_zero_relations',
         canonical_reference: { book, chapter, verse, ref },
         edition,
         supported_predicates: manifest.predicates || R3_PREDICATES,
         counts: { frames: allFrames.length, relations: 0, candidate_relations: 0 },
         frames: allFrames,
         relations: [],
-        note: 'Requested reference is marked not_in_canonical_verse and is excluded from verified passage extraction.',
+        note: covResult.reason,
       };
     }
 
+    const includeCandidates = parseBoolParam(params.include_candidates ?? params.include_uncertain, true);
     const relations = includeCandidates ? allRelations : allRelations.filter(r => r.quality !== 'candidate');
     let frames = allFrames;
     if (!includeCandidates) {
@@ -894,11 +1223,11 @@ export async function handleQueryRelationshipsV2(ctx, params = {}) {
         });
     }
 
-    const status = (frames.length === 0 && relations.length === 0) ? 'no_evidence_in_covered_scope' : 'ok';
     return {
       ...baseEnvelope,
-      status,
-      source_mode: 'cloudflare_r5_graph',
+      status: 'ok',
+      coverage_classification: 'covered_with_evidence',
+      source_mode: 'canonical_macula_syntax',
       canonical_reference: { book, chapter, verse, ref },
       edition,
       supported_predicates: manifest.predicates || R3_PREDICATES,
@@ -909,6 +1238,7 @@ export async function handleQueryRelationshipsV2(ctx, params = {}) {
       },
       frames,
       relations,
+      note: covResult.reason,
     };
   }
 
@@ -916,6 +1246,7 @@ export async function handleQueryRelationshipsV2(ctx, params = {}) {
     const includeUncertain = parseBoolParam(params.include_uncertain ?? params.include_candidates, false);
     const limit = clampLimit(params.limit, 25);
     const offset = Math.max(0, Number(params.offset) || 0);
+    const targetRelId = params.relation_id || (typeof params.query === 'string' && params.query.startsWith('rel:') ? params.query : null);
 
     let records = [];
     if (params.summary_id && manifest.sharding?.evidence_by_summary) {
@@ -923,12 +1254,25 @@ export async function handleQueryRelationshipsV2(ctx, params = {}) {
       const bucket = Number(BigInt('0x' + fnv1a64Hex(params.summary_id)) % bCount).toString(16).padStart(2, '0');
       const sumShard = await ctx.loadJsonShard(ctx.env, `${baseDir}/evidence/by-summary/shard-${bucket}.json.gz`);
       records = sumShard?.entries?.[String(params.summary_id)] || [];
-    } else if (params.relation_id && manifest.sharding?.evidence_by_book) {
-      const coords = parseRefCoords(String(params.relation_id).split(':')[2]?.split('#')[0]);
-      const bookNo = coords?.book;
-      if (bookNo) {
-        const bShard = await ctx.loadJsonShard(ctx.env, `${baseDir}/evidence/b${bookNo}.json.gz`);
-        const r = bShard?.by_relation_id?.[String(params.relation_id)];
+    } else if (targetRelId) {
+      const parsedRel = parseRelationId(targetRelId);
+      if (!parsedRel.valid) {
+        return {
+          ...baseEnvelope,
+          status: 'invalid_request',
+          error_message: `Malformed relation_id format: ${targetRelId}`,
+          relation_id: targetRelId,
+          relations: [],
+          page: { limit, offset, returned: 0, total_available: 0, has_more: false, next_offset: null },
+        };
+      }
+      if (manifest.sharding?.evidence_by_book) {
+        const bShard = await ctx.loadJsonShard(ctx.env, `${baseDir}/evidence/b${parsedRel.book}.json.gz`);
+        const r = bShard?.by_relation_id?.[targetRelId];
+        if (r) records = [r];
+      } else {
+        const evShard = await ctx.loadJsonShard(ctx.env, `${baseDir}/evidence-by-id.json.gz`);
+        const r = evShard?.by_relation_id?.[targetRelId];
         if (r) records = [r];
       }
     } else {
@@ -949,10 +1293,17 @@ export async function handleQueryRelationshipsV2(ctx, params = {}) {
       records = records.filter(r => r.quality !== 'candidate');
     }
     const pageSlice = records.slice(offset, offset + limit);
+    const isSingleRelLookup = Boolean(targetRelId);
+    const status = records.length > 0 ? 'ok' : (isSingleRelLookup ? 'not_found' : 'no_evidence_in_covered_scope');
     return {
       ...baseEnvelope,
-      status: records.length > 0 ? 'ok' : 'no_evidence_in_covered_scope',
+      status,
       summary_id: params.summary_id || null,
+      relation_id: targetRelId,
+      counts: {
+        total_records: records.length,
+        returned: pageSlice.length,
+      },
       relations: pageSlice,
       page: {
         limit,
@@ -988,7 +1339,7 @@ export async function handleQueryRelationshipsV2(ctx, params = {}) {
   const hasPosition = params.position != null || params.word_position != null;
   const filterToPassage = hasPassageCoords && parseBoolParam(params.filter_to_passage, !hasPosition);
 
-  const res = await resolveLemmaV2(params, resolver, loadUncovered);
+  const res = await resolveLemmaV2(params, resolver, loadUncovered, ctx);
   if (res.status === 'needs_disambiguation') {
     return {
       ...baseEnvelope,

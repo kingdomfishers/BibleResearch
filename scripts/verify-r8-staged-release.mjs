@@ -15,7 +15,7 @@
 import assert from 'node:assert';
 
 const WORKER_BASE = 'https://bibleresearch-corpus.kingdomfishers-custom.workers.dev';
-const RELEASE = 'r8-v1.0';
+const RELEASE = process.env.RELEASE || 'r8-v1.1';
 
 async function queryWorker(params) {
   const t0 = Date.now();

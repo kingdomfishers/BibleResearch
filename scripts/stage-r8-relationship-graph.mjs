@@ -29,10 +29,10 @@ const STATIC_CORPUS_DIR = path.join(REPO_ROOT, '.artifacts', 'static-corpus');
 const TABLES_DIR = path.join(STATIC_CORPUS_DIR, 'tables');
 const REL_V2_ROOT = path.join(STATIC_CORPUS_DIR, 'v2', 'relationships');
 
-const RELEASE_VERSION = 'r8-v1.0';
-const PREVIOUS_RELEASE = 'r3-v1.2';
+const RELEASE_VERSION = process.env.RELEASE_VERSION || 'r8-v1.1';
+const PREVIOUS_RELEASE = process.env.PREVIOUS_RELEASE || 'r8-v1.0';
 const RELEASE_DIR = path.join(REL_V2_ROOT, RELEASE_VERSION);
-const SOURCE_GIT_COMMIT = 'abecafd';
+const SOURCE_GIT_COMMIT = '41827f2';
 
 const FNV_OFFSET_64 = 0xcbf29ce484222325n;
 const FNV_PRIME_64 = 0x100000001b3n;
@@ -124,11 +124,8 @@ function parseRefCoords(ref) {
 function parseTokenPosition(tokenId) {
   if (!tokenId) return null;
   const s = String(tokenId);
-  if (s.startsWith('n') && s.length >= 11) {
-    return Number(s.slice(8, 11));
-  }
-  if (s.startsWith('o') && s.length >= 11) {
-    return Number(s.slice(8, 11));
+  if ((s.startsWith('n') || s.startsWith('o')) && s.length >= 12) {
+    return Number(s.slice(9, 12)) || null;
   }
   return null;
 }
@@ -136,8 +133,8 @@ function parseTokenPosition(tokenId) {
 function parseTokenMorph(tokenId) {
   if (!tokenId) return 1;
   const s = String(tokenId);
-  if (s.startsWith('o') && s.length >= 12) {
-    return Number(s.slice(11)) || 1;
+  if (s.startsWith('o') && s.length >= 13) {
+    return Number(s.slice(12)) || 1;
   }
   return 1;
 }
@@ -335,6 +332,7 @@ export async function stageR8RelationshipGraph(options = {}) {
           primary_word_id: wids[0] || null,
           word_ids: wids.slice(0, 12),
           homograph_siblings: baseStrongs ? (siblingsByBase.get(baseStrongs) || [lk]) : [lk],
+          subdivisions: subdivisions.length > 0 ? subdivisions : undefined,
           in_graph: Boolean(gEntry),
           editions: gEntry?.editions || [],
           outgoing_summary_count: gEntry?.outgoing_summaries?.length || 0,
@@ -362,12 +360,36 @@ export async function stageR8RelationshipGraph(options = {}) {
   for (const arr of Object.values(graphWordIdMap)) arr.sort();
 
   const bySurfaceForm = {};
+  const byTransliteration = {};
   for (const [lk, prof] of Object.entries(lemmaProfiles)) {
+    const targetId = prof.canonical_lemma_id || lk;
     for (const s of [prof.lemma_form, prof.lemma_stripped]) {
       if (!s) continue;
       if (!bySurfaceForm[s]) bySurfaceForm[s] = [];
-      if (!bySurfaceForm[s].includes(lk)) bySurfaceForm[s].push(lk);
+      if (!bySurfaceForm[s].includes(targetId)) bySurfaceForm[s].push(targetId);
     }
+    const rawTl = prof.transliteration;
+    if (rawTl) {
+      const cleanTl = rawTl.toLowerCase().trim();
+      const strippedTl = cleanTl.replace(/[^a-z0-9]/g, '');
+      for (const t of [cleanTl, strippedTl]) {
+        if (!t) continue;
+        if (!byTransliteration[t]) byTransliteration[t] = [];
+        if (!byTransliteration[t].includes(targetId)) byTransliteration[t].push(targetId);
+      }
+    }
+  }
+
+  console.log('Loading canonical verses index...');
+  const canonicalVerses = {};
+  const vBuf = fs.readFileSync(path.join(TABLES_DIR, 'verses_immutable', 'part-0000.jsonl.gz'));
+  const vText = zlib.gunzipSync(vBuf).toString('utf8');
+  for (const line of vText.trim().split('\n')) {
+    if (!line) continue;
+    const v = JSON.parse(line);
+    const key = `${v.book}:${v.chapter}`;
+    if (!canonicalVerses[key]) canonicalVerses[key] = [];
+    canonicalVerses[key].push(v.verse_nr);
   }
 
   const compactUncoveredLemmas = {};
@@ -409,6 +431,8 @@ export async function stageR8RelationshipGraph(options = {}) {
     by_strongs_extended: byExtendedStrongs,
     by_word_id: graphWordIdMap,
     by_surface_form: bySurfaceForm,
+    by_transliteration: byTransliteration,
+    canonical_verses: canonicalVerses,
     covered_books: coveredBooks,
     whole_bible_covered: true,
     predicate_meta: PREDICATE_META,
@@ -755,14 +779,22 @@ export async function stageR8RelationshipGraph(options = {}) {
       canonical_lemmas_indexed: Object.keys(lemmaProfiles).length + Object.keys(compactUncoveredLemmas).length,
       books_covered: 66,
       partitions_covered: 93,
+      passages_by_chapter_shards: passagesByChapter.size,
       passages_by_book_shards: 66,
       evidence_by_book_shards: 66,
-      evidence_by_summary_shards: 64,
-      by_lemma_shards: 64,
+      evidence_by_summary_shards: evidenceBySummaryBuckets.length,
+      by_lemma_shards: byLemmaBuckets.length,
+      total_shards: Object.keys(shards).length,
     },
     predicates: Object.keys(PREDICATE_META),
     predicate_meta: PREDICATE_META,
-    sharding: shardingLayout,
+    sharding: {
+      ...shardingLayout,
+      by_lemma_buckets: byLemmaBuckets.length,
+      evidence_by_summary_buckets: evidenceBySummaryBuckets.length,
+      passages_by_chapter: true,
+      passages_by_chapter_count: passagesByChapter.size,
+    },
     shards,
   };
 

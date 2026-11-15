@@ -83,7 +83,7 @@ async function run() {
   const { data: cov, elapsed: covElapsed } = await mcpCall('get_relationship_coverage_v2', {});
   timings.push(`coverage:${covElapsed}ms`);
   assert(cov.status === 'ok', 'Coverage status not ok');
-  assert(cov.release_version === 'r8-v1.0', `Expected release_version r8-v1.0, got ${cov.release_version}`);
+  assert(cov.release_version === 'r8-v1.1' || cov.release_version === 'r8-v1.0', `Expected release_version r8-v1.1/r8-v1.0, got ${cov.release_version}`);
   assert(cov.manifest_counts.frames_emitted === 150522, 'Frames emitted mismatch');
   assert(cov.manifest_counts.occurrence_relations_emitted === 124312, 'Occurrence relations mismatch');
   assert(cov.manifest_counts.relation_summaries_total === 61752, 'Summaries mismatch');
@@ -92,7 +92,7 @@ async function run() {
   assert(cov.supported_predicates.length === 6, 'Expected 6 supported predicates');
   assert(cov.coverage_report.whole_bible_covered === true, 'Expected whole_bible_covered === true');
   checksPassed++;
-  console.log(`  PASS: Active release is r8-v1.0 (150,522 frames, 124,312 relations, 61,752 summaries, 66 books, 93 partitions) in ${covElapsed}ms`);
+  console.log(`  PASS: Active release is ${cov.release_version} (150,522 frames, 124,312 relations, 61,752 summaries, 66 books, 93 partitions) in ${covElapsed}ms`);
 
   // 3. Test A: Genesis 1:1 בָּרָא (lemma:H1254a)
   console.log('3. Test A: Genesis 1:1 בָּרָא (lemma:H1254a)...');
@@ -226,6 +226,49 @@ async function run() {
   assert(h776Mcp.homograph_siblings.length === 2, 'Expected 2 homograph siblings for H776');
   checksPassed++;
   console.log(`  PASS: Base Strongs H776 correctly returns needs_disambiguation with 2 distinct homograph siblings in ${h776Elapsed}ms`);
+
+  // 8b. R8D: Transliteration & alias resolution via MCP
+  console.log('8b. Checking R8D transliteration ("ruach") and sense alias ("H7307G") via MCP...');
+  const { data: ruachTlMcp, elapsed: ruachTlElapsed } = await mcpCall('get_word_relationships_v2', { query: 'ruach' });
+  timings.push(`r8d_ruach_tl:${ruachTlElapsed}ms`);
+  assert(ruachTlMcp.status === 'needs_disambiguation', 'Expected needs_disambiguation for ruach');
+  assert(ruachTlMcp.homograph_candidates?.length === 3, 'Expected 3 phonetic homographs for ruach (H7306, H7307, H7308)');
+  checksPassed++;
+  console.log(`  PASS: Transliteration "ruach" resolved via normalized transliteration index in ${ruachTlElapsed}ms`);
+
+  const { data: h7307gMcp, elapsed: h7307gElapsed } = await mcpCall('get_word_relationships_v2', { query: 'H7307G' });
+  timings.push(`r8d_h7307g:${h7307gElapsed}ms`);
+  assert(h7307gMcp.status === 'ok', 'Expected ok for H7307G');
+  assert(h7307gMcp.focus?.lemma_id === 'lemma:H7307', 'Expected canonical lemma:H7307 for H7307G');
+  checksPassed++;
+  console.log(`  PASS: Extended Strong's H7307G resolved to canonical lemma:H7307 in ${h7307gElapsed}ms`);
+
+  // 8c. R8D: Individual relation evidence lookup via MCP
+  console.log('8c. Checking R8D individual relation lookup via MCP...');
+  const testRelId = 'rel:macula-hebrew-wlc:GEN 1:1#cl0:grammatical_subject_of:o010010010031:o010010010021';
+  const { data: relMcp, elapsed: relMcpElapsed } = await mcpCall('get_word_relationships_v2', { query: testRelId });
+  timings.push(`r8d_relation_id:${relMcpElapsed}ms`);
+  assert(relMcp.status === 'ok', 'Expected ok for relation lookup');
+  assert(relMcp.relations?.length === 1, 'Expected 1 relation');
+  assert(relMcp.relations[0].canonical_ref === 'GEN 1:1', 'Canonical ref mismatch');
+  checksPassed++;
+  console.log(`  PASS: Safe relation-ID lookup resolved exact evidence (GEN 1:1) in ${relMcpElapsed}ms`);
+
+  // 8d. R8D: Passage coverage classifications via MCP
+  console.log('8d. Checking R8D coverage classifications via MCP...');
+  const { data: gen1016Mcp, elapsed: gen1016Elapsed } = await mcpCall('get_passage_grammatical_frames_v2', { book: 1, chapter: 10, verse: 16 });
+  timings.push(`r8d_gen1016:${gen1016Elapsed}ms`);
+  assert(gen1016Mcp.status === 'no_evidence_in_covered_scope', 'Expected no_evidence_in_covered_scope for Gen 10:16');
+  assert(gen1016Mcp.coverage_classification === 'covered_no_supported_relation', 'Expected covered_no_supported_relation for Gen 10:16');
+  checksPassed++;
+  console.log(`  PASS: Gen 10:16 correctly classified as covered_no_supported_relation in ${gen1016Elapsed}ms`);
+
+  const { data: mat1721Mcp, elapsed: mat1721Elapsed } = await mcpCall('get_passage_grammatical_frames_v2', { book: 40, chapter: 17, verse: 21 });
+  timings.push(`r8d_mat1721:${mat1721Elapsed}ms`);
+  assert(mat1721Mcp.status === 'not_in_canonical_verse', 'Expected not_in_canonical_verse for Matt 17:21');
+  assert(mat1721Mcp.coverage_classification === 'not_in_canonical_verse', 'Expected not_in_canonical_verse classification');
+  checksPassed++;
+  console.log(`  PASS: Matt 17:21 correctly classified as not_in_canonical_verse in ${mat1721Elapsed}ms`);
 
   // 9. Website Worker parity check
   console.log('9. Checking website Worker gateway parity...');
