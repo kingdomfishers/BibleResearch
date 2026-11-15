@@ -35,14 +35,15 @@ export function computeBucketHex(hashAlgorithm: string, bucketsNum: number, key:
   const buckets = BigInt(bucketsNum);
   const hex64 = fnv1a64Hex(key);
   let idx: number;
-  if (hashAlgorithm === 'fnv1a64_mod256' || hashAlgorithm === 'fnv1a64_mod') {
+  if (/^fnv1a64_mod\d*$/.test(hashAlgorithm)) {
     idx = Number(BigInt('0x' + hex64) % buckets);
-  } else if (hashAlgorithm === 'fnv1a64_hi32_mod64' || hashAlgorithm === 'fnv1a64_hi32_mod') {
+  } else if (/^fnv1a64_hi32_mod\d*$/.test(hashAlgorithm)) {
     idx = Number(BigInt('0x' + hex64.slice(0, 8)) % buckets);
   } else {
     throw new Error(`Unsupported hash algorithm: ${hashAlgorithm}`);
   }
-  return idx.toString(16).padStart(2, '0');
+  const padLen = Math.max(2, Math.ceil(Math.log2(Math.max(2, bucketsNum)) / 4));
+  return idx.toString(16).padStart(padLen, '0');
 }
 
 export function inferEntityKind(entityKey: string): EntityKind {
@@ -150,6 +151,31 @@ export interface UncoveredLemmasData {
   entries?: Record<string, [string?, string?, string?, string?, string?]>;
 }
 
+export interface CompactMetaData {
+  lemmas?: Record<string, [string | null, number, string | null, string | null]>;
+  uncovered?: Record<string, [string | null, string | null]>;
+}
+
+export interface EnglishConceptsData {
+  rows?: Array<[string, string, string | null, string | null, string | null, string | null, string | null, string | null, number, number, number]>;
+}
+
+export interface ResolverByKeyEntry {
+  kind: 'lemma' | 'uncovered';
+  entry?: ResolverLemmaEntry;
+  key?: string;
+  tuple?: [string?, string?, string?, string?, string?];
+}
+
+export interface ResolverByKeyShardData {
+  lemmas?: Record<string, ResolverLemmaEntry>;
+  uncovered?: Record<string, [string?, string?, string?, string?, string?]>;
+  by_strongs_base?: Record<string, ResolverByKeyEntry[]>;
+  by_strongs_extended?: Record<string, ResolverByKeyEntry>;
+  by_surface_form?: Record<string, ResolverLemmaEntry[]>;
+  by_transliteration?: Record<string, ResolverLemmaEntry[]>;
+}
+
 const LANG_NORM: Record<string, string> = {
   hebrew: 'hbo', aramaic: 'arc', greek: 'grc', hbo: 'hbo', arc: 'arc', grc: 'grc',
 };
@@ -231,21 +257,46 @@ function entityFromEndpoint(ep: Record<string, unknown> | null | undefined, fall
   };
 }
 
-function enrichEntityRef(ref: GraphEntityRef, resolver: ResolverIndexData | null): GraphEntityRef {
+function enrichEntityRef(
+  ref: GraphEntityRef,
+  resolver: ResolverIndexData | null,
+  compactMeta?: CompactMetaData | null,
+): GraphEntityRef {
   if (ref.entity_kind !== 'lemma') return ref;
-  const prof = profileFromResolver(ref.entity_key, resolver, null);
-  if (!prof) return ref;
-  return {
-    ...ref,
-    label: ref.label || prof.label,
-    transliteration: ref.transliteration ?? prof.transliteration,
-    gloss: ref.gloss ?? prof.gloss,
-    language: ref.language ?? prof.language,
-    pos: ref.pos ?? prof.pos,
-    strongs_base: ref.strongs_base ?? prof.strongs_base,
-    homograph_tag: ref.homograph_tag ?? prof.homograph_tag,
-    degree_hint: prof.degree_hint,
-  };
+  const prof = resolver ? profileFromResolver(ref.entity_key, resolver, null) : null;
+  if (prof) {
+    return {
+      ...ref,
+      label: ref.label || prof.label,
+      transliteration: ref.transliteration ?? prof.transliteration,
+      gloss: ref.gloss ?? prof.gloss,
+      language: ref.language ?? prof.language,
+      pos: ref.pos ?? prof.pos,
+      strongs_base: ref.strongs_base ?? prof.strongs_base,
+      homograph_tag: ref.homograph_tag ?? prof.homograph_tag,
+      degree_hint: prof.degree_hint,
+    };
+  }
+  const cMeta = compactMeta?.lemmas?.[ref.entity_key];
+  if (cMeta) {
+    return {
+      ...ref,
+      pos: ref.pos ?? cMeta[0] ?? null,
+      degree_hint: Number(cMeta[1] || 0),
+      gloss: ref.gloss ?? cMeta[2] ?? null,
+      homograph_tag: ref.homograph_tag ?? cMeta[3] ?? null,
+    };
+  }
+  const uMeta = compactMeta?.uncovered?.[ref.entity_key];
+  if (uMeta) {
+    return {
+      ...ref,
+      pos: ref.pos ?? uMeta[0] ?? null,
+      gloss: ref.gloss ?? uMeta[1] ?? null,
+      degree_hint: 0,
+    };
+  }
+  return ref;
 }
 
 // === @section:logic:layer-grammatical-lexical ===
@@ -261,6 +312,7 @@ interface LayerContext {
   entityKey: string;
   selfRef: GraphEntityRef;
   resolver: ResolverIndexData | null;
+  compactMeta: CompactMetaData | null;
   options: NeighborLoadOptions;
   predicateSet: Set<string> | null;
   langSet: Set<string> | null;
@@ -292,7 +344,7 @@ async function loadGrammaticalEdges(ctx: LayerContext, gMeta: Record<string, unk
     if (ctx.editionSet && !ctx.editionSet.has(ed)) continue;
 
     const isOutgoing = s.direction === 'outgoing';
-    const peerRef = enrichEntityRef(entityFromEndpoint((s.related_lemma as Record<string, unknown>) || {}, String(s.related_lemma_id || '')), ctx.resolver);
+    const peerRef = enrichEntityRef(entityFromEndpoint((s.related_lemma as Record<string, unknown>) || {}, String(s.related_lemma_id || '')), ctx.resolver, ctx.compactMeta);
     if (ctx.langSet && peerRef.language && !ctx.langSet.has(peerRef.language)) continue;
 
     const sStats = (s.stats as Record<string, number>) || {};
@@ -370,8 +422,8 @@ async function loadLexicalEdges(ctx: LayerContext, lMeta: Record<string, unknown
     const predicate = String(edge.raw_relation_code || edge.category || 'lexical_relation');
     if (ctx.predicateSet && !ctx.predicateSet.has(predicate) && !ctx.predicateSet.has(String(edge.category || ''))) continue;
 
-    const subjRef = enrichEntityRef(entityFromEndpoint(edge.subject as Record<string, unknown>, ctx.entityKey), ctx.resolver);
-    const tgtRef = enrichEntityRef(entityFromEndpoint(edge.target as Record<string, unknown>, String(link.peer_key || '')), ctx.resolver);
+    const subjRef = enrichEntityRef(entityFromEndpoint(edge.subject as Record<string, unknown>, ctx.entityKey), ctx.resolver, ctx.compactMeta);
+    const tgtRef = enrichEntityRef(entityFromEndpoint(edge.target as Record<string, unknown>, String(link.peer_key || '')), ctx.resolver, ctx.compactMeta);
     const toRef = role === 'incoming' ? subjRef : role === 'outgoing' ? tgtRef : (subjRef.entity_key === ctx.entityKey ? tgtRef : subjRef);
     if (ctx.langSet && toRef.language && !ctx.langSet.has(toRef.language)) continue;
 
@@ -428,6 +480,20 @@ async function loadContextualEdges(ctx: LayerContext, cMeta: Record<string, unkn
   truncated: boolean;
   incompleteReason: string | null;
 }> {
+  const targetSet = new Set<string>(ctx.options.target_hints || []);
+  if (ctx.options.target_hint) targetSet.add(ctx.options.target_hint);
+  const selfIsGreek = ctx.entityKey.startsWith('lemma:G');
+  const selfIsHebrew = ctx.entityKey.startsWith('lemma:H');
+  const remainingTargets = new Set<string>();
+  for (const t of targetSet) {
+    if (selfIsGreek && t.startsWith('lemma:H')) continue;
+    if (selfIsHebrew && t.startsWith('lemma:G')) continue;
+    remainingTargets.add(t);
+  }
+  if (targetSet.size > 0 && remainingTargets.size === 0) {
+    return { edges: [], totalNeighbors: 0, pagesLoaded: 0, pagesSkipped: 0, truncated: false, incompleteReason: null };
+  }
+
   const hex = computeBucketHex(String(cMeta.hash_algorithm || 'fnv1a64_hi32_mod64'), Number(cMeta.buckets || 64), ctx.entityKey);
   const ctxShard = (await ctx.readShard(`${cMeta.base_dir}/sharded-contextual/shard-${hex}.json.gz`)) as Record<string, Record<string, unknown>> | null;
   const cEntry = ctxShard?.[ctx.entityKey];
@@ -441,16 +507,6 @@ async function loadContextualEdges(ctx: LayerContext, cMeta: Record<string, unkn
   const minClause = Math.max(ctx.options.min_same_clause ?? (scope === 'same_clause' ? 1 : 0), 0);
   const minColloc = Math.max(ctx.options.min_collocation ?? (scope === 'collocation' ? 1 : 0), 0);
   const maxPages = ctx.options.max_contextual_pages ?? 2;
-  const targetSet = new Set<string>(ctx.options.target_hints || []);
-  if (ctx.options.target_hint) targetSet.add(ctx.options.target_hint);
-  const selfIsGreek = ctx.entityKey.startsWith('lemma:G');
-  const selfIsHebrew = ctx.entityKey.startsWith('lemma:H');
-  const remainingTargets = new Set<string>();
-  for (const t of targetSet) {
-    if (selfIsGreek && t.startsWith('lemma:H')) continue;
-    if (selfIsHebrew && t.startsWith('lemma:G')) continue;
-    remainingTargets.add(t);
-  }
   for (const it of topItems) {
     remainingTargets.delete(String(it.target_lemma_key || ''));
   }
@@ -522,7 +578,7 @@ async function loadContextualEdges(ctx: LayerContext, cMeta: Record<string, unkn
       transliteration: item.target_transliteration,
       language: item.target_language,
       base_strongs: item.target_base_strongs,
-    }, targetKey), ctx.resolver);
+    }, targetKey), ctx.resolver, ctx.compactMeta);
     if (ctx.langSet && peerRef.language && !ctx.langSet.has(peerRef.language)) continue;
     if (minQuality === 'high_precision_only' && sameClause === 0) continue;
 
@@ -588,7 +644,7 @@ async function loadLxxEdges(ctx: LayerContext, lxxMeta: Record<string, unknown>)
     for (const pCand of peerList) {
       const peerKey = String(pCand.lemma_key || '');
       if (!peerKey) continue;
-      const peerRef = enrichEntityRef(entityFromEndpoint({ ...pCand, canonical_key: peerKey, entity_kind: 'lemma', language: isGreek ? 'hbo' : 'grc' }, peerKey), ctx.resolver);
+      const peerRef = enrichEntityRef(entityFromEndpoint({ ...pCand, canonical_key: peerKey, entity_kind: 'lemma', language: isGreek ? 'hbo' : 'grc' }, peerKey), ctx.resolver, ctx.compactMeta);
       if (ctx.langSet && peerRef.language && !ctx.langSet.has(peerRef.language)) continue;
       edges.push({
         edge_id: `${String(cand.edge_id)}::${ctx.entityKey}->${peerKey}`,
@@ -638,6 +694,8 @@ export class ShardedAdjacencyLoader implements AdjacencyLoader {
   private manifestPromise: Promise<Record<string, unknown> | null> | null = null;
   private resolverPromise: Promise<ResolverIndexData | null> | null = null;
   private uncoveredPromise: Promise<UncoveredLemmasData | null> | null = null;
+  private compactMetaPromise: Promise<CompactMetaData | null> | null = null;
+  private englishConceptsPromise: Promise<EnglishConceptsData | null> | null = null;
 
   constructor(reader: AssetReader, config: ShardLoaderConfig = {}) {
     this.reader = reader;
@@ -736,7 +794,74 @@ export class ShardedAdjacencyLoader implements AdjacencyLoader {
     return res;
   }
 
+  async hasShardedResolver(budget?: AssetBudgetContext): Promise<boolean> {
+    const m = await this.getManifestSummary(budget);
+    const resLayer = (m?.layers as Record<string, Record<string, unknown>> | undefined)?.resolver;
+    return Boolean(resLayer?.base_dir);
+  }
+
+  async getCompactMeta(budget?: AssetBudgetContext): Promise<CompactMetaData | null> {
+    if (!this.compactMetaPromise) {
+      this.compactMetaPromise = (async () => {
+        const m = await this.getManifestSummary(budget);
+        const resLayer = (m?.layers as Record<string, Record<string, unknown>> | undefined)?.resolver;
+        if (!resLayer?.base_dir) return null;
+        const fmt = (resLayer.shard_path_formats as Record<string, string> | undefined)?.compact_meta || 'compact-meta.json.gz';
+        return this.readShard(`${resLayer.base_dir}/${fmt}`, undefined, budget) as Promise<CompactMetaData | null>;
+      })();
+    }
+    const res = await this.compactMetaPromise;
+    if (!res) this.compactMetaPromise = null;
+    return res;
+  }
+
+  async getResolverBucket(lookupKey: string, budget?: AssetBudgetContext): Promise<ResolverByKeyShardData | null> {
+    const m = await this.getManifestSummary(budget);
+    const resLayer = (m?.layers as Record<string, Record<string, unknown>> | undefined)?.resolver;
+    if (!resLayer?.base_dir) return null;
+    const normKey = String(lookupKey || '').trim().toLowerCase();
+    const hex = computeBucketHex(String(resLayer.hash_algorithm || 'fnv1a64_mod256'), Number(resLayer.buckets || 256), normKey);
+    const fmt = String((resLayer.shard_path_formats as Record<string, string> | undefined)?.by_key || 'by-key/shard-{hex2}.json.gz').replace('{hex2}', hex);
+    return this.readShard(`${resLayer.base_dir}/${fmt}`, undefined, budget) as Promise<ResolverByKeyShardData | null>;
+  }
+
+  async getEnglishConcepts(budget?: AssetBudgetContext): Promise<EnglishConceptsData | null> {
+    if (!this.englishConceptsPromise) {
+      this.englishConceptsPromise = (async () => {
+        const m = await this.getManifestSummary(budget);
+        const resLayer = (m?.layers as Record<string, Record<string, unknown>> | undefined)?.resolver;
+        if (!resLayer?.base_dir) return null;
+        const fmt = (resLayer.shard_path_formats as Record<string, string> | undefined)?.english_concepts || 'english-concepts.json.gz';
+        return this.readShard(`${resLayer.base_dir}/${fmt}`, undefined, budget) as Promise<EnglishConceptsData | null>;
+      })();
+    }
+    const res = await this.englishConceptsPromise;
+    if (!res) this.englishConceptsPromise = null;
+    return res;
+  }
+
   async getEntityProfile(entityKey: string, budget?: AssetBudgetContext): Promise<GraphEntityRef | null> {
+    if (inferEntityKind(entityKey) !== 'lemma') {
+      return profileFromResolver(entityKey, null, null);
+    }
+    if (await this.hasShardedResolver(budget)) {
+      const shard = await this.getResolverBucket(entityKey, budget);
+      if (shard?.lemmas?.[entityKey]) {
+        return profileFromResolver(entityKey, { lemmas: shard.lemmas }, null);
+      }
+      if (shard?.lemmas) {
+        const lower = entityKey.toLowerCase();
+        for (const [k, v] of Object.entries(shard.lemmas)) {
+          if (k.toLowerCase() === lower || v.canonical_lemma_id?.toLowerCase() === lower) {
+            return profileFromResolver(k, { lemmas: { [k]: v } }, null);
+          }
+        }
+      }
+      if (shard?.uncovered?.[entityKey]) {
+        return profileFromResolver(entityKey, null, { entries: shard.uncovered });
+      }
+      return null;
+    }
     const resolver = await this.getResolverIndex(budget);
     if (resolver?.lemmas?.[entityKey]) return profileFromResolver(entityKey, resolver, null);
     const uncovered = await this.getUncoveredLemmas(budget);
@@ -781,17 +906,27 @@ export class ShardedAdjacencyLoader implements AdjacencyLoader {
       };
     }
 
-    const resolver = await this.getResolverIndex(budget);
-    const uncovered = resolver?.lemmas?.[entityKey] ? null : await this.getUncoveredLemmas(budget);
-    const entity = profileFromResolver(entityKey, resolver, uncovered);
+    let resolver: ResolverIndexData | null = null;
+    let compactMeta: CompactMetaData | null = null;
+    let entity: GraphEntityRef | null = null;
+    if (await this.hasShardedResolver(budget)) {
+      [entity, compactMeta] = await Promise.all([
+        this.getEntityProfile(entityKey, budget),
+        this.getCompactMeta(budget),
+      ]);
+    } else {
+      resolver = await this.getResolverIndex(budget);
+      const uncovered = resolver?.lemmas?.[entityKey] ? null : await this.getUncoveredLemmas(budget);
+      entity = profileFromResolver(entityKey, resolver, uncovered);
+    }
 
     const requestedLayers = new Set<GraphLayer>(options.layers?.length ? options.layers : ['grammatical', 'lexical', 'contextual', 'lxx_translation']);
     const selfRef = entity || enrichEntityRef({
       entity_key: entityKey, entity_kind: inferEntityKind(entityKey), label: entityKey.replace(/^(lemma|root|sense):/, ''),
       transliteration: null, gloss: null, language: normalizeLang(null, entityKey), pos: null, strongs_base: null, homograph_tag: null,
-    }, resolver);
+    }, resolver, compactMeta);
     const ctx: LayerContext = {
-      entityKey, selfRef, resolver, options,
+      entityKey, selfRef, resolver, compactMeta, options,
       predicateSet: options.predicates?.length ? new Set(options.predicates) : null,
       langSet: options.languages?.length ? new Set(options.languages.map((l) => normalizeLang(l, '') || l.toLowerCase())) : null,
       editionSet: options.editions?.length ? new Set(options.editions) : null,

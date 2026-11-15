@@ -486,7 +486,19 @@ async function runTargetSearch(
   const revTargetSet = new Set(revKeys);
 
   // 3-hop: expand promising depth-1 nodes fwd0 -> C -> revMap[C] -> target
-  outer3: for (const e1 of fwd0) {
+  // Prefer documented lexical/LXX/grammatical links and nodes directly in revTargetSet ahead of broad contextual hubs.
+  const layerOrderWeight = (layer: GraphLayer): number =>
+    layer === 'lexical' ? 0 : layer === 'lxx_translation' ? 1 : layer === 'grammatical' ? 2 : 3;
+  const fwd0ForHop3 = [...fwd0].sort((a, b) => {
+    const aHit = revTargetSet.has(a.to_entity.entity_key) ? 0 : 1;
+    const bHit = revTargetSet.has(b.to_entity.entity_key) ? 0 : 1;
+    if (aHit !== bHit) return aHit - bHit;
+    const la = layerOrderWeight(a.layer);
+    const lb = layerOrderWeight(b.layer);
+    if (la !== lb) return la - lb;
+    return 0;
+  });
+  outer3: for (const e1 of fwd0ForHop3) {
     const bKey = e1.to_entity.entity_key;
     if (!allowCycles && (bKey === sourceKey || targetKeys.has(bKey))) continue;
     if (!tracker.hubConfig.allow_function_word_intermediates && isFunctionWordPos(e1.to_entity.pos)) continue;

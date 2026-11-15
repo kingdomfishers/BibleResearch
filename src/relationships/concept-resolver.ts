@@ -2,7 +2,14 @@
 // @feature: relationships-r9c
 // Explicit concept -> candidate original-language lemmas resolution without auto-collapsing semantics.
 
-import type { ResolverIndexData, ShardedAdjacencyLoader, UncoveredLemmasData } from './adjacency-loader.ts';
+import type {
+  EnglishConceptsData,
+  ResolverByKeyEntry,
+  ResolverByKeyShardData,
+  ResolverIndexData,
+  ShardedAdjacencyLoader,
+  UncoveredLemmasData,
+} from './adjacency-loader.ts';
 import { inferEntityKind, normalizeLang } from './adjacency-loader.ts';
 import type {
   AdjacencyLoader,
@@ -22,6 +29,9 @@ export interface ConceptSearchOptions {
 type ResolverCapableLoader = AdjacencyLoader & {
   getResolverIndex?: (budget?: AssetBudgetContext) => Promise<ResolverIndexData | null>;
   getUncoveredLemmas?: (budget?: AssetBudgetContext) => Promise<UncoveredLemmasData | null>;
+  hasShardedResolver?: (budget?: AssetBudgetContext) => Promise<boolean>;
+  getResolverBucket?: (lookupKey: string, budget?: AssetBudgetContext) => Promise<ResolverByKeyShardData | null>;
+  getEnglishConcepts?: (budget?: AssetBudgetContext) => Promise<EnglishConceptsData | null>;
 };
 
 export interface EntityKeyResolution {
@@ -195,6 +205,62 @@ function collectGlossCandidates(
   return scored.map((s) => s.candidate);
 }
 
+function candidateFromByKeyEntry(
+  item: ResolverByKeyEntry,
+  matchKind: ConceptCandidate['match_kind'],
+): ConceptCandidate | null {
+  if (item.kind === 'lemma' && item.entry) {
+    return candidateFromResolverEntry(item.entry.canonical_lemma_id || item.entry.lemma_id, item.entry, matchKind);
+  }
+  if (item.kind === 'uncovered' && item.key && item.tuple) {
+    return candidateFromUncoveredTuple(item.key, item.tuple, matchKind);
+  }
+  return null;
+}
+
+function collectEnglishRowCandidates(
+  rawQuery: string,
+  eng: EnglishConceptsData | null,
+  includeUncovered: boolean,
+): ConceptCandidate[] {
+  const qTokens = tokenizeEnglish(rawQuery);
+  if (!qTokens.length || !eng?.rows) return [];
+  const scored: Array<{ score: number; candidate: ConceptCandidate }> = [];
+  for (const row of eng.rows) {
+    const [key, gloss, lemmaForm, translit, lang, pos, strongsBase, extStrongs, inGraphFlag, deg, isUncFlag] = row;
+    if (!includeUncovered && isUncFlag) continue;
+    if (!gloss) continue;
+    const score = scoreGlossMatch(gloss, rawQuery, qTokens);
+    if (score > 0) {
+      scored.push({
+        score: isUncFlag ? score - 5 : score,
+        candidate: {
+          entity_key: key,
+          entity_kind: inferEntityKind(key),
+          language: normalizeLang(lang, key),
+          label: lemmaForm || key.replace(/^lemma:/, ''),
+          transliteration: translit || null,
+          gloss,
+          pos: pos || null,
+          strongs_base: strongsBase || null,
+          extended_strongs: extStrongs || key.replace(/^lemma:/, ''),
+          match_kind: 'licensed_gloss_candidate',
+          in_grammatical_graph: Boolean(inGraphFlag),
+          grammatical_degree: Number(deg || 0),
+        },
+      });
+    }
+  }
+  scored.sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    if (b.candidate.grammatical_degree !== a.candidate.grammatical_degree) {
+      return b.candidate.grammatical_degree - a.candidate.grammatical_degree;
+    }
+    return a.candidate.entity_key.localeCompare(b.candidate.entity_key);
+  });
+  return scored.map((s) => s.candidate);
+}
+
 // === @section:logic:concept-resolution-entrypoint ===
 function lookupExactEntry(
   key: string,
@@ -237,10 +303,28 @@ export async function resolveResearchConcept(
   }
 
   const cap = loader as ResolverCapableLoader;
-  const resolver = (cap.getResolverIndex ? await cap.getResolverIndex(options.budget) : null) as ResolverIndexData | null;
-  const uncovered = (cap.getUncoveredLemmas ? await cap.getUncoveredLemmas(options.budget) : null) as UncoveredLemmasData | null;
+  const useSharded = Boolean(cap.hasShardedResolver && (await cap.hasShardedResolver(options.budget)));
+  let resolver: ResolverIndexData | null = null;
+  let uncovered: UncoveredLemmasData | null = null;
 
-  if (!resolver) {
+  if (!useSharded) {
+    resolver = (cap.getResolverIndex ? await cap.getResolverIndex(options.budget) : null) as ResolverIndexData | null;
+    uncovered = (cap.getUncoveredLemmas ? await cap.getUncoveredLemmas(options.budget) : null) as UncoveredLemmasData | null;
+
+    if (!resolver) {
+      return {
+        schema_version: '1.0',
+        query,
+        status: 'incomplete_coverage',
+        requires_explicit_selection: false,
+        candidates: [],
+        guardrails: GUARDRAILS,
+        guidance: options.budget?.budget_exceeded
+          ? `Concept resolution stopped by resource budget (${options.budget.exceeded_reason}).`
+          : 'Relationship resolver index is unavailable; cannot verify canonical entities.',
+      };
+    }
+  } else if (options.budget?.budget_exceeded) {
     return {
       schema_version: '1.0',
       query,
@@ -248,9 +332,7 @@ export async function resolveResearchConcept(
       requires_explicit_selection: false,
       candidates: [],
       guardrails: GUARDRAILS,
-      guidance: options.budget?.budget_exceeded
-        ? `Concept resolution stopped by resource budget (${options.budget.exceeded_reason}).`
-        : 'Relationship resolver index is unavailable; cannot verify canonical entities.',
+      guidance: `Concept resolution stopped by resource budget (${options.budget.exceeded_reason}).`,
     };
   }
 
@@ -258,7 +340,20 @@ export async function resolveResearchConcept(
   if (/^(lemma|root|sense):/i.test(query)) {
     const kind = inferEntityKind(query);
     if (kind === 'lemma') {
-      const hit = lookupExactEntry(query, resolver, uncovered, 'exact_id');
+      let hit: ConceptCandidate | null = null;
+      if (useSharded) {
+        const bucket = await cap.getResolverBucket!(query, options.budget);
+        if (options.budget?.budget_exceeded && !bucket) {
+          return {
+            schema_version: '1.0', query, status: 'incomplete_coverage', requires_explicit_selection: false,
+            candidates: [], guardrails: GUARDRAILS,
+            guidance: `Concept resolution stopped by resource budget (${options.budget.exceeded_reason}).`,
+          };
+        }
+        hit = lookupExactEntry(query, bucket ? { lemmas: bucket.lemmas } : null, bucket ? { entries: bucket.uncovered } : null, 'exact_id');
+      } else {
+        hit = lookupExactEntry(query, resolver, uncovered, 'exact_id');
+      }
       if (hit) {
         return {
           schema_version: '1.0', query, status: 'resolved', requires_explicit_selection: false,
@@ -270,11 +365,19 @@ export async function resolveResearchConcept(
       const baseMatch = /^([HG]\d{1,4})$/i.exec(stripped);
       if (baseMatch) {
         const strongsBase = `${baseMatch[1][0].toUpperCase()}${baseMatch[1].slice(1).padStart(4, '0')}`;
-        const baseIds = resolver.by_strongs_base?.[strongsBase] || [];
         const baseCandidates: ConceptCandidate[] = [];
-        for (const id of baseIds) {
-          const entry = resolver.lemmas?.[id];
-          if (entry) baseCandidates.push(candidateFromResolverEntry(id, entry, 'base_strongs_candidate'));
+        if (useSharded) {
+          const baseShard = await cap.getResolverBucket!(strongsBase, options.budget);
+          for (const item of baseShard?.by_strongs_base?.[strongsBase] || []) {
+            const c = candidateFromByKeyEntry(item, 'base_strongs_candidate');
+            if (c) baseCandidates.push(c);
+          }
+        } else {
+          const baseIds = resolver?.by_strongs_base?.[strongsBase] || [];
+          for (const id of baseIds) {
+            const entry = resolver?.lemmas?.[id];
+            if (entry) baseCandidates.push(candidateFromResolverEntry(id, entry, 'base_strongs_candidate'));
+          }
         }
         const deduped = filterAndDedupeCandidates(baseCandidates, options.language).slice(0, limit);
         if (deduped.length === 1) {
@@ -327,8 +430,20 @@ export async function resolveResearchConcept(
   const strongs = normalizeStrongsToken(query);
   if (strongs.isStrongs) {
     if (!strongs.isBaseOnly) {
-      const extKey = resolver?.by_strongs_extended?.[strongs.canonicalKey.replace(/^lemma:/, '')] || strongs.canonicalKey;
-      const hit = lookupExactEntry(extKey, resolver, uncovered, 'extended_strongs');
+      const rawExt = strongs.canonicalKey.replace(/^lemma:/, '');
+      let hit: ConceptCandidate | null = null;
+      if (useSharded) {
+        const extShard = await cap.getResolverBucket!(rawExt, options.budget);
+        const mapped = extShard?.by_strongs_extended?.[rawExt];
+        if (mapped) hit = candidateFromByKeyEntry(mapped, 'extended_strongs');
+        if (!hit) {
+          const directShard = await cap.getResolverBucket!(strongs.canonicalKey, options.budget);
+          hit = lookupExactEntry(strongs.canonicalKey, directShard ? { lemmas: directShard.lemmas } : null, directShard ? { entries: directShard.uncovered } : null, 'extended_strongs');
+        }
+      } else {
+        const extKey = resolver?.by_strongs_extended?.[rawExt] || strongs.canonicalKey;
+        hit = lookupExactEntry(extKey, resolver, uncovered, 'extended_strongs');
+      }
       if (hit) {
         return {
           schema_version: '1.0', query, status: 'resolved', requires_explicit_selection: false,
@@ -337,14 +452,27 @@ export async function resolveResearchConcept(
         };
       }
     }
-    const baseIds = resolver?.by_strongs_base?.[strongs.base] || [];
     const baseCandidates: ConceptCandidate[] = [];
-    for (const id of baseIds) {
-      const entry = resolver?.lemmas?.[id];
-      if (entry) baseCandidates.push(candidateFromResolverEntry(id, entry, 'base_strongs_candidate'));
+    if (useSharded) {
+      const baseShard = await cap.getResolverBucket!(strongs.base, options.budget);
+      for (const item of baseShard?.by_strongs_base?.[strongs.base] || []) {
+        const c = candidateFromByKeyEntry(item, 'base_strongs_candidate');
+        if (c) baseCandidates.push(c);
+      }
+      if (baseCandidates.length === 0) {
+        const directShard = await cap.getResolverBucket!(`lemma:${strongs.base}`, options.budget);
+        const directBase = lookupExactEntry(`lemma:${strongs.base}`, directShard ? { lemmas: directShard.lemmas } : null, directShard ? { entries: directShard.uncovered } : null, 'base_strongs_candidate');
+        if (directBase) baseCandidates.push(directBase);
+      }
+    } else {
+      const baseIds = resolver?.by_strongs_base?.[strongs.base] || [];
+      for (const id of baseIds) {
+        const entry = resolver?.lemmas?.[id];
+        if (entry) baseCandidates.push(candidateFromResolverEntry(id, entry, 'base_strongs_candidate'));
+      }
+      const directBase = lookupExactEntry(`lemma:${strongs.base}`, resolver, uncovered, 'base_strongs_candidate');
+      if (directBase) baseCandidates.push(directBase);
     }
-    const directBase = lookupExactEntry(`lemma:${strongs.base}`, resolver, uncovered, 'base_strongs_candidate');
-    if (directBase) baseCandidates.push(directBase);
     const deduped = filterAndDedupeCandidates(baseCandidates, options.language).slice(0, limit);
     if (deduped.length === 1) {
       return {
@@ -364,29 +492,70 @@ export async function resolveResearchConcept(
 
   // === @section:logic:surface-and-english-concept ===
   // 3. Surface form or transliteration
-  const surfMatches = resolver?.by_surface_form?.[query] || resolver?.by_transliteration?.[query.toLowerCase()] || [];
-  if (surfMatches.length > 0) {
-    const matchKind = resolver?.by_surface_form?.[query] ? 'surface_form' : 'transliteration';
-    const raw = surfMatches
-      .map((id) => (resolver?.lemmas?.[id] ? candidateFromResolverEntry(id, resolver.lemmas[id], matchKind) : null))
-      .filter((x): x is ConceptCandidate => x !== null);
-    const deduped = filterAndDedupeCandidates(raw, options.language).slice(0, limit);
-    if (deduped.length > 0) {
-      const needsChoice = deduped.length > 1;
-      return {
-        schema_version: '1.0', query,
-        status: needsChoice ? 'needs_disambiguation' : 'resolved',
-        requires_explicit_selection: needsChoice,
-        candidates: deduped, guardrails: GUARDRAILS,
-        guidance: needsChoice
-          ? `Multiple lemmas match "${query}"; select explicit canonical entity_key values before graph traversal.`
-          : `Resolved "${query}" to ${deduped[0].entity_key}.`,
-      };
+  if (useSharded) {
+    const surfShard = await cap.getResolverBucket!(query, options.budget);
+    const surfEntries = surfShard?.by_surface_form?.[query] || surfShard?.by_transliteration?.[query.toLowerCase()] || [];
+    if (surfEntries.length > 0) {
+      const matchKind = surfShard?.by_surface_form?.[query] ? 'surface_form' : 'transliteration';
+      const raw = surfEntries.map((entry) => candidateFromResolverEntry(entry.canonical_lemma_id || entry.lemma_id, entry, matchKind));
+      const deduped = filterAndDedupeCandidates(raw, options.language).slice(0, limit);
+      if (deduped.length > 0) {
+        const needsChoice = deduped.length > 1;
+        return {
+          schema_version: '1.0', query,
+          status: needsChoice ? 'needs_disambiguation' : 'resolved',
+          requires_explicit_selection: needsChoice,
+          candidates: deduped, guardrails: GUARDRAILS,
+          guidance: needsChoice
+            ? `Multiple lemmas match "${query}"; select explicit canonical entity_key values before graph traversal.`
+            : `Resolved "${query}" to ${deduped[0].entity_key}.`,
+        };
+      }
+    }
+  } else {
+    const surfMatches = resolver?.by_surface_form?.[query] || resolver?.by_transliteration?.[query.toLowerCase()] || [];
+    if (surfMatches.length > 0) {
+      const matchKind = resolver?.by_surface_form?.[query] ? 'surface_form' : 'transliteration';
+      const raw = surfMatches
+        .map((id) => (resolver?.lemmas?.[id] ? candidateFromResolverEntry(id, resolver.lemmas[id], matchKind) : null))
+        .filter((x): x is ConceptCandidate => x !== null);
+      const deduped = filterAndDedupeCandidates(raw, options.language).slice(0, limit);
+      if (deduped.length > 0) {
+        const needsChoice = deduped.length > 1;
+        return {
+          schema_version: '1.0', query,
+          status: needsChoice ? 'needs_disambiguation' : 'resolved',
+          requires_explicit_selection: needsChoice,
+          candidates: deduped, guardrails: GUARDRAILS,
+          guidance: needsChoice
+            ? `Multiple lemmas match "${query}"; select explicit canonical entity_key values before graph traversal.`
+            : `Resolved "${query}" to ${deduped[0].entity_key}.`,
+        };
+      }
     }
   }
 
   // 4. English research concept -> candidate lemmas ONLY (never auto-select single lemma)
-  const glossRaw = collectGlossCandidates(query, resolver, uncovered, options.include_uncovered !== false);
+  let glossRaw: ConceptCandidate[] = [];
+  if (useSharded) {
+    const eng = await cap.getEnglishConcepts!(options.budget);
+    if (!eng) {
+      return {
+        schema_version: '1.0',
+        query,
+        status: 'incomplete_coverage',
+        requires_explicit_selection: false,
+        candidates: [],
+        guardrails: GUARDRAILS,
+        guidance: options.budget?.budget_exceeded
+          ? `Concept resolution stopped by resource budget (${options.budget.exceeded_reason}).`
+          : 'English concept index unavailable; cannot resolve gloss candidates.',
+      };
+    }
+    glossRaw = collectEnglishRowCandidates(query, eng, options.include_uncovered !== false);
+  } else {
+    glossRaw = collectGlossCandidates(query, resolver, uncovered, options.include_uncovered !== false);
+  }
   const glossCandidates = filterAndDedupeCandidates(glossRaw, options.language).slice(0, limit);
   if (glossCandidates.length === 0) {
     return {

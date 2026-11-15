@@ -106,8 +106,8 @@ async function run() {
     assert.equal(cov.layers.grammatical.buckets, 256);
     assert.equal(cov.layers.lexical.hash_algorithm, 'fnv1a64_hi32_mod64');
     assert.equal(cov.layers.lexical.buckets, 64);
-    assert.equal(cov.layers.contextual.hash_algorithm, 'fnv1a64_hi32_mod64');
-    assert.equal(cov.layers.contextual.buckets, 64);
+    assert.equal(cov.layers.contextual.hash_algorithm, 'fnv1a64_mod1024');
+    assert.equal(cov.layers.contextual.buckets, 1024);
     assert.equal(cov.layers.lxx_translation.hash_algorithm, 'fnv1a64_hi32_mod64');
     assert.equal(cov.layers.lxx_translation.buckets, 64);
     assert.equal(cov.manifest_counts.frames_emitted, 150522);

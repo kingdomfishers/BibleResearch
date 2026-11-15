@@ -1046,14 +1046,15 @@ function computeLayerBucketHex(layerMeta, key) {
   const buckets = BigInt(bucketsNum);
   const hex64 = fnv1a64Hex(key);
   let idx;
-  if (alg === 'fnv1a64_mod256' || alg === 'fnv1a64_mod') {
+  if (/^fnv1a64_mod\d*$/.test(alg)) {
     idx = Number(BigInt('0x' + hex64) % buckets);
-  } else if (alg === 'fnv1a64_hi32_mod64' || alg === 'fnv1a64_hi32_mod') {
+  } else if (/^fnv1a64_hi32_mod\d*$/.test(alg)) {
     idx = Number(BigInt('0x' + hex64.slice(0, 8)) % buckets);
   } else {
     throw new Error(`Unsupported shard hash_algorithm declared in manifest: ${alg}`);
   }
-  return idx.toString(16).padStart(2, '0');
+  const padLen = Math.max(2, Math.ceil(Math.log2(Math.max(2, bucketsNum)) / 4));
+  return idx.toString(16).padStart(padLen, '0');
 }
 
 function buildLayerAssetPath(layerMeta, formatKey, keyOrVars) {
@@ -1061,9 +1062,11 @@ function buildLayerAssetPath(layerMeta, formatKey, keyOrVars) {
   if (!fmt) {
     throw new Error(`Missing shard_path_formats.${formatKey} in manifest.`);
   }
-  const vars = typeof keyOrVars === 'string'
-    ? { hex2: computeLayerBucketHex(layerMeta, keyOrVars) }
-    : keyOrVars;
+  let vars = keyOrVars;
+  if (typeof keyOrVars === 'string') {
+    const hex = computeLayerBucketHex(layerMeta, keyOrVars);
+    vars = { hex2: hex, hex3: hex };
+  }
   let rel = fmt;
   for (const [k, v] of Object.entries(vars)) {
     rel = rel.replaceAll(`{${k}}`, String(v));

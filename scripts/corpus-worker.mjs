@@ -40,12 +40,15 @@ let cachedLxxBooksByNo = null;
 const shardLru = new Map();
 const MAX_LRU_SHARDS = 8;
 
-function setLru(key, val) {
+function setLru(key, val, decodedLength = 0) {
   if (
+    decodedLength > 2 * 1024 * 1024 ||
+    key.includes('resolver-index.json') ||
     key.includes('/by-lemma/') ||
     key.includes('/contextual/pages/') ||
     key.includes('/sharded-contextual/') ||
-    key.includes('/sharded-edges/')
+    key.includes('/sharded-edges/') ||
+    key.includes('/resolver/by-key/')
   ) {
     return;
   }
@@ -90,8 +93,8 @@ async function loadJsonShardWithBytes(env, assetPath) {
   const decodedBytes = await decompressGzipIfNeeded(rawBytes);
   const text = new TextDecoder('utf-8').decode(decodedBytes);
   const parsed = JSON.parse(text);
-  setLru(gzPath, parsed);
-  return { data: parsed, bytes: rawBytes.length };
+  setLru(gzPath, parsed, decodedBytes.length);
+  return { data: parsed, bytes: decodedBytes.length };
 }
 
 async function loadJsonShard(env, assetPath) {
