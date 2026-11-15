@@ -38,11 +38,16 @@ let cachedVerseByCoord = null;
 let cachedBooksById = null;
 let cachedLxxBooksByNo = null;
 const shardLru = new Map();
-const MAX_LRU_SHARDS = 4;
+const MAX_LRU_SHARDS = 8;
 
 function setLru(key, val) {
   if (
+    key.includes('/passages/') ||
+    key.includes('/evidence/') ||
+    key.includes('/v1/chapters/') ||
     key.includes('/by-lemma/') ||
+    key.includes('/by-hebrew-lemma/') ||
+    key.includes('/by-greek-lemma/') ||
     key.includes('/contextual/pages/') ||
     key.includes('/sharded-contextual/') ||
     key.includes('/sharded-edges/') ||
@@ -84,7 +89,10 @@ async function decompressGzipIfNeeded(bytes) {
 async function loadJsonShardWithBytes(env, assetPath) {
   const gzPath = assetPath.endsWith('.gz') ? assetPath : `${assetPath}.gz`;
   if (shardLru.has(gzPath)) {
-    return { data: shardLru.get(gzPath), bytes: 0 };
+    const val = shardLru.get(gzPath);
+    shardLru.delete(gzPath);
+    shardLru.set(gzPath, val);
+    return { data: val, bytes: 0 };
   }
   const rawBytes = await readAssetBytes(env, gzPath);
   if (!rawBytes) return null;
