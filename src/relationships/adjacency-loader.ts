@@ -321,8 +321,11 @@ interface LayerContext {
 }
 
 async function loadGrammaticalEdges(ctx: LayerContext, gMeta: Record<string, unknown>): Promise<{ edges: GraphEdge[]; uncovered: boolean }> {
-  const hex = computeBucketHex(String(gMeta.hash_algorithm || 'fnv1a64_mod256'), Number(gMeta.buckets || 256), ctx.entityKey);
-  const gramShard = (await ctx.readShard(`${gMeta.base_dir}/by-lemma/shard-${hex}.json.gz`)) as {
+  const ws = gMeta.worker_shards as Record<string, unknown> | undefined;
+  const gPath = ws?.base_dir && ws?.path
+    ? `${String(ws.base_dir)}/${String(ws.path).replace('{hex3}', computeBucketHex(String(ws.hash_algorithm || 'fnv1a64_mod1024'), Number(ws.buckets || 1024), ctx.entityKey)).replace('{hex2}', computeBucketHex(String(ws.hash_algorithm || 'fnv1a64_mod1024'), Number(ws.buckets || 1024), ctx.entityKey))}`
+    : `${gMeta.base_dir}/by-lemma/shard-${computeBucketHex(String(gMeta.hash_algorithm || 'fnv1a64_mod256'), Number(gMeta.buckets || 256), ctx.entityKey)}.json.gz`;
+  const gramShard = (await ctx.readShard(gPath)) as {
     entries?: Record<string, Record<string, unknown>>;
   } | null;
   const gEntry = gramShard?.entries?.[ctx.entityKey];
@@ -401,8 +404,11 @@ async function loadGrammaticalEdges(ctx: LayerContext, gMeta: Record<string, unk
 }
 
 async function loadLexicalEdges(ctx: LayerContext, lMeta: Record<string, unknown>): Promise<GraphEdge[]> {
-  const hex = computeBucketHex(String(lMeta.hash_algorithm || 'fnv1a64_hi32_mod64'), Number(lMeta.buckets || 64), ctx.entityKey);
-  const edgeShard = (await ctx.readShard(`${lMeta.base_dir}/edges/sharded-edges/shard-${hex}.json.gz`)) as {
+  const ws = lMeta.worker_shards as Record<string, unknown> | undefined;
+  const lPath = ws?.base_dir && ws?.path
+    ? `${String(ws.base_dir)}/${String(ws.path).replace('{hex3}', computeBucketHex(String(ws.hash_algorithm || 'fnv1a64_mod1024'), Number(ws.buckets || 1024), ctx.entityKey)).replace('{hex2}', computeBucketHex(String(ws.hash_algorithm || 'fnv1a64_mod1024'), Number(ws.buckets || 1024), ctx.entityKey))}`
+    : `${lMeta.base_dir}/edges/sharded-edges/shard-${computeBucketHex(String(lMeta.hash_algorithm || 'fnv1a64_hi32_mod64'), Number(lMeta.buckets || 64), ctx.entityKey)}.json.gz`;
+  const edgeShard = (await ctx.readShard(lPath)) as {
     endpoint_index?: Record<string, Array<Record<string, unknown>>>;
     edges_by_id?: Record<string, Record<string, unknown>>;
   } | null;
@@ -806,7 +812,8 @@ export class ShardedAdjacencyLoader implements AdjacencyLoader {
         const m = await this.getManifestSummary(budget);
         const resLayer = (m?.layers as Record<string, Record<string, unknown>> | undefined)?.resolver;
         if (!resLayer?.base_dir) return null;
-        const fmt = (resLayer.shard_path_formats as Record<string, string> | undefined)?.compact_meta || 'compact-meta.json.gz';
+        const fmtMap = (resLayer.shard_path_formats as Record<string, string> | undefined);
+        const fmt = fmtMap?.search_hints || fmtMap?.compact_meta || 'compact-meta.json.gz';
         return this.readShard(`${resLayer.base_dir}/${fmt}`, undefined, budget) as Promise<CompactMetaData | null>;
       })();
     }

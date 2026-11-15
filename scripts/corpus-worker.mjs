@@ -46,11 +46,13 @@ function setLru(key, val) {
     key.includes('/evidence/') ||
     key.includes('/v1/chapters/') ||
     key.includes('/by-lemma/') ||
+    key.includes('/fast-by-lemma/') ||
     key.includes('/by-hebrew-lemma/') ||
     key.includes('/by-greek-lemma/') ||
     key.includes('/contextual/pages/') ||
     key.includes('/sharded-contextual/') ||
     key.includes('/sharded-edges/') ||
+    key.includes('/fast-edges/') ||
     key.includes('/resolver/by-key/')
   ) {
     return;

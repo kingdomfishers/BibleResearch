@@ -164,6 +164,23 @@ function buildShardedResolver(r8Dir, r9bDir, checksums) {
   });
   checksums['resolver/compact-meta.json.gz'] = { sha256: compactRes.sha256, bytes: compactRes.bytes };
 
+  // 1b. search-hints.json.gz: tiny hub + function-word subset for cold Cloudflare CPU <10ms
+  const fnPosRe = /^(?:H:(?:P|C|T|R|D|S)|G:(?:PREP|CONJ|PART|ART|PRON|INJ))/;
+  const searchHintLemmas = {};
+  for (const [k, tup] of Object.entries(compactLemmas)) {
+    const pos = tup[0];
+    const deg = tup[1] || 0;
+    if (deg >= 100 || (pos && fnPosRe.test(pos)) || tup[3]) {
+      searchHintLemmas[k] = [pos, deg, null, tup[3]];
+    }
+  }
+  const hintsRes = writeGzJson(path.join(resDir, 'search-hints.json.gz'), {
+    schema_version: '1.0',
+    lemmas: searchHintLemmas,
+    uncovered: {},
+  });
+  checksums['resolver/search-hints.json.gz'] = { sha256: hintsRes.sha256, bytes: hintsRes.bytes };
+
   // 2. english-concepts.json.gz: compact gloss index
   const conceptRows = [];
   for (const [k, v] of Object.entries(resolver.lemmas || {})) {
@@ -307,12 +324,129 @@ function buildShardedResolver(r8Dir, r9bDir, checksums) {
   return {
     compactRawKB: +(compactRes.rawBytes / 1024).toFixed(1),
     compactGzKB: +(compactRes.bytes / 1024).toFixed(1),
+    hintsRawKB: +(hintsRes.rawBytes / 1024).toFixed(1),
+    hintsGzKB: +(hintsRes.bytes / 1024).toFixed(1),
     engRawKB: +(engRes.rawBytes / 1024).toFixed(1),
     engGzKB: +(engRes.bytes / 1024).toFixed(1),
     byKeyBuckets: RES_BUCKETS,
     byKeyMaxRawKB: +(maxRaw / 1024).toFixed(1),
     byKeyMaxGzKB: +(maxGz / 1024).toFixed(1),
   };
+}
+
+function slimGramSummary(s) {
+  return {
+    summary_id: s.summary_id,
+    predicate: s.predicate,
+    quality_tier: s.quality_tier,
+    source_edition: s.source_edition,
+    stats: s.stats,
+    direction: s.direction,
+    display_predicate: s.display_predicate,
+    display_label: s.display_label,
+    guardrail: s.guardrail,
+    rule_version: s.rule_version,
+    related_lemma_id: s.related_lemma_id,
+    related_lemma: s.related_lemma,
+    sample_relations: (s.sample_relations || []).map((r) => ({
+      relation_id: r.relation_id,
+      frame_id: r.frame_id,
+      source_clause_id: r.source_clause_id,
+      canonical_ref: r.canonical_ref,
+      edition: r.edition,
+      rule_id: r.rule_id,
+      quality: r.quality,
+      qualifiers: r.qualifiers,
+    })),
+  };
+}
+
+function slimGramEntry(v) {
+  return {
+    outgoing_summaries: (v.outgoing_summaries || []).map(slimGramSummary),
+    incoming_summaries: (v.incoming_summaries || []).map(slimGramSummary),
+  };
+}
+
+function buildFastGrammaticalShards(r8Dir, r9bDir, checksums) {
+  const srcDir = path.join(r8Dir, 'by-lemma');
+  const outDir = path.join(r9bDir, 'grammatical', 'fast-by-lemma');
+  fs.mkdirSync(outDir, { recursive: true });
+  const FAST_BUCKETS = 1024;
+  const buckets = Array.from({ length: FAST_BUCKETS }, () => ({}));
+  let totalEntries = 0;
+
+  for (const file of fs.readdirSync(srcDir).filter((f) => /^shard-.*\.json\.gz$/.test(f))) {
+    const obj = readGzJson(path.join(srcDir, file));
+    for (const [k, v] of Object.entries(obj.entries || {})) {
+      const idx = fnv1a64Mod(k, FAST_BUCKETS);
+      buckets[idx][k] = slimGramEntry(v);
+      totalEntries++;
+    }
+  }
+
+  for (const key of Object.keys(checksums)) {
+    if (key.startsWith('grammatical/fast-by-lemma/')) delete checksums[key];
+  }
+  let maxRaw = 0;
+  let maxGz = 0;
+  for (let i = 0; i < FAST_BUCKETS; i++) {
+    const hex3 = i.toString(16).padStart(3, '0');
+    const rel = `grammatical/fast-by-lemma/shard-${hex3}.json.gz`;
+    const res = writeGzJson(path.join(r9bDir, rel), {
+      schema_version: '1.0',
+      bucket: hex3,
+      entries: buckets[i],
+    });
+    if (res.rawBytes > maxRaw) maxRaw = res.rawBytes;
+    if (res.bytes > maxGz) maxGz = res.bytes;
+    checksums[rel] = { sha256: res.sha256, bytes: res.bytes };
+  }
+  return { entries: totalEntries, buckets: FAST_BUCKETS, maxRawKB: +(maxRaw / 1024).toFixed(1), maxGzKB: +(maxGz / 1024).toFixed(1) };
+}
+
+function buildFastLexicalShards(r9bDir, checksums) {
+  const srcDir = path.join(r9bDir, 'lexical', 'edges', 'sharded-edges');
+  const outDir = path.join(r9bDir, 'lexical', 'fast-edges');
+  fs.mkdirSync(outDir, { recursive: true });
+  const FAST_BUCKETS = 1024;
+  const buckets = Array.from({ length: FAST_BUCKETS }, () => ({ endpoint_index: {}, edges_by_id: {} }));
+  let totalKeys = 0;
+
+  for (const file of fs.readdirSync(srcDir).filter((f) => /^shard-.*\.json\.gz$/.test(f))) {
+    const obj = readGzJson(path.join(srcDir, file));
+    const ep = obj.endpoint_index || {};
+    const byId = obj.edges_by_id || {};
+    for (const [k, links] of Object.entries(ep)) {
+      const idx = fnv1a64Mod(k, FAST_BUCKETS);
+      buckets[idx].endpoint_index[k] = links;
+      for (const link of links || []) {
+        const edge = byId[String(link.relationship_id)];
+        if (edge) buckets[idx].edges_by_id[String(link.relationship_id)] = edge;
+      }
+      totalKeys++;
+    }
+  }
+
+  for (const key of Object.keys(checksums)) {
+    if (key.startsWith('lexical/fast-edges/')) delete checksums[key];
+  }
+  let maxRaw = 0;
+  let maxGz = 0;
+  for (let i = 0; i < FAST_BUCKETS; i++) {
+    const hex3 = i.toString(16).padStart(3, '0');
+    const rel = `lexical/fast-edges/shard-${hex3}.json.gz`;
+    const res = writeGzJson(path.join(r9bDir, rel), {
+      schema_version: '1.0',
+      bucket: hex3,
+      endpoint_index: buckets[i].endpoint_index,
+      edges_by_id: buckets[i].edges_by_id,
+    });
+    if (res.rawBytes > maxRaw) maxRaw = res.rawBytes;
+    if (res.bytes > maxGz) maxGz = res.bytes;
+    checksums[rel] = { sha256: res.sha256, bytes: res.bytes };
+  }
+  return { keys: totalKeys, buckets: FAST_BUCKETS, maxRawKB: +(maxRaw / 1024).toFixed(1), maxGzKB: +(maxGz / 1024).toFixed(1) };
 }
 
 for (const baseRelDir of DEFAULT_BASES) {
@@ -331,6 +465,8 @@ for (const baseRelDir of DEFAULT_BASES) {
 
   const ctxStats = optimizeContextualShards(r9bDir, checksums);
   const resStats = buildShardedResolver(r8Dir, r9bDir, checksums);
+  const gramStats = buildFastGrammaticalShards(r8Dir, r9bDir, checksums);
+  const lexStats = buildFastLexicalShards(r9bDir, checksums);
 
   manifest.layers = manifest.layers || {};
   manifest.layers.contextual = {
@@ -351,6 +487,7 @@ for (const baseRelDir of DEFAULT_BASES) {
     shard_path_formats: {
       by_key: 'by-key/shard-{hex2}.json.gz',
       compact_meta: 'compact-meta.json.gz',
+      search_hints: 'search-hints.json.gz',
       english_concepts: 'english-concepts.json.gz',
     },
   };
@@ -366,7 +503,37 @@ for (const baseRelDir of DEFAULT_BASES) {
   fs.writeFileSync(manifestPath, rawManifest, 'utf8');
   fs.writeFileSync(path.join(r9bDir, 'manifest.json.gz'), zlib.gzipSync(Buffer.from(rawManifest, 'utf8'), { level: 6 }));
 
+  const runtimeManifest = {
+    ...manifest,
+    layers: {
+      ...manifest.layers,
+      grammatical: {
+        ...(manifest.layers.grammatical || {}),
+        worker_shards: {
+          base_dir: '/v2/relationships/r9b-v1.0/grammatical',
+          hash_algorithm: 'fnv1a64_mod1024',
+          buckets: 1024,
+          path: 'fast-by-lemma/shard-{hex3}.json.gz',
+        },
+      },
+      lexical: {
+        ...(manifest.layers.lexical || {}),
+        worker_shards: {
+          base_dir: '/v2/relationships/r9b-v1.0/lexical',
+          hash_algorithm: 'fnv1a64_mod1024',
+          buckets: 1024,
+          path: 'fast-edges/shard-{hex3}.json.gz',
+        },
+      },
+    },
+  };
+  delete runtimeManifest.artifact_checksums;
+  const rtRes = writeGzJson(path.join(r9bDir, 'runtime-manifest.json.gz'), runtimeManifest);
+
   console.log(`Optimized ${r9bDir}:`);
   console.log('  contextual:', JSON.stringify(ctxStats));
   console.log('  resolver:', JSON.stringify(resStats));
+  console.log('  fast-grammatical:', JSON.stringify(gramStats));
+  console.log('  fast-lexical:', JSON.stringify(lexStats));
+  console.log('  runtime-manifest:', `${(rtRes.rawBytes / 1024).toFixed(1)} KB raw / ${(rtRes.bytes / 1024).toFixed(1)} KB gz`);
 }

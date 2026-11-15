@@ -2318,14 +2318,27 @@ async function resolveR9cReleaseVersion(ctx, params = {}) {
   if (activeRel && !activeRel.startsWith('r8-')) {
     return { error: null, releaseVersion: activeRel };
   }
-  const r9bManifest = await ctx.loadJsonShard(ctx.env, '/v2/relationships/r9b-v1.0/manifest.json.gz');
+  const r9bManifest =
+    (await ctx.loadJsonShard(ctx.env, '/v2/relationships/r9b-v1.0/runtime-manifest.json.gz')) ||
+    (await ctx.loadJsonShard(ctx.env, '/v2/relationships/r9b-v1.0/manifest.json.gz'));
   if (r9bManifest) return { error: null, releaseVersion: 'r9b-v1.0' };
   return { error: null, releaseVersion: activeRel || 'r9b-v1.0' };
 }
 
 function createWorkerAdjacencyLoader(ctx, releaseVersion) {
+  const manifestGz = `/v2/relationships/${releaseVersion}/manifest.json.gz`;
+  const runtimeManifestGz = `/v2/relationships/${releaseVersion}/runtime-manifest.json.gz`;
   const reader = {
     async readJson(assetPath) {
+      if (assetPath === manifestGz) {
+        if (typeof ctx.loadJsonShardWithBytes === 'function') {
+          const rt = await ctx.loadJsonShardWithBytes(ctx.env, runtimeManifestGz);
+          if (rt) return rt;
+        } else {
+          const rt = await ctx.loadJsonShard(ctx.env, runtimeManifestGz);
+          if (rt) return { data: rt, bytes: 0 };
+        }
+      }
       if (typeof ctx.loadJsonShardWithBytes === 'function') {
         return await ctx.loadJsonShardWithBytes(ctx.env, assetPath);
       }
@@ -2418,15 +2431,15 @@ export async function handleDiscoverRelationshipPathsV1(ctx, params = {}) {
   const hasExplicitTarget = Boolean((params.target && String(params.target).trim()) || (targetList && targetList.length > 0));
   const rawLimits = params.limits && typeof params.limits === 'object' ? params.limits : {};
   const workerLimits = {
-    max_nodes_expanded: Math.min(60, Math.max(1, finiteOr(rawLimits.max_nodes_expanded, 35))),
-    max_edges_examined: Math.min(4000, Math.max(1, finiteOr(rawLimits.max_edges_examined, 2500))),
+    max_nodes_expanded: Math.min(60, Math.max(1, finiteOr(rawLimits.max_nodes_expanded, hasExplicitTarget ? 35 : 8))),
+    max_edges_examined: Math.min(4000, Math.max(1, finiteOr(rawLimits.max_edges_examined, hasExplicitTarget ? 2500 : 800))),
     max_paths_returned: Math.min(50, Math.max(1, finiteOr(rawLimits.max_paths_returned ?? params.limit, 20))),
-    max_per_node_edges: Math.min(300, Math.max(1, finiteOr(rawLimits.max_per_node_edges, 120))),
-    max_contextual_pages_per_node: Math.min(8, Math.max(0, finiteOr(rawLimits.max_contextual_pages_per_node, hasExplicitTarget ? 0 : 1))),
+    max_per_node_edges: Math.min(300, Math.max(1, finiteOr(rawLimits.max_per_node_edges, hasExplicitTarget ? 120 : 60))),
+    max_contextual_pages_per_node: Math.min(8, Math.max(0, finiteOr(rawLimits.max_contextual_pages_per_node, 0))),
     max_asset_requests: Math.min(70, Math.max(1, finiteOr(rawLimits.max_asset_requests, 55))),
     max_bytes_read: Math.min(20 * 1024 * 1024, Math.max(1024, finiteOr(rawLimits.max_bytes_read, 16 * 1024 * 1024))),
     max_execution_ms: Math.min(5000, Math.max(25, finiteOr(rawLimits.max_execution_ms, 3500))),
-    max_candidate_paths: Math.min(500, Math.max(1, finiteOr(rawLimits.max_candidate_paths, 300))),
+    max_candidate_paths: Math.min(500, Math.max(1, finiteOr(rawLimits.max_candidate_paths, hasExplicitTarget ? 300 : 120))),
   };
 
   return await discoverMultiHopPaths(loader, {
