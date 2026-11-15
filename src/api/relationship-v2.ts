@@ -9,15 +9,30 @@ export type R2PredicateIdV2 =
   | 'grammatical_subject_of'
   | 'grammatical_object_of';
 
-export type PlannedR3PredicateIdV2 =
+export type R3EnabledPredicateIdV2 =
   | 'grammatical_indirect_object_of'
   | 'grammatical_second_object_of'
   | 'modifies'
-  | 'possessive_construction_with'
+  | 'possessive_construction_with';
+
+export type EnabledPredicateIdV2 = R2PredicateIdV2 | R3EnabledPredicateIdV2;
+
+export type PlannedR3PredicateIdV2 =
+  | R3EnabledPredicateIdV2
   | 'grammatical_predicate_of'
   | 'attached_preposition_to';
 
 export type PredicateIdV2 = R2PredicateIdV2 | PlannedR3PredicateIdV2;
+
+export type PredicateStatusV2 =
+  | 'enabled_r2'
+  | 'enabled_r3'
+  | 'planned_r3'
+  | 'planned_r4';
+
+export type RelationshipPredicateIdV2 = PredicateIdV2;
+export type SourceEditionIdV2 = string;
+export type SourceLanguageV2 = 'hebrew' | 'greek';
 
 export type ExtractionQualityV2 =
   | 'source_explicit'
@@ -61,7 +76,7 @@ export interface PredicateDefinitionV2 {
   transitive: false;
   eligible_for_cross_claim_inference: false;
   minimum_rule_version: string;
-  phase_status: 'enabled_r2' | 'planned_r3';
+  phase_status: PredicateStatusV2;
 }
 
 // === @section:types:frame ===
@@ -155,6 +170,76 @@ export interface OccurrenceRelationV2 {
   qualifiers: OccurrenceRelationQualifiersV2;
 }
 
+export interface RelationSummaryStatsV2 {
+  distinct_frames: number;
+  occurrences: number;
+  distinct_passages: number;
+  distinct_books: number;
+  source_explicit: number;
+  rule_derived: number;
+  candidate: number;
+  negated_or_uncertain: number;
+  command_or_prediction: number;
+  clauses_eligible: number;
+  clauses_processed: number;
+}
+
+export interface RelationSummaryV2 {
+  summary_id: string;
+  lane: 'grammatical';
+  from_lemma_id: string;
+  predicate: RelationshipPredicateIdV2;
+  inverse_predicate: string;
+  to_lemma_id: string;
+  quality_tier: 'high_quality' | 'candidate_only';
+  source_edition: SourceEditionIdV2;
+  language: SourceLanguageV2;
+  rule_version: string;
+  stats: RelationSummaryStatsV2;
+  sample_passages: string[];
+  evidence_ids: string[];
+}
+
+export interface LexicalLaneRecordV2 {
+  lane: 'lexical';
+  lemma_id: string;
+  lexeme_id: string | null;
+  strongs_base: string | null;
+  lemma_form: string | null;
+  root_links: Array<Record<string, unknown>>;
+  lexical_formations: Array<Record<string, unknown>>;
+  lexical_connections: Array<Record<string, unknown>>;
+  canonical_entity_links: Array<Record<string, unknown>>;
+}
+
+export interface ContextualCooccurrenceSummaryV2 {
+  lane: 'contextual';
+  nature: 'statistical_co_occurrence_not_grammatical_relation';
+  same_verse_co_occurrences_sample_count: number;
+  distinct_co_occurring_strongs: string[];
+}
+
+export interface EvidenceIndexEntryV2 {
+  relation_id: string;
+  frame_id: string;
+  clause_node_id: string;
+  canonical_ref: string;
+  source_edition: SourceEditionIdV2;
+  language: SourceLanguageV2;
+  summary_id: string | null;
+  inverse_summary_id: string | null;
+  relation: OccurrenceRelationV2;
+}
+
+export interface GraphManifestV2 {
+  schema_version: '2.0';
+  rule_version: string;
+  generated_at: string;
+  artifact_root: string;
+  files: Record<string, { path: string; sha256: string; bytes: number }>;
+  counts: Record<string, unknown>;
+}
+
 // === @section:registry:v2 ===
 export const RESTRICTED_SOURCE_FIELDS: readonly string[] = [
   'sdbh',
@@ -217,8 +302,8 @@ export const PREDICATE_REGISTRY_V2: Record<PredicateIdV2, PredicateDefinitionV2>
     default_quality: 'candidate',
     transitive: false,
     eligible_for_cross_claim_inference: false,
-    minimum_rule_version: '1.0',
-    phase_status: 'planned_r3',
+    minimum_rule_version: '1.2',
+    phase_status: 'enabled_r3',
   },
   grammatical_second_object_of: {
     id: 'grammatical_second_object_of',
@@ -234,8 +319,8 @@ export const PREDICATE_REGISTRY_V2: Record<PredicateIdV2, PredicateDefinitionV2>
     default_quality: 'candidate',
     transitive: false,
     eligible_for_cross_claim_inference: false,
-    minimum_rule_version: '1.0',
-    phase_status: 'planned_r3',
+    minimum_rule_version: '1.2',
+    phase_status: 'enabled_r3',
   },
   modifies: {
     id: 'modifies',
@@ -250,8 +335,8 @@ export const PREDICATE_REGISTRY_V2: Record<PredicateIdV2, PredicateDefinitionV2>
     default_quality: 'candidate',
     transitive: false,
     eligible_for_cross_claim_inference: false,
-    minimum_rule_version: '1.0',
-    phase_status: 'planned_r3',
+    minimum_rule_version: '1.2',
+    phase_status: 'enabled_r3',
   },
   possessive_construction_with: {
     id: 'possessive_construction_with',
@@ -267,8 +352,8 @@ export const PREDICATE_REGISTRY_V2: Record<PredicateIdV2, PredicateDefinitionV2>
     default_quality: 'candidate',
     transitive: false,
     eligible_for_cross_claim_inference: false,
-    minimum_rule_version: '1.0',
-    phase_status: 'planned_r3',
+    minimum_rule_version: '1.2',
+    phase_status: 'enabled_r3',
   },
   grammatical_predicate_of: {
     id: 'grammatical_predicate_of',
@@ -306,9 +391,26 @@ export const PREDICATE_REGISTRY_V2: Record<PredicateIdV2, PredicateDefinitionV2>
 };
 
 // === @section:validators:v2 ===
+export const VERBAL_CLAUSE_ARGUMENT_PREDICATES: readonly EnabledPredicateIdV2[] = [
+  'grammatical_subject_of',
+  'grammatical_object_of',
+  'grammatical_indirect_object_of',
+  'grammatical_second_object_of',
+];
+
+export const PHRASE_INTERNAL_PREDICATES: readonly R3EnabledPredicateIdV2[] = [
+  'modifies',
+  'possessive_construction_with',
+];
+
 export function isR2EnabledPredicate(value: string): value is R2PredicateIdV2 {
   const def = (PREDICATE_REGISTRY_V2 as Record<string, PredicateDefinitionV2 | undefined>)[value];
   return Boolean(def && def.phase_status === 'enabled_r2');
+}
+
+export function isEnabledPredicateV2(value: string): value is EnabledPredicateIdV2 {
+  const def = (PREDICATE_REGISTRY_V2 as Record<string, PredicateDefinitionV2 | undefined>)[value];
+  return Boolean(def && (def.phase_status === 'enabled_r2' || def.phase_status === 'enabled_r3'));
 }
 
 export function findRestrictedFieldKeys(value: unknown, path = ''): string[] {
@@ -364,8 +466,8 @@ export function validateOccurrenceRelationV2(
   const errors: string[] = [];
   if (!relation.relation_id) errors.push('missing_relation_id');
   if (!relation.frame_id) errors.push('missing_frame_id');
-  if (!isR2EnabledPredicate(relation.predicate)) {
-    errors.push(`predicate_not_enabled_for_r2:${relation.predicate}`);
+  if (!isEnabledPredicateV2(relation.predicate)) {
+    errors.push(`predicate_not_enabled:${relation.predicate}`);
   }
   if (!relation.subject_token_id || !relation.subject_lemma_id) {
     errors.push('missing_subject_identity');
@@ -375,6 +477,10 @@ export function validateOccurrenceRelationV2(
   }
   if (!relation.evidence?.edition || !relation.evidence?.source_clause_id || !relation.evidence?.rule_id) {
     errors.push('missing_evidence_provenance');
+  }
+  const isPhraseInternal = (PHRASE_INTERNAL_PREDICATES as readonly string[]).includes(relation.predicate);
+  if (isPhraseInternal && relation.subject_token_id && relation.subject_token_id === relation.object_token_id) {
+    errors.push('self_loop_phrase_relation');
   }
   if (frameById) {
     const frame = frameById.get(relation.frame_id);
@@ -387,12 +493,91 @@ export function validateOccurrenceRelationV2(
       if (frame.source.clause_node_id !== relation.evidence.source_clause_id) {
         errors.push('cross_clause_mismatch');
       }
-      if (!frame.predicate?.token_id || frame.predicate.token_id !== relation.object_token_id) {
-        errors.push('object_not_frame_predicate');
+      if (!isPhraseInternal) {
+        if (!frame.predicate?.token_id || frame.predicate.token_id !== relation.object_token_id) {
+          errors.push('object_not_frame_predicate');
+        }
+        const hasRoleToken = frame.roles.some((r) => r.head_token_id === relation.subject_token_id);
+        if (!hasRoleToken) {
+          errors.push('subject_not_in_frame_roles');
+        }
       }
     }
   }
   const restricted = findRestrictedFieldKeys(relation);
+  if (restricted.length > 0) {
+    errors.push(`restricted_fields_present:${restricted.join(',')}`);
+  }
+  return errors;
+}
+
+export function validateRelationSummaryV2(
+  summary: RelationSummaryV2,
+  relationsById?: Map<string, OccurrenceRelationV2>,
+): string[] {
+  const errors: string[] = [];
+  if (!summary.summary_id) errors.push('missing_summary_id');
+  if (summary.lane !== 'grammatical') errors.push('invalid_summary_lane');
+  if (!summary.from_lemma_id || !summary.to_lemma_id) errors.push('missing_lemma_pair');
+  if (!isEnabledPredicateV2(summary.predicate)) {
+    errors.push(`predicate_not_enabled:${summary.predicate}`);
+  } else {
+    const expectedInverse = PREDICATE_REGISTRY_V2[summary.predicate].inverse_label;
+    if (summary.inverse_predicate !== expectedInverse) {
+      errors.push(`inverse_predicate_mismatch:${summary.inverse_predicate}!=${expectedInverse}`);
+    }
+  }
+  if (!summary.source_edition || !summary.language || !summary.rule_version) {
+    errors.push('missing_edition_or_rule_version');
+  }
+  if (!Array.isArray(summary.evidence_ids) || summary.evidence_ids.length === 0) {
+    errors.push('missing_evidence_ids');
+  }
+  const s = summary.stats;
+  if (!s) {
+    errors.push('missing_stats');
+  } else if (summary.quality_tier === 'high_quality') {
+    if (s.candidate !== 0) errors.push('high_quality_summary_contains_candidates');
+    if (s.occurrences !== s.source_explicit + s.rule_derived) {
+      errors.push('high_quality_occurrence_count_mismatch');
+    }
+    if (Array.isArray(summary.evidence_ids) && s.occurrences !== summary.evidence_ids.length) {
+      errors.push('high_quality_evidence_count_mismatch');
+    }
+  } else if (summary.quality_tier === 'candidate_only') {
+    if (s.source_explicit !== 0 || s.rule_derived !== 0 || s.occurrences !== 0) {
+      errors.push('candidate_summary_pollutes_high_quality_counts');
+    }
+    if (Array.isArray(summary.evidence_ids) && s.candidate !== summary.evidence_ids.length) {
+      errors.push('candidate_evidence_count_mismatch');
+    }
+  } else {
+    errors.push(`invalid_quality_tier:${String(summary.quality_tier)}`);
+  }
+
+  if (relationsById && Array.isArray(summary.evidence_ids)) {
+    for (const eid of summary.evidence_ids) {
+      const rel = relationsById.get(eid);
+      if (!rel) {
+        errors.push(`orphan_evidence_id:${eid}`);
+        continue;
+      }
+      if (
+        rel.subject_lemma_id !== summary.from_lemma_id ||
+        rel.predicate !== summary.predicate ||
+        rel.object_lemma_id !== summary.to_lemma_id ||
+        rel.evidence.edition !== summary.source_edition
+      ) {
+        errors.push(`evidence_mismatch:${eid}`);
+      }
+      const expectedTier = rel.quality === 'candidate' ? 'candidate_only' : 'high_quality';
+      if (expectedTier !== summary.quality_tier) {
+        errors.push(`quality_tier_mismatch:${eid}`);
+      }
+    }
+  }
+
+  const restricted = findRestrictedFieldKeys(summary);
   if (restricted.length > 0) {
     errors.push(`restricted_fields_present:${restricted.join(',')}`);
   }

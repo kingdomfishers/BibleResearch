@@ -403,14 +403,15 @@
       "must_differ_from_lemma": "lemma:H1254a"
     },
     {
-      "name": "PSA 3:0#cl2 (MT 3:1) psalm heading shifts to canonical_verse_id 13959 and skips unmapped pronoun suffix H2050c",
+      "name": "PSA 3:0#cl2 (MT 3:1) psalm heading shifts to canonical_verse_id 13959, emits 0 SVO verbal relations + 1 construct relation, and skips unmapped pronoun suffix H2050c",
       "frame_id": "frame:macula-hebrew-wlc:PSA 3:0#cl2:svov1",
-      "expected_relation_count": 0,
+      "expected_relation_count": 1,
+      "expected_verbal_relation_count": 0,
       "expected_alignment_status": "versification_shifted",
       "expected_canonical_verse_ids": ["13959"],
       "expected_modality": "infinitive",
       "expected_quotation": "none",
-      "expected_frame_quality": "candidate",
+      "expected_frame_quality": "rule_derived",
       "must_not_contain_lemma_ids": ["lemma:H2050"]
     },
     {
@@ -423,9 +424,10 @@
       "expected_quotation": "unknown"
     },
     {
-      "name": "MAT 28:20#cl3 copular eimi clause emits 0 SVO relations with unknown quotation",
+      "name": "MAT 28:20#cl3 copular eimi clause emits 0 SVO verbal relations + 1 genitive relation with unknown quotation",
       "frame_id": "frame:macula-greek-nestle1904:MAT 28:20#cl3:svov1",
-      "expected_relation_count": 0,
+      "expected_relation_count": 1,
+      "expected_verbal_relation_count": 0,
       "expected_quotation": "unknown"
     },
     {
@@ -435,9 +437,10 @@
       "expected_quotation": "unknown"
     },
     {
-      "name": "LUK 8:11#cl1 copular scope control preserves G4703 sporos and emits 0 relations",
+      "name": "LUK 8:11#cl1 copular scope control preserves G4703 sporos and emits 0 SVO verbal relations + 1 genitive relation",
       "frame_id": "frame:macula-greek-nestle1904:LUK 8:11#cl1:svov1",
-      "expected_relation_count": 0,
+      "expected_relation_count": 1,
+      "expected_verbal_relation_count": 0,
       "expected_quotation": "unknown",
       "expected_role_token_lemma": {
         "token_id": "n42008011007",
@@ -458,9 +461,10 @@
       "expected_quotation": "unknown"
     },
     {
-      "name": "JHN 6:35#cl1 quoted S-VC-P copular Ego eimi must emit 0 relations and preserve nested_speech_object",
+      "name": "JHN 6:35#cl1 quoted S-VC-P copular Ego eimi emits 0 SVO verbal relations + 1 genitive relation and preserves nested_speech_object",
       "frame_id": "frame:macula-greek-nestle1904:JHN 6:35#cl1:svov1",
-      "expected_relation_count": 0,
+      "expected_relation_count": 1,
+      "expected_verbal_relation_count": 0,
       "expected_quotation": "nested_speech_object",
       "expected_speaker_scope": "quoted_speaker"
     },
@@ -506,6 +510,325 @@
       "forbidden_pair": ["o010010110081", "o010010110031"]
     }
   ],
+  "r3_positive_relations": [
+    {
+      "name": "GEN 3:1#cl2 Hebrew speech-verb pp -> grammatical_indirect_object_of (woman <- said)",
+      "relation_id": "rel:macula-hebrew-wlc:GEN 3:1#cl2:grammatical_indirect_object_of:o010030010132:o010030010112",
+      "predicate": "grammatical_indirect_object_of",
+      "subject_lemma_id": "lemma:H0802G",
+      "object_lemma_id": "lemma:H0559",
+      "quality": "rule_derived",
+      "rule_id": "he_clause_io_speech_pp_v1"
+    },
+    {
+      "name": "GEN 3:4#cl0 Hebrew speech-verb pp -> grammatical_indirect_object_of",
+      "relation_id": "rel:macula-hebrew-wlc:GEN 3:4#cl0:grammatical_indirect_object_of:o010030040042:o010030040012",
+      "predicate": "grammatical_indirect_object_of",
+      "subject_lemma_id": "lemma:H0802G",
+      "object_lemma_id": "lemma:H0559",
+      "quality": "rule_derived",
+      "rule_id": "he_clause_io_speech_pp_v1"
+    },
+    {
+      "name": "PSA 3:2#cl0 Hebrew participle speech-verb pp -> grammatical_indirect_object_of",
+      "relation_id": "rel:macula-hebrew-wlc:PSA 3:2#cl0:grammatical_indirect_object_of:o190030030032:o190030030021",
+      "predicate": "grammatical_indirect_object_of",
+      "subject_lemma_id": "lemma:H5315G",
+      "object_lemma_id": "lemma:H0559",
+      "quality": "rule_derived",
+      "rule_id": "he_clause_io_speech_pp_v1"
+    },
+    {
+      "name": "JHN 1:12#cl0 Greek explicit io role (with referent) -> grammatical_indirect_object_of",
+      "relation_id": "rel:macula-greek-nestle1904:JHN 1:12#cl0:grammatical_indirect_object_of:n43001012006:n43001012005",
+      "predicate": "grammatical_indirect_object_of",
+      "subject_lemma_id": "lemma:G0846",
+      "object_lemma_id": "lemma:G1325",
+      "quality": "rule_derived",
+      "rule_id": "gr_clause_io_v_v1"
+    },
+    {
+      "name": "JHN 4:42#cl0 Greek noun indirect object -> grammatical_indirect_object_of",
+      "relation_id": "rel:macula-greek-nestle1904:JHN 4:42#cl0:grammatical_indirect_object_of:n43004042003:n43004042004",
+      "predicate": "grammatical_indirect_object_of",
+      "subject_lemma_id": "lemma:G1135G",
+      "object_lemma_id": "lemma:G3004G",
+      "quality": "rule_derived",
+      "rule_id": "gr_clause_io_v_v1"
+    },
+    {
+      "name": "JHN 6:67#cl0 Greek io role (twelve -> said) -> grammatical_indirect_object_of",
+      "relation_id": "rel:macula-greek-nestle1904:JHN 6:67#cl0:grammatical_indirect_object_of:n43006067006:n43006067001",
+      "predicate": "grammatical_indirect_object_of",
+      "subject_lemma_id": "lemma:G1427",
+      "object_lemma_id": "lemma:G2036",
+      "quality": "rule_derived",
+      "rule_id": "gr_clause_io_v_v1"
+    },
+    {
+      "name": "GEN 1:27#cl2 Hebrew coordinated grammatical_second_object_of (male) -> H1254a",
+      "relation_id": "rel:macula-hebrew-wlc:GEN 1:27#cl2:grammatical_second_object_of:o010010270101:o010010270121",
+      "predicate": "grammatical_second_object_of",
+      "subject_lemma_id": "lemma:H2145",
+      "object_lemma_id": "lemma:H1254a",
+      "quality": "rule_derived",
+      "rule_id": "he_clause_o2_v_v1"
+    },
+    {
+      "name": "GEN 1:27#cl2 Hebrew coordinated grammatical_second_object_of (female) -> H1254a",
+      "relation_id": "rel:macula-hebrew-wlc:GEN 1:27#cl2:grammatical_second_object_of:o010010270112:o010010270121",
+      "predicate": "grammatical_second_object_of",
+      "subject_lemma_id": "lemma:H5347",
+      "object_lemma_id": "lemma:H1254a",
+      "quality": "rule_derived",
+      "rule_id": "he_clause_o2_v_v1"
+    },
+    {
+      "name": "GEN 3:20#cl0 Hebrew grammatical_second_object_of (Eve -> called)",
+      "relation_id": "rel:macula-hebrew-wlc:GEN 3:20#cl0:grammatical_second_object_of:o010030200051:o010030200012",
+      "predicate": "grammatical_second_object_of",
+      "subject_lemma_id": "lemma:H2332",
+      "object_lemma_id": "lemma:H7121G",
+      "quality": "source_explicit",
+      "rule_id": "he_clause_o2_v_v1"
+    },
+    {
+      "name": "JOS 17:14#cl2 Hebrew interrogative grammatical_second_object_of",
+      "relation_id": "rel:macula-hebrew-wlc:JOS 17:14#cl2:grammatical_second_object_of:o060170140101:o060170140081",
+      "predicate": "grammatical_second_object_of",
+      "subject_lemma_id": "lemma:H5159",
+      "object_lemma_id": "lemma:H5414G",
+      "quality": "source_explicit",
+      "rule_id": "he_clause_o2_v_v1",
+      "qualifiers": { "modality": "interrogative", "quotation": "direct_speech_turn" }
+    },
+    {
+      "name": "JHN 2:16#cl4 Greek negative imperative grammatical_second_object_of",
+      "relation_id": "rel:macula-greek-nestle1904:JHN 2:16#cl4:grammatical_second_object_of:n43002016017:n43002016011",
+      "predicate": "grammatical_second_object_of",
+      "subject_lemma_id": "lemma:G3624G",
+      "object_lemma_id": "lemma:G4160G",
+      "quality": "rule_derived",
+      "rule_id": "gr_clause_o2_v_v1",
+      "qualifiers": { "polarity": "negative", "modality": "imperative" }
+    },
+    {
+      "name": "JHN 4:46#cl1 Greek grammatical_second_object_of (wine <- made)",
+      "relation_id": "rel:macula-greek-nestle1904:JHN 4:46#cl1:grammatical_second_object_of:n43004046013:n43004046010",
+      "predicate": "grammatical_second_object_of",
+      "subject_lemma_id": "lemma:G3631",
+      "object_lemma_id": "lemma:G4160G",
+      "quality": "source_explicit",
+      "rule_id": "gr_clause_o2_v_v1"
+    },
+    {
+      "name": "GEN 1:16#cl0 Hebrew adjective modifies first great light",
+      "relation_id": "rel:macula-hebrew-wlc:GEN 1:16#cl0:modifies:o010010160092:o010010160082",
+      "predicate": "modifies",
+      "subject_lemma_id": "lemma:H1419A",
+      "object_lemma_id": "lemma:H3974",
+      "quality": "rule_derived",
+      "rule_id": "he_phrase_mod_v1"
+    },
+    {
+      "name": "GEN 1:16#cl0 Hebrew adjective modifies lesser light without cross-attaching",
+      "relation_id": "rel:macula-hebrew-wlc:GEN 1:16#cl0:modifies:o010010160142:o010010160132",
+      "predicate": "modifies",
+      "subject_lemma_id": "lemma:H6996B",
+      "object_lemma_id": "lemma:H3974",
+      "quality": "rule_derived",
+      "rule_id": "he_phrase_mod_v1"
+    },
+    {
+      "name": "GEN 1:21#cl0 Hebrew coordinated adjective modifies great sea-creatures",
+      "relation_id": "rel:macula-hebrew-wlc:GEN 1:21#cl0:modifies:o010010210052:o010010210042",
+      "predicate": "modifies",
+      "subject_lemma_id": "lemma:H1419A",
+      "object_lemma_id": "lemma:H8577M",
+      "quality": "rule_derived",
+      "rule_id": "he_phrase_mod_v1"
+    },
+    {
+      "name": "MAT 28:19#cl2 Greek adjective modifies Holy -> Spirit",
+      "relation_id": "rel:macula-greek-nestle1904:MAT 28:19#cl2:modifies:n40028019019:n40028019020",
+      "predicate": "modifies",
+      "subject_lemma_id": "lemma:G0040G",
+      "object_lemma_id": "lemma:G4151",
+      "quality": "rule_derived",
+      "rule_id": "gr_phrase_mod_v1"
+    },
+    {
+      "name": "JHN 3:16#cl5 Greek adjective modifies eternal -> life",
+      "relation_id": "rel:macula-greek-nestle1904:JHN 3:16#cl5:modifies:n43003016025:n43003016024",
+      "predicate": "modifies",
+      "subject_lemma_id": "lemma:G0166",
+      "object_lemma_id": "lemma:G2222",
+      "quality": "rule_derived",
+      "rule_id": "gr_phrase_mod_v1"
+    },
+    {
+      "name": "LUK 8:15#cl2 Greek coordinated modifier 1 (kalē -> kardia)",
+      "relation_id": "rel:macula-greek-nestle1904:LUK 8:15#cl2:modifies:n42008015012:n42008015011",
+      "predicate": "modifies",
+      "subject_lemma_id": "lemma:G2570G",
+      "object_lemma_id": "lemma:G2588",
+      "quality": "rule_derived",
+      "rule_id": "gr_phrase_mod_v1"
+    },
+    {
+      "name": "LUK 8:15#cl2 Greek coordinated modifier 2 (agathē -> kardia)",
+      "relation_id": "rel:macula-greek-nestle1904:LUK 8:15#cl2:modifies:n42008015014:n42008015011",
+      "predicate": "modifies",
+      "subject_lemma_id": "lemma:G0018",
+      "object_lemma_id": "lemma:G2588",
+      "quality": "rule_derived",
+      "rule_id": "gr_phrase_mod_v1"
+    },
+    {
+      "name": "GEN 1:2#cl1 Hebrew construct chain face of deep -> possessive_construction_with",
+      "relation_id": "rel:macula-hebrew-wlc:GEN 1:2#cl1:possessive_construction_with:o010010020081:o010010020071",
+      "predicate": "possessive_construction_with",
+      "subject_lemma_id": "lemma:H8415",
+      "object_lemma_id": "lemma:H6440H",
+      "quality": "rule_derived",
+      "rule_id": "he_phrase_poss_v1"
+    },
+    {
+      "name": "GEN 1:2#cl2 Hebrew construct chain Spirit of God",
+      "relation_id": "rel:macula-hebrew-wlc:GEN 1:2#cl2:possessive_construction_with:o010010020101:o010010020092",
+      "predicate": "possessive_construction_with",
+      "subject_lemma_id": "lemma:H0430G",
+      "object_lemma_id": "lemma:H7307",
+      "quality": "rule_derived",
+      "rule_id": "he_phrase_poss_v1"
+    },
+    {
+      "name": "JOS 17:15#cl3 Hebrew construct land of Perizzites -> possessive_construction_with",
+      "relation_id": "rel:macula-hebrew-wlc:JOS 17:15#cl3:possessive_construction_with:o060170150152:o060170150142",
+      "predicate": "possessive_construction_with",
+      "subject_lemma_id": "lemma:H6522",
+      "object_lemma_id": "lemma:H0776G",
+      "quality": "rule_derived",
+      "rule_id": "he_phrase_poss_v1"
+    },
+    {
+      "name": "MAT 28:19#cl2 Greek coordinated genitive 1 (Father -> name)",
+      "relation_id": "rel:macula-greek-nestle1904:MAT 28:19#cl2:possessive_construction_with:n40028019013:n40028019011",
+      "predicate": "possessive_construction_with",
+      "subject_lemma_id": "lemma:G3962",
+      "object_lemma_id": "lemma:G3686",
+      "quality": "rule_derived",
+      "rule_id": "gr_phrase_poss_v1"
+    },
+    {
+      "name": "MAT 28:19#cl2 Greek coordinated genitive 2 (Son -> name)",
+      "relation_id": "rel:macula-greek-nestle1904:MAT 28:19#cl2:possessive_construction_with:n40028019016:n40028019011",
+      "predicate": "possessive_construction_with",
+      "subject_lemma_id": "lemma:G5207",
+      "object_lemma_id": "lemma:G3686",
+      "quality": "rule_derived",
+      "rule_id": "gr_phrase_poss_v1"
+    },
+    {
+      "name": "MAT 28:19#cl2 Greek coordinated genitive 3 (Spirit -> name)",
+      "relation_id": "rel:macula-greek-nestle1904:MAT 28:19#cl2:possessive_construction_with:n40028019020:n40028019011",
+      "predicate": "possessive_construction_with",
+      "subject_lemma_id": "lemma:G4151",
+      "object_lemma_id": "lemma:G3686",
+      "quality": "rule_derived",
+      "rule_id": "gr_phrase_poss_v1"
+    },
+    {
+      "name": "LUK 8:11#cl1 Greek genitive word of God",
+      "relation_id": "rel:macula-greek-nestle1904:LUK 8:11#cl1:possessive_construction_with:n42008011012:n42008011010",
+      "predicate": "possessive_construction_with",
+      "subject_lemma_id": "lemma:G2316",
+      "object_lemma_id": "lemma:G3056",
+      "quality": "rule_derived",
+      "rule_id": "gr_phrase_poss_v1"
+    },
+    {
+      "name": "JHN 1:12#cl2 Greek genitive children of God",
+      "relation_id": "rel:macula-greek-nestle1904:JHN 1:12#cl2:possessive_construction_with:n43001012009:n43001012008",
+      "predicate": "possessive_construction_with",
+      "subject_lemma_id": "lemma:G2316",
+      "object_lemma_id": "lemma:G5043",
+      "quality": "rule_derived",
+      "rule_id": "gr_phrase_poss_v1"
+    },
+    {
+      "name": "JHN 2:16#cl4 Greek genitive house of trade",
+      "relation_id": "rel:macula-greek-nestle1904:JHN 2:16#cl4:possessive_construction_with:n43002016018:n43002016017",
+      "predicate": "possessive_construction_with",
+      "subject_lemma_id": "lemma:G1712",
+      "object_lemma_id": "lemma:G3624G",
+      "quality": "rule_derived",
+      "rule_id": "gr_phrase_poss_v1"
+    }
+  ],
+  "r3_negative_and_ambiguous_cases": [
+    {
+      "name": "GEN 1:1#cl0 non-speech Hebrew PP (in beginning) emits 0 grammatical_indirect_object_of",
+      "kind": "forbidden_predicate_in_frame",
+      "frame_id": "frame:macula-hebrew-wlc:GEN 1:1#cl0:svov1",
+      "forbidden_predicate": "grammatical_indirect_object_of"
+    },
+    {
+      "name": "GEN 1:5#cl0 non-speech Hebrew PP (to light) emits 0 grammatical_indirect_object_of",
+      "kind": "forbidden_predicate_in_frame",
+      "frame_id": "frame:macula-hebrew-wlc:GEN 1:5#cl0:svov1",
+      "forbidden_predicate": "grammatical_indirect_object_of"
+    },
+    {
+      "name": "GEN 1:9#cl1 non-speech Hebrew PP (to one place) emits 0 grammatical_indirect_object_of",
+      "kind": "forbidden_predicate_in_frame",
+      "frame_id": "frame:macula-hebrew-wlc:GEN 1:9#cl1:svov1",
+      "forbidden_predicate": "grammatical_indirect_object_of"
+    },
+    {
+      "name": "GEN 1:11#cl1 clausal CL2Adjp modifier must not emit cross-clause modifies",
+      "kind": "forbidden_subject_in_frame",
+      "frame_id": "frame:macula-hebrew-wlc:GEN 1:11#cl1:svov1",
+      "forbidden_predicate": "modifies",
+      "forbidden_subject_token_ids": ["o010010110071", "o010010110081", "o010010110111", "o010010110121"]
+    },
+    {
+      "name": "JHN 1:6#cl0 V-ADV participle sent from God must not emit modifies edge to anthropos",
+      "kind": "forbidden_predicate_in_frame",
+      "frame_id": "frame:macula-greek-nestle1904:JHN 1:6#cl0:svov1",
+      "forbidden_predicate": "modifies"
+    },
+    {
+      "name": "JHN 6:38#cl1 DetCL relative clause must not attach to thelema via modifies or possessive",
+      "kind": "forbidden_subject_in_frame",
+      "frame_id": "frame:macula-greek-nestle1904:JHN 6:38#cl1:svov1",
+      "forbidden_subject_token_ids": ["n43006038016", "n43006038017"]
+    },
+    {
+      "name": "MAT 28:19#cl2 adjective Holy (n40028019019) must not attach to Father or Son",
+      "kind": "forbidden_pair",
+      "subject_token_id": "n40028019019",
+      "forbidden_object_token_ids": ["n40028019013", "n40028019016", "n40028019011"]
+    },
+    {
+      "name": "GEN 1:16#cl0 lesser (o010010160142) must not attach to great light head (o010010160082 or o010010160052)",
+      "kind": "forbidden_pair",
+      "subject_token_id": "o010010160142",
+      "forbidden_object_token_ids": ["o010010160082", "o010010160052"]
+    },
+    {
+      "name": "JHN 4:46#cl2 indefinite pronoun tis modifies noun stays candidate quality",
+      "kind": "expected_candidate_quality",
+      "relation_id": "rel:macula-greek-nestle1904:JHN 4:46#cl2:modifies:n43004046016:n43004046017",
+      "expected_quality": "candidate"
+    },
+    {
+      "name": "GEN 3:5#cl3 2mp suffix on construct noun stays candidate quality",
+      "kind": "expected_candidate_quality",
+      "relation_id": "rel:macula-hebrew-wlc:GEN 3:5#cl3:possessive_construction_with:o010030050092:o010030050091",
+      "expected_quality": "candidate"
+    }
+  ],
   "gold_inspected_clauses": {
     "hebrew": [
       {
@@ -526,13 +849,17 @@
       },
       {
         "frame_id": "frame:macula-hebrew-wlc:GEN 1:2#cl1:svov1",
-        "expected_high_quality_relation_ids": [],
+        "expected_high_quality_relation_ids": [
+          "rel:macula-hebrew-wlc:GEN 1:2#cl1:possessive_construction_with:o010010020081:o010010020071"
+        ],
         "unsupported_kind": "verbless"
       },
       {
         "frame_id": "frame:macula-hebrew-wlc:GEN 1:2#cl2:svov1",
         "expected_high_quality_relation_ids": [
-          "rel:macula-hebrew-wlc:GEN 1:2#cl2:grammatical_subject_of:o010010020092:o010010020111"
+          "rel:macula-hebrew-wlc:GEN 1:2#cl2:grammatical_subject_of:o010010020092:o010010020111",
+          "rel:macula-hebrew-wlc:GEN 1:2#cl2:possessive_construction_with:o010010020101:o010010020092",
+          "rel:macula-hebrew-wlc:GEN 1:2#cl2:possessive_construction_with:o010010020142:o010010020131"
         ]
       },
       {
@@ -572,7 +899,8 @@
           "rel:macula-hebrew-wlc:GEN 1:11#cl1:grammatical_subject_of:o010010110042:o010010110031",
           "rel:macula-hebrew-wlc:GEN 1:11#cl1:grammatical_object_of:o010010110051:o010010110031",
           "rel:macula-hebrew-wlc:GEN 1:11#cl1:grammatical_object_of:o010010110061:o010010110031",
-          "rel:macula-hebrew-wlc:GEN 1:11#cl1:grammatical_object_of:o010010110091:o010010110031"
+          "rel:macula-hebrew-wlc:GEN 1:11#cl1:grammatical_object_of:o010010110091:o010010110031",
+          "rel:macula-hebrew-wlc:GEN 1:11#cl1:possessive_construction_with:o010010110101:o010010110091"
         ]
       },
       {
@@ -614,7 +942,8 @@
       {
         "frame_id": "frame:macula-hebrew-wlc:GEN 3:4#cl0:svov1",
         "expected_high_quality_relation_ids": [
-          "rel:macula-hebrew-wlc:GEN 3:4#cl0:grammatical_subject_of:o010030040022:o010030040012"
+          "rel:macula-hebrew-wlc:GEN 3:4#cl0:grammatical_subject_of:o010030040022:o010030040012",
+          "rel:macula-hebrew-wlc:GEN 3:4#cl0:grammatical_indirect_object_of:o010030040042:o010030040012"
         ]
       },
       {
@@ -643,7 +972,8 @@
         "frame_id": "frame:macula-hebrew-wlc:JOS 17:14#cl2:svov1",
         "expected_high_quality_relation_ids": [
           "rel:macula-hebrew-wlc:JOS 17:14#cl2:grammatical_object_of:o060170140111:o060170140081",
-          "rel:macula-hebrew-wlc:JOS 17:14#cl2:grammatical_object_of:o060170140132:o060170140081"
+          "rel:macula-hebrew-wlc:JOS 17:14#cl2:grammatical_object_of:o060170140132:o060170140081",
+          "rel:macula-hebrew-wlc:JOS 17:14#cl2:grammatical_second_object_of:o060170140101:o060170140081"
         ]
       },
       {
@@ -661,7 +991,8 @@
       {
         "frame_id": "frame:macula-hebrew-wlc:JOS 17:15#cl4:svov1",
         "expected_high_quality_relation_ids": [
-          "rel:macula-hebrew-wlc:JOS 17:15#cl4:grammatical_subject_of:o060170150201:o060170150181"
+          "rel:macula-hebrew-wlc:JOS 17:15#cl4:grammatical_subject_of:o060170150201:o060170150181",
+          "rel:macula-hebrew-wlc:JOS 17:15#cl4:possessive_construction_with:o060170150211:o060170150201"
         ]
       },
       {
@@ -671,7 +1002,9 @@
       },
       {
         "frame_id": "frame:macula-hebrew-wlc:PSA 3:0#cl2:svov1",
-        "expected_high_quality_relation_ids": [],
+        "expected_high_quality_relation_ids": [
+          "rel:macula-hebrew-wlc:PSA 3:0#cl2:possessive_construction_with:o190030010051:o190030010042"
+        ],
         "unsupported_kind": "unmapped_extended_strongs"
       },
       {
@@ -685,7 +1018,8 @@
       {
         "frame_id": "frame:macula-greek-nestle1904:MAT 28:18#cl0:svov1",
         "expected_high_quality_relation_ids": [
-          "rel:macula-greek-nestle1904:MAT 28:18#cl0:grammatical_subject_of:n40028018004:n40028018005"
+          "rel:macula-greek-nestle1904:MAT 28:18#cl0:grammatical_subject_of:n40028018004:n40028018005",
+          "rel:macula-greek-nestle1904:MAT 28:18#cl0:grammatical_indirect_object_of:n40028018006:n40028018005"
         ]
       },
       {
@@ -701,7 +1035,11 @@
       {
         "frame_id": "frame:macula-greek-nestle1904:MAT 28:19#cl2:svov1",
         "expected_high_quality_relation_ids": [
-          "rel:macula-greek-nestle1904:MAT 28:19#cl2:grammatical_object_of:n40028019008:n40028019007"
+          "rel:macula-greek-nestle1904:MAT 28:19#cl2:grammatical_object_of:n40028019008:n40028019007",
+          "rel:macula-greek-nestle1904:MAT 28:19#cl2:modifies:n40028019019:n40028019020",
+          "rel:macula-greek-nestle1904:MAT 28:19#cl2:possessive_construction_with:n40028019013:n40028019011",
+          "rel:macula-greek-nestle1904:MAT 28:19#cl2:possessive_construction_with:n40028019016:n40028019011",
+          "rel:macula-greek-nestle1904:MAT 28:19#cl2:possessive_construction_with:n40028019020:n40028019011"
         ]
       },
       {
@@ -714,12 +1052,15 @@
       {
         "frame_id": "frame:macula-greek-nestle1904:MAT 28:20#cl2:svov1",
         "expected_high_quality_relation_ids": [
-          "rel:macula-greek-nestle1904:MAT 28:20#cl2:grammatical_object_of:n40028020005:n40028020006"
+          "rel:macula-greek-nestle1904:MAT 28:20#cl2:grammatical_object_of:n40028020005:n40028020006",
+          "rel:macula-greek-nestle1904:MAT 28:20#cl2:grammatical_indirect_object_of:n40028020007:n40028020006"
         ]
       },
       {
         "frame_id": "frame:macula-greek-nestle1904:MAT 28:20#cl3:svov1",
-        "expected_high_quality_relation_ids": [],
+        "expected_high_quality_relation_ids": [
+          "rel:macula-greek-nestle1904:MAT 28:20#cl3:possessive_construction_with:n40028020021:n40028020019"
+        ],
         "unsupported_kind": "copular"
       },
       {
@@ -729,7 +1070,9 @@
       },
       {
         "frame_id": "frame:macula-greek-nestle1904:LUK 8:11#cl1:svov1",
-        "expected_high_quality_relation_ids": [],
+        "expected_high_quality_relation_ids": [
+          "rel:macula-greek-nestle1904:LUK 8:11#cl1:possessive_construction_with:n42008011012:n42008011010"
+        ],
         "unsupported_kind": "copular"
       },
       {
@@ -758,7 +1101,8 @@
       {
         "frame_id": "frame:macula-greek-nestle1904:JHN 1:12#cl0:svov1",
         "expected_high_quality_relation_ids": [
-          "rel:macula-greek-nestle1904:JHN 1:12#cl0:grammatical_object_of:n43001012007:n43001012005"
+          "rel:macula-greek-nestle1904:JHN 1:12#cl0:grammatical_object_of:n43001012007:n43001012005",
+          "rel:macula-greek-nestle1904:JHN 1:12#cl0:grammatical_indirect_object_of:n43001012006:n43001012005"
         ]
       },
       {
@@ -778,7 +1122,8 @@
       {
         "frame_id": "frame:macula-greek-nestle1904:JHN 3:16#cl1:svov1",
         "expected_high_quality_relation_ids": [
-          "rel:macula-greek-nestle1904:JHN 3:16#cl1:grammatical_object_of:n43003016010:n43003016013"
+          "rel:macula-greek-nestle1904:JHN 3:16#cl1:grammatical_object_of:n43003016010:n43003016013",
+          "rel:macula-greek-nestle1904:JHN 3:16#cl1:modifies:n43003016012:n43003016010"
         ]
       },
       {
@@ -790,7 +1135,8 @@
       {
         "frame_id": "frame:macula-greek-nestle1904:JHN 3:16#cl5:svov1",
         "expected_high_quality_relation_ids": [
-          "rel:macula-greek-nestle1904:JHN 3:16#cl5:grammatical_object_of:n43003016024:n43003016023"
+          "rel:macula-greek-nestle1904:JHN 3:16#cl5:grammatical_object_of:n43003016024:n43003016023",
+          "rel:macula-greek-nestle1904:JHN 3:16#cl5:modifies:n43003016025:n43003016024"
         ]
       },
       {
@@ -831,18 +1177,22 @@
       {
         "frame_id": "frame:macula-greek-nestle1904:JHN 4:41#cl0:svov1",
         "expected_high_quality_relation_ids": [
-          "rel:macula-greek-nestle1904:JHN 4:41#cl0:grammatical_subject_of:n43004041002:n43004041004"
+          "rel:macula-greek-nestle1904:JHN 4:41#cl0:grammatical_subject_of:n43004041002:n43004041004",
+          "rel:macula-greek-nestle1904:JHN 4:41#cl0:possessive_construction_with:n43004041008:n43004041007"
         ]
       },
       {
         "frame_id": "frame:macula-greek-nestle1904:JHN 6:35#cl0:svov1",
         "expected_high_quality_relation_ids": [
-          "rel:macula-greek-nestle1904:JHN 6:35#cl0:grammatical_subject_of:n43006035004:n43006035001"
+          "rel:macula-greek-nestle1904:JHN 6:35#cl0:grammatical_subject_of:n43006035004:n43006035001",
+          "rel:macula-greek-nestle1904:JHN 6:35#cl0:grammatical_indirect_object_of:n43006035002:n43006035001"
         ]
       },
       {
         "frame_id": "frame:macula-greek-nestle1904:JHN 6:35#cl1:svov1",
-        "expected_high_quality_relation_ids": [],
+        "expected_high_quality_relation_ids": [
+          "rel:macula-greek-nestle1904:JHN 6:35#cl1:possessive_construction_with:n43006035010:n43006035008"
+        ],
         "unsupported_kind": "copular"
       },
       {
@@ -855,13 +1205,15 @@
         "frame_id": "frame:macula-greek-nestle1904:JHN 6:37#cl1:svov1",
         "expected_high_quality_relation_ids": [
           "rel:macula-greek-nestle1904:JHN 6:37#cl1:grammatical_subject_of:n43006037006:n43006037003",
-          "rel:macula-greek-nestle1904:JHN 6:37#cl1:grammatical_object_of:n43006037002:n43006037003"
+          "rel:macula-greek-nestle1904:JHN 6:37#cl1:grammatical_object_of:n43006037002:n43006037003",
+          "rel:macula-greek-nestle1904:JHN 6:37#cl1:grammatical_indirect_object_of:n43006037004:n43006037003"
         ]
       },
       {
         "frame_id": "frame:macula-greek-nestle1904:JHN 6:67#cl0:svov1",
         "expected_high_quality_relation_ids": [
-          "rel:macula-greek-nestle1904:JHN 6:67#cl0:grammatical_subject_of:n43006067004:n43006067001"
+          "rel:macula-greek-nestle1904:JHN 6:67#cl0:grammatical_subject_of:n43006067004:n43006067001",
+          "rel:macula-greek-nestle1904:JHN 6:67#cl0:grammatical_indirect_object_of:n43006067006:n43006067001"
         ]
       },
       {

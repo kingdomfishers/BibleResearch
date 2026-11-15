@@ -323,11 +323,22 @@ class S1ClauseExtractor:
             "is_clausal": bool,
             "is_coordinated": bool,
             "token_span": list[str],
+            "prep_lemmas": list[str],
+            "prep_token_ids": list[str],
             "diagnostics": list[str],
           }
         """
         span = [w.get(XID) for w in elem.iter("w") if w.get(XID)]
-        return self._resolve_node(elem, top_span=span, applied=[], unlisted=[], diagnostics=[], is_coord=False)
+        return self._resolve_node(
+            elem,
+            top_span=span,
+            applied=[],
+            unlisted=[],
+            diagnostics=[],
+            is_coord=False,
+            prep_lemmas=[],
+            prep_token_ids=[],
+        )
 
     def _resolve_node(
         self,
@@ -337,7 +348,11 @@ class S1ClauseExtractor:
         unlisted: list[str],
         diagnostics: list[str],
         is_coord: bool,
+        prep_lemmas: list[str] | None = None,
+        prep_token_ids: list[str] | None = None,
     ) -> list[dict[str, Any]]:
+        p_lemmas = list(prep_lemmas or [])
+        p_tids = list(prep_token_ids or [])
         if elem.tag == "w":
             rec = self._rec(elem)
             if not rec:
@@ -360,6 +375,8 @@ class S1ClauseExtractor:
                     "is_clausal": False,
                     "is_coordinated": is_coord,
                     "token_span": top_span,
+                    "prep_lemmas": p_lemmas,
+                    "prep_token_ids": p_tids,
                     "diagnostics": list(diagnostics),
                 }
             ]
@@ -375,6 +392,8 @@ class S1ClauseExtractor:
                     "is_clausal": True,
                     "is_coordinated": is_coord,
                     "token_span": [w.get(XID) for w in elem.iter("w") if w.get(XID)],
+                    "prep_lemmas": p_lemmas,
+                    "prep_token_ids": p_tids,
                     "diagnostics": ["clausal_argument_not_nominal_participant"],
                 }
             ]
@@ -392,13 +411,17 @@ class S1ClauseExtractor:
                     "is_clausal": False,
                     "is_coordinated": is_coord,
                     "token_span": top_span,
+                    "prep_lemmas": p_lemmas,
+                    "prep_token_ids": p_tids,
                     "diagnostics": ["empty_phrase_group"],
                 }
             ]
 
         if len(kids) == 1:
             next_applied = applied + ([rule] if rule else [])
-            return self._resolve_node(kids[0], top_span, next_applied, unlisted, diagnostics, is_coord)
+            return self._resolve_node(
+                kids[0], top_span, next_applied, unlisted, diagnostics, is_coord, p_lemmas, p_tids
+            )
 
         if rule in self.heads.coord:
             next_applied = applied + [f"coord:{rule}"]
@@ -408,15 +431,31 @@ class S1ClauseExtractor:
                 if k.tag == "w" and self._is_fn(k, ("cj",)):
                     continue
                 results.extend(
-                    self._resolve_node(k, top_span, next_applied, unlisted, diagnostics, True)
+                    self._resolve_node(
+                        k, top_span, next_applied, unlisted, diagnostics, True, p_lemmas, p_tids
+                    )
                 )
             return results
 
         if rule in self.heads.prep:
             marked = [k for k in kids if k.get("head") == "true"]
             obj = marked[0] if marked else kids[-1]
+            next_prep_lemmas = list(p_lemmas)
+            next_prep_tids = list(p_tids)
+            for k in kids:
+                if k is obj or k.tag != "w":
+                    continue
+                kr = self._rec(k)
+                if kr and (kr.get("class") == "prep" or kr.get("pos") == "preposition"):
+                    pl = norm(kr.get("lemma"))
+                    if pl and pl not in next_prep_lemmas:
+                        next_prep_lemmas.append(pl)
+                    if kr.get("id") and kr["id"] not in next_prep_tids:
+                        next_prep_tids.append(kr["id"])
             next_applied = applied + [f"prep:{rule}"]
-            return self._resolve_node(obj, top_span, next_applied, unlisted, diagnostics, is_coord)
+            return self._resolve_node(
+                obj, top_span, next_applied, unlisted, diagnostics, is_coord, next_prep_lemmas, next_prep_tids
+            )
 
         marked_idx = [i for i, k in enumerate(kids) if k.get("head") == "true"]
         next_applied = list(applied)
@@ -473,7 +512,7 @@ class S1ClauseExtractor:
             head_i = non_art
 
         res = self._resolve_node(
-            kids[head_i], top_span, next_applied, next_unlisted, next_diag, is_coord
+            kids[head_i], top_span, next_applied, next_unlisted, next_diag, is_coord, p_lemmas, p_tids
         )
         # Upstream S1 guard: "πᾶς ὁ πιστεύων" (All-NP wrapping DetCL): word head if present
         if res and res[0]["is_clausal"] and len(next_unlisted) == 0:
@@ -492,9 +531,125 @@ class S1ClauseExtractor:
             )
             if word_i is not None:
                 return self._resolve_node(
-                    kids[word_i], top_span, next_applied, next_unlisted, next_diag, is_coord
+                    kids[word_i], top_span, next_applied, next_unlisted, next_diag, is_coord, p_lemmas, p_tids
                 )
         return res
+
+    def extract_clause_phrase_relations(
+        self,
+        cl_elem: ET.Element,
+        excluded_ids: set[int] | None = None,
+    ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+        """Extract phrase-internal attribute ('modifies') and genitive/construct ('possessive_construction_with')
+        relations strictly within cl_elem's direct phrase tree without crossing nested clause boundaries."""
+        skip = excluded_ids or set()
+        relations: list[dict[str, Any]] = []
+        diagnostics: list[dict[str, Any]] = []
+        seen_pairs: set[tuple[str, str, str]] = set()
+        clausal_rules = {"CL2Adjp", "CL2NP", "DetCL", "V-ADV", "relCL", "PrepCL", "CL-NP"}
+
+        def visit_phrase(node: ET.Element, is_clause_root: bool = False) -> None:
+            if not is_clause_root:
+                rule = _get_rule(node)
+                rel: str | None = None
+                head_i: int | None = None
+                kids = list(node)
+                if len(kids) >= 2 and rule:
+                    if rule in self.heads.first:
+                        rel = self.heads.first[rule]
+                        head_i = 0
+                    elif rule in self.heads.last:
+                        rel = self.heads.last[rule]
+                        head_i = len(kids) - 1
+                    marked = [i for i, k in enumerate(kids) if k.get("head") == "true"]
+                    if marked and rel in ("attribute", "of"):
+                        head_i = marked[0]
+
+                if rel in ("attribute", "of") and head_i is not None:
+                    rel_kind = "modifies" if rel == "attribute" else "possessive_construction_with"
+                    span = [w.get(XID) for w in node.iter("w") if w.get(XID)]
+                    head_elem = kids[head_i]
+                    target_heads = self.resolve_heads(head_elem)
+                    for idx, dep_elem in enumerate(kids):
+                        if idx == head_i or id(dep_elem) in skip:
+                            continue
+                        if dep_elem.tag == "w" and self._is_fn(dep_elem, ("art", "om", "cj", "prep", "rel", "ptcl")):
+                            continue
+                        dep_rule = _get_rule(dep_elem) if dep_elem.tag == "wg" else ""
+                        if (
+                            dep_elem.tag == "wg"
+                            and (
+                                dep_elem.get("class") == "cl"
+                                or self.is_complex(dep_elem)
+                                or dep_rule in clausal_rules
+                            )
+                        ):
+                            diagnostics.append({
+                                "relation_kind": rel_kind,
+                                "phrase_rule": rule,
+                                "skip_reason": "clausal_constituent",
+                                "phrase_token_span": span,
+                            })
+                            continue
+
+                        dep_heads = self.resolve_heads(dep_elem)
+                        valid_targets = [h for h in target_heads if h.get("word") and not h.get("is_clausal")]
+                        if not valid_targets or any(h.get("is_clausal") for h in target_heads):
+                            reason = "clausal_constituent" if any(h.get("is_clausal") for h in target_heads) else "unresolved_phrase_head"
+                            diagnostics.append({
+                                "relation_kind": rel_kind,
+                                "phrase_rule": rule,
+                                "skip_reason": reason,
+                                "phrase_token_span": span,
+                            })
+                            continue
+
+                        if not dep_heads or any(h.get("is_clausal") for h in dep_heads):
+                            reason = "clausal_constituent" if any(h.get("is_clausal") for h in dep_heads) else "unresolved_phrase_head"
+                            diagnostics.append({
+                                "relation_kind": rel_kind,
+                                "phrase_rule": rule,
+                                "skip_reason": reason,
+                                "phrase_token_span": span,
+                            })
+                            continue
+
+                        for dh in dep_heads:
+                            dw = dh.get("word")
+                            if not dw or dh.get("is_clausal"):
+                                diagnostics.append({
+                                    "relation_kind": rel_kind,
+                                    "phrase_rule": rule,
+                                    "skip_reason": "unresolved_phrase_head",
+                                    "phrase_token_span": span,
+                                })
+                                continue
+                            for th in valid_targets:
+                                tw = th["word"]
+                                if dw["id"] == tw["id"]:
+                                    continue
+                                pair_key = (rel_kind, dw["id"], tw["id"])
+                                if pair_key in seen_pairs:
+                                    continue
+                                seen_pairs.add(pair_key)
+                                relations.append({
+                                    "relation_kind": rel_kind,
+                                    "phrase_rule": rule,
+                                    "phrase_token_span": span,
+                                    "dep_head": dh,
+                                    "target_head": th,
+                                    "is_coordinated": bool(dh.get("is_coordinated") or th.get("is_coordinated")),
+                                })
+
+            for ch in node:
+                if ch.tag != "wg" or id(ch) in skip:
+                    continue
+                if ch.get("class") == "cl" or self.is_complex(ch):
+                    continue
+                visit_phrase(ch, is_clause_root=False)
+
+        visit_phrase(cl_elem, is_clause_root=True)
+        return relations, diagnostics
 
     def _compute_sentence_clauses(
         self,
@@ -658,6 +813,8 @@ class S1ClauseExtractor:
                 "quotation_status": "unknown",
                 "speaker_scope": "unknown",
                 "relativized": role_in_parent == "rel" or any(o.get("class") == "rel" for o in pending_openers),
+                "phrase_relations": [],
+                "phrase_diagnostics": [],
             }
             sent_clauses.append(cl_rec)
 
@@ -878,6 +1035,9 @@ class S1ClauseExtractor:
                         voice = "unknown"
 
                     conj_lemmas = [o.get("lemma") for o in child_openers if o.get("class") == "cj" and o.get("lemma")]
+                    phrase_relations, phrase_diagnostics = self.extract_clause_phrase_relations(
+                        node, excluded_ids
+                    )
 
                     cl_rec = {
                         "source_clause_id": cid,
@@ -911,6 +1071,8 @@ class S1ClauseExtractor:
                         "quotation_status": "unknown",
                         "speaker_scope": "unknown",
                         "relativized": role_in_parent == "rel" or any(o.get("class") == "rel" for o in child_openers),
+                        "phrase_relations": phrase_relations,
+                        "phrase_diagnostics": phrase_diagnostics,
                     }
                     sent_clauses.append(cl_rec)
 

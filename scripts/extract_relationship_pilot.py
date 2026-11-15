@@ -9,7 +9,6 @@ GrammaticalFrameV2, OccurrenceRelationV2, inventory, and coverage artifacts.
 
 from __future__ import annotations
 
-import base64
 import gzip
 import hashlib
 import json
@@ -17,21 +16,27 @@ import re
 import sys
 import unicodedata
 import xml.etree.ElementTree as ET
-import zlib
 from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT / "third_party" / "bibleontology"))
+sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
+from build_relationship_graph_v2 import build_r3_graph_artifacts  # noqa: E402
 from s0_s1_s2_builder import S1ClauseExtractor, extract_s0_words, norm  # noqa: E402
 
 SOURCES_DIR = REPO_ROOT / ".artifacts" / "sources"
 TABLES_DIR = REPO_ROOT / ".artifacts" / "static-corpus" / "tables"
 BUNDLE_PATH = REPO_ROOT / "third_party" / "bibleontology" / "heads_and_lexicon.json"
 DEFAULT_OUT_DIR = REPO_ROOT / ".artifacts" / "relationships-v2"
-MCP_RELATIONSHIPS_TS = REPO_ROOT / "supabase" / "functions" / "bible-mcp" / "relationships-v2.ts"
+RULE_VERSION = "1.2"
+
+# Documented BibleOntology S4 Hebrew speech-verb addressee rule (excludes קרא naming clauses)
+SPEECH_IO_HEBREW_LEMMAS = {"אמר", "דבר", "צוה", "ענה", "שאל", "נגד", "שבע", "מלל", "חוה"}
+ADDRESSEE_PREPS_HEBREW = {"אל", "ל"}
+FUNCTION_WORD_CLASSES = {"art", "om", "cj", "prep", "rel", "ptcl"}
 
 RESTRICTED_FIELD_KEYS = {
     "sdbh",
@@ -71,13 +76,26 @@ PILOT_TARGETS: list[dict[str, Any]] = [
         "edition": "macula-hebrew-wlc",
         "language": "hebrew",
         "source_file": "macula-hebrew/WLC/lowfat/01-Gen-001-lowfat.xml",
-        "verses": [f"GEN 1:{i}" for i in range(1, 13)],
+        "verses": (
+            [f"GEN 1:{i}" for i in range(1, 13)]
+            + [
+                "GEN 1:16",
+                "GEN 1:20",
+                "GEN 1:21",
+                "GEN 1:24",
+                "GEN 1:26",
+                "GEN 1:27",
+                "GEN 1:28",
+                "GEN 1:30",
+                "GEN 1:31",
+            ]
+        ),
     },
     {
         "edition": "macula-hebrew-wlc",
         "language": "hebrew",
         "source_file": "macula-hebrew/WLC/lowfat/01-Gen-003-lowfat.xml",
-        "verses": [f"GEN 3:{i}" for i in range(1, 14)],
+        "verses": [f"GEN 3:{i}" for i in range(1, 14)] + ["GEN 3:20"],
     },
     {
         "edition": "macula-hebrew-wlc",
@@ -121,8 +139,10 @@ PILOT_TARGETS: list[dict[str, Any]] = [
         "source_file": "macula-greek/Nestle1904/lowfat/04-john.xml",
         "verses": (
             [f"JHN 1:{i}" for i in range(1, 15)]
+            + ["JHN 2:16"]
             + [f"JHN 3:{i}" for i in range(14, 22)]
             + [f"JHN 4:{i}" for i in range(39, 43)]
+            + ["JHN 4:46"]
             + [f"JHN 6:{i}" for i in range(35, 41)]
             + [f"JHN 6:{i}" for i in range(66, 70)]
         ),
@@ -131,7 +151,7 @@ PILOT_TARGETS: list[dict[str, Any]] = [
         "edition": "macula-greek-sblgnt",
         "language": "greek",
         "source_file": "macula-greek/SBLGNT/lowfat/04-john.xml",
-        "verses": ["JHN 3:16", "JHN 3:17", "JHN 3:18"],
+        "verses": ["JHN 2:16", "JHN 3:16", "JHN 3:17", "JHN 3:18", "JHN 4:46"],
     },
 ]
 
@@ -603,11 +623,19 @@ def init_lang_metrics() -> dict[str, Any]:
         "clauses_parsed": 0,
         "clauses_eligible_grammatical_subject_of": 0,
         "clauses_eligible_grammatical_object_of": 0,
+        "clauses_eligible_grammatical_indirect_object_of": 0,
+        "clauses_eligible_grammatical_second_object_of": 0,
+        "clauses_eligible_modifies": 0,
+        "clauses_eligible_possessive_construction_with": 0,
         "frames_emitted": 0,
         "relations_emitted_total": 0,
         "relations_by_predicate": {
             "grammatical_subject_of": 0,
             "grammatical_object_of": 0,
+            "grammatical_indirect_object_of": 0,
+            "grammatical_second_object_of": 0,
+            "modifies": 0,
+            "possessive_construction_with": 0,
         },
         "relations_by_quality": {
             "source_explicit": 0,
@@ -618,6 +646,88 @@ def init_lang_metrics() -> dict[str, Any]:
         "skip_reasons": Counter(),
         "missing_mappings": [],
         "unsupported_constructions": Counter(),
+    }
+
+
+def _assess_pair_quality(
+    *,
+    subj_word: dict[str, Any],
+    subj_cw: dict[str, Any],
+    subj_head: dict[str, Any],
+    obj_word: dict[str, Any],
+    obj_cw: dict[str, Any],
+    obj_head: dict[str, Any],
+    clause_align: str,
+    pred_ambiguous: bool = False,
+    force_rule_derived: bool = False,
+) -> tuple[str, list[str]]:
+    """Classify (subject -> object) relation quality strictly without promoting uncertain pairs."""
+    cand_reasons: list[str] = []
+    if pred_ambiguous:
+        cand_reasons.append("ambiguous_multiple_predicates")
+    if not subj_head.get("is_verified_head", True):
+        cand_reasons.append(subj_head["resolution_kind"])
+    if not obj_head.get("is_verified_head", True):
+        cand_reasons.append(f"head_{obj_head['resolution_kind']}")
+    if (subj_word.get("class") == "pron") and not subj_word.get("referent"):
+        cand_reasons.append("unresolved_pronoun_referent")
+    if (obj_word.get("class") == "pron") and not obj_word.get("referent"):
+        cand_reasons.append("unresolved_head_pronoun_referent")
+    if subj_cw["lemma_resolution_status"] not in VERIFIED_LEMMA_STATUSES:
+        cand_reasons.append(f"uncertain_lemma:{subj_cw['lemma_resolution_status']}")
+    if obj_cw["lemma_resolution_status"] not in VERIFIED_LEMMA_STATUSES:
+        cand_reasons.append(f"uncertain_head_lemma:{obj_cw['lemma_resolution_status']}")
+    if clause_align not in ("native_source", "versification_shifted"):
+        cand_reasons.append(f"alignment:{clause_align}")
+
+    if cand_reasons:
+        return "candidate", cand_reasons
+    if (
+        not force_rule_derived
+        and subj_head.get("resolution_kind") == "direct_role_word"
+        and obj_head.get("resolution_kind") == "direct_role_word"
+    ):
+        return "source_explicit", []
+    return "rule_derived", []
+
+
+def _make_relation_record(
+    *,
+    edition: str,
+    cid: str,
+    frame_id: str,
+    clause_node_id: str,
+    effective_ref: str,
+    predicate_name: str,
+    rule_id: str,
+    subj_word: dict[str, Any],
+    subj_cw: dict[str, Any],
+    obj_word: dict[str, Any],
+    obj_cw: dict[str, Any],
+    quality: str,
+    context: dict[str, str],
+) -> dict[str, Any]:
+    return {
+        "relation_id": f"rel:{edition}:{cid}:{predicate_name}:{subj_word['id']}:{obj_word['id']}",
+        "frame_id": frame_id,
+        "subject_token_id": subj_word["id"],
+        "subject_lemma_id": subj_cw["lemma_id"],
+        "predicate": predicate_name,
+        "object_token_id": obj_word["id"],
+        "object_lemma_id": obj_cw["lemma_id"],
+        "evidence": {
+            "edition": edition,
+            "reference": effective_ref,
+            "source_clause_id": clause_node_id,
+            "rule_id": rule_id,
+        },
+        "quality": quality,
+        "qualifiers": {
+            "polarity": context["polarity"],
+            "modality": context["modality"],
+            "voice": context["voice"],
+            "quotation": context["quotation"],
+        },
     }
 
 
@@ -668,6 +778,7 @@ def main() -> None:
 
     frames: list[dict[str, Any]] = []
     relations: list[dict[str, Any]] = []
+    clause_lemma_presence: dict[tuple[str, str], set[str]] = defaultdict(set)
     metrics = {"hebrew": init_lang_metrics(), "greek": init_lang_metrics()}
     file_inventory: list[dict[str, Any]] = []
     unmapped_tokens: list[dict[str, Any]] = []
@@ -741,6 +852,11 @@ def main() -> None:
             cid = f"{effective_ref}#cl{cl['clause_index_in_verse']}"
             clause_node_id = cl.get("syntax_node_key") or cid
             frame_id = f"frame:{edition}:{cid}:svov1"
+
+            for wid in cl["token_ids"]:
+                tcw_tok = crosswalk.resolve_token(edition, wid, words.get(wid))
+                if tcw_tok["lemma_id"]:
+                    clause_lemma_presence[(edition, tcw_tok["lemma_id"])].add(clause_node_id)
 
             pred_word = cl["predicate_word"]
             pred_cw = (
@@ -827,117 +943,238 @@ def main() -> None:
                         role_rec["reason"] = ";".join(reasons)
                     roles_out.append(role_rec)
 
-            # Frame quality assessment & R2 SVO edge emission
+            # Frame quality assessment & R2+R3.1 relation emission
             clause_relations: list[dict[str, Any]] = []
             context = build_frame_context(cl)
             lang_pfx = "he" if lang == "hebrew" else "gr"
+
+            # Documented BibleOntology S4 Hebrew speech-verb addressee indirect-object candidates
+            speech_io_heads: list[tuple[int, dict[str, Any]]] = []
+            if (
+                lang == "hebrew"
+                and clause_align != "not_in_canonical_verse"
+                and cl["clause_kind"] == "verbal"
+                and pred_word
+                and pred_cw
+                and pred_cw["lemma_id"]
+                and not cl.get("predicate_ambiguous")
+                and hebrew_consonants(pred_word.get("lemma")) in SPEECH_IO_HEBREW_LEMMAS
+            ):
+                for pp_idx, pp_h in enumerate(cl["resolved_roles"].get("pp", [])):
+                    if not pp_h.get("is_clausal") and (set(pp_h.get("prep_lemmas") or []) & ADDRESSEE_PREPS_HEBREW):
+                        speech_io_heads.append((pp_idx, pp_h))
+                        if pp_h.get("word") is not None:
+                            pw_h = pp_h["word"]
+                            ptcw = crosswalk.resolve_token(edition, pw_h["id"], pw_h)
+                            is_unresolved_pron = (pw_h.get("class") == "pron") and not pw_h.get("referent")
+                            io_reasons: list[str] = []
+                            if not pp_h["is_verified_head"]:
+                                io_reasons.append(pp_h["resolution_kind"])
+                            if is_unresolved_pron:
+                                io_reasons.append("unresolved_pronoun_referent")
+                            if ptcw["crosswalk_status"] != "resolved":
+                                io_reasons.append(f"crosswalk:{ptcw['crosswalk_status']}")
+                            elif ptcw["lemma_resolution_status"] not in VERIFIED_LEMMA_STATUSES:
+                                io_reasons.append(f"uncertain_lemma:{ptcw['lemma_resolution_status']}")
+                            io_role_rec: dict[str, Any] = {
+                                "role": "grammatical_indirect_object",
+                                "head_token_id": pw_h["id"],
+                                "lemma_id": ptcw["lemma_id"],
+                                "source_phrase_id": make_phrase_id(cid, "pp", pp_idx, pp_h["token_span"]),
+                                "state": "candidate" if io_reasons else "explicit",
+                                "head_resolution": f"{pp_h['resolution_kind']}+speech_pp",
+                            }
+                            if io_reasons:
+                                io_role_rec["reason"] = ";".join(io_reasons)
+                            roles_out.append(io_role_rec)
 
             if clause_align == "not_in_canonical_verse":
                 frame_quality = "not_covered"
                 m["skip_reasons"]["not_in_canonical_verse"] += 1
                 m["unsupported_constructions"]["not_in_canonical_verse"] += 1
                 warnings.append("skipped:not_in_canonical_verse")
-            elif cl["clause_kind"] != "verbal":
-                frame_quality = (
-                    "candidate"
-                    if any(r["state"] in ("candidate", "unresolved") for r in roles_out)
-                    else "source_explicit"
-                )
-                skip_tag = f"non_verbal_clause:{cl['clause_kind']}"
-                m["skip_reasons"][skip_tag] += 1
-                m["unsupported_constructions"][cl["clause_kind"]] += 1
-                warnings.append(f"skipped_svo:{skip_tag}")
-            elif not pred_word or not pred_cw or not pred_cw["lemma_id"]:
-                frame_quality = "candidate"
-                reason = pred_cw["crosswalk_status"] if pred_cw else "missing_predicate_token"
-                m["skip_reasons"][f"predicate_unmapped:{reason}"] += 1
-                warnings.append(f"skipped_svo:predicate_unmapped:{reason}")
             else:
-                pred_head = v_heads[0]
-                for role_code, predicate_name, rule_id in (
-                    ("s", "grammatical_subject_of", f"{lang_pfx}_clause_s_v_v1"),
-                    ("o", "grammatical_object_of", f"{lang_pfx}_clause_o_v_v1"),
-                ):
-                    role_entries = cl["resolved_roles"].get(role_code, [])
-                    if not role_entries:
-                        continue
-                    if predicate_name == "grammatical_subject_of":
-                        m["clauses_eligible_grammatical_subject_of"] += 1
-                    else:
-                        m["clauses_eligible_grammatical_object_of"] += 1
+                if cl["clause_kind"] != "verbal":
+                    skip_tag = f"non_verbal_clause:{cl['clause_kind']}"
+                    m["skip_reasons"][skip_tag] += 1
+                    m["unsupported_constructions"][cl["clause_kind"]] += 1
+                    warnings.append(f"skipped_svo:{skip_tag}")
+                elif not pred_word or not pred_cw or not pred_cw["lemma_id"]:
+                    reason = pred_cw["crosswalk_status"] if pred_cw else "missing_predicate_token"
+                    m["skip_reasons"][f"predicate_unmapped:{reason}"] += 1
+                    warnings.append(f"skipped_svo:predicate_unmapped:{reason}")
+                else:
+                    pred_head = v_heads[0]
+                    role_specs: list[tuple[str, str, str, bool, list[dict[str, Any]]]] = [
+                        ("s", "grammatical_subject_of", f"{lang_pfx}_clause_s_v_v1", False, cl["resolved_roles"].get("s", [])),
+                        ("o", "grammatical_object_of", f"{lang_pfx}_clause_o_v_v1", False, cl["resolved_roles"].get("o", [])),
+                        ("io", "grammatical_indirect_object_of", f"{lang_pfx}_clause_io_v_v1", False, cl["resolved_roles"].get("io", [])),
+                        ("o2", "grammatical_second_object_of", f"{lang_pfx}_clause_o2_v_v1", False, cl["resolved_roles"].get("o2", [])),
+                    ]
+                    if speech_io_heads:
+                        role_specs.append(
+                            (
+                                "pp",
+                                "grammatical_indirect_object_of",
+                                "he_clause_io_speech_pp_v1",
+                                True,
+                                [pair[1] for pair in speech_io_heads],
+                            )
+                        )
+                    matched_pp_spans = {id(pair[1]) for pair in speech_io_heads}
+                    for pp_h in cl["resolved_roles"].get("pp", []):
+                        if id(pp_h) not in matched_pp_spans:
+                            m["skip_reasons"]["pp:non_io_prepositional_phrase"] += 1
 
-                    for h in role_entries:
-                        if h["is_clausal"]:
-                            m["skip_reasons"][f"{predicate_name}:clausal_constituent"] += 1
-                            m["unsupported_constructions"][f"clausal_{role_code}"] += 1
+                    for role_code, predicate_name, rule_id, force_rd, role_entries in role_specs:
+                        if not role_entries:
                             continue
-                        w = h["word"]
-                        if w is None:
-                            m["skip_reasons"][f"{predicate_name}:empty_head"] += 1
-                            continue
-                        tcw = crosswalk.resolve_token(edition, w["id"], w)
-                        if not tcw["lemma_id"]:
-                            m["skip_reasons"][f"{predicate_name}:{tcw['crosswalk_status']}"] += 1
-                            m["missing_mappings"].append({
-                                "edition": edition,
-                                "clause_id": cid,
-                                "token_id": w["id"],
-                                "reason": tcw["crosswalk_status"],
-                            })
-                            continue
+                        m[f"clauses_eligible_{predicate_name}"] += 1
 
-                        cand_reasons: list[str] = []
-                        if cl.get("predicate_ambiguous"):
-                            cand_reasons.append("ambiguous_multiple_predicates")
-                        if not h["is_verified_head"]:
-                            cand_reasons.append(h["resolution_kind"])
-                        if not pred_head["is_verified_head"]:
-                            cand_reasons.append(f"pred_{pred_head['resolution_kind']}")
-                        if (w.get("class") == "pron") and not w.get("referent"):
-                            cand_reasons.append("unresolved_pronoun_referent")
-                        if tcw["lemma_resolution_status"] not in VERIFIED_LEMMA_STATUSES:
-                            cand_reasons.append(f"uncertain_lemma:{tcw['lemma_resolution_status']}")
-                        if pred_cw["lemma_resolution_status"] not in VERIFIED_LEMMA_STATUSES:
-                            cand_reasons.append(f"uncertain_pred_lemma:{pred_cw['lemma_resolution_status']}")
-                        if clause_align not in ("native_source", "versification_shifted"):
-                            cand_reasons.append(f"alignment:{clause_align}")
+                        for h in role_entries:
+                            if h["is_clausal"]:
+                                m["skip_reasons"][f"{predicate_name}:clausal_constituent"] += 1
+                                m["unsupported_constructions"][f"clausal_{role_code}"] += 1
+                                continue
+                            w = h["word"]
+                            if w is None:
+                                m["skip_reasons"][f"{predicate_name}:empty_head"] += 1
+                                continue
+                            tcw = crosswalk.resolve_token(edition, w["id"], w)
+                            if not tcw["lemma_id"]:
+                                m["skip_reasons"][f"{predicate_name}:{tcw['crosswalk_status']}"] += 1
+                                m["missing_mappings"].append({
+                                    "edition": edition,
+                                    "clause_id": cid,
+                                    "token_id": w["id"],
+                                    "reason": tcw["crosswalk_status"],
+                                })
+                                continue
 
-                        if not cand_reasons and h["resolution_kind"] == "direct_role_word" and pred_head["resolution_kind"] == "direct_role_word":
-                            rel_quality = "source_explicit"
-                        elif not cand_reasons:
-                            rel_quality = "rule_derived"
-                        else:
-                            rel_quality = "candidate"
+                            rel_quality, cand_reasons = _assess_pair_quality(
+                                subj_word=w,
+                                subj_cw=tcw,
+                                subj_head=h,
+                                obj_word=pred_word,
+                                obj_cw=pred_cw,
+                                obj_head=pred_head,
+                                clause_align=clause_align,
+                                pred_ambiguous=bool(cl.get("predicate_ambiguous")),
+                                force_rule_derived=force_rd,
+                            )
                             for cr in cand_reasons:
                                 m["candidate_reasons"][cr] += 1
 
-                        rel_id = f"rel:{edition}:{cid}:{predicate_name}:{w['id']}:{pred_word['id']}"
-                        rel = {
-                            "relation_id": rel_id,
-                            "frame_id": frame_id,
-                            "subject_token_id": w["id"],
-                            "subject_lemma_id": tcw["lemma_id"],
-                            "predicate": predicate_name,
-                            "object_token_id": pred_word["id"],
-                            "object_lemma_id": pred_cw["lemma_id"],
-                            "evidence": {
-                                "edition": edition,
-                                "reference": effective_ref,
-                                "source_clause_id": clause_node_id,
-                                "rule_id": rule_id,
-                            },
-                            "quality": rel_quality,
-                            "qualifiers": {
-                                "polarity": context["polarity"],
-                                "modality": context["modality"],
-                                "voice": context["voice"],
-                                "quotation": context["quotation"],
-                            },
-                        }
-                        clause_relations.append(rel)
-                        m["relations_emitted_total"] += 1
-                        m["relations_by_predicate"][predicate_name] += 1
-                        m["relations_by_quality"][rel_quality] += 1
+                            rel = _make_relation_record(
+                                edition=edition,
+                                cid=cid,
+                                frame_id=frame_id,
+                                clause_node_id=clause_node_id,
+                                effective_ref=effective_ref,
+                                predicate_name=predicate_name,
+                                rule_id=rule_id,
+                                subj_word=w,
+                                subj_cw=tcw,
+                                obj_word=pred_word,
+                                obj_cw=pred_cw,
+                                quality=rel_quality,
+                                context=context,
+                            )
+                            clause_relations.append(rel)
+                            m["relations_emitted_total"] += 1
+                            m["relations_by_predicate"][predicate_name] += 1
+                            m["relations_by_quality"][rel_quality] += 1
+
+                # R3.1 C/D/E: Phrase-internal modifies & possessive_construction_with (applies inside verbal & nominal clauses)
+                for pd in cl.get("phrase_diagnostics", []):
+                    pk = pd["relation_kind"]
+                    sr = pd["skip_reason"]
+                    m["skip_reasons"][f"{pk}:{sr}"] += 1
+                    if sr == "clausal_constituent":
+                        m["unsupported_constructions"][f"clausal_{pk}"] += 1
+
+                seen_phrase_preds_in_clause: set[str] = set()
+                for pr in cl.get("phrase_relations", []):
+                    pred_name = pr["relation_kind"]
+                    rule_pfx = "mod" if pred_name == "modifies" else "poss"
+                    rule_id = f"{lang_pfx}_phrase_{rule_pfx}_v1"
+                    if pred_name not in seen_phrase_preds_in_clause:
+                        m[f"clauses_eligible_{pred_name}"] += 1
+                        seen_phrase_preds_in_clause.add(pred_name)
+
+                    dh = pr["dep_head"]
+                    th = pr["target_head"]
+                    dw = dh["word"]
+                    tw = th["word"]
+
+                    if (
+                        (dw.get("class") in FUNCTION_WORD_CLASSES)
+                        or (tw.get("class") in FUNCTION_WORD_CLASSES)
+                    ):
+                        m["skip_reasons"][f"{pred_name}:function_word_endpoint"] += 1
+                        continue
+                    if (
+                        pred_name == "possessive_construction_with"
+                        and lang == "greek"
+                        and dw.get("case") != "genitive"
+                    ):
+                        m["skip_reasons"]["possessive_construction_with:non_genitive_dependent"] += 1
+                        continue
+
+                    dcw = crosswalk.resolve_token(edition, dw["id"], dw)
+                    tcw_head = crosswalk.resolve_token(edition, tw["id"], tw)
+                    if not dcw["lemma_id"]:
+                        m["skip_reasons"][f"{pred_name}:{dcw['crosswalk_status']}"] += 1
+                        m["missing_mappings"].append({
+                            "edition": edition,
+                            "clause_id": cid,
+                            "token_id": dw["id"],
+                            "reason": dcw["crosswalk_status"],
+                        })
+                        continue
+                    if not tcw_head["lemma_id"]:
+                        m["skip_reasons"][f"{pred_name}:{tcw_head['crosswalk_status']}"] += 1
+                        m["missing_mappings"].append({
+                            "edition": edition,
+                            "clause_id": cid,
+                            "token_id": tw["id"],
+                            "reason": tcw_head["crosswalk_status"],
+                        })
+                        continue
+
+                    rel_quality, cand_reasons = _assess_pair_quality(
+                        subj_word=dw,
+                        subj_cw=dcw,
+                        subj_head=dh,
+                        obj_word=tw,
+                        obj_cw=tcw_head,
+                        obj_head=th,
+                        clause_align=clause_align,
+                        pred_ambiguous=False,
+                        force_rule_derived=True,
+                    )
+                    for cr in cand_reasons:
+                        m["candidate_reasons"][cr] += 1
+
+                    rel = _make_relation_record(
+                        edition=edition,
+                        cid=cid,
+                        frame_id=frame_id,
+                        clause_node_id=clause_node_id,
+                        effective_ref=effective_ref,
+                        predicate_name=pred_name,
+                        rule_id=rule_id,
+                        subj_word=dw,
+                        subj_cw=dcw,
+                        obj_word=tw,
+                        obj_cw=tcw_head,
+                        quality=rel_quality,
+                        context=context,
+                    )
+                    clause_relations.append(rel)
+                    m["relations_emitted_total"] += 1
+                    m["relations_by_predicate"][pred_name] += 1
+                    m["relations_by_quality"][rel_quality] += 1
 
                 if clause_relations:
                     if any(r["quality"] == "source_explicit" for r in clause_relations):
@@ -946,6 +1183,14 @@ def main() -> None:
                         frame_quality = "rule_derived"
                     else:
                         frame_quality = "candidate"
+                elif cl["clause_kind"] != "verbal":
+                    frame_quality = (
+                        "candidate"
+                        if any(r["state"] in ("candidate", "unresolved") for r in roles_out)
+                        else "source_explicit"
+                    )
+                elif not pred_word or not pred_cw or not pred_cw["lemma_id"]:
+                    frame_quality = "candidate"
                 else:
                     has_candidate_svo_role = any(
                         r["state"] in ("candidate", "unresolved")
@@ -972,8 +1217,8 @@ def main() -> None:
                 "roles": roles_out,
                 "context": context,
                 "extraction": {
-                    "algorithm": "bibleontology_s0_s1_s2_r2_svov1",
-                    "rule_version": "1.1",
+                    "algorithm": "bibleontology_s0_s1_s2_r3_v1",
+                    "rule_version": RULE_VERSION,
                     "quality": frame_quality,
                     "warnings": uniq_warnings,
                 },
@@ -1024,14 +1269,18 @@ def main() -> None:
     }
 
     coverage_doc = {
-        "schema_version": "1.1",
-        "pilot_scope_note": "Stratified R2.1 Hebrew/Greek verification slice (400+ clauses); metrics do not represent whole-Bible coverage.",
+        "schema_version": "1.2",
+        "pilot_scope_note": "Stratified R3 Hebrew/Greek verification slice; metrics do not represent whole-Bible coverage.",
         "languages": {
             lang: {
                 "clauses_examined": m["clauses_examined"],
                 "clauses_parsed": m["clauses_parsed"],
                 "clauses_eligible_grammatical_subject_of": m["clauses_eligible_grammatical_subject_of"],
                 "clauses_eligible_grammatical_object_of": m["clauses_eligible_grammatical_object_of"],
+                "clauses_eligible_grammatical_indirect_object_of": m["clauses_eligible_grammatical_indirect_object_of"],
+                "clauses_eligible_grammatical_second_object_of": m["clauses_eligible_grammatical_second_object_of"],
+                "clauses_eligible_modifies": m["clauses_eligible_modifies"],
+                "clauses_eligible_possessive_construction_with": m["clauses_eligible_possessive_construction_with"],
                 "frames_emitted": m["frames_emitted"],
                 "relations_emitted_total": m["relations_emitted_total"],
                 "relations_by_predicate": m["relations_by_predicate"],
@@ -1074,27 +1323,16 @@ def main() -> None:
         newline="\n",
     )
 
-    if out_dir.resolve() == DEFAULT_OUT_DIR.resolve() and MCP_RELATIONSHIPS_TS.exists():
-        bundle_payload = json.dumps(
-            {"pf": frames, "pr": relations, "pc": coverage_doc},
-            ensure_ascii=False,
-            separators=(",", ":"),
-            sort_keys=True,
-        ).encode("utf-8")
-        compressor = zlib.compressobj(level=9, wbits=-15)
-        raw_deflate = compressor.compress(bundle_payload) + compressor.flush()
-        b64 = base64.b64encode(raw_deflate).decode("ascii")
-        b64_lines = "\n".join(b64[i : i + 100] for i in range(0, len(b64), 100))
-        ts_src = MCP_RELATIONSHIPS_TS.read_text(encoding="utf-8")
-        updated_src, n_subs = re.subn(
-            r'const PILOT_B64 = (?:"[^"]*"|`[^`]*`);',
-            f'const PILOT_B64 = `\n{b64_lines}\n`;',
-            ts_src,
-            count=1,
-        )
-        if n_subs != 1:
-            raise RuntimeError(f"Expected 1 PILOT_B64 constant in {MCP_RELATIONSHIPS_TS}, found {n_subs}")
-        MCP_RELATIONSHIPS_TS.write_text(updated_src, encoding="utf-8", newline="\n")
+    # R3 is an offline build milestone (§8): do NOT overwrite/bloat supabase/functions/bible-mcp/relationships-v2.ts.
+    r3_report = build_r3_graph_artifacts(
+        out_dir=out_dir,
+        frames=frames,
+        relations=relations,
+        coverage_doc=coverage_doc,
+        inventory_doc=inventory_doc,
+        clause_lemma_presence=clause_lemma_presence,
+        rule_version=RULE_VERSION,
+    )
 
     print(
         json.dumps(
@@ -1103,6 +1341,7 @@ def main() -> None:
                 "out_dir": str(out_dir),
                 "hebrew": coverage_doc["languages"]["hebrew"],
                 "greek": coverage_doc["languages"]["greek"],
+                "r3_summary_totals": r3_report["totals"],
             },
             ensure_ascii=False,
         )
