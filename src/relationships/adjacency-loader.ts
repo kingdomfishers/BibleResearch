@@ -4,6 +4,7 @@
 
 import type {
   AdjacencyLoader,
+  AssetBudgetContext,
   EdgeStats,
   EntityKind,
   EpistemicClass,
@@ -440,16 +441,28 @@ async function loadContextualEdges(ctx: LayerContext, cMeta: Record<string, unkn
   const minClause = Math.max(ctx.options.min_same_clause ?? (scope === 'same_clause' ? 1 : 0), 0);
   const minColloc = Math.max(ctx.options.min_collocation ?? (scope === 'collocation' ? 1 : 0), 0);
   const maxPages = ctx.options.max_contextual_pages ?? 2;
-  const targetHint = ctx.options.target_hint || null;
+  const targetSet = new Set<string>(ctx.options.target_hints || []);
+  if (ctx.options.target_hint) targetSet.add(ctx.options.target_hint);
+  const selfIsGreek = ctx.entityKey.startsWith('lemma:G');
+  const selfIsHebrew = ctx.entityKey.startsWith('lemma:H');
+  const remainingTargets = new Set<string>();
+  for (const t of targetSet) {
+    if (selfIsGreek && t.startsWith('lemma:H')) continue;
+    if (selfIsHebrew && t.startsWith('lemma:G')) continue;
+    remainingTargets.add(t);
+  }
+  for (const it of topItems) {
+    remainingTargets.delete(String(it.target_lemma_key || ''));
+  }
 
   const collectedItems: Array<Record<string, unknown>> = [...topItems];
-  const foundInTop = targetHint ? topItems.some((it) => it.target_lemma_key === targetHint) : false;
+  const allFoundInTop = targetSet.size > 0 && remainingTargets.size === 0;
   let pagesLoaded = 0;
   let pagesSkipped = 0;
   let truncated = false;
   let incompleteReason: string | null = null;
 
-  if (!foundInTop && overflowPages.length > 0 && maxPages > 0) {
+  if (!allFoundInTop && overflowPages.length > 0 && maxPages > 0) {
     const eligible = overflowPages.filter(
       (p) => Number(p.max_same_verse ?? 999999) >= minVerse && Number(p.max_same_clause ?? 999999) >= minClause && Number(p.max_collocation ?? 999999) >= minColloc,
     );
@@ -460,16 +473,29 @@ async function loadContextualEdges(ctx: LayerContext, cMeta: Record<string, unkn
         incompleteReason = `Contextual adjacency for ${ctx.entityKey} truncated after ${pagesLoaded}/${eligible.length} eligible overflow pages (${totalNeighbors} total neighbors).`;
         break;
       }
+      if (ctx.options.budget?.budget_exceeded) {
+        truncated = true;
+        incompleteReason = `Contextual adjacency for ${ctx.entityKey} stopped by resource budget (${ctx.options.budget.exceeded_reason || 'budget'}).`;
+        break;
+      }
       const relPath = String(pMeta.path || '').replace(/^contextual\//, '');
       const pageData = (await ctx.readShard(`${cMeta.base_dir}/${relPath}`)) as { entries?: Record<string, Array<{ offset_start: number; items: Array<Record<string, unknown>> }>> } | null;
+      if (!pageData && ctx.options.budget?.budget_exceeded) {
+        truncated = true;
+        incompleteReason = `Contextual adjacency for ${ctx.entityKey} stopped by resource budget (${ctx.options.budget.exceeded_reason || 'budget'}).`;
+        break;
+      }
       pagesLoaded += 1;
       const seg = (pageData?.entries?.[ctx.entityKey] || []).find((s) => s.offset_start === pMeta.offset_start);
       if (seg?.items) {
         collectedItems.push(...seg.items);
-        if (targetHint && seg.items.some((it) => it.target_lemma_key === targetHint)) break;
+        if (targetSet.size > 0) {
+          for (const it of seg.items) remainingTargets.delete(String(it.target_lemma_key || ''));
+          if (remainingTargets.size === 0) break;
+        }
       }
     }
-  } else if (!foundInTop && overflowPages.length > 0 && maxPages <= 0) {
+  } else if (!allFoundInTop && overflowPages.length > 0 && maxPages <= 0) {
     truncated = true;
     incompleteReason = `Contextual overflow pages not loaded for ${ctx.entityKey} (page budget 0; ${totalNeighbors} total neighbors).`;
   }
@@ -619,12 +645,29 @@ export class ShardedAdjacencyLoader implements AdjacencyLoader {
     this.maxCachedShards = Math.max(8, config.maxCachedShards ?? 64);
   }
 
-  private async readShard(assetPath: string, trackStats?: { shardsRead: number; bytesRead: number; missingShards: string[] }): Promise<unknown | null> {
+  private async readShard(
+    assetPath: string,
+    trackStats?: { shardsRead: number; bytesRead: number; missingShards: string[] },
+    budget?: AssetBudgetContext,
+  ): Promise<unknown | null> {
     const cached = this.lru.get(assetPath);
     if (cached) {
       this.lru.delete(assetPath);
       this.lru.set(assetPath, cached);
       return cached.data;
+    }
+    if (budget) {
+      if (budget.asset_requests >= budget.max_asset_requests) {
+        budget.budget_exceeded = true;
+        budget.exceeded_reason = budget.exceeded_reason || 'max_asset_requests';
+        return null;
+      }
+      if (budget.bytes_read >= budget.max_bytes_read) {
+        budget.budget_exceeded = true;
+        budget.exceeded_reason = budget.exceeded_reason || 'max_bytes_read';
+        return null;
+      }
+      budget.asset_requests += 1;
     }
     const res = await this.reader.readJson(assetPath);
     if (!res) {
@@ -635,6 +678,14 @@ export class ShardedAdjacencyLoader implements AdjacencyLoader {
       trackStats.shardsRead += 1;
       trackStats.bytesRead += res.bytes;
     }
+    if (budget) {
+      budget.shards_read += 1;
+      budget.bytes_read += res.bytes;
+      if (budget.bytes_read > budget.max_bytes_read) {
+        budget.budget_exceeded = true;
+        budget.exceeded_reason = budget.exceeded_reason || 'max_bytes_read';
+      }
+    }
     this.lru.set(assetPath, res);
     if (this.lru.size > this.maxCachedShards) {
       const oldest = this.lru.keys().next().value;
@@ -643,53 +694,62 @@ export class ShardedAdjacencyLoader implements AdjacencyLoader {
     return res.data;
   }
 
-  async getManifestSummary(): Promise<Record<string, unknown> | null> {
+  async getManifestSummary(budget?: AssetBudgetContext): Promise<Record<string, unknown> | null> {
     if (!this.manifestPromise) {
-      this.manifestPromise = this.readShard(`/v2/relationships/${this.releaseVersion}/manifest.json.gz`) as Promise<Record<string, unknown> | null>;
+      this.manifestPromise = this.readShard(`/v2/relationships/${this.releaseVersion}/manifest.json.gz`, undefined, budget) as Promise<Record<string, unknown> | null>;
     }
-    return this.manifestPromise;
+    const res = await this.manifestPromise;
+    if (!res) this.manifestPromise = null;
+    return res;
   }
 
-  async getReleaseVersion(): Promise<string> {
-    const m = await this.getManifestSummary();
+  async getReleaseVersion(budget?: AssetBudgetContext): Promise<string> {
+    const m = await this.getManifestSummary(budget);
     return String(m?.release_version || this.releaseVersion);
   }
 
-  async getResolverIndex(): Promise<ResolverIndexData | null> {
+  async getResolverIndex(budget?: AssetBudgetContext): Promise<ResolverIndexData | null> {
     if (!this.resolverPromise) {
       this.resolverPromise = (async () => {
-        const m = await this.getManifestSummary();
+        const m = await this.getManifestSummary(budget);
+        if (!m) return null;
         const gramBase = String((m?.layers as Record<string, Record<string, unknown>>)?.grammatical?.base_dir || `/v2/relationships/${this.releaseVersion}`);
-        return this.readShard(`${gramBase}/resolver-index.json.gz`) as Promise<ResolverIndexData | null>;
+        return this.readShard(`${gramBase}/resolver-index.json.gz`, undefined, budget) as Promise<ResolverIndexData | null>;
       })();
     }
-    return this.resolverPromise;
+    const res = await this.resolverPromise;
+    if (!res) this.resolverPromise = null;
+    return res;
   }
 
-  async getUncoveredLemmas(): Promise<UncoveredLemmasData | null> {
+  async getUncoveredLemmas(budget?: AssetBudgetContext): Promise<UncoveredLemmasData | null> {
     if (!this.uncoveredPromise) {
       this.uncoveredPromise = (async () => {
-        const m = await this.getManifestSummary();
+        const m = await this.getManifestSummary(budget);
+        if (!m) return null;
         const gramBase = String((m?.layers as Record<string, Record<string, unknown>>)?.grammatical?.base_dir || `/v2/relationships/${this.releaseVersion}`);
-        return this.readShard(`${gramBase}/uncovered-lemmas.json.gz`) as Promise<UncoveredLemmasData | null>;
+        return this.readShard(`${gramBase}/uncovered-lemmas.json.gz`, undefined, budget) as Promise<UncoveredLemmasData | null>;
       })();
     }
-    return this.uncoveredPromise;
+    const res = await this.uncoveredPromise;
+    if (!res) this.uncoveredPromise = null;
+    return res;
   }
 
-  async getEntityProfile(entityKey: string): Promise<GraphEntityRef | null> {
-    const resolver = await this.getResolverIndex();
+  async getEntityProfile(entityKey: string, budget?: AssetBudgetContext): Promise<GraphEntityRef | null> {
+    const resolver = await this.getResolverIndex(budget);
     if (resolver?.lemmas?.[entityKey]) return profileFromResolver(entityKey, resolver, null);
-    const uncovered = await this.getUncoveredLemmas();
+    const uncovered = await this.getUncoveredLemmas(budget);
     return profileFromResolver(entityKey, resolver, uncovered);
   }
 
-  async getSummaryEvidence(summaryId: string): Promise<HopEvidenceWitness[]> {
-    const manifest = await this.getManifestSummary();
+  async getSummaryEvidence(summaryId: string, budget?: AssetBudgetContext): Promise<HopEvidenceWitness[]> {
+    const manifest = await this.getManifestSummary(budget);
+    if (!manifest) return [];
     const gramLayer = ((manifest?.layers || {}) as Record<string, Record<string, unknown>>).grammatical;
     const gramBase = String(gramLayer?.base_dir || `/v2/relationships/${this.releaseVersion}`);
     const hex = computeBucketHex(String(gramLayer?.hash_algorithm || 'fnv1a64_mod256'), Number(gramLayer?.buckets || 256), summaryId);
-    const evShard = (await this.readShard(`${gramBase}/evidence/by-summary/shard-${hex}.json.gz`)) as {
+    const evShard = (await this.readShard(`${gramBase}/evidence/by-summary/shard-${hex}.json.gz`, undefined, budget)) as {
       entries?: Record<string, Array<Record<string, unknown>>>;
     } | null;
     return (evShard?.entries?.[summaryId] || []).map((r) => ({
@@ -705,21 +765,25 @@ export class ShardedAdjacencyLoader implements AdjacencyLoader {
   }
 
   async getNeighbors(entityKey: string, options: NeighborLoadOptions = {}): Promise<NeighborLoadResult> {
-    const manifest = await this.getManifestSummary();
-    const resolver = await this.getResolverIndex();
-    const uncovered = resolver?.lemmas?.[entityKey] ? null : await this.getUncoveredLemmas();
-    const entity = profileFromResolver(entityKey, resolver, uncovered);
+    const budget = options.budget;
+    const manifest = await this.getManifestSummary(budget);
     const stats = { shardsRead: 0, bytesRead: 0, missingShards: [] as string[] };
     const incompleteReasons: string[] = [];
 
     if (!manifest) {
       return {
-        entity, edges: [], total_available_edges: 0, contextual_total_neighbors: 0,
+        entity: null, edges: [], total_available_edges: 0, contextual_total_neighbors: 0,
         contextual_pages_loaded: 0, contextual_pages_skipped: 0, contextual_truncated: false,
-        shards_read: 0, bytes_read: 0, missing_shards: [`/v2/relationships/${this.releaseVersion}/manifest.json.gz`],
-        uncovered_in_grammatical: false, incomplete_reasons: ['Relationship release manifest unavailable.'],
+        shards_read: 0, bytes_read: 0,
+        missing_shards: budget?.budget_exceeded ? [] : [`/v2/relationships/${this.releaseVersion}/manifest.json.gz`],
+        uncovered_in_grammatical: false,
+        incomplete_reasons: [budget?.budget_exceeded ? `Stopped by resource budget (${budget.exceeded_reason}).` : 'Relationship release manifest unavailable.'],
       };
     }
+
+    const resolver = await this.getResolverIndex(budget);
+    const uncovered = resolver?.lemmas?.[entityKey] ? null : await this.getUncoveredLemmas(budget);
+    const entity = profileFromResolver(entityKey, resolver, uncovered);
 
     const requestedLayers = new Set<GraphLayer>(options.layers?.length ? options.layers : ['grammatical', 'lexical', 'contextual', 'lxx_translation']);
     const selfRef = entity || enrichEntityRef({
@@ -731,7 +795,7 @@ export class ShardedAdjacencyLoader implements AdjacencyLoader {
       predicateSet: options.predicates?.length ? new Set(options.predicates) : null,
       langSet: options.languages?.length ? new Set(options.languages.map((l) => normalizeLang(l, '') || l.toLowerCase())) : null,
       editionSet: options.editions?.length ? new Set(options.editions) : null,
-      readShard: (p) => this.readShard(p, stats),
+      readShard: (p) => this.readShard(p, stats, budget),
     };
     const layersMeta = (manifest.layers || {}) as Record<string, Record<string, unknown>>;
     const isLemma = inferEntityKind(entityKey) === 'lemma';

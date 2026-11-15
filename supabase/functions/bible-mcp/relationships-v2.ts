@@ -423,4 +423,113 @@ export function registerRelationshipV2Tools(server: McpServer, read: DatabaseRea
     }));
     return { content: jsonContent(payload), structuredContent: payload };
   });
+
+  server.registerTool('resolve_research_concept_v1', {
+    title: 'Resolve English concepts, Strongs IDs, forms, or canonical root/sense/lemma keys',
+    description:
+      'Resolve an English concept, Strongs ID (base or extended), transliteration, surface form, or canonical entity_key (lemma:*, root:*, sense:*) into explicit candidate entities before multi-hop traversal. Ambiguous Strongs bases and English concepts return needs_disambiguation and require explicit selection.',
+    inputSchema: z.strictObject({
+      query: z.string().trim().min(1).max(128).describe('Concept, Strongs ID (e.g. H7307, H1697, G4151), canonical key, transliteration, or surface form.'),
+      language: z.enum(['hbo', 'arc', 'grc', 'hebrew', 'aramaic', 'greek']).optional().describe('Optional language filter.'),
+      limit: z.number().int().min(1).max(50).default(20),
+      include_uncovered: z.boolean().default(true),
+      release: z.string().trim().min(1).max(32).optional().describe('Optional relationship release override (defaults to r9b-v1.0).'),
+    }),
+    outputSchema: z.record(z.string(), z.unknown()),
+    ...readOnlyMeta,
+  }, async (input) => {
+    const reply = await read({
+      name: 'resolve_research_concept_v1',
+      args: compactDefined({
+        query: input.query,
+        language: input.language,
+        limit: input.limit,
+        include_uncovered: input.include_uncovered,
+        release: input.release,
+      }),
+      limit: 1,
+      offset: 0,
+    });
+    const payload = asObj(reply.rows[0]);
+    return { content: jsonContent(payload), structuredContent: payload };
+  });
+
+  server.registerTool('discover_relationship_paths_v1', {
+    title: 'Discover bounded 1-3 hop biblical relationship paths with ranked explanations',
+    description:
+      'Traverse grammatical, lexical, contextual, and LXX translation layers in bounded 1-3 hop queries between canonical lemma:/root:/sense: entities or unique Strongs IDs. Ambiguous Strongs bases and English words require resolve_research_concept_v1 first. Preserves distinct epistemic classes, passage/frame join scope, uncertainty indicators, resource-budget metadata, and explicit incomplete-coverage reporting.',
+    inputSchema: z.strictObject({
+      source: z.string().trim().min(1).max(96).describe('Starting canonical entity key (e.g. lemma:H7307, root:H7307, sense:...) or unique Strongs ID.'),
+      target: z.string().trim().min(1).max(96).optional().describe('Optional single target canonical entity key for targeted path discovery.'),
+      targets: z.array(z.string().trim().min(1).max(96)).max(10).optional().describe('Optional list of up to 10 target canonical entity keys.'),
+      max_hops: z.number().int().min(1).max(3).default(2),
+      layers: z.array(z.enum(R9B_LAYERS)).max(4).optional().describe('Restrict traversal to specific layers.'),
+      predicates: z.array(z.string().trim().min(1).max(64)).max(24).optional(),
+      direction: z.enum(['both', 'outgoing', 'incoming']).default('both'),
+      min_quality: z.enum(['all', 'high_precision_only']).default('all'),
+      languages: z.array(z.string().trim().min(1).max(16)).max(4).optional(),
+      editions: z.array(z.string().trim().min(1).max(40)).max(6).optional(),
+      contextual_scope: z.enum(CONTEXTUAL_SCOPES).optional(),
+      min_same_verse: z.number().int().min(1).max(500).optional(),
+      min_same_clause: z.number().int().min(0).max(500).optional(),
+      min_collocation: z.number().int().min(0).max(500).optional(),
+      allow_cycles: z.boolean().default(false),
+      hub_penalty: z.strictObject({
+        enabled: z.boolean().optional(),
+        function_word_penalty: z.number().min(0).max(100).optional(),
+        hub_degree_threshold: z.number().int().min(10).max(10000).optional(),
+        hub_degree_weight: z.number().min(0).max(25).optional(),
+        allow_function_word_intermediates: z.boolean().optional(),
+      }).optional(),
+      limits: z.strictObject({
+        max_nodes_expanded: z.number().int().min(1).max(60).optional(),
+        max_edges_examined: z.number().int().min(1).max(4000).optional(),
+        max_paths_returned: z.number().int().min(1).max(50).optional(),
+        max_per_node_edges: z.number().int().min(1).max(300).optional(),
+        max_contextual_pages_per_node: z.number().int().min(0).max(8).optional(),
+        max_asset_requests: z.number().int().min(1).max(70).optional(),
+        max_bytes_read: z.number().int().min(1024).max(18 * 1024 * 1024).optional(),
+        max_execution_ms: z.number().int().min(25).max(5000).optional(),
+        max_candidate_paths: z.number().int().min(1).max(500).optional(),
+      }).optional(),
+      limit: z.number().int().min(1).max(50).default(20),
+      offset: z.number().int().min(0).max(5000).default(0),
+      cursor: z.string().trim().min(1).max(128).optional(),
+      release: z.string().trim().min(1).max(32).optional().describe('Optional relationship release override (defaults to r9b-v1.0).'),
+    }),
+    outputSchema: z.record(z.string(), z.unknown()),
+    ...readOnlyMeta,
+  }, async (input) => {
+    const reply = await read({
+      name: 'discover_relationship_paths_v1',
+      args: compactDefined({
+        source: input.source,
+        target: input.target,
+        targets: input.targets,
+        max_hops: input.max_hops,
+        layers: input.layers,
+        predicates: input.predicates,
+        direction: input.direction,
+        min_quality: input.min_quality,
+        languages: input.languages,
+        editions: input.editions,
+        contextual_scope: input.contextual_scope,
+        min_same_verse: input.min_same_verse,
+        min_same_clause: input.min_same_clause,
+        min_collocation: input.min_collocation,
+        allow_cycles: input.allow_cycles,
+        hub_penalty: input.hub_penalty,
+        limits: input.limits,
+        limit: input.limit,
+        offset: input.offset,
+        cursor: input.cursor,
+        release: input.release,
+      }),
+      limit: 1,
+      offset: 0,
+    });
+    const payload = asObj(reply.rows[0]);
+    const isErr = payload.status === 'invalid_request' || payload.status === 'unknown_entity';
+    return { content: jsonContent(payload), structuredContent: payload, ...(isErr ? { isError: false } : {}) };
+  });
 }

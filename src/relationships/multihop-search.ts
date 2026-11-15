@@ -3,7 +3,7 @@
 // Bounded, deterministic 1-3 hop graph traversal with lazy adjacency, cycle detection, and completeness tracking.
 
 import { fnv1a64Hex, isFunctionWordPos, normalizeLang } from './adjacency-loader.ts';
-import { resolveEntityKey } from './concept-resolver.ts';
+import { resolveEntityKeyDetailed } from './concept-resolver.ts';
 import {
   buildPathStep,
   compareMultiHopPaths,
@@ -14,6 +14,7 @@ import {
 } from './path-ranker.ts';
 import type {
   AdjacencyLoader,
+  AssetBudgetContext,
   DirectionFilter,
   GraphEdge,
   GraphEntityRef,
@@ -39,6 +40,10 @@ export const DEFAULT_SEARCH_LIMITS: SearchLimits = {
   max_paths_returned: 20,
   max_per_node_edges: 150,
   max_contextual_pages_per_node: 4,
+  max_asset_requests: 120,
+  max_execution_ms: 4000,
+  max_bytes_read: 32 * 1024 * 1024,
+  max_candidate_paths: 500,
 };
 
 const ALL_LAYERS: GraphLayer[] = ['grammatical', 'lexical', 'contextual', 'lxx_translation'];
@@ -89,13 +94,17 @@ function clampLimits(raw?: Partial<SearchLimits>, reqLimit?: number): SearchLimi
   const maxReturned = Math.max(1, Math.min(100, raw?.max_paths_returned ?? reqLimit ?? DEFAULT_SEARCH_LIMITS.max_paths_returned));
   return {
     max_nodes_expanded: Math.max(1, Math.min(500, raw?.max_nodes_expanded ?? DEFAULT_SEARCH_LIMITS.max_nodes_expanded)),
-    max_edges_examined: Math.max(10, Math.min(25000, raw?.max_edges_examined ?? DEFAULT_SEARCH_LIMITS.max_edges_examined)),
+    max_edges_examined: Math.max(1, Math.min(25000, raw?.max_edges_examined ?? DEFAULT_SEARCH_LIMITS.max_edges_examined)),
     max_paths_returned: maxReturned,
-    max_per_node_edges: Math.max(5, Math.min(5000, raw?.max_per_node_edges ?? DEFAULT_SEARCH_LIMITS.max_per_node_edges)),
+    max_per_node_edges: Math.max(1, Math.min(5000, raw?.max_per_node_edges ?? DEFAULT_SEARCH_LIMITS.max_per_node_edges)),
     max_contextual_pages_per_node: Math.max(
       0,
       Math.min(100, raw?.max_contextual_pages_per_node ?? DEFAULT_SEARCH_LIMITS.max_contextual_pages_per_node),
     ),
+    max_asset_requests: Math.max(1, Math.min(500, raw?.max_asset_requests ?? DEFAULT_SEARCH_LIMITS.max_asset_requests)),
+    max_execution_ms: Math.max(25, Math.min(15000, raw?.max_execution_ms ?? DEFAULT_SEARCH_LIMITS.max_execution_ms)),
+    max_bytes_read: Math.max(1024, Math.min(128 * 1024 * 1024, raw?.max_bytes_read ?? DEFAULT_SEARCH_LIMITS.max_bytes_read)),
+    max_candidate_paths: Math.max(maxReturned, Math.min(2000, raw?.max_candidate_paths ?? DEFAULT_SEARCH_LIMITS.max_candidate_paths)),
   };
 }
 
@@ -109,7 +118,9 @@ function parseCursor(cursor: string | null | undefined, sigPrefix: string): numb
 
 // === @section:logic:state-and-loader-budget ===
 interface SearchBudgetTracker {
+  startTimeMs: number;
   limits: SearchLimits;
+  budget: AssetBudgetContext;
   hubConfig: HubPenaltyConfig;
   layers: GraphLayer[];
   predicates?: string[];
@@ -133,6 +144,45 @@ interface SearchBudgetTracker {
   nodeCache: Map<string, NeighborLoadResult>;
 }
 
+function hasRemainingExecutionAndResourceBudget(tracker: SearchBudgetTracker, checkNodeLimit = true): boolean {
+  if (Date.now() - tracker.startTimeMs >= tracker.limits.max_execution_ms) {
+    tracker.limitsReached.add('max_execution_ms');
+    return false;
+  }
+  if (tracker.budget.budget_exceeded) {
+    tracker.limitsReached.add(tracker.budget.exceeded_reason || 'max_asset_requests');
+    return false;
+  }
+  if (tracker.budget.asset_requests >= tracker.limits.max_asset_requests) {
+    tracker.limitsReached.add('max_asset_requests');
+    return false;
+  }
+  if (tracker.budget.bytes_read >= tracker.limits.max_bytes_read) {
+    tracker.limitsReached.add('max_bytes_read');
+    return false;
+  }
+  if (tracker.edgesExamined >= tracker.limits.max_edges_examined) {
+    tracker.limitsReached.add('max_edges_examined');
+    return false;
+  }
+  if (checkNodeLimit && tracker.nodesExpanded >= tracker.limits.max_nodes_expanded) {
+    tracker.limitsReached.add('max_nodes_expanded');
+    return false;
+  }
+  return true;
+}
+
+function enforcePerNodeCap(
+  tracker: SearchBudgetTracker,
+  edges: GraphEdge[],
+  entityKey: string,
+  targetKeys?: Set<string>,
+): GraphEdge[] {
+  if (edges.length <= tracker.limits.max_per_node_edges) return edges;
+  tracker.limitsReached.add(`max_per_node_edges (${tracker.limits.max_per_node_edges}) at ${entityKey}`);
+  return layerBalancedSlice(edges, tracker.limits.max_per_node_edges, targetKeys);
+}
+
 async function fetchNodeEdges(
   loader: AdjacencyLoader,
   tracker: SearchBudgetTracker,
@@ -140,13 +190,20 @@ async function fetchNodeEdges(
   dir: DirectionFilter,
   targetHint: string | null,
   isIntermediateFilter: boolean,
+  layersOverride?: GraphLayer[],
+  targetHints?: string[],
 ): Promise<GraphEdge[]> {
-  const cacheKey = `${entityKey}::${dir}::${targetHint || ''}`;
+  const effectiveLayers = layersOverride?.length ? layersOverride : tracker.layers;
+  const layerSig = [...effectiveLayers].sort().join(',');
+  const hintsSig = targetHints?.length ? [...targetHints].sort().join(',') : targetHint || '';
+  const cacheKey = `${entityKey}::${dir}::${layerSig}::${hintsSig}`;
   const cached = tracker.nodeCache.get(cacheKey);
   if (cached) return cached.edges;
 
+  if (!hasRemainingExecutionAndResourceBudget(tracker, false)) return [];
+
   const loadOpts: NeighborLoadOptions = {
-    layers: tracker.layers,
+    layers: effectiveLayers,
     predicates: tracker.predicates,
     direction: dir,
     min_quality: tracker.minQuality,
@@ -156,8 +213,12 @@ async function fetchNodeEdges(
     min_same_verse: tracker.minSameVerse,
     min_same_clause: tracker.minSameClause,
     min_collocation: tracker.minCollocation,
-    max_contextual_pages: tracker.limits.max_contextual_pages_per_node,
+    max_contextual_pages: isIntermediateFilter
+      ? Math.min(1, tracker.limits.max_contextual_pages_per_node)
+      : tracker.limits.max_contextual_pages_per_node,
     target_hint: targetHint,
+    target_hints: targetHints,
+    budget: tracker.budget,
   };
 
   const res = await loader.getNeighbors(entityKey, loadOpts);
@@ -167,12 +228,22 @@ async function fetchNodeEdges(
   for (const ms of res.missing_shards) tracker.missingShards.add(ms);
   for (const reason of res.incomplete_reasons) tracker.incompleteReasons.add(reason);
   if (res.contextual_truncated) tracker.truncatedContextual.add(entityKey);
-  if (res.uncovered_in_grammatical && tracker.layers.includes('grammatical') && res.edges.length === 0) {
+  if (tracker.budget.budget_exceeded) {
+    tracker.limitsReached.add(tracker.budget.exceeded_reason || 'max_asset_requests');
+  }
+  if (res.uncovered_in_grammatical && effectiveLayers.includes('grammatical') && res.edges.length === 0) {
     tracker.incompleteReasons.add(`${entityKey}: uncovered in grammatical layer (lexical/contextual/LXX may still exist).`);
   }
 
+  const remainingEdgeBudget = Math.max(0, tracker.limits.max_edges_examined - tracker.edgesExamined);
   let edges = res.edges;
-  tracker.edgesExamined += edges.length;
+  if (edges.length > remainingEdgeBudget) {
+    tracker.limitsReached.add('max_edges_examined');
+    tracker.edgesExamined += remainingEdgeBudget;
+    edges = edges.slice(0, remainingEdgeBudget);
+  } else {
+    tracker.edgesExamined += edges.length;
+  }
 
   if (!tracker.hubConfig.allow_function_word_intermediates && isIntermediateFilter) {
     edges = edges.filter((e) => !isFunctionWordPos(e.to_entity.pos));
@@ -313,6 +384,30 @@ function wouldCreateCycle(chain: GraphEdge[], nextEntityKey: string, allowCycles
   return chain.some((e) => e.to_entity.entity_key === nextEntityKey);
 }
 
+function selectHop3LayersAndHints(
+  bKey: string,
+  requestedLayers: GraphLayer[],
+  revHebrewKeys: string[],
+  revGreekKeys: string[],
+): { layers: GraphLayer[]; targetHints?: string[] } {
+  const isRootOrSense = bKey.startsWith('root:') || bKey.startsWith('sense:');
+  if (isRootOrSense) {
+    return { layers: requestedLayers.filter((l) => l === 'lexical') };
+  }
+  const isGreek = bKey.startsWith('lemma:G');
+  const isHebrew = bKey.startsWith('lemma:H');
+  const sameCorpKeys = isGreek ? revGreekKeys : isHebrew ? revHebrewKeys : [];
+  const crossCorpKeys = isGreek ? revHebrewKeys : isHebrew ? revGreekKeys : [];
+  const layers = requestedLayers.filter((l) => {
+    if (l === 'lexical') return true;
+    if (l === 'grammatical' || l === 'contextual') return !isHebrew && !isGreek ? true : sameCorpKeys.length > 0;
+    if (l === 'lxx_translation') return !isHebrew && !isGreek ? true : crossCorpKeys.length > 0;
+    return true;
+  });
+  const targetHints = sameCorpKeys.length > 0 && sameCorpKeys.length <= 25 ? sameCorpKeys : undefined;
+  return { layers, targetHints };
+}
+
 async function runTargetSearch(
   loader: AdjacencyLoader,
   tracker: SearchBudgetTracker,
@@ -322,34 +417,42 @@ async function runTargetSearch(
   allowCycles: boolean,
 ): Promise<GraphEdge[][]> {
   const rawPaths = new Map<string, GraphEdge[]>();
-  const recordChain = (chain: GraphEdge[]): void => {
+  const recordChain = (chain: GraphEdge[]): boolean => {
     const key = chain.map((e) => e.edge_id).join('>');
-    if (!rawPaths.has(key)) rawPaths.set(key, chain);
+    if (rawPaths.has(key)) return true;
+    if (rawPaths.size >= tracker.limits.max_candidate_paths) {
+      tracker.limitsReached.add('max_candidate_paths');
+      return false;
+    }
+    rawPaths.set(key, chain);
+    return true;
   };
 
+  if (!hasRemainingExecutionAndResourceBudget(tracker, true)) return [];
   const singleHint = targetKeys.size === 1 ? Array.from(targetKeys)[0] : null;
   tracker.nodesExpanded += 1;
-  const fwd0 = await fetchNodeEdges(loader, tracker, sourceKey, tracker.direction, singleHint, false);
+  const fwd0All = await fetchNodeEdges(loader, tracker, sourceKey, tracker.direction, singleHint, false);
+  const fwd0 = enforcePerNodeCap(tracker, fwd0All, sourceKey, targetKeys);
 
   // 1-hop direct
   for (const e1 of fwd0) {
     if (hasLanguageConflict(e1, tracker.languages)) continue;
     if (targetKeys.has(e1.to_entity.entity_key)) {
-      recordChain([e1]);
+      if (!recordChain([e1])) break;
     }
   }
-  if (maxHops === 1) return Array.from(rawPaths.values());
+  if (maxHops === 1 || rawPaths.size >= tracker.limits.max_candidate_paths) {
+    return Array.from(rawPaths.values());
+  }
 
   // Reverse frontier from each target (allows 2-hop meet-in-the-middle without expanding intermediates)
   const revDir = reverseDirectionFilter(tracker.direction);
   const revMap = new Map<string, GraphEdge[]>(); // intermediateKey -> flipped edges (B -> target)
   for (const tKey of targetKeys) {
-    if (tracker.nodesExpanded >= tracker.limits.max_nodes_expanded) {
-      tracker.limitsReached.add('max_nodes_expanded');
-      break;
-    }
+    if (!hasRemainingExecutionAndResourceBudget(tracker, true)) break;
     tracker.nodesExpanded += 1;
-    const revRaw = await fetchNodeEdges(loader, tracker, tKey, revDir, sourceKey, false);
+    const revRawAll = await fetchNodeEdges(loader, tracker, tKey, revDir, sourceKey, false);
+    const revRaw = enforcePerNodeCap(tracker, revRawAll, tKey, new Set([sourceKey]));
     for (const rEdge of revRaw) {
       const fwdEdge = flipIncomingEdgeToForward(rEdge);
       if (hasLanguageConflict(fwdEdge, tracker.languages)) continue;
@@ -362,7 +465,7 @@ async function runTargetSearch(
   }
 
   // 2-hop meet-in-the-middle: source -e1-> mid -e2-> target
-  for (const e1 of fwd0) {
+  outer2: for (const e1 of fwd0) {
     const mid = e1.to_entity.entity_key;
     if (mid === sourceKey && !allowCycles) continue;
     if (!tracker.hubConfig.allow_function_word_intermediates && isFunctionWordPos(e1.to_entity.pos)) continue;
@@ -370,32 +473,31 @@ async function runTargetSearch(
     const matches = revMap.get(mid);
     if (!matches) continue;
     for (const e2 of matches) {
-      recordChain([e1, e2]);
+      if (!recordChain([e1, e2])) break outer2;
     }
   }
-  if (maxHops === 2) return Array.from(rawPaths.values());
+  if (maxHops === 2 || revMap.size === 0 || rawPaths.size >= tracker.limits.max_candidate_paths) {
+    return Array.from(rawPaths.values());
+  }
+
+  const revKeys = Array.from(revMap.keys());
+  const revHebrewKeys = revKeys.filter((k) => k.startsWith('lemma:H'));
+  const revGreekKeys = revKeys.filter((k) => k.startsWith('lemma:G'));
+  const revTargetSet = new Set(revKeys);
 
   // 3-hop: expand promising depth-1 nodes fwd0 -> C -> revMap[C] -> target
-  const fwd0Frontier = fwd0.length > tracker.limits.max_per_node_edges
-    ? (tracker.limitsReached.add(`max_per_node_edges (${tracker.limits.max_per_node_edges}) at ${sourceKey}`), layerBalancedSlice(fwd0, tracker.limits.max_per_node_edges, targetKeys))
-    : fwd0;
-  for (const e1 of fwd0Frontier) {
+  outer3: for (const e1 of fwd0) {
     const bKey = e1.to_entity.entity_key;
     if (!allowCycles && (bKey === sourceKey || targetKeys.has(bKey))) continue;
     if (!tracker.hubConfig.allow_function_word_intermediates && isFunctionWordPos(e1.to_entity.pos)) continue;
-    if (tracker.nodesExpanded >= tracker.limits.max_nodes_expanded) {
-      tracker.limitsReached.add('max_nodes_expanded');
-      break;
-    }
-    if (tracker.edgesExamined >= tracker.limits.max_edges_examined) {
-      tracker.limitsReached.add('max_edges_examined');
-      break;
-    }
+    if (!hasRemainingExecutionAndResourceBudget(tracker, true)) break;
+
+    const { layers: hop3Layers, targetHints } = selectHop3LayersAndHints(bKey, tracker.layers, revHebrewKeys, revGreekKeys);
+    if (hop3Layers.length === 0) continue;
+
     tracker.nodesExpanded += 1;
-    const fwd1Raw = await fetchNodeEdges(loader, tracker, bKey, tracker.direction, null, true);
-    const fwd1 = fwd1Raw.length > tracker.limits.max_per_node_edges
-      ? (tracker.limitsReached.add(`max_per_node_edges (${tracker.limits.max_per_node_edges}) at ${bKey}`), layerBalancedSlice(fwd1Raw, tracker.limits.max_per_node_edges, targetKeys))
-      : fwd1Raw;
+    const fwd1Raw = await fetchNodeEdges(loader, tracker, bKey, tracker.direction, null, true, hop3Layers, targetHints);
+    const fwd1 = enforcePerNodeCap(tracker, fwd1Raw, bKey, revTargetSet);
     for (const e2 of fwd1) {
       const cKey = e2.to_entity.entity_key;
       if (!allowCycles && (cKey === sourceKey || cKey === bKey || targetKeys.has(cKey))) continue;
@@ -403,7 +505,7 @@ async function runTargetSearch(
       if (!tailEdges) continue;
       for (const e3 of tailEdges) {
         if (!allowCycles && (e3.to_entity.entity_key === bKey || e3.to_entity.entity_key === cKey)) continue;
-        recordChain([e1, e2, e3]);
+        if (!recordChain([e1, e2, e3])) break outer3;
       }
     }
   }
@@ -419,46 +521,41 @@ async function runOpenEndedSearch(
 ): Promise<GraphEdge[][]> {
   const results: GraphEdge[][] = [];
   let frontier: GraphEdge[][] = [];
+  const pushResult = (chain: GraphEdge[]): boolean => {
+    if (results.length >= tracker.limits.max_candidate_paths) {
+      tracker.limitsReached.add('max_candidate_paths');
+      return false;
+    }
+    results.push(chain);
+    return true;
+  };
 
+  if (!hasRemainingExecutionAndResourceBudget(tracker, true)) return results;
   tracker.nodesExpanded += 1;
-  const fwd0Raw = await fetchNodeEdges(loader, tracker, sourceKey, tracker.direction, null, false);
-  for (const e1 of fwd0Raw) {
+  const fwd0All = await fetchNodeEdges(loader, tracker, sourceKey, tracker.direction, null, false);
+  const fwd0Capped = enforcePerNodeCap(tracker, fwd0All, sourceKey);
+  for (const e1 of fwd0Capped) {
     if (hasLanguageConflict(e1, tracker.languages)) continue;
     if (!allowCycles && e1.to_entity.entity_key === sourceKey) continue;
-    results.push([e1]);
-  }
-  const fwd0Frontier = fwd0Raw.length > tracker.limits.max_per_node_edges
-    ? (tracker.limitsReached.add(`max_per_node_edges (${tracker.limits.max_per_node_edges}) at ${sourceKey}`), layerBalancedSlice(fwd0Raw, tracker.limits.max_per_node_edges))
-    : fwd0Raw;
-  for (const e1 of fwd0Frontier) {
-    if (hasLanguageConflict(e1, tracker.languages)) continue;
-    if (!allowCycles && e1.to_entity.entity_key === sourceKey) continue;
+    if (!pushResult([e1])) break;
     frontier.push([e1]);
   }
 
   for (let depth = 2; depth <= maxHops; depth++) {
+    if (results.length >= tracker.limits.max_candidate_paths) break;
     const nextFrontier: GraphEdge[][] = [];
     for (const chain of frontier) {
       const tip = chain[chain.length - 1].to_entity;
       if (!tracker.hubConfig.allow_function_word_intermediates && isFunctionWordPos(tip.pos)) continue;
-      if (tracker.nodesExpanded >= tracker.limits.max_nodes_expanded) {
-        tracker.limitsReached.add('max_nodes_expanded');
-        return results;
-      }
-      if (tracker.edgesExamined >= tracker.limits.max_edges_examined) {
-        tracker.limitsReached.add('max_edges_examined');
-        return results;
-      }
+      if (!hasRemainingExecutionAndResourceBudget(tracker, true)) return results;
       tracker.nodesExpanded += 1;
       const adjRaw = await fetchNodeEdges(loader, tracker, tip.entity_key, tracker.direction, null, true);
-      const adj = adjRaw.length > tracker.limits.max_per_node_edges
-        ? (tracker.limitsReached.add(`max_per_node_edges (${tracker.limits.max_per_node_edges}) at ${tip.entity_key}`), layerBalancedSlice(adjRaw, tracker.limits.max_per_node_edges))
-        : adjRaw;
+      const adj = enforcePerNodeCap(tracker, adjRaw, tip.entity_key);
       for (const nextEdge of adj) {
         if (hasLanguageConflict(nextEdge, tracker.languages)) continue;
         if (wouldCreateCycle(chain, nextEdge.to_entity.entity_key, allowCycles)) continue;
         const nextChain = [...chain, nextEdge];
-        results.push(nextChain);
+        if (!pushResult(nextChain)) return results;
         if (depth < maxHops) nextFrontier.push(nextChain);
       }
     }
@@ -472,6 +569,7 @@ async function enrichTopGrammaticalJoins(
   loader: AdjacencyLoader,
   chains: GraphEdge[][],
   hubConfig: HubPenaltyConfig,
+  tracker: SearchBudgetTracker,
 ): Promise<MultiHopPath[]> {
   // Rank preliminarily and lazily verify full summary witnesses on top grammatical multi-hop candidates.
   const prelim = chains.map((c) => ({ chain: c, path: buildMultiHopPath(c, hubConfig) }));
@@ -486,8 +584,19 @@ async function enrichTopGrammaticalJoins(
     if (item.path.explanation.join_scope === 'same_frame') continue;
     for (const edge of item.chain) {
       if (fetched >= summaryBudget) break;
+      if (Date.now() - tracker.startTimeMs >= tracker.limits.max_execution_ms) {
+        tracker.limitsReached.add('max_execution_ms');
+        break;
+      }
+      if (tracker.budget.budget_exceeded || tracker.budget.asset_requests >= tracker.limits.max_asset_requests) {
+        tracker.limitsReached.add(tracker.budget.exceeded_reason || 'max_asset_requests');
+        break;
+      }
       if (!extraWitnesses.has(edge.source_relationship_id)) {
-        const fullW = await loader.getSummaryEvidence(edge.source_relationship_id);
+        const fullW = await loader.getSummaryEvidence(edge.source_relationship_id, tracker.budget);
+        if (tracker.budget.budget_exceeded) {
+          tracker.limitsReached.add(tracker.budget.exceeded_reason || 'max_asset_requests');
+        }
         extraWitnesses.set(edge.source_relationship_id, fullW);
         fetched += 1;
       }
@@ -513,6 +622,8 @@ function buildInvalidResponse(
   layers: GraphLayer[],
   query: MultiHopQuery,
   hubConfig: HubPenaltyConfig,
+  budget?: AssetBudgetContext,
+  executionMs = 0,
 ): MultiHopResult {
   return {
     schema_version: '1.0',
@@ -537,12 +648,22 @@ function buildInvalidResponse(
     paths: [],
     pagination: { limit: 0, offset: 0, returned: 0, total_available: 0, has_more: false, next_offset: null, next_cursor: null },
     coverage: {
-      exhaustive: false, search_stopped_by_limits: false, limits_reached: [],
+      exhaustive: false,
+      search_stopped_by_limits: Boolean(budget?.budget_exceeded),
+      limits_reached: budget?.budget_exceeded && budget.exceeded_reason ? [budget.exceeded_reason] : [],
       source_coverage_incomplete: status === 'incomplete_coverage',
       incomplete_reasons: status === 'incomplete_coverage' ? [message] : [],
-      missing_shards: [], truncated_contextual_entities: [],
-      nodes_expanded: 0, edges_examined: 0, shards_read: 0, bytes_read: 0,
-      contextual_pages_loaded: 0, total_paths_found: 0, paths_returned: 0,
+      missing_shards: [],
+      truncated_contextual_entities: [],
+      nodes_expanded: 0,
+      edges_examined: 0,
+      asset_requests: budget?.asset_requests ?? 0,
+      shards_read: budget?.shards_read ?? 0,
+      bytes_read: budget?.bytes_read ?? 0,
+      execution_ms: executionMs,
+      contextual_pages_loaded: 0,
+      total_paths_found: 0,
+      paths_returned: 0,
     },
     guardrails: {
       ranking_is_not_truth_probability: true,
@@ -555,43 +676,74 @@ function buildInvalidResponse(
 
 // === @section:logic:search-execution ===
 export async function discoverMultiHopPaths(loader: AdjacencyLoader, query: MultiHopQuery): Promise<MultiHopResult> {
-  const releaseVersion = await loader.getReleaseVersion();
+  const startTimeMs = Date.now();
+  const limits = clampLimits(query.limits, query.limit);
+  const budget: AssetBudgetContext = {
+    asset_requests: 0,
+    shards_read: 0,
+    bytes_read: 0,
+    max_asset_requests: limits.max_asset_requests,
+    max_bytes_read: limits.max_bytes_read,
+    budget_exceeded: false,
+    exceeded_reason: null,
+  };
   const layers = query.layers?.length ? query.layers : ALL_LAYERS;
   const hubConfig = mergeHubConfig(query.hub_penalty);
   const rawMaxHops = query.max_hops ?? 2;
+  const releaseVersion = await loader.getReleaseVersion(budget);
+  if (budget.budget_exceeded) {
+    return buildInvalidResponse('incomplete_coverage', `Stopped by resource budget (${budget.exceeded_reason}) before search started.`, query.source, 2, releaseVersion, layers, query, hubConfig, budget, Date.now() - startTimeMs);
+  }
   if (!Number.isInteger(rawMaxHops) || rawMaxHops < 1 || rawMaxHops > 3) {
-    return buildInvalidResponse('invalid_request', `max_hops must be an integer between 1 and 3 (received ${rawMaxHops}).`, query.source, 2, releaseVersion, layers, query, hubConfig);
+    return buildInvalidResponse('invalid_request', `max_hops must be an integer between 1 and 3 (received ${rawMaxHops}).`, query.source, 2, releaseVersion, layers, query, hubConfig, budget, Date.now() - startTimeMs);
+  }
+  if (query.offset !== undefined && (!Number.isInteger(query.offset) || query.offset < 0)) {
+    return buildInvalidResponse('invalid_request', `offset must be a non-negative integer (received ${query.offset}).`, query.source, rawMaxHops, releaseVersion, layers, query, hubConfig, budget, Date.now() - startTimeMs);
   }
 
-  const sourceKey = await resolveEntityKey(loader, query.source);
-  if (!sourceKey) {
-    return buildInvalidResponse('invalid_request', `Invalid or ambiguous starting entity "${query.source}". Use resolveResearchConcept() first for English concepts or bare Strong's bases.`, query.source, rawMaxHops, releaseVersion, layers, query, hubConfig);
+  const sourceRes = await resolveEntityKeyDetailed(loader, query.source, budget);
+  if (!sourceRes.ok || !sourceRes.entityKey) {
+    return buildInvalidResponse(
+      sourceRes.status === 'unknown_entity' ? 'unknown_entity' : sourceRes.status === 'incomplete_coverage' ? 'incomplete_coverage' : 'invalid_request',
+      sourceRes.message || `Invalid starting entity "${query.source}". Use resolveResearchConcept() first for ambiguous homographs or English concepts.`,
+      query.source,
+      rawMaxHops,
+      releaseVersion,
+      layers,
+      query,
+      hubConfig,
+      budget,
+      Date.now() - startTimeMs,
+    );
   }
+  const sourceKey = sourceRes.entityKey;
 
   const targetKeys = new Set<string>();
   const targetInputs = [...(query.target ? [query.target] : []), ...(query.targets || [])];
   for (const t of targetInputs) {
-    const rk = await resolveEntityKey(loader, t);
-    if (!rk) {
-      return buildInvalidResponse('invalid_request', `Invalid or ambiguous target entity "${t}".`, sourceKey, rawMaxHops, releaseVersion, layers, query, hubConfig);
+    const tr = await resolveEntityKeyDetailed(loader, t, budget);
+    if (!tr.ok || !tr.entityKey) {
+      return buildInvalidResponse(
+        tr.status === 'unknown_entity' ? 'unknown_entity' : tr.status === 'incomplete_coverage' ? 'incomplete_coverage' : 'invalid_request',
+        tr.message || `Invalid target entity "${t}".`,
+        sourceKey,
+        rawMaxHops,
+        releaseVersion,
+        layers,
+        query,
+        hubConfig,
+        budget,
+        Date.now() - startTimeMs,
+      );
     }
-    targetKeys.add(rk);
+    targetKeys.add(tr.entityKey);
   }
 
-  const sourceProf = await loader.getEntityProfile(sourceKey);
-  if (!sourceProf && sourceKey.startsWith('lemma:')) {
-    const probe = await loader.getNeighbors(sourceKey, { max_contextual_pages: 0 });
-    if (probe.missing_shards.length > 0 && probe.edges.length === 0) {
-      return buildInvalidResponse('incomplete_coverage', `Source shards unavailable for ${sourceKey}.`, sourceKey, rawMaxHops, releaseVersion, layers, query, hubConfig);
-    }
-    if (probe.edges.length === 0) {
-      return buildInvalidResponse('unknown_entity', `Entity "${sourceKey}" not found in relationship indexes.`, sourceKey, rawMaxHops, releaseVersion, layers, query, hubConfig);
-    }
-  }
-
-  const limits = clampLimits(query.limits, query.limit);
+  const sourceProf = await loader.getEntityProfile(sourceKey, budget);
   const tracker: SearchBudgetTracker = {
+    startTimeMs,
     limits,
+    budget,
     hubConfig,
     layers,
     predicates: query.predicates,
@@ -608,7 +760,7 @@ export async function discoverMultiHopPaths(loader: AdjacencyLoader, query: Mult
     shardsRead: 0,
     bytesRead: 0,
     contextualPagesLoaded: 0,
-    limitsReached: new Set<string>(),
+    limitsReached: new Set<string>(budget.budget_exceeded && budget.exceeded_reason ? [budget.exceeded_reason] : []),
     missingShards: new Set<string>(),
     truncatedContextual: new Set<string>(),
     incompleteReasons: new Set<string>(),
@@ -621,18 +773,49 @@ export async function discoverMultiHopPaths(loader: AdjacencyLoader, query: Mult
       ? await runTargetSearch(loader, tracker, sourceKey, targetKeys, rawMaxHops, allowCycles)
       : await runOpenEndedSearch(loader, tracker, sourceKey, rawMaxHops, allowCycles);
 
-  const sortedPaths = await enrichTopGrammaticalJoins(loader, chains, hubConfig);
+  const sortedPaths = await enrichTopGrammaticalJoins(loader, chains, hubConfig, tracker);
   const totalAvailable = sortedPaths.length;
-  const sigPrefix = fnv1a64Hex(`${sourceKey}|${Array.from(targetKeys).sort().join(',')}|${rawMaxHops}|${layers.join(',')}|${totalAvailable}`).slice(0, 8);
-  const offset = parseCursor(query.cursor, sigPrefix) ?? Math.max(0, query.offset ?? 0);
+  const queryFingerprint = JSON.stringify({
+    releaseVersion,
+    sourceKey,
+    targets: Array.from(targetKeys).sort(),
+    maxHops: rawMaxHops,
+    layers: [...layers].sort(),
+    predicates: query.predicates ? [...query.predicates].sort() : null,
+    direction: tracker.direction,
+    minQuality: tracker.minQuality,
+    languages: query.languages ? [...query.languages].map((l) => l.toLowerCase()).sort() : null,
+    editions: query.editions ? [...query.editions].sort() : null,
+    contextualScope: query.contextual_scope ?? 'all',
+    minSameVerse: query.min_same_verse ?? null,
+    minSameClause: query.min_same_clause ?? null,
+    minCollocation: query.min_collocation ?? null,
+    allowCycles,
+    hubConfig,
+    limits,
+    totalAvailable,
+  });
+  const sigPrefix = fnv1a64Hex(queryFingerprint).slice(0, 16);
+
+  let offset = Math.max(0, query.offset ?? 0);
+  if (query.cursor !== undefined && query.cursor !== null && query.cursor !== '') {
+    const parsedCursorOffset = parseCursor(query.cursor, sigPrefix);
+    if (parsedCursorOffset === null || (totalAvailable > 0 && parsedCursorOffset >= totalAvailable) || (totalAvailable === 0 && parsedCursorOffset > 0)) {
+      return buildInvalidResponse('invalid_request', 'Invalid or stale pagination cursor for the current query parameters or release.', sourceKey, rawMaxHops, releaseVersion, layers, query, hubConfig, budget, Date.now() - startTimeMs);
+    }
+    offset = parsedCursorOffset;
+  }
+
   const pageLimit = Math.max(1, Math.min(limits.max_paths_returned, query.limit ?? limits.max_paths_returned));
   const pagedPaths = sortedPaths.slice(offset, offset + pageLimit);
   const hasMore = offset + pagedPaths.length < totalAvailable;
   const nextOffset = hasMore ? offset + pagedPaths.length : null;
 
-  const targetProfiles = await Promise.all(Array.from(targetKeys).map(async (k) => (await loader.getEntityProfile(k)) || { entity_key: k }));
+  const targetProfiles = await Promise.all(Array.from(targetKeys).map(async (k) => (await loader.getEntityProfile(k, budget)) || { entity_key: k }));
+  if (budget.budget_exceeded) tracker.limitsReached.add(budget.exceeded_reason || 'max_asset_requests');
   const stoppedByLimits = tracker.limitsReached.size > 0;
   const sourceIncomplete = tracker.missingShards.size > 0 || tracker.truncatedContextual.size > 0;
+  const executionMs = Date.now() - tracker.startTimeMs;
   const coverage: SearchCoverageMetadata = {
     exhaustive: !stoppedByLimits && !sourceIncomplete,
     search_stopped_by_limits: stoppedByLimits,
@@ -643,21 +826,28 @@ export async function discoverMultiHopPaths(loader: AdjacencyLoader, query: Mult
     truncated_contextual_entities: Array.from(tracker.truncatedContextual),
     nodes_expanded: tracker.nodesExpanded,
     edges_examined: tracker.edgesExamined,
-    shards_read: tracker.shardsRead,
-    bytes_read: tracker.bytesRead,
+    asset_requests: tracker.budget.asset_requests,
+    shards_read: Math.max(tracker.shardsRead, tracker.budget.shards_read),
+    bytes_read: Math.max(tracker.bytesRead, tracker.budget.bytes_read),
+    execution_ms: executionMs,
     contextual_pages_loaded: tracker.contextualPagesLoaded,
     total_paths_found: totalAvailable,
     paths_returned: pagedPaths.length,
   };
 
+  const incompleteEmpty = pagedPaths.length === 0 && (sourceIncomplete || stoppedByLimits);
   const status: MultiHopResult['status'] =
-    pagedPaths.length > 0 ? 'ok' : tracker.missingShards.size > 0 ? 'incomplete_coverage' : 'no_supported_path';
+    pagedPaths.length > 0 ? 'ok' : incompleteEmpty ? 'incomplete_coverage' : 'no_supported_path';
   const message =
     pagedPaths.length > 0
-      ? `Found ${totalAvailable} evidence-backed path(s) within ${rawMaxHops} hop(s).`
+      ? stoppedByLimits || sourceIncomplete
+        ? `Found ${totalAvailable} evidence-backed path(s) within ${rawMaxHops} hop(s) (partial search: ${[...coverage.limits_reached, ...(sourceIncomplete ? ['incomplete_source_coverage'] : [])].join(', ')}).`
+        : `Found ${totalAvailable} evidence-backed path(s) within ${rawMaxHops} hop(s).`
       : tracker.missingShards.size > 0
         ? 'Search could not verify paths because required relationship shards were unavailable.'
-        : 'No supported path within the requested scope.';
+        : sourceIncomplete || stoppedByLimits
+          ? `No path found before reaching exploration bounds (${[...coverage.limits_reached, ...Array.from(tracker.incompleteReasons)].slice(0, 3).join('; ')}); coverage is incomplete.`
+          : 'No supported path within the requested scope.';
 
   return {
     schema_version: '1.0',

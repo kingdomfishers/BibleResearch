@@ -6,17 +6,18 @@
 
 // === @section:imports ===
 import { BibleRPC } from '../../api/rpc';
-import type {
-  ContextualScopeFilter,
-  LexicalDirectionFilter,
-  R9BContextualLayerResult,
-  R9BContextualNeighborItem,
-  R9BLayerKey,
-  R9BLexicalEndpoint,
-  R9BLexicalLayerResult,
-  R9BLexicalRelationItem,
-  R9BLxxLayerResult,
-  R9BLxxTranslationItem,
+import {
+  isRelationshipPreviewEnabled,
+  type ContextualScopeFilter,
+  type LexicalDirectionFilter,
+  type R9BContextualLayerResult,
+  type R9BContextualNeighborItem,
+  type R9BLayerKey,
+  type R9BLexicalEndpoint,
+  type R9BLexicalLayerResult,
+  type R9BLexicalRelationItem,
+  type R9BLxxLayerResult,
+  type R9BLxxTranslationItem,
 } from '../../api/relationships-rpc';
 import type { RelationshipNotePrefill } from '../../api/relationship-notes-adapter';
 import type {
@@ -34,6 +35,7 @@ import {
   createGrammaticalRelationshipsPanel,
   type GrammaticalWordContext,
 } from './GrammaticalRelationshipsPanel';
+import { createExploreConnectionsPanel } from './ExploreConnectionsPanel';
 
 // === @section:types ===
 export interface LexicalRelationshipsSectionProps {
@@ -54,7 +56,7 @@ export interface LexicalRelationshipsSectionHandle {
   clear: () => void;
 }
 
-type LayerFilterTab = 'all' | R9BLayerKey;
+type LayerFilterTab = 'all' | R9BLayerKey | 'explore';
 
 const BOOK_NAME_MAP: ReadonlyMap<number, string> = new Map(
   BOOK_NAMES.map((name: string, idx: number) => [idx + 1, name])
@@ -479,11 +481,19 @@ export function createLexicalRelationshipsSection(
     },
   });
 
+  const previewEnabled = isRelationshipPreviewEnabled();
+  const explorePanel = createExploreConnectionsPanel({
+    onInspectTarget: props.onInspectTarget,
+    preview: props.preview,
+    navigate: props.navigate,
+  });
+
   function syncTabVisibility() {
     gramPanel.element.hidden = activeTab !== 'all' && activeTab !== 'grammatical';
     lexBox.hidden = activeTab !== 'all' && activeTab !== 'lexical';
     ctxBox.hidden = activeTab !== 'all' && activeTab !== 'contextual';
     lxxBox.hidden = activeTab !== 'all' && activeTab !== 'lxx_translation';
+    explorePanel.element.hidden = !previewEnabled || activeTab !== 'explore';
   }
 
   function updateSummaryAndTabs() {
@@ -499,6 +509,7 @@ export function createLexicalRelationshipsSection(
       { id: 'lexical', label: `Lexical (${fmt(lexCount)})` },
       { id: 'contextual', label: `Contextual (${fmt(ctxCount)})` },
       { id: 'lxx_translation', label: `LXX (${fmt(lxxCount)})` },
+      ...(previewEnabled ? [{ id: 'explore' as const, label: 'Explore Paths' }] : []),
     ];
     tabBar.replaceChildren(
       ...tabs.map(t =>
@@ -771,7 +782,7 @@ export function createLexicalRelationshipsSection(
     renderLxxPanel();
   }
 
-  body.append(tabBar, gramPanel.element, lexBox, ctxBox, lxxBox);
+  body.append(tabBar, gramPanel.element, lexBox, ctxBox, lxxBox, explorePanel.element);
   details.append(summaryEl, body);
   updateSummaryAndTabs();
 
@@ -821,6 +832,17 @@ export function createLexicalRelationshipsSection(
       const uData = unifiedRes.data;
       if (uData.focus?.lemma_id) {
         currentBaseParams.lemmaId = uData.focus.lemma_id;
+        explorePanel.setSource(
+          uData.focus.lemma_id,
+          uData.focus.lemma_form || uData.focus.transliteration || undefined
+        );
+      } else {
+        const fallbackKey = context.extendedStrongs
+          ? `lemma:${context.extendedStrongs}`
+          : strongsNr
+            ? `lemma:${strongsNr}`
+            : null;
+        explorePanel.setSource(fallbackKey);
       }
 
       const lexLayer = uData.layers?.lexical ?? null;
@@ -882,6 +904,7 @@ export function createLexicalRelationshipsSection(
       lexBox.replaceChildren();
       ctxBox.replaceChildren();
       lxxBox.replaceChildren();
+      explorePanel.clear();
     },
   };
 }

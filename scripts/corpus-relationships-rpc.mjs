@@ -7,6 +7,10 @@
  * and `/v1/lexical/*`). Zero runtime SQL or whole-corpus downloads.
  */
 
+import { ShardedAdjacencyLoader } from '../src/relationships/adjacency-loader.ts';
+import { resolveResearchConcept } from '../src/relationships/concept-resolver.ts';
+import { discoverMultiHopPaths } from '../src/relationships/multihop-search.ts';
+
 const FNV_OFFSET_64 = 0xcbf29ce484222325n;
 const FNV_PRIME_64 = 0x100000001b3n;
 const MASK_64 = 0xffffffffffffffffn;
@@ -2282,5 +2286,165 @@ export async function handleQueryRelationshipsV2(ctx, params = {}) {
       lxx_translation: lxxLayer,
     },
   };
+}
+
+function parseOptionalListParam(v) {
+  const arr = parseListParam(v);
+  return arr.length > 0 ? arr : undefined;
+}
+
+function finiteOr(v, fallback) {
+  if (v === undefined || v === null || v === '') return fallback;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+async function resolveR9cReleaseVersion(ctx, params = {}) {
+  const requested = params.release || params.release_version;
+  if (requested) {
+    const clean = String(requested).trim();
+    if (!/^[A-Za-z0-9._-]+$/.test(clean)) {
+      return { error: `Invalid release identifier: ${clean}`, releaseVersion: clean };
+    }
+    return { error: null, releaseVersion: clean };
+  }
+  const envDefault = ctx.env?.R9C_DEFAULT_RELEASE || ctx.env?.RELATIONSHIPS_RELEASE;
+  if (envDefault) return { error: null, releaseVersion: String(envDefault).trim() };
+  const active = await ctx.loadJsonShard(ctx.env, '/v2/relationships/active.json.gz');
+  const activeRel = active?.active_release ? String(active.active_release).trim() : null;
+  if (activeRel && !activeRel.startsWith('r8-')) {
+    return { error: null, releaseVersion: activeRel };
+  }
+  const r9bManifest = await ctx.loadJsonShard(ctx.env, '/v2/relationships/r9b-v1.0/manifest.json.gz');
+  if (r9bManifest) return { error: null, releaseVersion: 'r9b-v1.0' };
+  return { error: null, releaseVersion: activeRel || 'r9b-v1.0' };
+}
+
+function createWorkerAdjacencyLoader(ctx, releaseVersion) {
+  const reader = {
+    async readJson(assetPath) {
+      if (typeof ctx.loadJsonShardWithBytes === 'function') {
+        return await ctx.loadJsonShardWithBytes(ctx.env, assetPath);
+      }
+      const data = await ctx.loadJsonShard(ctx.env, assetPath);
+      if (!data) return null;
+      return { data, bytes: 0 };
+    },
+  };
+  return new ShardedAdjacencyLoader(reader, { releaseVersion, maxCachedShards: 12 });
+}
+
+export async function handleResolveResearchConceptV1(ctx, params = {}) {
+  const rel = await resolveR9cReleaseVersion(ctx, params);
+  if (rel.error) {
+    return {
+      schema_version: '1.0',
+      query: String(params.query || ''),
+      status: 'invalid_request',
+      requires_explicit_selection: false,
+      candidates: [],
+      guardrails: {
+        english_concept_never_auto_picks_single_lemma: true,
+        gloss_similarity_never_creates_graph_edges: true,
+        homographs_preserved_distinct: true,
+      },
+      guidance: rel.error,
+    };
+  }
+  const query = String(params.query || params.q || params.term || '').trim();
+  const loader = createWorkerAdjacencyLoader(ctx, rel.releaseVersion);
+  const res = await resolveResearchConcept(loader, query, {
+    language: params.language ? String(params.language).trim() : undefined,
+    limit: finiteOr(params.limit, 25),
+    include_uncovered: params.include_uncovered !== false && params.include_uncovered !== 'false',
+    budget: {
+      asset_requests: 0,
+      shards_read: 0,
+      bytes_read: 0,
+      max_asset_requests: 12,
+      max_bytes_read: 8 * 1024 * 1024,
+      budget_exceeded: false,
+      exceeded_reason: null,
+    },
+  });
+  return { release_version: rel.releaseVersion, ...res };
+}
+
+export async function handleDiscoverRelationshipPathsV1(ctx, params = {}) {
+  const rel = await resolveR9cReleaseVersion(ctx, params);
+  if (rel.error) {
+    return {
+      schema_version: '1.0',
+      release_version: rel.releaseVersion,
+      status: 'invalid_request',
+      message: rel.error,
+      paths: [],
+    };
+  }
+  const loader = createWorkerAdjacencyLoader(ctx, rel.releaseVersion);
+  const manifest = await loader.getManifestSummary();
+  if (!manifest) {
+    return {
+      schema_version: '1.0',
+      release_version: rel.releaseVersion,
+      status: 'incomplete_coverage',
+      message: `Relationship graph release unavailable: ${rel.releaseVersion}`,
+      paths: [],
+      coverage: {
+        exhaustive: false,
+        search_stopped_by_limits: false,
+        limits_reached: [],
+        source_coverage_incomplete: true,
+        incomplete_reasons: [`Release manifest ${rel.releaseVersion} missing.`],
+        missing_shards: [`/v2/relationships/${rel.releaseVersion}/manifest.json.gz`],
+        truncated_contextual_entities: [],
+        nodes_expanded: 0,
+        edges_examined: 0,
+        asset_requests: 1,
+        shards_read: 0,
+        bytes_read: 0,
+        execution_ms: 0,
+        contextual_pages_loaded: 0,
+        total_paths_found: 0,
+        paths_returned: 0,
+      },
+    };
+  }
+
+  const rawLimits = params.limits && typeof params.limits === 'object' ? params.limits : {};
+  const workerLimits = {
+    max_nodes_expanded: Math.min(60, Math.max(1, finiteOr(rawLimits.max_nodes_expanded, 35))),
+    max_edges_examined: Math.min(4000, Math.max(1, finiteOr(rawLimits.max_edges_examined, 2500))),
+    max_paths_returned: Math.min(50, Math.max(1, finiteOr(rawLimits.max_paths_returned ?? params.limit, 20))),
+    max_per_node_edges: Math.min(300, Math.max(1, finiteOr(rawLimits.max_per_node_edges, 120))),
+    max_contextual_pages_per_node: Math.min(8, Math.max(0, finiteOr(rawLimits.max_contextual_pages_per_node, 2))),
+    max_asset_requests: Math.min(70, Math.max(1, finiteOr(rawLimits.max_asset_requests, 55))),
+    max_bytes_read: Math.min(18 * 1024 * 1024, Math.max(1024, finiteOr(rawLimits.max_bytes_read, 14 * 1024 * 1024))),
+    max_execution_ms: Math.min(5000, Math.max(25, finiteOr(rawLimits.max_execution_ms, 3500))),
+    max_candidate_paths: Math.min(500, Math.max(1, finiteOr(rawLimits.max_candidate_paths, 300))),
+  };
+
+  return await discoverMultiHopPaths(loader, {
+    source: String(params.source || params.from || '').trim(),
+    target: params.target ? String(params.target).trim() : null,
+    targets: parseOptionalListParam(params.targets),
+    max_hops: params.max_hops !== undefined ? finiteOr(params.max_hops, 2) : 2,
+    layers: parseOptionalListParam(params.layers),
+    predicates: parseOptionalListParam(params.predicates),
+    direction: params.direction ? String(params.direction) : 'both',
+    min_quality: params.min_quality ? String(params.min_quality) : 'all',
+    languages: parseOptionalListParam(params.languages),
+    editions: parseOptionalListParam(params.editions),
+    contextual_scope: params.contextual_scope ? String(params.contextual_scope) : undefined,
+    min_same_verse: params.min_same_verse !== undefined ? finiteOr(params.min_same_verse, undefined) : undefined,
+    min_same_clause: params.min_same_clause !== undefined ? finiteOr(params.min_same_clause, undefined) : undefined,
+    min_collocation: params.min_collocation !== undefined ? finiteOr(params.min_collocation, undefined) : undefined,
+    allow_cycles: params.allow_cycles === true || params.allow_cycles === 'true',
+    hub_penalty: params.hub_penalty && typeof params.hub_penalty === 'object' ? params.hub_penalty : undefined,
+    limits: workerLimits,
+    limit: params.limit !== undefined ? finiteOr(params.limit, 20) : undefined,
+    offset: params.offset !== undefined ? finiteOr(params.offset, 0) : undefined,
+    cursor: params.cursor ? String(params.cursor) : null,
+  });
 }
 

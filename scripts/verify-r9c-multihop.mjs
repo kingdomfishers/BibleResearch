@@ -319,7 +319,8 @@ async function main() {
     assert.equal(limited.coverage.search_stopped_by_limits, true);
 
     const truncCtx = await discoverMultiHopPaths(fxLoader, { source: 'lemma:H9001', target: 'lemma:H9004', max_hops: 1, layers: ['contextual'], limits: { max_contextual_pages_per_node: 0 } });
-    assert.equal(truncCtx.status, 'no_supported_path');
+    assert.equal(truncCtx.status, 'incomplete_coverage');
+    assert.equal(truncCtx.coverage.exhaustive, false);
     assert.equal(truncCtx.coverage.source_coverage_incomplete, true);
     assert.ok(truncCtx.coverage.truncated_contextual_entities.includes('lemma:H9001'));
 
@@ -394,6 +395,124 @@ async function main() {
     assert.equal(ruachCtx.status, 'ok');
     assert.ok(ruachCtx.coverage.total_paths_found > 50, `Expected >50 contextual neighbors via R9B overflow pages, got ${ruachCtx.coverage.total_paths_found}`);
     assert.ok(ruachCtx.coverage.contextual_pages_loaded >= 1);
+  });
+
+  await check('Reg-1 (2A): Enforce node/edge/asset/bytes/path limits across 1-hop, 2-hop & open BFS', async () => {
+    const oneHopCapped = await discoverMultiHopPaths(fxLoader, {
+      source: 'lemma:H9001',
+      target: 'lemma:H9009',
+      max_hops: 1,
+      limits: { max_per_node_edges: 1, max_edges_examined: 1 },
+    });
+    assert.equal(oneHopCapped.coverage.exhaustive, false);
+    assert.equal(oneHopCapped.coverage.search_stopped_by_limits, true);
+    assert.ok(oneHopCapped.coverage.edges_examined <= 1);
+    assert.ok(oneHopCapped.coverage.limits_reached.length >= 1);
+
+    const openPathCapped = await discoverMultiHopPaths(fxLoader, {
+      source: 'lemma:H9001',
+      max_hops: 2,
+      limits: { max_candidate_paths: 2, max_paths_returned: 2 },
+    });
+    assert.equal(openPathCapped.coverage.exhaustive, false);
+    assert.equal(openPathCapped.coverage.search_stopped_by_limits, true);
+    assert.ok(openPathCapped.coverage.total_paths_found <= 2);
+    assert.ok(openPathCapped.coverage.limits_reached.includes('max_candidate_paths'));
+
+    const freshAssetLoader = new ShardedAdjacencyLoader(createInMemoryAssetReader(files), { releaseVersion });
+    const assetCapped = await discoverMultiHopPaths(freshAssetLoader, {
+      source: 'lemma:H9001',
+      max_hops: 2,
+      limits: { max_asset_requests: 3 },
+    });
+    assert.equal(assetCapped.coverage.exhaustive, false);
+    assert.equal(assetCapped.coverage.search_stopped_by_limits, true);
+    assert.ok(assetCapped.coverage.asset_requests <= 3);
+    assert.ok(assetCapped.coverage.limits_reached.includes('max_asset_requests'));
+
+    const freshByteLoader = new ShardedAdjacencyLoader(createInMemoryAssetReader(files), { releaseVersion });
+    const bytesCapped = await discoverMultiHopPaths(freshByteLoader, {
+      source: 'lemma:H9001',
+      max_hops: 2,
+      limits: { max_bytes_read: 1024 },
+    });
+    assert.equal(bytesCapped.coverage.exhaustive, false);
+    assert.equal(bytesCapped.coverage.search_stopped_by_limits, true);
+    assert.ok(bytesCapped.coverage.limits_reached.includes('max_bytes_read'));
+  });
+
+  await check('Reg-2 (2B): Reject unknown entities & ambiguous Strongs; preserve unique keys, roots, senses & languages', async () => {
+    for (const fake of ['lemma:H99999', 'root:FAKE_ROOT_XYZ', 'sense:FAKE_SENSE_XYZ']) {
+      const unk = await discoverMultiHopPaths(realLoader, { source: fake, max_hops: 1 });
+      assert.equal(unk.status, 'unknown_entity', `Expected unknown_entity for ${fake}, got ${unk.status}`);
+      const unkTgt = await discoverMultiHopPaths(realLoader, { source: 'lemma:H7307', target: fake, max_hops: 1 });
+      assert.equal(unkTgt.status, 'unknown_entity', `Expected unknown_entity target for ${fake}, got ${unkTgt.status}`);
+    }
+    for (const ambig of ['H1697', 'lemma:H1697', 'H1254', 'lemma:H1254']) {
+      const rConcept = await resolveResearchConcept(realLoader, ambig);
+      assert.equal(rConcept.status, 'needs_disambiguation', `${ambig} must require disambiguation`);
+      assert.equal(rConcept.requires_explicit_selection, true);
+      assert.ok(rConcept.candidates.length >= 2);
+      const rSearch = await discoverMultiHopPaths(realLoader, { source: ambig, max_hops: 1 });
+      assert.equal(rSearch.status, 'invalid_request', `Direct traversal of ambiguous ${ambig} must be rejected`);
+    }
+    const baseResolved = await discoverMultiHopPaths(realLoader, { source: 'H7307', target: 'G4151', max_hops: 1, layers: ['lxx_translation'] });
+    assert.equal(baseResolved.status, 'ok');
+    assert.equal(baseResolved.query.starting_entity.entity_key, 'lemma:H7307');
+    assert.equal(baseResolved.query.target_entity?.entity_key, 'lemma:G4151');
+  });
+
+  await check('Reg-3 (2C): Reject malformed/stale cursors & verify full filter signature in cursor', async () => {
+    const p1 = await discoverMultiHopPaths(fxLoader, { source: 'lemma:H9001', max_hops: 2, limit: 2, offset: 0 });
+    assert.ok(p1.pagination.next_cursor);
+
+    const malformed = await discoverMultiHopPaths(fxLoader, { source: 'lemma:H9001', max_hops: 2, limit: 2, cursor: 'mh1:bad:cursor' });
+    assert.equal(malformed.status, 'invalid_request');
+
+    const staleLayer = await discoverMultiHopPaths(fxLoader, {
+      source: 'lemma:H9001', max_hops: 2, limit: 2, layers: ['grammatical'], cursor: p1.pagination.next_cursor,
+    });
+    assert.equal(staleLayer.status, 'invalid_request');
+
+    const staleDir = await discoverMultiHopPaths(fxLoader, {
+      source: 'lemma:H9001', max_hops: 2, limit: 2, direction: 'outgoing', cursor: p1.pagination.next_cursor,
+    });
+    assert.equal(staleDir.status, 'invalid_request');
+
+    const staleHub = await discoverMultiHopPaths(fxLoader, {
+      source: 'lemma:H9001', max_hops: 2, limit: 2, hub_penalty: { enabled: false }, cursor: p1.pagination.next_cursor,
+    });
+    assert.equal(staleHub.status, 'invalid_request');
+
+    const negOff = await discoverMultiHopPaths(fxLoader, { source: 'lemma:H9001', max_hops: 2, offset: -1 });
+    assert.equal(negOff.status, 'invalid_request');
+  });
+
+  await check('Reg-4 (2D) & Required Research Examples 1-7 on real R9B+R8D graph', async () => {
+    // 1. H7307 -> H7308
+    const ex1 = await discoverMultiHopPaths(realLoader, { source: 'lemma:H7307', target: 'lemma:H7308', max_hops: 2 });
+    assert.equal(ex1.status, 'ok');
+    assert.ok(ex1.paths.some((p) => p.layers_used.includes('lexical')));
+    // 2. H7307 -> G4151
+    const ex2 = await discoverMultiHopPaths(realLoader, { source: 'lemma:H7307', target: 'lemma:G4151', max_hops: 2 });
+    assert.equal(ex2.status, 'ok');
+    assert.ok(ex2.paths.some((p) => p.layers_used.includes('lxx_translation')));
+    // 3. H7308 -> G4151 (3 hops)
+    const ex3 = await discoverMultiHopPaths(realLoader, { source: 'lemma:H7308', target: 'lemma:G4151', max_hops: 3 });
+    assert.equal(ex3.status, 'ok');
+    assert.ok(ex3.paths.some((p) => p.entities.some((e) => e.entity_key === 'lemma:H7307')));
+    assert.equal(ex3.guardrails.cross_language_path_not_nt_theology_proof, true);
+    // 4. H1697G -> G3056
+    const ex4 = await discoverMultiHopPaths(realLoader, { source: 'lemma:H1697G', target: 'lemma:G3056', max_hops: 2 });
+    assert.equal(ex4.status, 'ok');
+    // 5. H0430G -> H8064
+    const ex5 = await discoverMultiHopPaths(realLoader, { source: 'lemma:H0430G', target: 'lemma:H8064', max_hops: 2 });
+    assert.equal(ex5.status, 'ok');
+    assert.ok(ex5.paths.some((p) => p.explanation.shared_references.includes('GEN 1:1')));
+    // Missing shard with null manifest -> incomplete_coverage
+    const emptyLoader = new ShardedAdjacencyLoader(createInMemoryAssetReader({}), { releaseVersion: 'missing-rel' });
+    const missRes = await discoverMultiHopPaths(emptyLoader, { source: 'lemma:H7307', max_hops: 1 });
+    assert.equal(missRes.status, 'incomplete_coverage');
   });
 
   console.log(`\nALL ${passed} R9C VERIFICATION CHECKS PASSED.`);

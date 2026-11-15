@@ -6,6 +6,7 @@ import type { ResolverIndexData, ShardedAdjacencyLoader, UncoveredLemmasData } f
 import { inferEntityKind, normalizeLang } from './adjacency-loader.ts';
 import type {
   AdjacencyLoader,
+  AssetBudgetContext,
   ConceptCandidate,
   ConceptResolutionResult,
 } from './multihop-types.ts';
@@ -15,12 +16,20 @@ export interface ConceptSearchOptions {
   language?: string;
   limit?: number;
   include_uncovered?: boolean;
+  budget?: AssetBudgetContext;
 }
 
 type ResolverCapableLoader = AdjacencyLoader & {
-  getResolverIndex?: () => Promise<ResolverIndexData | null>;
-  getUncoveredLemmas?: () => Promise<UncoveredLemmasData | null>;
+  getResolverIndex?: (budget?: AssetBudgetContext) => Promise<ResolverIndexData | null>;
+  getUncoveredLemmas?: (budget?: AssetBudgetContext) => Promise<UncoveredLemmasData | null>;
 };
+
+export interface EntityKeyResolution {
+  ok: boolean;
+  entityKey: string | null;
+  status: 'ok' | 'invalid_request' | 'unknown_entity' | 'incomplete_coverage';
+  message?: string;
+}
 
 const GUARDRAILS: ConceptResolutionResult['guardrails'] = {
   english_concept_never_auto_picks_single_lemma: true,
@@ -228,8 +237,22 @@ export async function resolveResearchConcept(
   }
 
   const cap = loader as ResolverCapableLoader;
-  const resolver = cap.getResolverIndex ? await cap.getResolverIndex() : null;
-  const uncovered = cap.getUncoveredLemmas ? await cap.getUncoveredLemmas() : null;
+  const resolver = (cap.getResolverIndex ? await cap.getResolverIndex(options.budget) : null) as ResolverIndexData | null;
+  const uncovered = (cap.getUncoveredLemmas ? await cap.getUncoveredLemmas(options.budget) : null) as UncoveredLemmasData | null;
+
+  if (!resolver) {
+    return {
+      schema_version: '1.0',
+      query,
+      status: 'incomplete_coverage',
+      requires_explicit_selection: false,
+      candidates: [],
+      guardrails: GUARDRAILS,
+      guidance: options.budget?.budget_exceeded
+        ? `Concept resolution stopped by resource budget (${options.budget.exceeded_reason}).`
+        : 'Relationship resolver index is unavailable; cannot verify canonical entities.',
+    };
+  }
 
   // 1. Canonical entity key (lemma:*, root:*, sense:*)
   if (/^(lemma|root|sense):/i.test(query)) {
@@ -243,9 +266,42 @@ export async function resolveResearchConcept(
           guidance: `Exact canonical lemma resolved: ${hit.entity_key}.`,
         };
       }
+      const stripped = query.replace(/^lemma:/i, '');
+      const baseMatch = /^([HG]\d{1,4})$/i.exec(stripped);
+      if (baseMatch) {
+        const strongsBase = `${baseMatch[1][0].toUpperCase()}${baseMatch[1].slice(1).padStart(4, '0')}`;
+        const baseIds = resolver.by_strongs_base?.[strongsBase] || [];
+        const baseCandidates: ConceptCandidate[] = [];
+        for (const id of baseIds) {
+          const entry = resolver.lemmas?.[id];
+          if (entry) baseCandidates.push(candidateFromResolverEntry(id, entry, 'base_strongs_candidate'));
+        }
+        const deduped = filterAndDedupeCandidates(baseCandidates, options.language).slice(0, limit);
+        if (deduped.length === 1) {
+          return {
+            schema_version: '1.0', query, status: 'resolved', requires_explicit_selection: false,
+            candidates: deduped, guardrails: GUARDRAILS,
+            guidance: `Unique Strong's candidate resolved: ${deduped[0].entity_key}.`,
+          };
+        }
+        if (deduped.length > 1) {
+          return {
+            schema_version: '1.0', query, status: 'needs_disambiguation', requires_explicit_selection: true,
+            candidates: deduped, guardrails: GUARDRAILS,
+            guidance: `Strong's base ${strongsBase} maps to ${deduped.length} distinct homograph/canonical lemmas; explicit selection is required.`,
+          };
+        }
+      }
     } else {
-      const profile = await loader.getEntityProfile(query);
-      const lexProbe = await loader.getNeighbors(query, { layers: ['lexical'], max_edges_per_node: 2 });
+      const profile = await loader.getEntityProfile(query, options.budget);
+      const lexProbe = await loader.getNeighbors(query, { layers: ['lexical'], max_edges_per_node: 2, budget: options.budget });
+      if (lexProbe.missing_shards.length > 0 && lexProbe.edges.length === 0) {
+        return {
+          schema_version: '1.0', query, status: 'incomplete_coverage', requires_explicit_selection: false,
+          candidates: [], guardrails: GUARDRAILS,
+          guidance: `Lexical shards unavailable while verifying ${query}.`,
+        };
+      }
       if (profile && lexProbe.edges.length > 0) {
         return {
           schema_version: '1.0', query, status: 'resolved', requires_explicit_selection: false,
@@ -350,16 +406,32 @@ export async function resolveResearchConcept(
   };
 }
 
-export async function resolveEntityKey(loader: AdjacencyLoader, input: string): Promise<string | null> {
+export async function resolveEntityKeyDetailed(
+  loader: AdjacencyLoader,
+  input: string,
+  budget?: AssetBudgetContext,
+): Promise<EntityKeyResolution> {
   const trimmed = String(input || '').trim();
-  if (!trimmed) return null;
-  if (/^(root|sense):/i.test(trimmed)) return trimmed;
-  if (/^lemma:/i.test(trimmed) || /^[HG]\d{1,4}[A-Za-z]+$/i.test(trimmed)) {
-    const res = await resolveResearchConcept(loader, trimmed);
-    if (res.status === 'resolved' && res.candidates.length === 1) {
-      return res.candidates[0].entity_key;
-    }
-    return trimmed.startsWith('lemma:') ? trimmed : `lemma:${trimmed}`;
+  if (!trimmed) {
+    return { ok: false, entityKey: null, status: 'invalid_request', message: 'Entity identifier must be non-empty.' };
   }
-  return null;
+  const res = await resolveResearchConcept(loader, trimmed, { limit: 10, budget });
+  if (res.status === 'resolved' && res.candidates.length === 1) {
+    return { ok: true, entityKey: res.candidates[0].entity_key, status: 'ok' };
+  }
+  if (res.status === 'incomplete_coverage') {
+    return { ok: false, entityKey: null, status: 'incomplete_coverage', message: res.guidance };
+  }
+  if (res.status === 'needs_disambiguation') {
+    return { ok: false, entityKey: null, status: 'invalid_request', message: res.guidance };
+  }
+  if (res.status === 'not_found') {
+    return { ok: false, entityKey: null, status: 'unknown_entity', message: res.guidance };
+  }
+  return { ok: false, entityKey: null, status: 'invalid_request', message: res.guidance };
+}
+
+export async function resolveEntityKey(loader: AdjacencyLoader, input: string): Promise<string | null> {
+  const r = await resolveEntityKeyDetailed(loader, input);
+  return r.entityKey;
 }

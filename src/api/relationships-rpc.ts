@@ -6,6 +6,13 @@
 
 // === @section:imports ===
 import { callCorpusRpc, type CorpusClientOptions } from './corpus-client';
+import type {
+  ConceptResolutionResult,
+  GraphLayer,
+  MultiHopPath,
+  MultiHopQuery,
+  MultiHopResult,
+} from '../relationships/multihop-types';
 import { CROSS_REFERENCE_GUARDRAILS } from './relationship-model';
 import {
   buildNotePrefillFromCrossReference,
@@ -383,9 +390,11 @@ export async function lookupGrammaticalRelationships(
   params: GrammaticalRelationshipQueryParams,
   opts: CorpusClientOptions = {}
 ): Promise<DataResult<GrammaticalRelationshipsResponse>> {
+  const release = (params as { release?: string }).release ?? getConfiguredRelationshipsRelease();
+  const payload = release ? { ...params, release } : params;
   const res = await callCorpusRpc<GrammaticalRelationshipsResponse>(
     'query_relationships_v2',
-    params as unknown as Record<string, unknown>,
+    payload as unknown as Record<string, unknown>,
     opts
   );
   if (res.data) return { ...res, data: res.data };
@@ -620,14 +629,51 @@ export interface UnifiedWordRelationshipsResponse extends GrammaticalRelationshi
   lxx_translation?: R9BLxxLayerResult | null;
 }
 
+const PREVIEW_STORAGE_KEY = 'bibleresearch_rel_preview';
+
+/** Resolves opt-in relationship graph preview release (`?preview=r9b`, `?release=...`, or `VITE_RELATIONSHIPS_RELEASE`). */
+export function getConfiguredRelationshipsRelease(): string | undefined {
+  if (typeof window !== 'undefined') {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const preview = params.get('preview')?.trim().toLowerCase();
+      const rel = params.get('release')?.trim();
+      if (preview === 'off' || preview === '0' || preview === 'false') {
+        window.sessionStorage?.removeItem(PREVIEW_STORAGE_KEY);
+        return undefined;
+      }
+      if (rel && /^[A-Za-z0-9._-]+$/.test(rel)) {
+        window.sessionStorage?.setItem(PREVIEW_STORAGE_KEY, rel);
+        return rel;
+      }
+      if (preview === 'r9b' || preview === 'r9c' || preview === 'r9b-v1.0' || preview === '1' || preview === 'true') {
+        window.sessionStorage?.setItem(PREVIEW_STORAGE_KEY, 'r9b-v1.0');
+        return 'r9b-v1.0';
+      }
+      const stored = window.sessionStorage?.getItem(PREVIEW_STORAGE_KEY);
+      if (stored && /^[A-Za-z0-9._-]+$/.test(stored)) return stored;
+    } catch { /* ignore storage errors */ }
+  }
+  const envRel = (import.meta.env?.VITE_RELATIONSHIPS_RELEASE as string | undefined)?.trim();
+  return envRel && envRel.length > 0 ? envRel : undefined;
+}
+
+export function isRelationshipPreviewEnabled(): boolean {
+  const rel = getConfiguredRelationshipsRelease();
+  return Boolean(rel && rel !== 'r8-v1.1');
+}
+
+export type { ConceptResolutionResult, GraphLayer, MultiHopPath, MultiHopQuery, MultiHopResult };
+
 async function callV2RelationshipOp<T extends { status: string; error_message?: string | null }>(
   op: string,
   params: Record<string, unknown>,
   opts: CorpusClientOptions = {}
 ): Promise<DataResult<T>> {
+  const release = (params.release as string | undefined) ?? getConfiguredRelationshipsRelease();
   const res = await callCorpusRpc<T>(
     'query_relationships_v2',
-    { op, ...params },
+    { op, ...params, ...(release ? { release } : {}) },
     opts
   );
   if (!res.data) {
@@ -676,6 +722,32 @@ export function lookupLxxTranslations(
   return callV2RelationshipOp<UnifiedWordRelationshipsResponse>('lxx_translations', { ...params }, opts);
 }
 
+/** Resolves an English concept, Strong's ID, or surface form into explicit candidate entities. */
+export function resolveResearchConcept(
+  params: { query: string; language?: string; limit?: number; include_uncovered?: boolean; release?: string },
+  opts: CorpusClientOptions = {}
+): Promise<DataResult<ConceptResolutionResult | null>> {
+  const release = params.release ?? getConfiguredRelationshipsRelease();
+  return callCorpusRpc<ConceptResolutionResult>(
+    'resolve_research_concept_v1',
+    { ...params, ...(release ? { release } : {}) },
+    opts
+  );
+}
+
+/** Discovers bounded 1-3 hop evidence-backed relationship paths with ranked explanations. */
+export function discoverRelationshipPaths(
+  params: MultiHopQuery & { release?: string },
+  opts: CorpusClientOptions = {}
+): Promise<DataResult<MultiHopResult | null>> {
+  const release = params.release ?? getConfiguredRelationshipsRelease();
+  return callCorpusRpc<MultiHopResult>(
+    'discover_relationship_paths_v1',
+    { ...params, ...(release ? { release } : {}) } as Record<string, unknown>,
+    { timeoutMs: opts.timeoutMs ?? 12000, ...opts }
+  );
+}
+
 // === @section:logic:gateway ===
 export const RelationshipsRPC = {
   lookupCrossReferences,
@@ -685,6 +757,8 @@ export const RelationshipsRPC = {
   lookupContextualNeighborsPage,
   lookupLexicalRelationsV2,
   lookupLxxTranslations,
+  resolveResearchConcept,
+  discoverRelationshipPaths,
   buildNotePrefillFromCrossReference,
   buildNotePrefillFromLexicalEdge,
   extractRelationshipEvaluation,

@@ -110,6 +110,16 @@ export interface GraphEdge {
   guardrails: string[];
 }
 
+export interface AssetBudgetContext {
+  asset_requests: number;
+  shards_read: number;
+  bytes_read: number;
+  max_asset_requests: number;
+  max_bytes_read: number;
+  budget_exceeded: boolean;
+  exceeded_reason: string | null;
+}
+
 export interface NeighborLoadOptions {
   layers?: GraphLayer[];
   predicates?: string[];
@@ -123,7 +133,9 @@ export interface NeighborLoadOptions {
   min_collocation?: number;
   max_contextual_pages?: number;
   target_hint?: string | null;
+  target_hints?: string[];
   max_edges_per_node?: number;
+  budget?: AssetBudgetContext;
 }
 
 export interface NeighborLoadResult {
@@ -156,6 +168,10 @@ export interface SearchLimits {
   max_paths_returned: number;
   max_per_node_edges: number;
   max_contextual_pages_per_node: number;
+  max_asset_requests: number;
+  max_execution_ms: number;
+  max_bytes_read: number;
+  max_candidate_paths: number;
 }
 
 export interface MultiHopQuery {
@@ -259,8 +275,10 @@ export interface SearchCoverageMetadata {
   truncated_contextual_entities: string[];
   nodes_expanded: number;
   edges_examined: number;
+  asset_requests: number;
   shards_read: number;
   bytes_read: number;
+  execution_ms: number;
   contextual_pages_loaded: number;
   total_paths_found: number;
   paths_returned: number;
@@ -327,7 +345,7 @@ export interface ConceptCandidate {
 export interface ConceptResolutionResult {
   schema_version: '1.0';
   query: string;
-  status: 'resolved' | 'needs_disambiguation' | 'not_found' | 'invalid_request';
+  status: 'resolved' | 'needs_disambiguation' | 'not_found' | 'invalid_request' | 'incomplete_coverage';
   requires_explicit_selection: boolean;
   candidates: ConceptCandidate[];
   guardrails: {
@@ -339,9 +357,10 @@ export interface ConceptResolutionResult {
 }
 
 export interface AdjacencyLoader {
-  getReleaseVersion(): Promise<string>;
-  getEntityProfile(entityKey: string): Promise<GraphEntityRef | null>;
+  getReleaseVersion(budget?: AssetBudgetContext): Promise<string>;
+  getEntityProfile(entityKey: string, budget?: AssetBudgetContext): Promise<GraphEntityRef | null>;
   getNeighbors(entityKey: string, options?: NeighborLoadOptions): Promise<NeighborLoadResult>;
-  getSummaryEvidence(summaryId: string): Promise<HopEvidenceWitness[]>;
-  getManifestSummary(): Promise<Record<string, unknown> | null>;
+  getSummaryEvidence(summaryId: string, budget?: AssetBudgetContext): Promise<HopEvidenceWitness[]>;
+  getManifestSummary(budget?: AssetBudgetContext): Promise<Record<string, unknown> | null>;
+  getResolverIndex?(budget?: AssetBudgetContext): Promise<unknown | null>;
 }

@@ -18,9 +18,11 @@
 
 import { withCorpusSecurity } from './corpus-security.mjs';
 import {
+  handleDiscoverRelationshipPathsV1,
   handleLookupCrossReferencesV1,
   handleLookupLexicalRelationshipsV1,
   handleQueryRelationshipsV2,
+  handleResolveResearchConceptV1,
 } from './corpus-relationships-rpc.mjs';
 
 const CORS_HEADERS = {
@@ -78,10 +80,10 @@ async function decompressGzipIfNeeded(bytes) {
   return bytes;
 }
 
-async function loadJsonShard(env, assetPath) {
+async function loadJsonShardWithBytes(env, assetPath) {
   const gzPath = assetPath.endsWith('.gz') ? assetPath : `${assetPath}.gz`;
   if (shardLru.has(gzPath)) {
-    return shardLru.get(gzPath);
+    return { data: shardLru.get(gzPath), bytes: 0 };
   }
   const rawBytes = await readAssetBytes(env, gzPath);
   if (!rawBytes) return null;
@@ -89,7 +91,12 @@ async function loadJsonShard(env, assetPath) {
   const text = new TextDecoder('utf-8').decode(decodedBytes);
   const parsed = JSON.parse(text);
   setLru(gzPath, parsed);
-  return parsed;
+  return { data: parsed, bytes: rawBytes.length };
+}
+
+async function loadJsonShard(env, assetPath) {
+  const res = await loadJsonShardWithBytes(env, assetPath);
+  return res ? res.data : null;
 }
 
 async function ensureCatalog(env) {
@@ -2468,6 +2475,12 @@ const corpusWorker = {
         }
         if (op === 'query_relationships_v2' || op === 'lookup_grammatical_relationships_v2') {
           return jsonResponse(await handleQueryRelationshipsV2({ env, loadJsonShard }, params));
+        }
+        if (op === 'resolve_research_concept_v1') {
+          return jsonResponse(await handleResolveResearchConceptV1({ env, loadJsonShard, loadJsonShardWithBytes }, params), 200, 'public, max-age=300');
+        }
+        if (op === 'discover_relationship_paths_v1') {
+          return jsonResponse(await handleDiscoverRelationshipPathsV1({ env, loadJsonShard, loadJsonShardWithBytes }, params), 200, 'public, max-age=300');
         }
 
         return jsonResponse({ error: 'unknown_rpc_operation', operation: op }, 404, 'no-store');

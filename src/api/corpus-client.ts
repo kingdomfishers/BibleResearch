@@ -65,6 +65,8 @@ const CORPUS_RO_OPS = new Set<string>([
   'lookup_cross_references_v1',
   'lookup_lexical_relationships_v1',
   'query_relationships_v2',
+  'resolve_research_concept_v1',
+  'discover_relationship_paths_v1',
 ]);
 
 export function isStaticCorpusRpc(name: string): boolean {

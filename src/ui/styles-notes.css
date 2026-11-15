@@ -1900,4 +1900,93 @@
   margin-top: 6px;
 }
 
+.r9c-explore-panel {
+  min-width: 0;
+}
+
+.r9c-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 8px 0 12px;
+}
+
+.r9c-input {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 36px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--soft);
+  color: var(--text);
+  font-size: 0.85rem;
+}
+
+.r9c-actions,
+.r9c-candidate-list,
+.r9c-chain,
+.r9c-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.r9c-submit {
+  min-height: 36px;
+}
+
+.r9c-cand-btn,
+.r9c-node-btn {
+  min-height: 34px;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.r9c-edge-pill,
+.r9c-node-static {
+  font-size: 0.78rem;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.r9c-path-card {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.r9c-why,
+.r9c-guardrail,
+.r9c-step-meta,
+.r9c-step-warn {
+  font-size: 0.78rem;
+  margin-top: 4px;
+}
+
+.r9c-steps-details {
+  margin-top: 8px;
+}
+
+.r9c-steps-summary {
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.r9c-step-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+  padding-left: 8px;
+  border-left: 2px solid var(--border);
+}
+
+.r9c-partial-banner {
+  border-left: 3px solid var(--accent);
+  padding-left: 8px;
+}
+
 

@@ -43,6 +43,8 @@ export const RESEARCH_TOOL_NAMES = [
   'page_contextual_neighbors_v2',
   'lookup_lexical_relations_v2',
   'lookup_lxx_translations_v2',
+  'resolve_research_concept_v1',
+  'discover_relationship_paths_v1',
   'prompt_verse_words',
   'resolve_word_id',
   'get_word_details',
