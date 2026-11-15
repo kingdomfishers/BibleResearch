@@ -1,0 +1,864 @@
+{
+  "schema_version": "2.0",
+  "release_version": "r4-lxx-v1.0",
+  "generated_at": "2026-11-15T12:50:53.315Z",
+  "ruach": {
+    "hebrew_strong": "H7307",
+    "canonical_lemma": "lemma:H7307",
+    "hebrew_script": "רוּחַ",
+    "transliteration": "ru.ach",
+    "gloss": "spirit, wind, breath",
+    "source_correspondences": {
+      "total_attested_renderings": 306,
+      "candidate_count": 3,
+      "candidates": [
+        {
+          "edge_id": "rel:lxx:trans:H7307->G4151",
+          "greek_strong": "G4151",
+          "published_count": 259,
+          "translation_share": 0.8464,
+          "mapping_status": "exact",
+          "homograph_ambiguity": false,
+          "greek_candidate_count": 1,
+          "greek_lemma_keys": [
+            "lemma:G4151"
+          ],
+          "greek_candidates": [
+            {
+              "lemma_key": "lemma:G4151",
+              "lemma_script": "πνεῦμα",
+              "transliteration": "pneuma",
+              "gloss": "pneuma",
+              "primary_pos": "G:N-N",
+              "homograph_tag": "G"
+            }
+          ]
+        },
+        {
+          "edge_id": "rel:lxx:trans:H7307->G0417",
+          "greek_strong": "G0417",
+          "published_count": 44,
+          "translation_share": 0.1438,
+          "mapping_status": "exact",
+          "homograph_ambiguity": false,
+          "greek_candidate_count": 1,
+          "greek_lemma_keys": [
+            "lemma:G0417"
+          ],
+          "greek_candidates": [
+            {
+              "lemma_key": "lemma:G0417",
+              "lemma_script": "ἄνεμος",
+              "transliteration": "anemos",
+              "gloss": "anemos",
+              "primary_pos": "G:N-M",
+              "homograph_tag": null
+            }
+          ]
+        },
+        {
+          "edge_id": "rel:lxx:trans:H7307->G4157",
+          "greek_strong": "G4157",
+          "published_count": 3,
+          "translation_share": 0.0098,
+          "mapping_status": "exact",
+          "homograph_ambiguity": false,
+          "greek_candidate_count": 1,
+          "greek_lemma_keys": [
+            "lemma:G4157"
+          ],
+          "greek_candidates": [
+            {
+              "lemma_key": "lemma:G4157",
+              "lemma_script": "πνοή",
+              "transliteration": "pnoē",
+              "gloss": "pnoē",
+              "primary_pos": "G:N-F",
+              "homograph_tag": null
+            }
+          ]
+        }
+      ]
+    },
+    "reverse_correspondences": {
+      "pneuma_G4151": {
+        "total_attested_renderings": 259,
+        "candidate_count": 1,
+        "candidates": [
+          {
+            "edge_id": "rel:lxx:trans:H7307->G4151",
+            "hebrew_strong": "H7307",
+            "published_count": 259,
+            "translation_share": 1,
+            "mapping_status": "exact",
+            "homograph_ambiguity": false,
+            "hebrew_candidate_count": 1,
+            "hebrew_lemma_keys": [
+              "lemma:H7307"
+            ],
+            "hebrew_candidates": [
+              {
+                "lemma_key": "lemma:H7307",
+                "lemma_script": "רוּחַ",
+                "transliteration": "ru.ach",
+                "gloss": "ru.ach",
+                "primary_pos": "H:N-F",
+                "homograph_tag": "G"
+              }
+            ]
+          }
+        ]
+      },
+      "anemos_G0417": {
+        "total_attested_renderings": 44,
+        "candidate_count": 1,
+        "candidates": [
+          {
+            "edge_id": "rel:lxx:trans:H7307->G0417",
+            "hebrew_strong": "H7307",
+            "published_count": 44,
+            "translation_share": 1,
+            "mapping_status": "exact",
+            "homograph_ambiguity": false,
+            "hebrew_candidate_count": 1,
+            "hebrew_lemma_keys": [
+              "lemma:H7307"
+            ],
+            "hebrew_candidates": [
+              {
+                "lemma_key": "lemma:H7307",
+                "lemma_script": "רוּחַ",
+                "transliteration": "ru.ach",
+                "gloss": "ru.ach",
+                "primary_pos": "H:N-F",
+                "homograph_tag": "G"
+              }
+            ]
+          }
+        ]
+      },
+      "pnoe_G4157": {
+        "total_attested_renderings": 10,
+        "candidate_count": 2,
+        "candidates": [
+          {
+            "edge_id": "rel:lxx:trans:H5397->G4157",
+            "hebrew_strong": "H5397",
+            "published_count": 7,
+            "translation_share": 0.7,
+            "mapping_status": "exact",
+            "homograph_ambiguity": false,
+            "hebrew_candidate_count": 1,
+            "hebrew_lemma_keys": [
+              "lemma:H5397"
+            ],
+            "hebrew_candidates": [
+              {
+                "lemma_key": "lemma:H5397",
+                "lemma_script": "נְשָׁמָה",
+                "transliteration": "ne.sha.mah",
+                "gloss": "ne.sha.mah",
+                "primary_pos": "H:N-F",
+                "homograph_tag": null
+              }
+            ]
+          },
+          {
+            "edge_id": "rel:lxx:trans:H7307->G4157",
+            "hebrew_strong": "H7307",
+            "published_count": 3,
+            "translation_share": 0.3,
+            "mapping_status": "exact",
+            "homograph_ambiguity": false,
+            "hebrew_candidate_count": 1,
+            "hebrew_lemma_keys": [
+              "lemma:H7307"
+            ],
+            "hebrew_candidates": [
+              {
+                "lemma_key": "lemma:H7307",
+                "lemma_script": "רוּחַ",
+                "transliteration": "ru.ach",
+                "gloss": "ru.ach",
+                "primary_pos": "H:N-F",
+                "homograph_tag": "G"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "findings": [
+      "Source dataset documents H7307 translated by G4151 (pneuma) 259 times (84.6%), G0417 (anemos) 44 times (14.4%), and G4157 (pnoe) 3 times (1.0%).",
+      "In the reverse direction, G4151 (pneuma) and G0417 (anemos) both trace back exclusively to H7307 in this attested dataset.",
+      "Full lexical family of H7307 is preserved as a single canonical lemma without splitting based on English translations.",
+      "No missing correspondences were invented."
+    ]
+  },
+  "elohim": {
+    "hebrew_strong": "H0430",
+    "canonical_homographs": [
+      {
+        "key": "lemma:H0430G",
+        "description": "God (true God, singular sense)"
+      },
+      {
+        "key": "lemma:H0430H",
+        "description": "gods (pagan deities, plural)"
+      },
+      {
+        "key": "lemma:H0430I",
+        "description": "judges / rulers"
+      },
+      {
+        "key": "lemma:H0430a",
+        "description": "Noun Masculine Plural variant"
+      }
+    ],
+    "source_correspondences": {
+      "total_attested_renderings": 2279,
+      "candidate_count": 4,
+      "candidates": [
+        {
+          "edge_id": "rel:lxx:trans:H0430->G2316",
+          "greek_strong": "G2316",
+          "published_count": 2153,
+          "translation_share": 0.9447,
+          "mapping_status": "hebrew_homograph_ambiguous",
+          "homograph_ambiguity": true,
+          "greek_candidate_count": 1,
+          "greek_lemma_keys": [
+            "lemma:G2316"
+          ],
+          "greek_candidates": [
+            {
+              "lemma_key": "lemma:G2316",
+              "lemma_script": "θεός",
+              "transliteration": "theos",
+              "gloss": "theos",
+              "primary_pos": "G:N-M/F",
+              "homograph_tag": null
+            }
+          ]
+        },
+        {
+          "edge_id": "rel:lxx:trans:H0430->G2962",
+          "greek_strong": "G2962",
+          "published_count": 70,
+          "translation_share": 0.0307,
+          "mapping_status": "hebrew_homograph_ambiguous",
+          "homograph_ambiguity": true,
+          "greek_candidate_count": 1,
+          "greek_lemma_keys": [
+            "lemma:G2962G"
+          ],
+          "greek_candidates": [
+            {
+              "lemma_key": "lemma:G2962G",
+              "lemma_script": "κύριος",
+              "transliteration": "kurios",
+              "gloss": "kurios",
+              "primary_pos": "G:N-M",
+              "homograph_tag": "G"
+            }
+          ]
+        },
+        {
+          "edge_id": "rel:lxx:trans:H0430->G3588",
+          "greek_strong": "G3588",
+          "published_count": 53,
+          "translation_share": 0.0233,
+          "mapping_status": "hebrew_homograph_ambiguous",
+          "homograph_ambiguity": true,
+          "greek_candidate_count": 1,
+          "greek_lemma_keys": [
+            "lemma:G3588"
+          ],
+          "greek_candidates": [
+            {
+              "lemma_key": "lemma:G3588",
+              "lemma_script": "ὁ",
+              "transliteration": "ho",
+              "gloss": "ho",
+              "primary_pos": "G:T",
+              "homograph_tag": null
+            }
+          ]
+        },
+        {
+          "edge_id": "rel:lxx:trans:H0430->G0846",
+          "greek_strong": "G0846",
+          "published_count": 3,
+          "translation_share": 0.0013,
+          "mapping_status": "hebrew_homograph_ambiguous",
+          "homograph_ambiguity": true,
+          "greek_candidate_count": 1,
+          "greek_lemma_keys": [
+            "lemma:G0846"
+          ],
+          "greek_candidates": [
+            {
+              "lemma_key": "lemma:G0846",
+              "lemma_script": "αὐτός",
+              "transliteration": "autos",
+              "gloss": "autos",
+              "primary_pos": "G:P",
+              "homograph_tag": null
+            }
+          ]
+        }
+      ]
+    },
+    "findings": [
+      "Source documents H0430 translated by G2316 (theos) 2,153 times, G2962 (kyrios) 70 times, G3588 (ho) 53 times, and G0846 (autos) 3 times.",
+      "All 4 Hebrew canonical homographs are preserved in the candidate set with homograph_ambiguity=true.",
+      "No single homograph was chosen by default."
+    ]
+  },
+  "dabar_and_logos": {
+    "hebrew_strong": "H1697",
+    "canonical_homographs": [
+      "lemma:H1697G",
+      "lemma:H1697O"
+    ],
+    "source_correspondences": {
+      "total_attested_renderings": 971,
+      "candidate_count": 4,
+      "candidates": [
+        {
+          "edge_id": "rel:lxx:trans:H1697->G3056",
+          "greek_strong": "G3056",
+          "published_count": 668,
+          "translation_share": 0.688,
+          "mapping_status": "hebrew_homograph_ambiguous",
+          "homograph_ambiguity": true,
+          "greek_candidate_count": 1,
+          "greek_lemma_keys": [
+            "lemma:G3056"
+          ],
+          "greek_candidates": [
+            {
+              "lemma_key": "lemma:G3056",
+              "lemma_script": "λόγος",
+              "transliteration": "logos",
+              "gloss": "logos",
+              "primary_pos": "G:N-M",
+              "homograph_tag": null
+            }
+          ]
+        },
+        {
+          "edge_id": "rel:lxx:trans:H1697->G4487",
+          "greek_strong": "G4487",
+          "published_count": 257,
+          "translation_share": 0.2647,
+          "mapping_status": "hebrew_homograph_ambiguous",
+          "homograph_ambiguity": true,
+          "greek_candidate_count": 1,
+          "greek_lemma_keys": [
+            "lemma:G4487"
+          ],
+          "greek_candidates": [
+            {
+              "lemma_key": "lemma:G4487",
+              "lemma_script": "ῥῆμα",
+              "transliteration": "rhēma",
+              "gloss": "rhēma",
+              "primary_pos": "G:N-N",
+              "homograph_tag": null
+            }
+          ]
+        },
+        {
+          "edge_id": "rel:lxx:trans:H1697->G4229",
+          "greek_strong": "G4229",
+          "published_count": 26,
+          "translation_share": 0.0268,
+          "mapping_status": "hebrew_homograph_ambiguous",
+          "homograph_ambiguity": true,
+          "greek_candidate_count": 1,
+          "greek_lemma_keys": [
+            "lemma:G4229"
+          ],
+          "greek_candidates": [
+            {
+              "lemma_key": "lemma:G4229",
+              "lemma_script": "πρᾶγμα",
+              "transliteration": "pragma",
+              "gloss": "pragma",
+              "primary_pos": "G:N-N",
+              "homograph_tag": null
+            }
+          ]
+        },
+        {
+          "edge_id": "rel:lxx:trans:H1697->G2980",
+          "greek_strong": "G2980",
+          "published_count": 20,
+          "translation_share": 0.0206,
+          "mapping_status": "hebrew_homograph_ambiguous",
+          "homograph_ambiguity": true,
+          "greek_candidate_count": 1,
+          "greek_lemma_keys": [
+            "lemma:G2980"
+          ],
+          "greek_candidates": [
+            {
+              "lemma_key": "lemma:G2980",
+              "lemma_script": "λαλέω",
+              "transliteration": "laleō",
+              "gloss": "laleō",
+              "primary_pos": "G:V",
+              "homograph_tag": null
+            }
+          ]
+        }
+      ]
+    },
+    "reverse_logos_correspondences": {
+      "total_attested_renderings": 697,
+      "candidate_count": 5,
+      "candidates": [
+        {
+          "edge_id": "rel:lxx:trans:H1697->G3056",
+          "hebrew_strong": "H1697",
+          "published_count": 668,
+          "translation_share": 0.9584,
+          "mapping_status": "hebrew_homograph_ambiguous",
+          "homograph_ambiguity": true,
+          "hebrew_candidate_count": 2,
+          "hebrew_lemma_keys": [
+            "lemma:H1697G",
+            "lemma:H1697O"
+          ],
+          "hebrew_candidates": [
+            {
+              "lemma_key": "lemma:H1697G",
+              "lemma_script": "דָּבָר",
+              "transliteration": "da.var",
+              "gloss": "da.var",
+              "primary_pos": "H:N-M",
+              "homograph_tag": "G"
+            },
+            {
+              "lemma_key": "lemma:H1697O",
+              "lemma_script": "דָּבָר",
+              "transliteration": "da.var",
+              "gloss": "da.var",
+              "primary_pos": "H:N-M",
+              "homograph_tag": "O"
+            }
+          ]
+        },
+        {
+          "edge_id": "rel:lxx:trans:H0561->G3056",
+          "hebrew_strong": "H0561",
+          "published_count": 10,
+          "translation_share": 0.0143,
+          "mapping_status": "exact",
+          "homograph_ambiguity": false,
+          "hebrew_candidate_count": 1,
+          "hebrew_lemma_keys": [
+            "lemma:H0561"
+          ],
+          "hebrew_candidates": [
+            {
+              "lemma_key": "lemma:H0561",
+              "lemma_script": "אֵמֶר",
+              "transliteration": "e.mer",
+              "gloss": "e.mer",
+              "primary_pos": "H:N-M",
+              "homograph_tag": null
+            }
+          ]
+        },
+        {
+          "edge_id": "rel:lxx:trans:H4405->G3056",
+          "hebrew_strong": "H4405",
+          "published_count": 10,
+          "translation_share": 0.0143,
+          "mapping_status": "exact",
+          "homograph_ambiguity": false,
+          "hebrew_candidate_count": 1,
+          "hebrew_lemma_keys": [
+            "lemma:H4405"
+          ],
+          "hebrew_candidates": [
+            {
+              "lemma_key": "lemma:H4405",
+              "lemma_script": "מִלָּה",
+              "transliteration": "mil.lah",
+              "gloss": "mil.lah",
+              "primary_pos": "H:N-F",
+              "homograph_tag": null
+            }
+          ]
+        },
+        {
+          "edge_id": "rel:lxx:trans:H0565->G3056",
+          "hebrew_strong": "H0565",
+          "published_count": 6,
+          "translation_share": 0.0086,
+          "mapping_status": "hebrew_homograph_ambiguous",
+          "homograph_ambiguity": true,
+          "hebrew_candidate_count": 2,
+          "hebrew_lemma_keys": [
+            "lemma:H0565B",
+            "lemma:H0565A"
+          ],
+          "hebrew_candidates": [
+            {
+              "lemma_key": "lemma:H0565B",
+              "lemma_script": "אֶמְרָה",
+              "transliteration": "im.rah",
+              "gloss": "im.rah",
+              "primary_pos": "H:N-F",
+              "homograph_tag": "B"
+            },
+            {
+              "lemma_key": "lemma:H0565A",
+              "lemma_script": "אִמְרָה",
+              "transliteration": "im.rah",
+              "gloss": "im.rah",
+              "primary_pos": "H:N-F",
+              "homograph_tag": "A"
+            }
+          ]
+        },
+        {
+          "edge_id": "rel:lxx:trans:H4406->G3056",
+          "hebrew_strong": "H4406",
+          "published_count": 3,
+          "translation_share": 0.0043,
+          "mapping_status": "exact",
+          "homograph_ambiguity": false,
+          "hebrew_candidate_count": 1,
+          "hebrew_lemma_keys": [
+            "lemma:H4406"
+          ],
+          "hebrew_candidates": [
+            {
+              "lemma_key": "lemma:H4406",
+              "lemma_script": "מִלָּה",
+              "transliteration": "mil.lah",
+              "gloss": "mil.lah",
+              "primary_pos": "A:N-F",
+              "homograph_tag": null
+            }
+          ]
+        }
+      ]
+    },
+    "findings": [
+      "Hebrew H1697 translates to Greek G3056 (logos, 668), G4487 (rhema, 257), G4229 (pragma, 26), and G2980 (laleo, 20).",
+      "Greek G3056 (logos) is translated from H1697 (dabar, 668), H0561 (emer, 10), H4405 (millah, 10), H0565 (imrah, 6), and H4406 (millah, 3).",
+      "Reflects real observed translation evidence across speech and utterance vocabulary."
+    ]
+  },
+  "ambiguity_tests": {
+    "multiple_hebrew_homographs": {
+      "H0430": {
+        "edge_id": "rel:lxx:trans:H0430->G2316",
+        "greek_strong": "G2316",
+        "published_count": 2153,
+        "translation_share": 0.9447,
+        "mapping_status": "hebrew_homograph_ambiguous",
+        "homograph_ambiguity": true,
+        "greek_candidate_count": 1,
+        "greek_lemma_keys": [
+          "lemma:G2316"
+        ],
+        "greek_candidates": [
+          {
+            "lemma_key": "lemma:G2316",
+            "lemma_script": "θεός",
+            "transliteration": "theos",
+            "gloss": "theos",
+            "primary_pos": "G:N-M/F",
+            "homograph_tag": null
+          }
+        ]
+      },
+      "H0001": {
+        "edge_id": "rel:lxx:trans:H0001->G3962",
+        "greek_strong": "G3962",
+        "published_count": 1072,
+        "translation_share": 0.9108,
+        "mapping_status": "hebrew_homograph_ambiguous",
+        "homograph_ambiguity": true,
+        "greek_candidate_count": 1,
+        "greek_lemma_keys": [
+          "lemma:G3962"
+        ],
+        "greek_candidates": [
+          {
+            "lemma_key": "lemma:G3962",
+            "lemma_script": "πατήρ",
+            "transliteration": "patēr",
+            "gloss": "patēr",
+            "primary_pos": "G:N-M",
+            "homograph_tag": null
+          }
+        ]
+      }
+    },
+    "multiple_greek_candidates": {
+      "H7307": [
+        {
+          "edge_id": "rel:lxx:trans:H7307->G4151",
+          "greek_strong": "G4151",
+          "published_count": 259,
+          "translation_share": 0.8464,
+          "mapping_status": "exact",
+          "homograph_ambiguity": false,
+          "greek_candidate_count": 1,
+          "greek_lemma_keys": [
+            "lemma:G4151"
+          ],
+          "greek_candidates": [
+            {
+              "lemma_key": "lemma:G4151",
+              "lemma_script": "πνεῦμα",
+              "transliteration": "pneuma",
+              "gloss": "pneuma",
+              "primary_pos": "G:N-N",
+              "homograph_tag": "G"
+            }
+          ]
+        },
+        {
+          "edge_id": "rel:lxx:trans:H7307->G0417",
+          "greek_strong": "G0417",
+          "published_count": 44,
+          "translation_share": 0.1438,
+          "mapping_status": "exact",
+          "homograph_ambiguity": false,
+          "greek_candidate_count": 1,
+          "greek_lemma_keys": [
+            "lemma:G0417"
+          ],
+          "greek_candidates": [
+            {
+              "lemma_key": "lemma:G0417",
+              "lemma_script": "ἄνεμος",
+              "transliteration": "anemos",
+              "gloss": "anemos",
+              "primary_pos": "G:N-M",
+              "homograph_tag": null
+            }
+          ]
+        },
+        {
+          "edge_id": "rel:lxx:trans:H7307->G4157",
+          "greek_strong": "G4157",
+          "published_count": 3,
+          "translation_share": 0.0098,
+          "mapping_status": "exact",
+          "homograph_ambiguity": false,
+          "greek_candidate_count": 1,
+          "greek_lemma_keys": [
+            "lemma:G4157"
+          ],
+          "greek_candidates": [
+            {
+              "lemma_key": "lemma:G4157",
+              "lemma_script": "πνοή",
+              "transliteration": "pnoē",
+              "gloss": "pnoē",
+              "primary_pos": "G:N-F",
+              "homograph_tag": null
+            }
+          ]
+        }
+      ]
+    },
+    "crosswalk_resolved": {
+      "G3187_meizon": {
+        "total_attested_renderings": 5,
+        "candidate_count": 1,
+        "candidates": [
+          {
+            "edge_id": "rel:lxx:trans:H1419->G3187",
+            "hebrew_strong": "H1419",
+            "published_count": 5,
+            "translation_share": 1,
+            "mapping_status": "crosswalk_resolved",
+            "homograph_ambiguity": true,
+            "hebrew_candidate_count": 3,
+            "hebrew_lemma_keys": [
+              "lemma:H1419A",
+              "lemma:H1419B",
+              "lemma:H1419J"
+            ],
+            "hebrew_candidates": [
+              {
+                "lemma_key": "lemma:H1419A",
+                "lemma_script": "גָּדוֹל",
+                "transliteration": "ga.dol",
+                "gloss": "ga.dol",
+                "primary_pos": "H:A",
+                "homograph_tag": "A"
+              },
+              {
+                "lemma_key": "lemma:H1419B",
+                "lemma_script": "גָּדוֹל",
+                "transliteration": "ga.dol",
+                "gloss": "ga.dol",
+                "primary_pos": "N:N-M-P",
+                "homograph_tag": "B"
+              },
+              {
+                "lemma_key": "lemma:H1419J",
+                "lemma_script": "גָּדוֹל",
+                "transliteration": "ga.dol",
+                "gloss": "ga.dol",
+                "primary_pos": "H:A",
+                "homograph_tag": "J"
+              }
+            ]
+          }
+        ]
+      },
+      "G3700_optanomai": {
+        "total_attested_renderings": 175,
+        "candidate_count": 2,
+        "candidates": [
+          {
+            "edge_id": "rel:lxx:trans:H7200->G3700",
+            "hebrew_strong": "H7200",
+            "published_count": 169,
+            "translation_share": 0.9657,
+            "mapping_status": "crosswalk_resolved",
+            "homograph_ambiguity": true,
+            "hebrew_candidate_count": 2,
+            "hebrew_lemma_keys": [
+              "lemma:H7200G",
+              "lemma:H7200N"
+            ],
+            "hebrew_candidates": [
+              {
+                "lemma_key": "lemma:H7200G",
+                "lemma_script": "רָאָה",
+                "transliteration": "ra.ah",
+                "gloss": "ra.ah",
+                "primary_pos": "H:V",
+                "homograph_tag": "G"
+              },
+              {
+                "lemma_key": "lemma:H7200N",
+                "lemma_script": "רָאָה",
+                "transliteration": "ra.ah",
+                "gloss": "ra.ah",
+                "primary_pos": "H:V",
+                "homograph_tag": "N"
+              }
+            ]
+          },
+          {
+            "edge_id": "rel:lxx:trans:H2372->G3700",
+            "hebrew_strong": "H2372",
+            "published_count": 6,
+            "translation_share": 0.0343,
+            "mapping_status": "crosswalk_resolved",
+            "homograph_ambiguity": false,
+            "hebrew_candidate_count": 1,
+            "hebrew_lemma_keys": [
+              "lemma:H2372"
+            ],
+            "hebrew_candidates": [
+              {
+                "lemma_key": "lemma:H2372",
+                "lemma_script": "חָזָה",
+                "transliteration": "cha.zah",
+                "gloss": "cha.zah",
+                "primary_pos": "H:V",
+                "homograph_tag": null
+              }
+            ]
+          }
+        ]
+      },
+      "G3708_horao": {
+        "total_attested_renderings": 118,
+        "candidate_count": 3,
+        "candidates": [
+          {
+            "edge_id": "rel:lxx:trans:H7200->G3708",
+            "hebrew_strong": "H7200",
+            "published_count": 108,
+            "translation_share": 0.9153,
+            "mapping_status": "crosswalk_resolved",
+            "homograph_ambiguity": true,
+            "hebrew_candidate_count": 2,
+            "hebrew_lemma_keys": [
+              "lemma:H7200G",
+              "lemma:H7200N"
+            ],
+            "hebrew_candidates": [
+              {
+                "lemma_key": "lemma:H7200G",
+                "lemma_script": "רָאָה",
+                "transliteration": "ra.ah",
+                "gloss": "ra.ah",
+                "primary_pos": "H:V",
+                "homograph_tag": "G"
+              },
+              {
+                "lemma_key": "lemma:H7200N",
+                "lemma_script": "רָאָה",
+                "transliteration": "ra.ah",
+                "gloss": "ra.ah",
+                "primary_pos": "H:V",
+                "homograph_tag": "N"
+              }
+            ]
+          },
+          {
+            "edge_id": "rel:lxx:trans:H2372->G3708",
+            "hebrew_strong": "H2372",
+            "published_count": 6,
+            "translation_share": 0.0508,
+            "mapping_status": "crosswalk_resolved",
+            "homograph_ambiguity": false,
+            "hebrew_candidate_count": 1,
+            "hebrew_lemma_keys": [
+              "lemma:H2372"
+            ],
+            "hebrew_candidates": [
+              {
+                "lemma_key": "lemma:H2372",
+                "lemma_script": "חָזָה",
+                "transliteration": "cha.zah",
+                "gloss": "cha.zah",
+                "primary_pos": "H:V",
+                "homograph_tag": null
+              }
+            ]
+          },
+          {
+            "edge_id": "rel:lxx:trans:H2370->G3708",
+            "hebrew_strong": "H2370",
+            "published_count": 4,
+            "translation_share": 0.0339,
+            "mapping_status": "crosswalk_resolved",
+            "homograph_ambiguity": false,
+            "hebrew_candidate_count": 1,
+            "hebrew_lemma_keys": [
+              "lemma:H2370"
+            ],
+            "hebrew_candidates": [
+              {
+                "lemma_key": "lemma:H2370",
+                "lemma_script": "חֲזָה",
+                "transliteration": "cha.zah",
+                "gloss": "cha.zah",
+                "primary_pos": "A:V",
+                "homograph_tag": null
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}
