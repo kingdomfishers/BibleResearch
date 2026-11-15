@@ -1,0 +1,197 @@
+{
+  "schema_version": "1.0",
+  "rule_version": "2.0",
+  "description": "Deterministic test fixtures and validation baselines for R9A Lexical & Contextual Relationship Integration.",
+  "homograph_cases": [
+    {
+      "case_id": "H1254_homographs",
+      "base_strongs": "H1254",
+      "expected_lemmas": [
+        {
+          "lemma_key": "lemma:H1254a",
+          "lemma_script": "בָּרָא",
+          "transliteration": "ba.ra",
+          "primary_gloss": "create / make",
+          "homograph_tag": "a"
+        },
+        {
+          "lemma_key": "lemma:H1254b",
+          "lemma_script": "בָּרָא",
+          "transliteration": "ba.ra",
+          "primary_gloss": "fatten / clear",
+          "homograph_tag": "b"
+        }
+      ],
+      "negative_constraint": "Lemmas sharing H1254 must never be merged into a single entry or exchange senses."
+    },
+    {
+      "case_id": "H0430_homographs",
+      "base_strongs": "H0430",
+      "expected_lemmas": [
+        {
+          "lemma_key": "lemma:H0430G",
+          "lemma_script": "אֱלֹהִים",
+          "transliteration": "e.lo.Him",
+          "primary_gloss": "God (of Israel)",
+          "homograph_tag": "G"
+        },
+        {
+          "lemma_key": "lemma:H0430a",
+          "lemma_script": "אֱלֹהִים",
+          "transliteration": "e.lo.Him",
+          "primary_gloss": "gods / rulers / judges",
+          "homograph_tag": "a"
+        }
+      ],
+      "negative_constraint": "Plural rulers/gods (H0430a) must not be merged with God of Israel (H0430G)."
+    },
+    {
+      "case_id": "H5869_homographs",
+      "base_strongs": "H5869",
+      "expected_lemmas": [
+        {
+          "lemma_key": "lemma:H5869a",
+          "lemma_script": "עַיִן",
+          "transliteration": "a.yin",
+          "primary_gloss": "eye",
+          "homograph_tag": "a"
+        },
+        {
+          "lemma_key": "lemma:H5869b",
+          "lemma_script": "עַיִן",
+          "transliteration": "a.yin",
+          "primary_gloss": "spring / fountain",
+          "homograph_tag": "b"
+        }
+      ],
+      "negative_constraint": "Anatomical eye (H5869a) and water spring (H5869b) must retain distinct canonical lemma rows."
+    }
+  ],
+  "ruach_critical_test": {
+    "canonical_lemma_key": "lemma:H7307",
+    "base_strongs": "H7307",
+    "language": "hbo",
+    "lemma_script": "רוּחַ",
+    "transliteration": "ru.ach",
+    "primary_pos": "H:N-F",
+    "documented_sense_subdivisions": [
+      {
+        "sense_key": "sense:H7307:primary",
+        "lexeme_key": "H7307",
+        "short_gloss": "spirit / wind / breath",
+        "parent_sense_key": null,
+        "is_primary": true
+      },
+      {
+        "sense_key": "sense:H7307H:sub",
+        "lexeme_key": "H7307H",
+        "short_gloss": "spirit: breath",
+        "parent_sense_key": "sense:H7307:primary",
+        "is_primary": false
+      },
+      {
+        "sense_key": "sense:H7307I:sub",
+        "lexeme_key": "H7307I",
+        "short_gloss": "spirit: side",
+        "parent_sense_key": "sense:H7307:primary",
+        "is_primary": false
+      },
+      {
+        "sense_key": "sense:H7307J:sub",
+        "lexeme_key": "H7307J",
+        "short_gloss": "spirit: temper",
+        "parent_sense_key": "sense:H7307:primary",
+        "is_primary": false
+      }
+    ],
+    "aramaic_cognate": {
+      "lemma_key": "lemma:H7308",
+      "base_strongs": "H7308",
+      "language": "arc",
+      "lemma_script": "רוּחַ",
+      "transliteration": "ru.ach",
+      "relationship_category": "cognate",
+      "relation_type": "aramaic_cognate_of"
+    },
+    "root_anchor": {
+      "root_key": "root:H7307",
+      "root_script": "רוּחַ",
+      "language": "hbo"
+    },
+    "verified_passages": [
+      {
+        "reference": "Genesis 1:2",
+        "book": 1,
+        "chapter": 1,
+        "verse_nr": 2,
+        "canonical_verse_id": 2,
+        "word_positions": [9],
+        "word_ids": [130555],
+        "surface_form": "וְר֣וּחַ",
+        "domain_aspect": "Spirit",
+        "english_rendering": "spirit",
+        "clause_level_neighbors": [
+          "lemma:H0430G"
+        ]
+      },
+      {
+        "reference": "Genesis 8:1",
+        "book": 1,
+        "chapter": 8,
+        "verse_nr": 1,
+        "canonical_verse_id": 185,
+        "word_positions": [16],
+        "word_ids": [130663],
+        "surface_form": "ר֙וּחַ֙",
+        "domain_aspect": "Wind",
+        "english_rendering": "wind",
+        "verse_level_neighbors": [
+          "lemma:H0430G"
+        ]
+      },
+      {
+        "reference": "Ezekiel 37:9",
+        "book": 26,
+        "chapter": 37,
+        "verse_nr": 9,
+        "canonical_verse_id": 21523,
+        "word_positions": [5, 11, 17, 19],
+        "word_ids": [130628, 130630, 130694, 130629],
+        "occurrences_in_verse": 4,
+        "domain_aspects": [
+          "Breath",
+          "Direction / side"
+        ],
+        "english_renderings": [
+          "breath",
+          "winds"
+        ]
+      }
+    ],
+    "negative_constraints": [
+      "Do NOT split ruach into multiple disconnected lemma entities for wind vs breath vs spirit.",
+      "Do NOT assign a single monolithic sense to all occurrences across Gen 1:2, Gen 8:1, and Ezek 37:9.",
+      "Do NOT filter or alter lexical relationships based on English translation strings."
+    ]
+  },
+  "guardrail_invariants": {
+    "implies_synonymy_allowed_categories": ["synonymy"],
+    "implies_common_etymology_allowed_categories": [
+      "same_lemma",
+      "same_documented_root",
+      "derivation",
+      "cognate",
+      "morphological_relationship"
+    ],
+    "inferred_from_english_gloss_must_be_false": true,
+    "inferred_from_spelling_alone_must_be_false_except": ["orthographic_overlap"],
+    "contextual_proximity_never_implies_synonymy": true,
+    "contextual_proximity_never_implies_causality": true
+  },
+  "licensing_invariants": {
+    "restricted_tbesh_column_7_excluded": true,
+    "restricted_s21_fields_excluded": true,
+    "permitted_license": "CC BY 4.0",
+    "attribution_required": true
+  }
+}
