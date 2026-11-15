@@ -38,12 +38,10 @@ let cachedVerseByCoord = null;
 let cachedBooksById = null;
 let cachedLxxBooksByNo = null;
 const shardLru = new Map();
-const MAX_LRU_SHARDS = 8;
+const MAX_LRU_SHARDS = 4;
 
-function setLru(key, val, decodedLength = 0) {
+function setLru(key, val) {
   if (
-    decodedLength > 2 * 1024 * 1024 ||
-    key.includes('resolver-index.json') ||
     key.includes('/by-lemma/') ||
     key.includes('/contextual/pages/') ||
     key.includes('/sharded-contextual/') ||
@@ -93,7 +91,7 @@ async function loadJsonShardWithBytes(env, assetPath) {
   const decodedBytes = await decompressGzipIfNeeded(rawBytes);
   const text = new TextDecoder('utf-8').decode(decodedBytes);
   const parsed = JSON.parse(text);
-  setLru(gzPath, parsed, decodedBytes.length);
+  setLru(gzPath, parsed);
   return { data: parsed, bytes: decodedBytes.length };
 }
 

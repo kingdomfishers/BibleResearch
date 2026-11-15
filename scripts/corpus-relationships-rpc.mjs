@@ -2422,7 +2422,7 @@ export async function handleDiscoverRelationshipPathsV1(ctx, params = {}) {
     max_per_node_edges: Math.min(300, Math.max(1, finiteOr(rawLimits.max_per_node_edges, 120))),
     max_contextual_pages_per_node: Math.min(8, Math.max(0, finiteOr(rawLimits.max_contextual_pages_per_node, 2))),
     max_asset_requests: Math.min(70, Math.max(1, finiteOr(rawLimits.max_asset_requests, 55))),
-    max_bytes_read: Math.min(18 * 1024 * 1024, Math.max(1024, finiteOr(rawLimits.max_bytes_read, 14 * 1024 * 1024))),
+    max_bytes_read: Math.min(32 * 1024 * 1024, Math.max(1024, finiteOr(rawLimits.max_bytes_read, 24 * 1024 * 1024))),
     max_execution_ms: Math.min(5000, Math.max(25, finiteOr(rawLimits.max_execution_ms, 3500))),
     max_candidate_paths: Math.min(500, Math.max(1, finiteOr(rawLimits.max_candidate_paths, 300))),
   };
