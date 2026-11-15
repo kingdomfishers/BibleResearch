@@ -34,6 +34,7 @@ const SOURCE_REVISION = 'b3b135b24394aa4a8f4eaa59dbc59689735c2b46';
 const SOURCE_LICENSE = 'CC BY 4.0';
 const RELEASE_VERSION = 'r4-lxx-v1.0';
 const SCHEMA_VERSION = '2.0';
+const BUILD_TIMESTAMP = process.env.R4_BUILD_TIMESTAMP || '2026-11-15T12:50:53.318Z';
 
 const FNV_OFFSET_64 = 0xcbf29ce484222325n;
 const FNV_PRIME_64 = 0x100000001b3n;
@@ -477,10 +478,10 @@ export function buildLxxBridge(options = {}) {
   const elohimExamples = {
     hebrew_strong: 'H0430',
     canonical_homographs: [
-      { key: 'lemma:H0430G', description: 'God (true God, singular sense)' },
-      { key: 'lemma:H0430H', description: 'gods (pagan deities, plural)' },
-      { key: 'lemma:H0430I', description: 'judges / rulers' },
-      { key: 'lemma:H0430a', description: 'Noun Masculine Plural variant' },
+      { key: 'lemma:H0430G', description: 'God (disambiguated STEP tag for the God of Israel; H0430G = a Name of H3068G)' },
+      { key: 'lemma:H0430a', description: 'gods / rulers / judges (plural deities or human magistrates; H0430A)' },
+      { key: 'lemma:H0430H', description: '(LORD)-Elohe (bound component of divine-name expression H3068G; = a Part of H3068G, not an independent lexical sense)' },
+      { key: 'lemma:H0430I', description: '(Gibeath)-elohim (bound component of Gibeath-elohim H1389G; = a Part of H1389G, not an independent lexical sense)' },
     ],
     source_correspondences: hebrewToGreekIndex.by_strongs['H0430'] || null,
     findings: [
@@ -520,7 +521,7 @@ export function buildLxxBridge(options = {}) {
   const researchExamples = {
     schema_version: SCHEMA_VERSION,
     release_version: RELEASE_VERSION,
-    generated_at: new Date().toISOString(),
+    generated_at: BUILD_TIMESTAMP,
     ruach: ruachExamples,
     elohim: elohimExamples,
     dabar_and_logos: dabarExamples,
@@ -533,7 +534,7 @@ export function buildLxxBridge(options = {}) {
   const mappingReport = {
     schema_version: SCHEMA_VERSION,
     release_version: RELEASE_VERSION,
-    generated_at: new Date().toISOString(),
+    generated_at: BUILD_TIMESTAMP,
     source_dataset: SOURCE_DATASET_ID,
     source_revision: SOURCE_REVISION,
     source_sha256: sourceSha256,
@@ -580,7 +581,7 @@ export function buildLxxBridge(options = {}) {
   const licenseManifest = {
     schema_version: SCHEMA_VERSION,
     release_version: RELEASE_VERSION,
-    generated_at: new Date().toISOString(),
+    generated_at: BUILD_TIMESTAMP,
     dataset: {
       id: SOURCE_DATASET_ID,
       file: 'lxx_bridge.tsv',
@@ -659,7 +660,7 @@ export function buildLxxBridge(options = {}) {
   const cloudflareManifest = {
     schema_version: SCHEMA_VERSION,
     release_version: RELEASE_VERSION,
-    generated_at: new Date().toISOString(),
+    generated_at: BUILD_TIMESTAMP,
     source_git_commit: SOURCE_REVISION.slice(0, 7),
     source_releases: {
       bcv_lxx_bridge: {
@@ -680,8 +681,14 @@ export function buildLxxBridge(options = {}) {
     },
     predicates: ['translation_candidate', 'translation_candidate_of'],
     sharding: {
+      schema_version: SCHEMA_VERSION,
       buckets: 64,
-      hash_algorithm: 'fnv1a64_mod64',
+      hash_algorithm: 'fnv1a64_hi32_mod64',
+      hash_input_normalization: 'canonical_lemma_key_utf16_exact',
+      shard_path_formats: {
+        by_hebrew_lemma: 'shards/by-hebrew-lemma/shard-{hex2}.json.gz',
+        by_greek_lemma: 'shards/by-greek-lemma/shard-{hex2}.json.gz',
+      },
     },
   };
 

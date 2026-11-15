@@ -1,7 +1,7 @@
 {
   "schema_version": "2.0",
   "release_version": "r4-lxx-v1.0",
-  "generated_at": "2026-11-15T12:50:53.315Z",
+  "generated_at": "2026-11-15T12:50:53.318Z",
   "ruach": {
     "hebrew_strong": "H7307",
     "canonical_lemma": "lemma:H7307",
@@ -200,19 +200,19 @@
     "canonical_homographs": [
       {
         "key": "lemma:H0430G",
-        "description": "God (true God, singular sense)"
-      },
-      {
-        "key": "lemma:H0430H",
-        "description": "gods (pagan deities, plural)"
-      },
-      {
-        "key": "lemma:H0430I",
-        "description": "judges / rulers"
+        "description": "God (disambiguated STEP tag for the God of Israel; H0430G = a Name of H3068G)"
       },
       {
         "key": "lemma:H0430a",
-        "description": "Noun Masculine Plural variant"
+        "description": "gods / rulers / judges (plural deities or human magistrates; H0430A)"
+      },
+      {
+        "key": "lemma:H0430H",
+        "description": "(LORD)-Elohe (bound component of divine-name expression H3068G; = a Part of H3068G, not an independent lexical sense)"
+      },
+      {
+        "key": "lemma:H0430I",
+        "description": "(Gibeath)-elohim (bound component of Gibeath-elohim H1389G; = a Part of H1389G, not an independent lexical sense)"
       }
     ],
     "source_correspondences": {
