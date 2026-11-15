@@ -46,7 +46,7 @@ function __stripRestrictedFields(value, depth=0){
 return {
  async fetch(request,env,ctx){
    const path=new URL(request.url).pathname;
-   if(request.method==='OPTIONS' && (path.startsWith('/v1/rpc/') || path==='/v1/syntax/unmapped')){
+   if(request.method==='OPTIONS' && (path.startsWith('/v1/rpc/') || path.startsWith('/api/relationships/v2/') || path==='/v1/syntax/unmapped')){
      const reqHeaders=request.headers.get('Access-Control-Request-Headers')||'content-type,authorization,apikey';
      return new Response(null,{status:204,headers:{'Access-Control-Allow-Origin':'*','Access-Control-Allow-Methods':'GET,POST,OPTIONS','Access-Control-Allow-Headers':reqHeaders,'Access-Control-Max-Age':'600','Vary':'Origin, Access-Control-Request-Headers','Cache-Control':'no-store'}});
    }
@@ -55,7 +55,7 @@ return {
      return new Response(JSON.stringify({error:'raw_corpus_asset_access_disabled',message:'Use the public versioned read-only RPC instead.'}),{status:403,headers:{'Content-Type':'application/json','Cache-Control':'no-store','Access-Control-Allow-Origin':'*','X-BibleResearch-Corpus-Security':'semantic-frame-redaction-v1'}});
    }
    const res=await __originalBibleResearchWorker.fetch(request,env,ctx);
-   if(!path.startsWith('/v1/rpc/') && path !== '/v1/syntax/unmapped')return res;
+   if(!path.startsWith('/v1/rpc/') && !path.startsWith('/api/relationships/v2/') && path !== '/v1/syntax/unmapped')return res;
    const ct=res.headers.get('Content-Type')||'';
    if(!ct.includes('application/json'))return new Response(JSON.stringify({error:'unexpected_api_content_type'}),{status:502,headers:{'Content-Type':'application/json','Cache-Control':'no-store'}});
    try{

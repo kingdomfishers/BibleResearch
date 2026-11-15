@@ -23,6 +23,7 @@ export type RpcName =
   | 'get_verse_chronology_v1' | 'get_verse_geography' | 'research_relationships_v1' | 'get_verse_research_v1' | 'get_verse_research_v2'
   | 'get_word_formation_v1' | 'suggest_orthographic_candidates_v1' | 'lookup_septuagint_passage_v1' | 'lookup_lexical_semantics_v1'
   | 'lookup_syntax_tree_v1' | 'compare_hebrew_septuagint_passage_v1' | 'lookup_hebrew_septuagint_alignments_v1' | 'audit_evidence_coverage_v1'
+  | 'query_relationships_v2'
   | 'research_word_lens_v1' | 'research_word_bridge_v1' | 'research_passage_lens_v1' |
   'get_dlm_notes_for_verse_v1' | 'verify_dlm_lemma_occurrence_v1' |
   'get_notes_for_passage_v1' | 'get_notes_for_word_v1' | 'get_note_v1' | 'search_note_targets_v1' | 'list_note_connection_types_v1';

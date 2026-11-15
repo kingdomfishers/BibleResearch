@@ -28,6 +28,7 @@ const corpusRpcs = new Set([
   'compare_hebrew_septuagint_passage_v1',
   'lookup_hebrew_septuagint_alignments_v1',
   'audit_evidence_coverage_v1',
+  'query_relationships_v2',
 ]);
 const allowedRpcs = new Set([
   'prompt_verse_words',
@@ -45,6 +46,7 @@ const allowedRpcs = new Set([
   'compare_hebrew_septuagint_passage_v1',
   'lookup_hebrew_septuagint_alignments_v1',
   'audit_evidence_coverage_v1',
+  'query_relationships_v2',
   'get_word_formation_v1',
   'suggest_orthographic_candidates_v1',
   'get_verse_research_v2',
@@ -77,6 +79,7 @@ const singlePacketRpcs = new Set([
   'compare_hebrew_septuagint_passage_v1',
   'lookup_hebrew_septuagint_alignments_v1',
   'audit_evidence_coverage_v1',
+  'query_relationships_v2',
   'get_word_formation_v1',
   'suggest_orthographic_candidates_v1',
   'get_notes_for_passage_v1',
@@ -130,7 +133,15 @@ export function createDatabaseReader(config: DatabaseConfig, fetcher: typeof fet
             };
           }
         }
-      } catch { /* fall back to PostgREST RPC */ }
+        if (name === 'query_relationships_v2') {
+          throw new Error(`Cloudflare relationship graph gateway HTTP ${corpRes.status}`);
+        }
+      } catch (err) {
+        if (name === 'query_relationships_v2') {
+          throw new Error(err instanceof Error ? err.message : 'Cloudflare relationship graph gateway unavailable.');
+        }
+        /* fall back to PostgREST RPC */
+      }
     }
     const url = new URL(name === 'get_word_details' ? '/rest/v1/words' : `/rest/v1/rpc/${name}`, base);
     if (name === 'get_word_details') {

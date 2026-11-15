@@ -17,7 +17,7 @@ import { createLexicalRelationshipsSection } from './LexicalRelationshipsSection
 import type { RelationshipNotePrefill } from '../../api/relationship-notes-adapter';
 
 // === @section:types ===
-interface Selection { id: number; position?: number; english?: string; rendering?: string; suggested?: boolean }
+interface Selection { id: number; position?: number; english?: string; rendering?: string; suggested?: boolean; lemmaId?: string }
 
 // === @section:ui:main ===
 export function createWordInspector(
@@ -154,8 +154,10 @@ export function createWordInspector(
 
   // === @section:ui:notes ===
   const lexicalGraph = createLexicalRelationshipsSection({
-    onInspectTarget: (targetWordId: number) => { void inspect({ id: targetWordId }); },
+    onInspectTarget: (targetWordId: number, lemmaId?: string) => { void inspect({ id: targetWordId, lemmaId }); },
     onEvaluateRelationship,
+    preview,
+    navigate,
   });
   const wordNotes = createWordNotes({
     onInspectWord: (targetWordId: number) => { void inspect({ id: targetWordId }); },
@@ -208,8 +210,17 @@ export function createWordInspector(
       void inspect({ id: targetId, ...opts });
     });
     void renderConnections(next.id, strongs, request);
-    void lexicalGraph.loadForWord(next.id, strongs);
     const curPassage = appState.getPassage();
+    const singleExtendedStrongs =
+      result.data.lexemes?.length === 1 ? result.data.lexemes[0].extended_strongs ?? undefined : undefined;
+    void lexicalGraph.loadForWord(next.id, strongs, [], {
+      book: curPassage.book,
+      chapter: curPassage.chapter,
+      verse: curPassage.verse,
+      position: next.position,
+      extendedStrongs: singleExtendedStrongs,
+      preferredLemmaId: next.lemmaId,
+    });
     const curOcc = result.data.occurrences?.find(
       o => o.book === curPassage.book && o.chapter === curPassage.chapter && o.verse === curPassage.verse
     );

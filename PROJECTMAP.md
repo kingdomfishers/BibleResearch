@@ -34,9 +34,9 @@ Use this index to locate code, then search the relevant paths with rg. Read a fi
 
 ## Relationships
 
-- UI: [RelationshipExplorer.ts](src/ui/components/RelationshipExplorer.ts), [LexicalRelationshipsSection.ts](src/ui/components/LexicalRelationshipsSection.ts), [PassageCrossReferences.ts](src/ui/components/PassageCrossReferences.ts).
+- UI: [RelationshipExplorer.ts](src/ui/components/RelationshipExplorer.ts), [LexicalRelationshipsSection.ts](src/ui/components/LexicalRelationshipsSection.ts), [GrammaticalRelationshipsPanel.ts](src/ui/components/GrammaticalRelationshipsPanel.ts), [PassageCrossReferences.ts](src/ui/components/PassageCrossReferences.ts).
 - Gateway/identity: [relationships-rpc.ts](src/api/relationships-rpc.ts), [relationship-model.ts](src/api/relationship-model.ts) (logic:identity, logic:dedup-xrefs, logic:dedup-lexical), [relationship-notes-adapter.ts](src/api/relationship-notes-adapter.ts).
-- Static operations: [corpus-relationships-rpc.mjs](scripts/corpus-relationships-rpc.mjs); pilot generation: [build-relationship-slice.mjs](scripts/build-relationship-slice.mjs).
+- Static operations: [corpus-relationships-rpc.mjs](scripts/corpus-relationships-rpc.mjs); R5 staging & verification: [stage-r5-relationship-graph.mjs](scripts/stage-r5-relationship-graph.mjs), [verify-r5-r6-e2e.mjs](scripts/verify-r5-r6-e2e.mjs); pilot generation: [build-relationship-slice.mjs](scripts/build-relationship-slice.mjs).
 - Design versus implemented scope: [RELATIONSHIP_ARCHITECTURE.md](RELATIONSHIP_ARCHITECTURE.md), [TASKS.md](TASKS.md). Do not infer deployment from a proposal.
 
 ## Corpus gateway, Supabase and Cloudflare

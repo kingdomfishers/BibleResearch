@@ -8,6 +8,7 @@
 import { BibleRPC } from '../../api/rpc';
 import type { RelationshipNotePrefill } from '../../api/relationship-notes-adapter';
 import type {
+  ActivePassage,
   LexicalRelationshipEdge,
   LexicalRelationshipLookupResponse,
   Note,
@@ -16,16 +17,28 @@ import type {
 import { notesState } from '../notes-state';
 import { action, el, status } from '../study-dom';
 import { BOOK_NAMES } from '../utils';
+import type { ContextPreview } from './ContextPreview';
+import {
+  createGrammaticalRelationshipsPanel,
+  type GrammaticalWordContext,
+} from './GrammaticalRelationshipsPanel';
 
 // === @section:types ===
 export interface LexicalRelationshipsSectionProps {
-  onInspectTarget?: (wordId: number) => void;
+  onInspectTarget?: (wordId: number, lemmaId?: string) => void;
   onEvaluateRelationship?: (prefill: RelationshipNotePrefill) => void;
+  preview?: ContextPreview;
+  navigate?: (p: ActivePassage) => void;
 }
 
 export interface LexicalRelationshipsSectionHandle {
   element: HTMLElement;
-  loadForWord: (wordId: number, strongsNr: string, notes?: Note[]) => Promise<void>;
+  loadForWord: (
+    wordId: number,
+    strongsNr: string,
+    notes?: Note[],
+    context?: GrammaticalWordContext
+  ) => Promise<void>;
   clear: () => void;
 }
 
@@ -126,21 +139,18 @@ function createLexicalEdgeCard(
 
 // === @section:ui:render ===
 function renderLexicalPacket(
-  body: HTMLElement,
-  summaryEl: HTMLElement,
+  lexBox: HTMLElement,
   packet: LexicalRelationshipLookupResponse,
   notes: Note[],
   props: LexicalRelationshipsSectionProps
-): void {
-  body.replaceChildren();
+): number {
+  lexBox.replaceChildren(el('h4', 'rel-subheading', 'Static Lexical & Root Connections'));
   if (packet.status !== 'ok') {
-    summaryEl.textContent = 'Lexical relationship graph';
-    body.append(status(packet.error_message ?? 'No extended lexical graph slice entry for this word.'));
-    return;
+    lexBox.append(status(packet.error_message ?? 'No extended lexical graph slice entry for this word.'));
+    return 0;
   }
 
-  summaryEl.textContent = `Lexical relationship graph (${packet.page.total_available})`;
-  body.append(
+  lexBox.append(
     el(
       'p',
       'study-muted rel-disclaimer',
@@ -154,7 +164,7 @@ function renderLexicalPacket(
       .map(h => `${h.disambiguated_strongs || h.extended_strongs} (${h.primary_gloss ?? ''})`)
       .join(' · ');
     homoRow.textContent = `Homograph siblings preserved: ${codes}`;
-    body.append(homoRow);
+    lexBox.append(homoRow);
   }
 
   const notesMap = BibleRPC.relationships.indexNotesByRelationshipId(notes);
@@ -163,10 +173,11 @@ function renderLexicalPacket(
     list.append(createLexicalEdgeCard(edge, notesMap.get(edge.relationship_id) ?? [], props));
   }
   if (!packet.edges.length) {
-    body.append(status('No lexical relationships recorded for this word.'));
+    lexBox.append(status('No lexical relationships recorded for this word.'));
   } else {
-    body.append(list);
+    lexBox.append(list);
   }
+  return packet.page.total_available;
 }
 
 // === @section:ui:main ===
@@ -174,30 +185,63 @@ export function createLexicalRelationshipsSection(
   props: LexicalRelationshipsSectionProps
 ): LexicalRelationshipsSectionHandle {
   const details = el('details', 'study-disclosure lexical-rels');
-  const summaryEl = el('summary', '', 'Lexical relationship graph');
+  const summaryEl = el('summary', '', 'Relationships (Grammatical & Lexical)');
   const body = el('div', 'lexical-rels__body');
+  const lexBox = el('section', 'lex-rels-panel');
+  let gramCount: number | null = null;
+  let lexCount: number | null = null;
+  const updateSummary = () => {
+    const g = gramCount === null ? '…' : String(gramCount);
+    const l = lexCount === null ? '…' : String(lexCount);
+    summaryEl.textContent = gramCount === null && lexCount === null
+      ? 'Relationships (Grammatical & Lexical)'
+      : `Relationships · Grammatical (${g}) · Lexical (${l})`;
+  };
+  const gramPanel = createGrammaticalRelationshipsPanel({
+    onInspectTarget: props.onInspectTarget,
+    preview: props.preview,
+    navigate: props.navigate,
+    onCountChange: (count) => {
+      gramCount = count;
+      updateSummary();
+    },
+  });
+  body.append(gramPanel.element, lexBox);
   details.append(summaryEl, body);
   let reqCounter = 0;
 
   return {
     element: details,
-    async loadForWord(wordId: number, strongsNr: string, notes: Note[] = []): Promise<void> {
+    async loadForWord(
+      wordId: number,
+      strongsNr: string,
+      notes: Note[] = [],
+      context: GrammaticalWordContext = {}
+    ): Promise<void> {
       const current = ++reqCounter;
-      summaryEl.textContent = 'Lexical relationship graph';
-      body.replaceChildren(status('Loading lexical relationships…'));
-      const res = await BibleRPC.relationships.lookupLexicalRelationships({
+      gramCount = null;
+      lexCount = null;
+      updateSummary();
+      lexBox.replaceChildren(el('h4', 'rel-subheading', 'Static Lexical & Root Connections'), status('Loading lexical relationships…'));
+      const gramPromise = gramPanel.load(wordId, strongsNr, context);
+      const lexPromise = BibleRPC.relationships.lookupLexicalRelationships({
         word_id: wordId,
         query: strongsNr,
         include_statistical: true,
         limit: 30,
       });
+      const [, res] = await Promise.all([gramPromise, lexPromise]);
       if (current !== reqCounter) return;
-      renderLexicalPacket(body, summaryEl, res.data, notes, props);
+      lexCount = renderLexicalPacket(lexBox, res.data, notes, props);
+      updateSummary();
     },
     clear(): void {
       reqCounter++;
-      summaryEl.textContent = 'Lexical relationship graph';
-      body.replaceChildren();
+      gramCount = null;
+      lexCount = null;
+      updateSummary();
+      gramPanel.clear();
+      lexBox.replaceChildren();
     },
   };
 }

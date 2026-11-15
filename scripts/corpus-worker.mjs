@@ -20,6 +20,7 @@ import { withCorpusSecurity } from './corpus-security.mjs';
 import {
   handleLookupCrossReferencesV1,
   handleLookupLexicalRelationshipsV1,
+  handleQueryRelationshipsV2,
 } from './corpus-relationships-rpc.mjs';
 
 const CORS_HEADERS = {
@@ -2457,8 +2458,25 @@ const corpusWorker = {
             )
           );
         }
+        if (op === 'query_relationships_v2' || op === 'lookup_grammatical_relationships_v2') {
+          return jsonResponse(await handleQueryRelationshipsV2({ env, loadJsonShard }, params));
+        }
 
         return jsonResponse({ error: 'unknown_rpc_operation', operation: op }, 404, 'no-store');
+      }
+
+      // 2b. Relationship Graph v2 Gateway (`/api/relationships/v2/query`)
+      if (pathname === '/api/relationships/v2/query') {
+        let params = {};
+        if (request.method === 'POST') {
+          const bodyText = await request.text();
+          if (bodyText.trim()) params = JSON.parse(bodyText);
+        } else {
+          for (const [k, v] of url.searchParams.entries()) {
+            params[k] = v;
+          }
+        }
+        return jsonResponse(await handleQueryRelationshipsV2({ env, loadJsonShard }, params));
       }
 
       // 3. Convenience syntax search & unmapped routes
@@ -2475,11 +2493,11 @@ const corpusWorker = {
         });
       }
 
-      // 4. Static Asset Retrieval (`/manifest.json`, `/v1/...`, `/tables/...`)
+      // 4. Static Asset Retrieval (`/manifest.json`, `/v1/...`, `/v2/...`, `/tables/...`)
       const wantRawGzip = url.searchParams.get('raw') === '1';
       let targetPath = pathname;
       if (
-        (pathname.startsWith('/v1/') || pathname.startsWith('/tables/')) &&
+        (pathname.startsWith('/v1/') || pathname.startsWith('/v2/') || pathname.startsWith('/tables/')) &&
         !pathname.endsWith('.gz')
       ) {
         targetPath = `${pathname}.gz`;
@@ -2503,6 +2521,7 @@ const corpusWorker = {
 
       const decodedBytes = await decompressGzipIfNeeded(assetBytes);
       const isJsonl = targetPath.includes('.jsonl');
+      const isActivePointer = pathname === '/manifest.json' || pathname === '/v2/relationships/active.json' || pathname === '/v2/relationships/active.json.gz';
       return new Response(decodedBytes, {
         status: 200,
         headers: {
@@ -2510,10 +2529,9 @@ const corpusWorker = {
           'Content-Type': isJsonl
             ? 'application/x-ndjson; charset=utf-8'
             : 'application/json; charset=utf-8',
-          'Cache-Control':
-            pathname === '/manifest.json'
-              ? 'public, max-age=300'
-              : 'public, max-age=31536000, immutable',
+          'Cache-Control': isActivePointer
+            ? 'public, max-age=300'
+            : 'public, max-age=31536000, immutable',
         },
       });
     } catch (err) {

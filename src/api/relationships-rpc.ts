@@ -185,10 +185,233 @@ export async function lookupLexicalRelationships(
   return { data: res.data, source: res.source, error: res.error };
 }
 
+// === @section:logic:grammatical-v2 ===
+export interface GrammaticalLemmaProfile {
+  lemma_id: string;
+  language: 'hebrew' | 'aramaic' | 'greek';
+  lemma_form: string;
+  lemma_stripped: string | null;
+  transliteration: string | null;
+  gloss: string | null;
+  homograph_note: string | null;
+  strongs_base: string | null;
+  extended_strongs: string | null;
+  pos: string | null;
+  primary_word_id: number | null;
+  word_ids: number[];
+  homograph_siblings: string[];
+  in_r3_graph: boolean;
+  editions: string[];
+  outgoing_summary_count: number;
+  incoming_summary_count: number;
+}
+
+export interface GrammaticalRefCoords {
+  usfm: string;
+  book: number;
+  chapter: number;
+  verse: number;
+}
+
+export interface GrammaticalSummaryItem {
+  summary_id: string;
+  from_lemma_id: string;
+  to_lemma_id: string;
+  predicate: string;
+  inverse_predicate: string;
+  direction: 'outgoing' | 'incoming';
+  display_predicate: string;
+  display_label: string;
+  guardrail: string | null;
+  focus_lemma_id: string;
+  related_lemma_id: string;
+  related_lemma: GrammaticalLemmaProfile | null;
+  from_lemma: GrammaticalLemmaProfile | null;
+  to_lemma: GrammaticalLemmaProfile | null;
+  quality_tier: 'high_quality' | 'candidate_only';
+  source_edition: string;
+  rule_version: string;
+  stats: {
+    occurrences: number;
+    candidate: number;
+    rule_derived: number;
+    source_explicit: number;
+    distinct_passages: number;
+    distinct_frames: number;
+    distinct_books: number;
+    command_or_prediction: number;
+    negated_or_uncertain: number;
+  };
+  sample_passages: { reference: string; coords: GrammaticalRefCoords | null }[];
+  sample_qualities: string[];
+  evidence_ids: string[];
+}
+
+export interface GrammaticalCategoryGroup {
+  group_key: string;
+  direction: 'outgoing' | 'incoming';
+  predicate: string;
+  display_predicate: string;
+  display_label: string;
+  guardrail: string | null;
+  summary_count: number;
+  total_occurrences: number;
+  total_candidate_occurrences: number;
+  total_passages: number;
+  items: GrammaticalSummaryItem[];
+}
+
+export interface GrammaticalOccurrenceEvidence {
+  relation_id: string;
+  summary_id: string;
+  frame_id: string;
+  source_clause_id: string;
+  edition: string;
+  language: string;
+  canonical_ref: string;
+  coords: GrammaticalRefCoords | null;
+  predicate: string;
+  inverse_predicate: string;
+  direction?: 'outgoing' | 'incoming';
+  display_predicate?: string;
+  display_label?: string;
+  quality: 'source_explicit' | 'rule_derived' | 'candidate';
+  rule_id: string;
+  rule_version: string;
+  qualifiers: {
+    polarity?: string;
+    modality?: string;
+    voice?: string;
+    quotation?: string;
+  };
+  frame_context: {
+    clause_node_id: string;
+    predicate_token_id: string | null;
+    predicate_lemma_id: string | null;
+    predicate_form: string | null;
+    context?: Record<string, string>;
+  } | null;
+  subject: {
+    lemma_id: string;
+    token_id: string;
+    word_id: number | null;
+    word_position: number | null;
+    surface_form: string | null;
+    lemma_form: string | null;
+    transliteration: string | null;
+    gloss: string | null;
+  };
+  object: {
+    lemma_id: string;
+    token_id: string;
+    word_id: number | null;
+    word_position: number | null;
+    surface_form: string | null;
+    lemma_form: string | null;
+    transliteration: string | null;
+    gloss: string | null;
+  };
+}
+
+export interface GrammaticalRelationshipQueryParams {
+  op?: 'resolve' | 'lemma_relationships' | 'passage_frames' | 'evidence' | 'coverage';
+  query?: string;
+  lemma_id?: string;
+  extended_strongs?: string;
+  word_id?: number;
+  book?: number;
+  chapter?: number;
+  verse?: number;
+  position?: number;
+  filter_to_passage?: boolean;
+  edition?: string;
+  direction?: 'both' | 'outgoing' | 'incoming';
+  predicates?: string[];
+  include_uncertain?: boolean;
+  summary_id?: string;
+  limit?: number;
+  offset?: number;
+  cursor?: string | null;
+}
+
+export interface GrammaticalRelationshipsResponse {
+  schema_version: '2.0';
+  release_version: string;
+  rule_version: string;
+  status: 'ok' | 'needs_disambiguation' | 'no_evidence_in_covered_scope' | 'not_covered' | 'not_found' | 'unavailable';
+  focus: GrammaticalLemmaProfile | null;
+  homograph_siblings: GrammaticalLemmaProfile[];
+  homograph_candidates?: GrammaticalLemmaProfile[];
+  resolved_occurrence?: {
+    lemma_id: string;
+    token_id: string;
+    word_id: number | null;
+    word_position: number;
+    surface_form: string;
+    edition: string;
+    reference: string;
+  } | null;
+  filters?: {
+    direction: string;
+    edition: string;
+    include_uncertain: boolean;
+    predicates: string[];
+  };
+  counts?: {
+    summaries_total: number;
+    summaries_unfiltered: number;
+    relations_total: number;
+    groups_total: number;
+  };
+  category_groups?: GrammaticalCategoryGroup[];
+  summaries?: GrammaticalSummaryItem[];
+  relations?: GrammaticalOccurrenceEvidence[];
+  page?: {
+    limit: number;
+    offset: number;
+    returned: number;
+    total_available: number;
+    has_more: boolean;
+    next_offset: number | null;
+    next_cursor: string | null;
+  };
+  coverage_notice?: string | null;
+  error_message?: string | null;
+}
+
+export async function lookupGrammaticalRelationships(
+  params: GrammaticalRelationshipQueryParams,
+  opts: CorpusClientOptions = {}
+): Promise<DataResult<GrammaticalRelationshipsResponse>> {
+  const res = await callCorpusRpc<GrammaticalRelationshipsResponse>(
+    'query_relationships_v2',
+    params as unknown as Record<string, unknown>,
+    opts
+  );
+  if (res.data) return { ...res, data: res.data };
+  return {
+    data: {
+      schema_version: '2.0',
+      release_version: 'unknown',
+      rule_version: '1.2',
+      status: 'unavailable',
+      focus: null,
+      homograph_siblings: [],
+      category_groups: [],
+      summaries: [],
+      relations: [],
+      error_message: res.error ?? 'Grammatical relationship graph unavailable.',
+    },
+    source: res.source,
+    error: res.error,
+  };
+}
+
 // === @section:logic:gateway ===
 export const RelationshipsRPC = {
   lookupCrossReferences,
   lookupLexicalRelationships,
+  lookupGrammaticalRelationships,
   buildNotePrefillFromCrossReference,
   buildNotePrefillFromLexicalEdge,
   extractRelationshipEvaluation,
