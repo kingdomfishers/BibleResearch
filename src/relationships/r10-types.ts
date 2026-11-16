@@ -175,6 +175,8 @@ export interface R10EvidenceRecord {
 }
 
 export interface R10ConnectionSummary {
+  query_support?: 'all_concepts' | 'meaningful_subset' | 'background';
+  shared_witness_refs?: string[];
   connection_id: string;
   evidence_id: string;
   title: string;
@@ -319,6 +321,12 @@ export interface DiscoverConnectionsResult {
   };
   search_metadata: {
     exhaustive: boolean;
+    scope?: string;
+    resolution_state?: 'unknown_concept' | 'known_concept';
+    occurrence_state?: 'direct_occurrences_found' | 'no_indexed_occurrences';
+    connection_state?: 'connections_found' | 'no_higher_order_connections';
+    completeness_state?: 'search_incomplete' | 'resource_limits_reached' | 'missing_source_coverage';
+    missing_assets?: string[];
     bounded_by: string[];
     asset_requests_used: number;
     execution_ms: number;

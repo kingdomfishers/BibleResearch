@@ -2312,9 +2312,8 @@ async function resolveR9cReleaseVersion(ctx, params = {}) {
     return { error: null, releaseVersion: clean };
   }
   const envDefault = ctx.env?.R9C_DEFAULT_RELEASE || ctx.env?.RELATIONSHIPS_RELEASE;
-  if (envDefault) return { error: null, releaseVersion: String(envDefault).trim() };
   const active = await ctx.loadJsonShard(ctx.env, '/v2/relationships/active.json.gz');
-  const activeRel = active?.active_release ? String(active.active_release).trim() : null;
+  const activeRel = envDefault ? String(envDefault).trim() : active?.active_release ? String(active.active_release).trim() : null;
   // Discovery releases inherit compatible relationship assets, rather than containing them.
   let candidate = activeRel;
   const visited = new Set();

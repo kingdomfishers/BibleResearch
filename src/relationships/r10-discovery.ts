@@ -87,6 +87,27 @@ const NUMBER_WORDS: Record<string, number> = {
   '10': 10, '12': 12, '40': 40, '70': 70,
 };
 
+const SMALL_NUMBERS: Record<string, number> = {
+  zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9,
+  ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15,
+  sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19, twenty: 20, thirty: 30,
+  forty: 40, fifty: 50, sixty: 60, seventy: 70, eighty: 80, ninety: 90,
+};
+
+function normalizeNumberPhrases(text: string): string {
+  const words = Object.keys(SMALL_NUMBERS).join('|');
+  return text.replace(new RegExp(`\\b(?:${words}|hundred|thousand)(?:(?:[ -]+)(?:${words}|hundred|thousand))*\\b`, 'gi'), phrase => {
+    if (!/[ -]/.test(phrase) && phrase.toLowerCase() in SMALL_NUMBERS) return phrase;
+    let total = 0, group = 0;
+    for (const token of phrase.toLowerCase().split(/[ -]+/)) {
+      if (token === 'hundred') group = (group || 1) * 100;
+      else if (token === 'thousand') { total += (group || 1) * 1000; group = 0; }
+      else group += SMALL_NUMBERS[token];
+    }
+    return String(total + group);
+  });
+}
+
 function normalizeToken(raw: string): string {
   return String(raw || '')
     .normalize('NFD')
@@ -147,12 +168,13 @@ async function readR10Json<T = any>(
   reader: AssetReader,
   releaseId: string,
   relPath: string,
-  budget: { used: number; max: number }
+  budget: { used: number; max: number; missing?: string[] }
 ): Promise<T | null> {
   if (budget.used >= budget.max) return null;
   budget.used++;
   const fullPath = `/v2/relationships/${releaseId}/r10/${relPath}`;
   const res = await reader.readJson(fullPath);
+  if (!res) budget.missing?.push(fullPath);
   // Legacy window-based copula extraction cannot establish identity: relative
   // clauses may describe location, possession, marriage, or numerical attributes.
   // Quarantine the entire unverified family, including evidence-by-ID access.
@@ -261,7 +283,7 @@ function tokenizeTerms(query: DiscoverConnectionsQuery): string[] {
   if (query.concepts && query.concepts.length > 0) {
     rawList.push(...query.concepts);
   }
-  const cleaned = String(query.query || '')
+  const cleaned = normalizeNumberPhrases(String(query.query || ''))
     .replace(/([A-Za-z]+)'s\b/g, '$1')
     .replace(/[?:,;()[\]{}"]/g, ' ');
   for (const part of cleaned.split(/[\s,/]+/)) {
@@ -295,7 +317,7 @@ export async function discoverBiblicalConnections(
   releaseId: string = query.release_id || DEFAULT_R10_RELEASE
 ): Promise<DiscoverConnectionsResult> {
   const tStart = Date.now();
-  const budget = { used: 0, max: MAX_SUBREQUEST_BUDGET };
+  const budget = { used: 0, max: MAX_SUBREQUEST_BUDGET, missing: [] as string[] };
   const limit = Math.max(1, Math.min(MAX_LIMIT, Number(query.limit ?? DEFAULT_LIMIT)));
   const offset = Math.max(0, Number.parseInt(String(query.cursor || '0'), 10) || 0);
 
@@ -450,12 +472,15 @@ export async function discoverBiblicalConnections(
     if (/^\d+$/.test(term) && refTokensToIgnore.has(term) && !NUMBER_WORDS[term]) continue;
     const lower = term.toLowerCase();
     const alias = conceptIdx.aliases[lower];
-    const numVal = NUMBER_WORDS[lower];
+    const numVal = /^\d+$/.test(lower) ? Number(lower) : (NUMBER_WORDS[lower] ?? SMALL_NUMBERS[lower]);
     const evHits = (motifsData.events || []).filter(e =>
       e.keywords?.includes(lower) && (lower.length >= 4 || ['red', 'sea'].includes(lower))
     ).slice(0, 4);
 
-    const shardHits = await lookupShardToken(term);
+    const shardHits = (await lookupShardToken(term)).sort((a, b) =>
+      Number(b.cnt > 0) - Number(a.cnt > 0) ||
+      Number(normalizeToken(b.gl || '') === lower) - Number(normalizeToken(a.gl || '') === lower) ||
+      b.match_rank - a.match_rank || b.cnt - a.cnt);
 
     // Proper-Name vs Common-Noun Guard:
     // If English concept matches both common nouns (!h.is_prop) and proper places/persons (h.is_prop),
@@ -593,7 +618,16 @@ export async function discoverBiblicalConnections(
   }
 
   // Stage 1.5: Parallel bounded profile loading from sharded `lemma-profiles` for up to 6 primary resolved Strong's codes
-  const profileStrongsToLoad = [...matchedStrongs].slice(0, 6);
+  // Round-robin concepts so the first ambiguous term cannot consume every slot.
+  const prioritized = new Set<string>();
+  if (query.focus_lemma) prioritized.add(query.focus_lemma);
+  for (let depth = 0; depth < 6; depth++) {
+    for (const concept of resolvedConcepts) {
+      const strongs = concept.lemmas[depth]?.strongs;
+      if (strongs) prioritized.add(strongs);
+    }
+  }
+  const profileStrongsToLoad = [...new Set([...prioritized, ...matchedStrongs])].slice(0, 6);
   const profileBuckets = new Map<string, string[]>();
   for (const bs of profileStrongsToLoad) {
     const bHex = computeBucketHex('fnv1a64_mod64', 64, bs);
@@ -1059,8 +1093,8 @@ export async function discoverBiblicalConnections(
           for (const vid of sharedVids.slice(0, 6)) {
             const p = await hydratePassageByVid(vid);
             if (!p) continue;
-            const pA = gA.profiles[0];
-            const pB = gB.profiles[0];
+            const pA = gA.profiles.find(p => p.all_vids.includes(vid))!;
+            const pB = gB.profiles.find(p => p.all_vids.includes(vid))!;
             const evId = `r11:intersect:verse:${pA.bs}:${pB.bs}:${vid}`;
             allCandidates.push({
               evidence_id: evId,
@@ -1099,10 +1133,13 @@ export async function discoverBiblicalConnections(
 
         // 2. Pericope window intersections (1 <= |vidA - vidB| <= 4 in same book)
         const pericopePairs: Array<[number, number]> = [];
-        const arrA = [...gA.vids].slice(0, 50);
-        const arrB = [...gB.vids].slice(0, 50);
+        const arrA = [...gA.vids].sort((a, b) => a - b);
+        const arrB = [...gB.vids].sort((a, b) => a - b);
+        let startB = 0;
         for (const vA of arrA) {
-          for (const vB of arrB) {
+          while (startB < arrB.length && arrB[startB] < vA - 4) startB++;
+          for (let bIndex = startB; bIndex < arrB.length && arrB[bIndex] <= vA + 4; bIndex++) {
+            const vB = arrB[bIndex];
             const diff = Math.abs(vA - vB);
             if (diff >= 1 && diff <= 4 && bookForVid(vA) === bookForVid(vB)) {
               pericopePairs.push([vA, vB]);
@@ -1116,8 +1153,8 @@ export async function discoverBiblicalConnections(
           const pA = await hydratePassageByVid(vA);
           const pB = await hydratePassageByVid(vB);
           if (pA && pB) {
-            const profA = gA.profiles[0];
-            const profB = gB.profiles[0];
+            const profA = gA.profiles.find(p => p.all_vids.includes(vA))!;
+            const profB = gB.profiles.find(p => p.all_vids.includes(vB))!;
             allCandidates.push({
               evidence_id: `r11:intersect:pericope:${vA}:${vB}`,
               predicate: 'shared_motif',
@@ -1133,7 +1170,7 @@ export async function discoverBiblicalConnections(
                 { lemma_key: profB.lk, strongs: profB.bs, language: profB.lang, lemma_script: profB.sc, transliteration: profB.tr, gloss: profB.gl },
               ],
               matched_terms: [gA.term, gB.term],
-              limitations: ['Localized proximity within the same pericope shows shared discourse setting without demanding direct grammatical coordination.'],
+              limitations: ['A four-verse window is a statistical proximity candidate, not a verified pericope boundary or intentional literary relationship.'],
               provenance: {
                 source_dataset: 'MACULA Hebrew & Greek',
                 source_record_ids: [pA.ref, pB.ref],
@@ -1297,6 +1334,7 @@ export async function discoverBiblicalConnections(
       const bucket = numbersData.by_value[String(nVal)];
       if (!bucket) continue;
       const relevantGroups = (bucket.groups || []).filter((g: any) =>
+        resolvedConcepts.every(c => c.resolution_kind === 'number') ||
         matchedStrongs.has(g.noun_s) ||
         queryTermSet.has(normalizeToken(g.noun_g).split(/\s+/)[0] || '') ||
         g.kind === 'symbolic_vision_count'
@@ -1371,7 +1409,20 @@ export async function discoverBiblicalConnections(
     return true;
   });
 
-  filtered.sort((a, b) => b.score_components.final_score - a.score_components.final_score || a.evidence_tier - b.evidence_tier);
+  const sharedWitnesses = (record: R10EvidenceRecord) => conceptGroups.length >= 2
+    ? record.passages.filter(p => conceptGroups.every(g => g.vids.has(p.verse_id))) : [];
+  const supportClass = (record: R10EvidenceRecord): 'all_concepts' | 'meaningful_subset' | 'background' => {
+    if (conceptGroups.length < 2) return 'background';
+    if (record.predicate === 'orthographic_overlap' || record.predicate === 'interpretive_hypothesis') return 'background';
+    if (sharedWitnesses(record).length && missingConcepts.length === 0) return 'all_concepts';
+    return (record.passages.some(p => conceptGroups.filter(g => g.vids.has(p.verse_id)).length >= 2) ||
+      (record.provenance.derivation_method === 'pericope_window_intersection' &&
+        conceptGroups.filter(g => record.passages.some(p => g.vids.has(p.verse_id))).length >= 2))
+      ? 'meaningful_subset' : 'background';
+  };
+  const supportRank = { all_concepts: 2, meaningful_subset: 1, background: 0 };
+  filtered.sort((a, b) => supportRank[supportClass(b)] - supportRank[supportClass(a)] ||
+    b.score_components.final_score - a.score_components.final_score || a.evidence_tier - b.evidence_tier);
 
   const uniqueMap = new Map<string, R10EvidenceRecord>();
   for (const item of filtered) {
@@ -1468,6 +1519,8 @@ export async function discoverBiblicalConnections(
 
     return {
       connection_id: r.evidence_id,
+      query_support: supportClass(r),
+      shared_witness_refs: sharedWitnesses(r).map(p => p.ref),
       evidence_id: r.evidence_id,
       title: r.title,
       explanation: r.summary,
@@ -1685,6 +1738,12 @@ export async function discoverBiblicalConnections(
     search_metadata: {
       // Exhausting bounded generated candidates is not exhaustive corpus discovery.
       exhaustive: false,
+      scope: 'Bounded candidate discovery over selected lemma profiles; occurrence pagination is complete only for its selected lemma and source editions.',
+      resolution_state: resolvedConcepts.length || explicitPassages.length ? 'known_concept' : 'unknown_concept',
+      occurrence_state: loadedProfiles.some(p => p.total_verses > 0) || explicitPassages.some(p => p.verse_id > 0) ? 'direct_occurrences_found' : 'no_indexed_occurrences',
+      connection_state: totalAvailable ? 'connections_found' : 'no_higher_order_connections',
+      completeness_state: budget.used >= budget.max ? 'resource_limits_reached' : budget.missing.length ? 'missing_source_coverage' : 'search_incomplete',
+      missing_assets: budget.missing,
       bounded_by: [
         `limit=${limit}`,
         `max_subrequests=${budget.max}`,

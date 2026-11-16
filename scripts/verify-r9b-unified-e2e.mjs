@@ -17,7 +17,7 @@ import worker from './corpus-worker.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
-const STAGING_DIR = path.join(ROOT, '.artifacts-r9b', 'staging');
+const STAGING_DIR = process.env.R9B_TEST_ASSETS || path.join(ROOT, '.artifacts-r9b', 'staging');
 const STATIC_DIR = path.join(ROOT, '.artifacts', 'static-corpus');
 
 async function resolveStaticFile(assetPath) {

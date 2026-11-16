@@ -1534,38 +1534,8 @@ const candidatePatterns = [
   },
 ];
 
-// Add auto-detected Greek relative+copula identifications
-const curatedIdsSeen = new Set(curatedEvidenceRecords.map(e => e.passages[0]?.verse_id));
-let autoCopulaCount = 0;
-for (const hit of explicitIdentHits) {
-  // The legacy relative-pronoun + nearby-noun window does not prove a
-  // subject/predicate identity. Retain source corpus tokens, but publish no
-  // identification until a clause-scoped syntactic rule is independently tested.
-  continue;
-  if (curatedIdsSeen.has(hit.vid)) continue;
-  const c = coordByVerseId.get(hit.vid);
-  if (!c) continue;
-  const subjWords = getOriginalWords([hit.subject_s, hit.predicate_s]);
-  if (subjWords.length < 2) continue;
-  curatedIdsSeen.add(hit.vid);
-  autoCopulaCount++;
-  curatedEvidenceRecords.push({
-    evidence_id: `r10:ident:auto:${hit.vid}`,
-    predicate: 'explicit_identification',
-    evidence_tier: 1,
-    epistemic_class: 'direct_textual_evidence',
-    title: `${hit.ref} explicit identification clause (${subjWords[0].lemma_script} / ${subjWords[0].gloss} → ${subjWords[1].lemma_script} / ${subjWords[1].gloss})`,
-    summary: `Syntactic relative-pronoun + copula clause (εἰμί G1510) in ${hit.ref} linking antecedent ${subjWords[0].lemma_script} (${subjWords[0].gloss}) to predicate ${subjWords[1].lemma_script} (${subjWords[1].gloss}).`,
-    source_node_id: `lemma:${hit.subject_s}`,
-    target_node_id: `lemma:${hit.predicate_s}`,
-    passages: [{ verse_id: hit.vid, ref: hit.ref, book: c.book, chapter: c.chapter, verse: c.verse, testament: 'NT', snippet: englishByCoord.get(c.key) || '' }],
-    original_words: subjWords,
-    matched_terms: [subjWords[0].gloss, subjWords[1].gloss, subjWords[0].transliteration, subjWords[1].transliteration].map(normalizeAscii).filter(Boolean),
-    limitations: ['Auto-extracted from MACULA Greek relative-pronoun referent + copula structure; verify full clause context in reader.'],
-    provenance: { source_dataset: 'MACULA Greek (Nestle1904)', source_record_ids: [`auto_copula:${hit.vid}`], license: 'CC BY 4.0', derivation_method: 'greek_relative_copula_referent_extraction' },
-  });
-}
-
+// Automatic window-based copula identities are intentionally not published.
+// Nearby nouns do not establish subject/predicate identity; retain source tokens.
 manifestFiles.push(writeGzJson('r10/explicit-and-typology.json.gz', {
   schema_version: 1,
   records: [...curatedEvidenceRecords, ...crossLangBridges, ...candidatePatterns],

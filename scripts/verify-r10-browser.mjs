@@ -110,7 +110,7 @@ async function runBrowserTests() {
     await page.click('.js-discover-form button[type="submit"]');
     await page.waitForSelector('.discover-conn-card');
     const textA = await page.textContent('.discover-panel');
-    assert.ok(textA.includes('Concept Subclusters & Bridges'), 'Expected subclusters section in Test A');
+    assert.ok(textA.includes('Concept Subclusters & Evidence Clusters'), 'Expected subclusters section in Test A');
     assert.ok(textA.includes('Bridge:'), 'Expected bridge banner in Test A');
     assert.ok(textA.includes('Revelation 4:5'), 'Expected Revelation 4:5 in Test A');
     assert.ok(textA.includes('Zechariah 4:2'), 'Expected Zechariah 4:2 in Test A');
