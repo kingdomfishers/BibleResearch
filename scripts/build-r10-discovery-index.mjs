@@ -1538,6 +1538,10 @@ const candidatePatterns = [
 const curatedIdsSeen = new Set(curatedEvidenceRecords.map(e => e.passages[0]?.verse_id));
 let autoCopulaCount = 0;
 for (const hit of explicitIdentHits) {
+  // The legacy relative-pronoun + nearby-noun window does not prove a
+  // subject/predicate identity. Retain source corpus tokens, but publish no
+  // identification until a clause-scoped syntactic rule is independently tested.
+  continue;
   if (curatedIdsSeen.has(hit.vid)) continue;
   const c = coordByVerseId.get(hit.vid);
   if (!c) continue;

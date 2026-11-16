@@ -1518,15 +1518,9 @@ async function fetchLxxLayerData(ctx, manifest, lemmaKey, params = {}, resolver 
 
 export async function handleQueryRelationshipsV2(ctx, params = {}) {
   const active = await ctx.loadJsonShard(ctx.env, '/v2/relationships/active.json.gz');
-  const envDefaultRelease = ctx.env?.RELATIONSHIPS_RELEASE ? String(ctx.env.RELATIONSHIPS_RELEASE).trim() : null;
-  if ((!active || !active.active_release) && !params.release && !params.release_version && !envDefaultRelease) {
-    return {
-      schema_version: '2.0',
-      status: 'unavailable',
-      error_message: 'Relationship graph v2 active pointer not found.',
-    };
-  }
-  const releaseVersion = String(params.release || params.release_version || envDefaultRelease || active?.active_release).trim();
+  const selected = await resolveR9cReleaseVersion(ctx, params);
+  if (selected.error) return { schema_version: '2.0', status: 'invalid_request', error_message: selected.error };
+  const releaseVersion = selected.releaseVersion;
   const baseDir = `/v2/relationships/${releaseVersion}`;
   const manifest = await ctx.loadJsonShard(ctx.env, `${baseDir}/manifest.json.gz`);
   if (!manifest) {
@@ -2321,11 +2315,16 @@ async function resolveR9cReleaseVersion(ctx, params = {}) {
   if (envDefault) return { error: null, releaseVersion: String(envDefault).trim() };
   const active = await ctx.loadJsonShard(ctx.env, '/v2/relationships/active.json.gz');
   const activeRel = active?.active_release ? String(active.active_release).trim() : null;
-  if (activeRel === 'r10-v1.0') {
-    return { error: null, releaseVersion: 'r9b-v1.0' };
-  }
-  if (activeRel && !activeRel.startsWith('r8-')) {
-    return { error: null, releaseVersion: activeRel };
+  // Discovery releases inherit compatible relationship assets, rather than containing them.
+  let candidate = activeRel;
+  const visited = new Set();
+  while (candidate && !visited.has(candidate)) {
+    visited.add(candidate);
+    const manifest = await ctx.loadJsonShard(ctx.env, `/v2/relationships/${candidate}/manifest.json.gz`);
+    if (manifest?.layers?.grammatical && manifest?.layers?.lexical) {
+      return { error: null, releaseVersion: candidate };
+    }
+    candidate = manifest?.inherits_release || null;
   }
   const r9bManifest =
     (await ctx.loadJsonShard(ctx.env, '/v2/relationships/r9b-v1.0/runtime-manifest.json.gz')) ||
@@ -2503,16 +2502,23 @@ export async function handleDiscoverBiblicalConnectionsV1(ctx, params = {}) {
   }
   const reader = createWorkerR10Reader(ctx);
   const releaseId = params.release_id ? String(params.release_id).trim() : DEFAULT_R10_RELEASE;
+  const limit = params.limit !== undefined ? Math.min(25, Math.max(1, finiteOr(params.limit, 10))) : 10;
   return await discoverBiblicalConnections(reader, {
-    query: queryText || concepts.join(' '),
+    query: queryText || (concepts ? concepts.join(' ') : ''),
     concepts,
+    mode: params.mode ? String(params.mode) : undefined,
+    cluster_id: params.cluster_id ? String(params.cluster_id) : undefined,
+    focus_lemma: params.focus_lemma ? String(params.focus_lemma) : undefined,
+    compare_targets: parseOptionalListParam(params.compare_targets),
     filters: params.filters && typeof params.filters === 'object' ? params.filters : undefined,
-    limit: params.limit !== undefined ? finiteOr(params.limit, 10) : 10,
+    limit,
     cursor: params.cursor ? String(params.cursor) : null,
     max_hops: params.max_hops !== undefined ? finiteOr(params.max_hops, 3) : 3,
     release_id: releaseId,
   }, releaseId);
 }
+
+export const handleDiscoverBiblicalConnectionsV2 = handleDiscoverBiblicalConnectionsV1;
 
 export async function handleGetConnectionEvidenceV1(ctx, params = {}) {
   const evidenceId = String(params.evidence_id || params.connection_id || params.id || '').trim();

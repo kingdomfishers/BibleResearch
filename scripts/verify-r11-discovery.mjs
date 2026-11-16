@@ -55,6 +55,22 @@ async function run() {
   console.log(`[R11-TEST] Starting R11 verification against ${BUNDLE_ROOT}...`);
   assert.equal(DEFAULT_R10_RELEASE, 'r11-v1.0', 'DEFAULT_R10_RELEASE must be r11-v1.0');
   const reader = await createNodeFsAssetReader([BUNDLE_ROOT]);
+  for (const query of ['1 Kings 7:26', 'Psalm 45:0', 'Genesis 1:2', '1 Kgs 7:26']) {
+    const result = await discoverBiblicalConnections(reader, { query });
+    assert.equal(result.parsed_query.explicit_passages.length, 1, query);
+    assert.deepEqual(result.parsed_query.extracted_terms, [], `Reference leaked into lexical tokens: ${query}`);
+    assert.equal(result.search_metadata.exhaustive, false);
+  }
+  // Audit every legacy auto-identification, rather than only the two known errors.
+  const autoData = await reader.readJson('/v2/relationships/r11-v1.0/r10/explicit-and-typology.json.gz');
+  const autoIds = autoData.data.records.filter(r => r.evidence_id.startsWith('r10:ident:auto:')).map(r => r.evidence_id);
+  assert.ok(autoIds.includes('r10:ident:auto:27705'));
+  assert.ok(autoIds.includes('r10:ident:auto:24806'));
+  for (const id of autoIds) {
+    const result = await getConnectionEvidence(reader, id);
+    assert.equal(result.status, 'not_found', `Unsupported identification remains accessible: ${id}`);
+  }
+  console.log(`Quarantined ${autoIds.length} unsupported auto-identifications, including relative/location/numerical contexts.`);
 
   // Test 1: "Lily"
   console.log('1. Testing "Lily"...');

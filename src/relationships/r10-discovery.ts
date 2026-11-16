@@ -153,6 +153,13 @@ async function readR10Json<T = any>(
   budget.used++;
   const fullPath = `/v2/relationships/${releaseId}/r10/${relPath}`;
   const res = await reader.readJson(fullPath);
+  // Legacy window-based copula extraction cannot establish identity: relative
+  // clauses may describe location, possession, marriage, or numerical attributes.
+  // Quarantine the entire unverified family, including evidence-by-ID access.
+  if (relPath === 'explicit-and-typology.json.gz' && res?.data) {
+    const data = res.data as { records?: Array<{ evidence_id?: string }> };
+    return { ...data, records: (data.records || []).filter(r => !r.evidence_id?.startsWith('r10:ident:auto:')) } as T;
+  }
   return (res?.data as T) ?? null;
 }
 
@@ -303,8 +310,10 @@ export async function discoverBiblicalConnections(
     throw new Error(`R10 release indexes missing for release_id=${releaseId}`);
   }
 
-  const extractedTerms = tokenizeTerms(query);
   const parsedRefs = parsePassageReferences(query.query || '', conceptIdx.book_names || []);
+  let lexicalQuery = query.query || '';
+  for (const ref of parsedRefs) lexicalQuery = lexicalQuery.replace(ref.refText, ' ');
+  const extractedTerms = tokenizeTerms({ ...query, query: lexicalQuery });
   const explicitPassages: R10PassageRef[] = parsedRefs.map(pr => {
     const bk = conceptIdx.book_names.find(b => b.id === pr.book);
     return {
@@ -1674,7 +1683,8 @@ export async function discoverBiblicalConnections(
       has_more: hasMore,
     },
     search_metadata: {
-      exhaustive: !hasMore && budget.used < budget.max,
+      // Exhausting bounded generated candidates is not exhaustive corpus discovery.
+      exhaustive: false,
       bounded_by: [
         `limit=${limit}`,
         `max_subrequests=${budget.max}`,
