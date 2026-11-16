@@ -540,6 +540,10 @@ export function registerRelationshipV2Tools(server: McpServer, read: DatabaseRea
     inputSchema: z.strictObject({
       query: z.string().trim().min(1).max(400).describe('Natural language question, passage references, transliterations (e.g. ruach, adam, dam), or comma-separated concept list.'),
       concepts: z.array(z.string().trim().min(1).max(64)).max(16).optional().describe('Optional explicit list of concepts to analyze alongside query.'),
+      mode: z.enum(['discover', 'expand', 'bridge', 'compare', 'explain', 'challenge']).optional().describe('Optional R11 exploration mode.'),
+      cluster_id: z.string().trim().max(160).optional().describe('Target cluster identifier for expand/drill-down exploration.'),
+      focus_lemma: z.string().trim().max(64).optional().describe('Specific Hebrew or Greek lemma / Strong\'s ID to anchor or disambiguate.'),
+      compare_targets: z.array(z.string().trim().min(1).max(128)).max(6).optional().describe('Up to 6 concepts, words, or lemmas to compare directly.'),
       filters: z.strictObject({
         predicates: z.array(z.string().trim().min(1).max(64)).optional(),
         max_tier: z.number().int().min(1).max(8).optional(),
@@ -561,6 +565,60 @@ export function registerRelationshipV2Tools(server: McpServer, read: DatabaseRea
       args: compactDefined({
         query: input.query,
         concepts: input.concepts,
+        mode: input.mode,
+        cluster_id: input.cluster_id,
+        focus_lemma: input.focus_lemma,
+        compare_targets: input.compare_targets,
+        filters: input.filters,
+        limit: input.limit,
+        cursor: input.cursor ?? undefined,
+        max_hops: input.max_hops,
+        release_id: input.release_id,
+      }),
+      limit: 1,
+      offset: 0,
+    });
+    const payload = asObj(reply.rows[0]);
+    const isErr = payload.status === 'invalid_request';
+    return { content: jsonContent(payload), structuredContent: payload, ...(isErr ? { isError: false } : {}) };
+  });
+
+  server.registerTool('discover_biblical_connections_v2', {
+    title: 'Discover & Explore Universal Biblical Connections (R11)',
+    description:
+      'Universal corpus-wide biblical discovery and multi-mode exploration. Handles ANY biblical concept, English word (e.g. lily, hyssop, pomegranate, cedar, door, oil, stone, water + spirit), Hebrew/Greek lemma or surface form, Strong\'s ID, number, passage (including Psalm verse 0 headings), or multi-concept question across all 31,203 verses. Returns evidence-ranked thematic and lemma clusters, homograph disambiguation, cross-references, LXX bridges, ranking rationale, and iterative discover, expand, bridge, compare, explain, and challenge modes with full pagination.',
+    inputSchema: z.strictObject({
+      query: z.string().trim().min(1).max(400).describe('Natural language question, English concept/word (e.g. lily, hyssop, pomegranate), passage reference (including Psalm headings verse 0), transliteration, Strong\'s ID, or comma-separated concepts.'),
+      concepts: z.array(z.string().trim().min(1).max(64)).max(16).optional().describe('Optional explicit list of concepts to analyze alongside query.'),
+      mode: z.enum(['discover', 'expand', 'bridge', 'compare', 'explain', 'challenge']).optional().describe('Exploration mode: discover (default overview), expand (drill into cluster/concept), bridge (trace cross-testament/LXX links), compare (contrast multiple targets), explain (evidence rationale), or challenge (test counter-evidence).'),
+      cluster_id: z.string().trim().max(160).optional().describe('Target cluster identifier for expand/drill-down exploration.'),
+      focus_lemma: z.string().trim().max(64).optional().describe('Specific Hebrew or Greek lemma / Strong\'s ID to anchor or disambiguate.'),
+      compare_targets: z.array(z.string().trim().min(1).max(128)).max(6).optional().describe('Up to 6 concepts, words, or lemmas to compare directly in compare mode.'),
+      filters: z.strictObject({
+        predicates: z.array(z.string().trim().min(1).max(64)).optional(),
+        max_tier: z.number().int().min(1).max(8).optional(),
+        include_orthographic: z.boolean().optional(),
+        include_candidate_patterns: z.boolean().optional(),
+        include_interpretive: z.boolean().optional(),
+        testaments: z.array(z.enum(['OT', 'NT'])).optional(),
+      }).optional(),
+      limit: z.number().int().min(1).max(25).optional(),
+      cursor: z.string().trim().max(128).nullable().optional(),
+      max_hops: z.number().int().min(1).max(3).optional(),
+      release_id: z.string().trim().min(1).max(32).optional(),
+    }),
+    outputSchema: z.record(z.string(), z.unknown()),
+    ...readOnlyMeta,
+  }, async (input) => {
+    const reply = await read({
+      name: 'discover_biblical_connections_v1',
+      args: compactDefined({
+        query: input.query,
+        concepts: input.concepts,
+        mode: input.mode,
+        cluster_id: input.cluster_id,
+        focus_lemma: input.focus_lemma,
+        compare_targets: input.compare_targets,
         filters: input.filters,
         limit: input.limit,
         cursor: input.cursor ?? undefined,
@@ -580,7 +638,7 @@ export function registerRelationshipV2Tools(server: McpServer, read: DatabaseRea
     description:
       'Retrieve full original-language Greek/Hebrew tokens (Strong\'s, lemma, gloss, highlighted matches), public-domain English text, orthographic decomposition, number classification, and dataset provenance/license for any connection returned by discover_biblical_connections_v1.',
     inputSchema: z.strictObject({
-      evidence_id: z.string().trim().min(1).max(160).describe('The evidence_id returned inside strongest_connections by discover_biblical_connections_v1.'),
+      evidence_id: z.string().trim().min(1).max(220).describe('The evidence_id returned inside strongest_connections by discover_biblical_connections_v1 or discover_biblical_connections_v2.'),
       release_id: z.string().trim().min(1).max(32).optional(),
     }),
     outputSchema: z.record(z.string(), z.unknown()),
@@ -604,7 +662,7 @@ export function registerRelationshipV2Tools(server: McpServer, read: DatabaseRea
     description:
       'Expand a specific motif, Strong\'s lemma, passage, or concept node into its neighboring verified biblical connections, negative controls, and original-language links.',
     inputSchema: z.strictObject({
-      node_id: z.string().trim().min(1).max(128).describe('Node identifier or label (e.g. motif:lampstand, lemma:H7307, passage:Zechariah 4:2).'),
+      node_id: z.string().trim().min(1).max(192).describe('Node identifier, label, or cluster ID (e.g. motif:lampstand, lemma:H7307, passage:Zechariah 4:2, cluster:H7799:temple_and_sanctuary_architecture).'),
       limit: z.number().int().min(1).max(20).optional(),
       cursor: z.string().trim().max(128).nullable().optional(),
       release_id: z.string().trim().min(1).max(32).optional(),

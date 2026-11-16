@@ -326,6 +326,160 @@
   font-size: 13px;
 }
 
+.discover-mode-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.discover-badge.is-mode {
+  color: var(--gold);
+  border: 1px solid var(--gold);
+  background: var(--accent);
+}
+
+.discover-resolution-section {
+  margin-top: 12px;
+}
+
+.discover-focus-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  border: 1px solid var(--green);
+  border-radius: 6px;
+  background: var(--accent);
+  font-size: 13px;
+}
+
+.discover-concepts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 10px;
+}
+
+.discover-concept-card {
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--background);
+  font-size: 13px;
+}
+
+.discover-concept-card.is-unresolved {
+  border-style: dashed;
+}
+
+.discover-concept-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.discover-lemmas-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.discover-resolved-lemma {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 4px 8px;
+  background: var(--soft);
+  border-radius: 5px;
+}
+
+.discover-resolved-lemma .original-script {
+  font-size: 16px;
+  color: var(--gold);
+}
+
+.discover-forms-row,
+.discover-senses-row {
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.discover-form-tag,
+.discover-sense-tag {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: var(--soft);
+  margin: 2px 2px 2px 0;
+}
+
+.discover-homograph-box {
+  margin-top: 8px;
+  padding: 6px 10px;
+  border-left: 2px solid var(--gold);
+  background: var(--soft);
+  border-radius: 0 4px 4px 0;
+  font-size: 12px;
+}
+
+.discover-ranking-rationale {
+  margin: 4px 0 8px;
+  font-size: 12px;
+  color: var(--text);
+  font-style: italic;
+}
+
+.discover-cluster-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+.discover-iterative-panel {
+  padding: 14px;
+  border: 1px solid var(--gold);
+  border-radius: 7px;
+  background: var(--soft);
+}
+
+.discover-iterative-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.discover-occurrences-box,
+.discover-comparison-box,
+.discover-bridges-box,
+.discover-challenges-box {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.discover-occurrences-box h4,
+.discover-comparison-box h4,
+.discover-bridges-box h4,
+.discover-challenges-box h4 {
+  font: normal 14px Georgia, serif;
+  margin: 0 0 6px;
+  color: var(--gold);
+}
+
 @media (max-width: 720px) {
   .discover-panel {
     padding: 14px;

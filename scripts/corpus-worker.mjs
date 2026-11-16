@@ -61,6 +61,7 @@ function setLru(key, val) {
     key.includes('/resolver/by-key/') ||
     key.includes('/resolver/english-tokens/') ||
     key.includes('/lemma-lookup/') ||
+    key.includes('/lemma-profiles/') ||
     key.includes('/orthographic/') ||
     key.includes('/xrefs/') ||
     key.includes('/evidence-passages/')
@@ -2503,7 +2504,7 @@ const corpusWorker = {
         if (op === 'discover_relationship_paths_v1') {
           return jsonResponse(await handleDiscoverRelationshipPathsV1({ env, loadJsonShard, loadJsonShardWithBytes }, params), 200, 'public, max-age=300');
         }
-        if (op === 'discover_biblical_connections_v1') {
+        if (op === 'discover_biblical_connections_v1' || op === 'discover_biblical_connections_v2') {
           return jsonResponse(await handleDiscoverBiblicalConnectionsV1({ env, loadJsonShard, loadJsonShardWithBytes }, params), 200, 'public, max-age=300');
         }
         if (op === 'get_connection_evidence_v1') {

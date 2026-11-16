@@ -32,6 +32,7 @@ const corpusRpcs = new Set([
   'resolve_research_concept_v1',
   'discover_relationship_paths_v1',
   'discover_biblical_connections_v1',
+  'discover_biblical_connections_v2',
   'get_connection_evidence_v1',
   'expand_biblical_connection_v1',
 ]);
@@ -55,6 +56,7 @@ const allowedRpcs = new Set([
   'resolve_research_concept_v1',
   'discover_relationship_paths_v1',
   'discover_biblical_connections_v1',
+  'discover_biblical_connections_v2',
   'get_connection_evidence_v1',
   'expand_biblical_connection_v1',
   'get_word_formation_v1',
@@ -93,6 +95,7 @@ const singlePacketRpcs = new Set([
   'resolve_research_concept_v1',
   'discover_relationship_paths_v1',
   'discover_biblical_connections_v1',
+  'discover_biblical_connections_v2',
   'get_connection_evidence_v1',
   'expand_biblical_connection_v1',
   'get_word_formation_v1',
@@ -162,6 +165,7 @@ export function createDatabaseReader(config: DatabaseConfig, fetcher: typeof fet
           name === 'resolve_research_concept_v1' ||
           name === 'discover_relationship_paths_v1' ||
           name === 'discover_biblical_connections_v1' ||
+          name === 'discover_biblical_connections_v2' ||
           name === 'get_connection_evidence_v1' ||
           name === 'expand_biblical_connection_v1'
         ) {
@@ -173,6 +177,7 @@ export function createDatabaseReader(config: DatabaseConfig, fetcher: typeof fet
           name === 'resolve_research_concept_v1' ||
           name === 'discover_relationship_paths_v1' ||
           name === 'discover_biblical_connections_v1' ||
+          name === 'discover_biblical_connections_v2' ||
           name === 'get_connection_evidence_v1' ||
           name === 'expand_biblical_connection_v1'
         ) {

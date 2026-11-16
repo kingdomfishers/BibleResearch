@@ -1,9 +1,10 @@
 /**
- * R10 Discover Connections UI Component
+ * R10 / R11 Discover Connections UI Component
  * Accessible from main workspace header & WordInspector.
  * Persistent search form (never destroys <input> focus/keyboard on Android),
  * separate autocomplete & results slots, subclusters + bridges, bounded SVG map,
- * evidence inspection, passage click-through with return history, filters & node expansion.
+ * evidence inspection, passage click-through with return history, filters, iterative modes,
+ * and node expansion.
  */
 
 import {
@@ -18,6 +19,7 @@ import type {
   R10EvidenceTier,
   R10PassageRef,
   R10Predicate,
+  R10ResolvedConcept,
 } from '../../relationships/r10-types';
 
 export interface DiscoverConnectionsCallbacks {
@@ -32,10 +34,15 @@ interface AutocompleteSuggestion {
 }
 
 const AUTOCOMPLETE_SUGGESTIONS: AutocompleteSuggestion[] = [
-  { label: 'ruach (רוּחַ H7307)', insert: 'ruach', hint: 'Spirit · Wind · Breath · Directions' },
-  { label: 'pneuma (πνεῦμα G4151)', insert: 'pneuma', hint: 'Spirit · Wind · Breath' },
-  { label: 'menorah (מְנוֹרָה H4501)', insert: 'menorah', hint: 'Golden Lampstand' },
-  { label: 'seven lamps & eyes', insert: 'seven eyes lamps', hint: 'Zech 4:2,10 · Rev 4:5 · Rev 5:6' },
+  { label: 'Lily (שׁוֹשָׁן H7799 / κρίνον G2918)', insert: 'Lily', hint: 'Passover · Temple · Song of Songs · Matt 6:28' },
+  { label: 'Hyssop (אֵזוֹב H231 / ὕσσωπος G5301)', insert: 'Hyssop', hint: 'Exod 12:22 · Lev 14 · Ps 51:7 · John 19:29' },
+  { label: 'Pomegranate (רִמּוֹן H7416 / ῥόα)', insert: 'Pomegranate', hint: 'Priestly hem · Temple pillars · Promised Land' },
+  { label: 'Cedar (אֶרֶז H730 / κέδρος)', insert: 'Cedar', hint: 'Lebanon · Cleansing ritual · Temple construction' },
+  { label: 'Water Spirit (ruach over waters)', insert: 'Water Spirit', hint: 'Gen 1:2 · Ezek 36:25-27 · John 3:5' },
+  { label: 'Oil Lampstand (menorah & shemen)', insert: 'Oil Lampstand', hint: 'Exod 25:31 · Zech 4:2 · Rev 1:12' },
+  { label: 'Blood Door (Passover typology)', insert: 'Blood Door', hint: 'Exod 12:7,13 · John 10:9 · Heb 10:19-20' },
+  { label: 'Tree of Life (עֵץ הַחַיִּים)', insert: 'Tree Life', hint: 'Gen 2:9 · Prov 3:18 · Rev 22:2' },
+  { label: 'ruach, spirit, seven, eyes, lamps...', insert: 'ruach, spirit, seven, eyes, lamps, menorah, oil, water, wind, directions', hint: 'Zech 4:2,10 · Rev 4:5 · Rev 5:6' },
   { label: 'Red Sea & baptism', insert: 'Red Sea baptism', hint: 'Exod 14 · 1 Cor 10:1-2' },
   { label: 'adam (אָדָם) & dam (דָּם)', insert: 'Adam dam', hint: 'Orthographic & wordplay test' },
   { label: 'adamah (אֲדָמָה ground)', insert: 'adamah', hint: 'Gen 2:7 paronomasia' },
@@ -45,14 +52,21 @@ const AUTOCOMPLETE_SUGGESTIONS: AutocompleteSuggestion[] = [
 ];
 
 const EXAMPLE_QUERIES = [
+  { label: 'Lily', q: 'Lily' },
+  { label: 'Hyssop', q: 'Hyssop' },
+  { label: 'Pomegranate', q: 'Pomegranate' },
+  { label: 'Cedar', q: 'Cedar' },
+  { label: 'Water Spirit', q: 'Water Spirit' },
+  { label: 'Oil Lampstand', q: 'Oil Lampstand' },
+  { label: 'Blood Door', q: 'Blood Door' },
+  { label: 'Tree Life', q: 'Tree Life' },
   { label: 'ruach, spirit, seven, eyes, lamps, menorah, oil, water, wind, directions', q: 'ruach, spirit, seven, eyes, lamps, menorah, oil, water, wind, directions' },
   { label: 'Red Sea & baptism', q: 'Red Sea baptism' },
   { label: 'Adam & dam', q: 'Adam dam' },
-  { label: 'Genesis 1 & Revelation 4', q: 'Genesis 1 creation Revelation 4 seven spirits' },
-  { label: 'Passover door, blood, & Jesus', q: 'Passover door blood Jesus' },
 ];
 
 type FilterBucket = 'all' | 'explicit' | 'lexical' | 'xref' | 'motif' | 'orthographic';
+type DiscoveryMode = 'discover' | 'expand' | 'bridge' | 'compare' | 'explain' | 'challenge';
 
 function esc(s: string | null | undefined): string {
   return String(s ?? '')
@@ -79,13 +93,22 @@ export class DiscoverConnectionsPanel {
 
   private currentQuery = '';
   private activeFilter: FilterBucket = 'all';
+  private currentMode: DiscoveryMode = 'discover';
+  private currentClusterId: string | undefined = undefined;
+  private focusLemma: string | undefined = undefined;
+  private compareTargets: string[] | undefined = undefined;
   private viewMode: 'cards' | 'map' = 'cards';
   private loading = false;
   private errorMsg: string | null = null;
   private result: DiscoverConnectionsResult | null = null;
   private evidenceCache = new Map<string, ConnectionEvidenceResult>();
   private openEvidenceIds = new Set<string>();
-  private previousStates: Array<{ query: string; filter: FilterBucket; result: DiscoverConnectionsResult | null }> = [];
+  private previousStates: Array<{
+    query: string;
+    filter: FilterBucket;
+    mode: DiscoveryMode;
+    result: DiscoverConnectionsResult | null;
+  }> = [];
   private awayFromDiscovery = false;
   private showAutocomplete = false;
 
@@ -169,6 +192,7 @@ export class DiscoverConnectionsPanel {
         this.currentQuery = prev.query;
         this.inputEl.value = prev.query;
         this.activeFilter = prev.filter;
+        this.currentMode = prev.mode || 'discover';
         this.result = prev.result;
         this.awayFromDiscovery = false;
         this.renderResults();
@@ -179,8 +203,13 @@ export class DiscoverConnectionsPanel {
   public async runDiscovery(queryText: string, pushHistory = true): Promise<void> {
     const clean = queryText.trim();
     if (!clean) return;
-    if (pushHistory && this.result && this.currentQuery && this.currentQuery !== clean) {
-      this.previousStates.push({ query: this.currentQuery, filter: this.activeFilter, result: this.result });
+    if (pushHistory && this.result && this.currentQuery && (this.currentQuery !== clean || this.currentMode !== 'discover')) {
+      this.previousStates.push({
+        query: this.currentQuery,
+        filter: this.activeFilter,
+        mode: this.currentMode,
+        result: this.result,
+      });
       if (this.previousStates.length > 8) this.previousStates.shift();
     }
     this.currentQuery = clean;
@@ -194,6 +223,10 @@ export class DiscoverConnectionsPanel {
 
     const res = await discoverBiblicalConnectionsRpc({
       query: clean,
+      mode: this.currentMode,
+      cluster_id: this.currentClusterId,
+      focus_lemma: this.focusLemma,
+      compare_targets: this.compareTargets,
       filters: this.buildFilterPayload(),
       limit: 10,
       cursor: null,
@@ -266,7 +299,7 @@ export class DiscoverConnectionsPanel {
     });
   }
 
-  private buildFilterPayload() {
+  private buildFilterPayload(): { max_tier?: R10EvidenceTier; predicates?: R10Predicate[] } | undefined {
     switch (this.activeFilter) {
       case 'explicit':
         return { max_tier: 2 as R10EvidenceTier };
@@ -289,6 +322,10 @@ export class DiscoverConnectionsPanel {
     this.renderResults();
     const res = await discoverBiblicalConnectionsRpc({
       query: this.currentQuery,
+      mode: this.currentMode,
+      cluster_id: this.currentClusterId,
+      focus_lemma: this.focusLemma,
+      compare_targets: this.compareTargets,
       filters: this.buildFilterPayload(),
       limit: 10,
       cursor: this.result.pagination.next_cursor,
@@ -299,6 +336,30 @@ export class DiscoverConnectionsPanel {
         ...res.data,
         strongest_connections: [...this.result.strongest_connections, ...res.data.strongest_connections],
         connection_paths: [...this.result.connection_paths, ...res.data.connection_paths],
+      };
+    }
+    this.renderResults();
+  }
+
+  private async loadMoreOccurrences(cursor: string): Promise<void> {
+    if (!this.result?.iterative_analysis?.lemma_occurrences || this.loading) return;
+    this.loading = true;
+    this.renderResults();
+    const strongs = this.result.iterative_analysis.lemma_occurrences.strongs;
+    const res = await discoverBiblicalConnectionsRpc({
+      query: this.currentQuery,
+      mode: 'expand',
+      focus_lemma: strongs,
+      cursor,
+      limit: 10,
+    });
+    this.loading = false;
+    if (res.data?.iterative_analysis?.lemma_occurrences) {
+      const nextOcc = res.data.iterative_analysis.lemma_occurrences;
+      const currentOcc = this.result.iterative_analysis.lemma_occurrences;
+      this.result.iterative_analysis.lemma_occurrences = {
+        ...nextOcc,
+        passages: [...currentOcc.passages, ...nextOcc.passages],
       };
     }
     this.renderResults();
@@ -323,7 +384,12 @@ export class DiscoverConnectionsPanel {
 
   private async handleExpandNode(nodeId: string, label: string): Promise<void> {
     if (this.result) {
-      this.previousStates.push({ query: this.currentQuery, filter: this.activeFilter, result: this.result });
+      this.previousStates.push({
+        query: this.currentQuery,
+        filter: this.activeFilter,
+        mode: this.currentMode,
+        result: this.result,
+      });
     }
     this.loading = true;
     this.errorMsg = null;
@@ -389,6 +455,225 @@ export class DiscoverConnectionsPanel {
     return `<div class="discover-map-svg-wrap"><svg viewBox="0 0 ${width} ${height}" width="100%" style="max-width:680px;display:block" role="img" aria-label="Bounded biblical connection map">${lines.join('')}${nodes.join('')}</svg><p class="study-muted">Bounded lightweight map (clustered & capped for mobile speed).</p></div>`;
   }
 
+  private renderConceptResolution(rcs: R10ResolvedConcept[]): string {
+    const hasAnyResolved = rcs.some(r => r.matched);
+    if (!hasAnyResolved && rcs.length === 0) return '';
+
+    return `
+      <div class="discover-resolution-section">
+        ${this.focusLemma ? `
+          <div class="discover-focus-banner">
+            <span>Filtered to original-language lemma: <strong>${esc(this.focusLemma)}</strong></span>
+            <button type="button" class="study-button js-clear-focus">Clear filter (show all lemmas)</button>
+          </div>
+        ` : ''}
+        <div class="discover-concepts-grid">
+          ${rcs.map(rc => {
+            const hasMultipleLemmas = rc.lemmas.length > 1;
+            return `
+              <div class="discover-concept-card ${rc.matched ? '' : 'is-unresolved'}">
+                <div class="discover-concept-header">
+                  <span class="discover-lemma-pill ${rc.matched ? '' : 'is-unresolved'}">
+                    <strong>${esc(rc.input_token)}</strong>
+                    <span class="study-muted">→ ${rc.matched ? esc(rc.resolution_kind.replace(/_/g, ' ')) : 'unresolved'}</span>
+                  </span>
+                  ${rc.entity_kind ? `<span class="discover-badge">${esc(rc.entity_kind.replace(/_/g, ' '))}</span>` : ''}
+                  ${rc.total_verses !== undefined ? `<span class="study-muted">${rc.total_verses} verse(s)</span>` : ''}
+                </div>
+
+                ${rc.lemmas.length > 0 ? `
+                  <div class="discover-lemmas-row">
+                    ${rc.lemmas.map(l => {
+                      const isFocused = this.focusLemma === l.strongs;
+                      return `
+                        <div class="discover-resolved-lemma">
+                          <span class="original-script" dir="${l.language === 'hbo' ? 'rtl' : 'ltr'}">${esc(l.lemma_script)}</span>
+                          <strong>${esc(l.transliteration)}</strong>
+                          <span class="study-muted">(${esc(l.strongs)})</span>
+                          <em>"${esc(l.gloss)}"${l.sense_note ? ` · ${esc(l.sense_note)}` : ''}</em>
+                          ${hasMultipleLemmas || rcs.length > 1 ? `
+                            <button type="button" class="discover-chip js-focus-lemma ${isFocused ? 'is-active' : ''}" data-focus-lemma="${esc(l.strongs || l.lemma_key || '')}">
+                              ${isFocused ? '✓ Focused' : `Focus ${esc(l.lemma_script)} (${esc(l.strongs)})`}
+                            </button>
+                          ` : ''}
+                        </div>
+                      `;
+                    }).join('')}
+                  </div>
+                ` : ''}
+
+                ${rc.forms && rc.forms.length > 0 ? `
+                  <div class="discover-forms-row">
+                    <span class="study-muted">Attested surface forms:</span>
+                    ${rc.forms.slice(0, 5).map(f => `
+                      <span class="discover-form-tag" title="${esc(f.gl)} (${f.cnt}x)">
+                        <strong>${esc(f.sf)}</strong> <em>${esc(f.tr)}</em> (${f.cnt})
+                      </span>
+                    `).join(' ')}
+                  </div>
+                ` : ''}
+
+                ${rc.sense_candidates && rc.sense_candidates.length > 0 ? `
+                  <div class="discover-senses-row">
+                    <span class="study-muted">Senses:</span>
+                    ${rc.sense_candidates.slice(0, 4).map(s => `
+                      <span class="discover-sense-tag">${esc(s.gl)}${s.note ? ` <small class="study-muted">(${esc(s.note)})</small>` : ''}</span>
+                    `).join('; ')}
+                  </div>
+                ` : ''}
+
+                ${rc.homograph_siblings && rc.homograph_siblings.length > 0 ? `
+                  <div class="discover-homograph-box">
+                    <span class="study-muted">Excluded homograph sibling(s):</span>
+                    ${rc.homograph_siblings.map(h => `
+                      <span class="discover-homograph-item">
+                        <strong>${esc(h.bs)}</strong> ${esc(h.sc)} (<em>${esc(h.tr)}</em> — "${esc(h.gl)}")
+                      </span>
+                    `).join(' · ')}
+                  </div>
+                ` : ''}
+
+                ${rc.ambiguity_note ? `
+                  <p class="discover-uncertainty" style="margin:4px 0 0"><small>${esc(rc.ambiguity_note)}</small></p>
+                ` : ''}
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  private renderClusters(res: DiscoverConnectionsResult): string {
+    if (this.viewMode !== 'map' && res.clusters.length < 1) return '';
+
+    return `
+      <div class="discover-section">
+        <h3>Concept Subclusters & Evidence Clusters (${res.clusters.length})</h3>
+        <div class="discover-clusters-grid">
+          ${res.clusters.map(cl => `
+            <div class="discover-cluster-card">
+              <div class="discover-cluster-header">
+                <h4>${esc(cl.label)}</h4>
+                ${cl.category ? `<span class="discover-badge">${esc(cl.category.replace(/_/g, ' '))}</span>` : ''}
+                ${cl.total_passages !== undefined ? `<span class="study-muted">${cl.total_passages} passage(s)</span>` : ''}
+              </div>
+              <p class="study-muted">${esc(cl.summary)}</p>
+              ${cl.uncertainty_note ? `<p class="discover-uncertainty">${esc(cl.uncertainty_note)}</p>` : ''}
+
+              ${cl.passages && cl.passages.length > 0 ? `
+                <div class="discover-chips-row">
+                  <span class="study-muted">Passages:</span>
+                  ${cl.passages.slice(0, 8).map(p => {
+                    const label = p.mt_ref ? `${p.ref} [MT ${p.mt_ref}]` : p.ref;
+                    return `<button type="button" class="discover-chip js-nav-passage" data-book="${p.book}" data-chapter="${p.chapter}" data-verse="${p.verse}">${esc(label)}</button>`;
+                  }).join('')}
+                </div>
+              ` : ''}
+
+              ${cl.collocated_words && cl.collocated_words.length > 0 ? `
+                <div class="discover-chips-row">
+                  <span class="study-muted">Collocations:</span>
+                  ${cl.collocated_words.slice(0, 6).map(w => `
+                    <button type="button" class="discover-chip js-inspect-word" data-strongs="${esc(w.bs)}" title="${esc(w.tr)} (${esc(w.gl)}) · ${w.hits} hits">
+                      <strong>${esc(w.sc)}</strong> <small>${esc(w.bs)} ${esc(w.gl)} (${w.hits})</small>
+                    </button>
+                  `).join('')}
+                </div>
+              ` : ''}
+
+              <div class="discover-cluster-actions" style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                <button type="button" class="study-button js-expand-cluster" data-cluster-id="${esc(cl.cluster_id)}">Expand cluster</button>
+                ${cl.anchor_nodes.map(n => `<button type="button" class="discover-chip js-expand-node" data-node="${esc(n.id)}" data-label="${esc(n.label)}">${esc(n.label)}</button>`).join('')}
+              </div>
+            </div>
+          `).join('')}
+        </div>
+        ${res.bridges.map(b => `<div class="discover-bridge-banner"><strong>Bridge:</strong> ${esc(b.explanation)}</div>`).join('')}
+        ${this.viewMode === 'map' ? this.renderLightweightMap(res) : ''}
+      </div>
+    `;
+  }
+
+  private renderIterativeAnalysis(ia: NonNullable<DiscoverConnectionsResult['iterative_analysis']>): string {
+    const occ = ia.lemma_occurrences;
+    const bridges = ia.bridges || [];
+    const comp = ia.comparison;
+    const challenges = ia.challenges || [];
+
+    return `
+      <div class="discover-section discover-iterative-panel">
+        <div class="discover-iterative-header">
+          <h3>Iterative Analysis: <span class="discover-badge is-mode">${esc(ia.mode.toUpperCase())}</span></h3>
+          ${ia.mode !== 'discover' ? `<button type="button" class="study-button js-reset-mode">Reset to standard discovery</button>` : ''}
+        </div>
+        ${ia.explanation ? `<p class="discover-conn-summary">${esc(ia.explanation)}</p>` : ''}
+
+        ${occ && occ.passages.length > 0 ? `
+          <div class="discover-occurrences-box">
+            <h4>Canonical Witnesses for ${esc(occ.strongs)} <span class="study-muted">(${occ.passages.length} of ${occ.total_verses} total verses)</span></h4>
+            <div class="discover-chips-row">
+              ${occ.passages.map(p => {
+                const label = p.mt_ref ? `${p.ref} [MT ${p.mt_ref}]` : p.ref;
+                return `<button type="button" class="discover-chip js-nav-passage" data-book="${p.book}" data-chapter="${p.chapter}" data-verse="${p.verse}">${esc(label)}</button>`;
+              }).join('')}
+            </div>
+            ${occ.has_more && occ.next_cursor ? `
+              <div style="margin-top:8px">
+                <button type="button" class="study-button js-load-more-occurrences" data-cursor="${esc(occ.next_cursor)}">Load next occurrences</button>
+              </div>
+            ` : ''}
+          </div>
+        ` : ''}
+
+        ${comp ? `
+          <div class="discover-comparison-box">
+            <h4>Comparative Analysis</h4>
+            ${comp.targets ? `<p><strong>Targets:</strong> ${esc(Array.isArray(comp.targets) ? comp.targets.join(', ') : String(comp.targets))}</p>` : ''}
+            ${comp.differences ? `<p class="study-muted">${esc(comp.differences)}</p>` : ''}
+            ${Array.isArray(comp.clusters) && comp.clusters.length > 0 ? `
+              <div class="discover-chips-row">
+                <span class="study-muted">Clusters compared:</span>
+                ${comp.clusters.map((c: any) => `<span class="discover-badge">${esc(c.label || c.id)} (${c.passages_count ?? 0} passages)</span>`).join(' ')}
+              </div>
+            ` : ''}
+          </div>
+        ` : ''}
+
+        ${bridges.length > 0 ? `
+          <div class="discover-bridges-box">
+            <h4>Conceptual Bridges</h4>
+            ${bridges.map((b: any) => `
+              <div class="discover-bridge-banner">
+                <strong>Bridge ${b.bridging_node?.label ? `(${esc(b.bridging_node.label)}):` : ':'}</strong> ${esc(b.explanation || b.summary || '')}
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
+
+        ${challenges.length > 0 ? `
+          <div class="discover-challenges-box">
+            <h4>Controls & Challenge Analysis</h4>
+            ${challenges.map(ctrl => `
+              <div class="discover-control-item">
+                <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px">
+                  <span class="discover-badge is-caution">${esc(ctrl.kind.replace(/_/g, ' '))}</span>
+                  <strong>${esc(ctrl.title)}</strong>
+                </div>
+                <p style="margin:2px 0 0">${esc(ctrl.explanation)}</p>
+                ${ctrl.passages && ctrl.passages.length > 0 ? `
+                  <div class="discover-chips-row" style="margin-top:6px">
+                    ${ctrl.passages.map(p => `<button type="button" class="discover-chip js-nav-passage" data-book="${p.book}" data-chapter="${p.chapter}" data-verse="${p.verse}">${esc(p.ref)}</button>`).join('')}
+                  </div>
+                ` : ''}
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
+      </div>
+    `;
+  }
+
   private renderCard(c: R10ConnectionSummary): string {
     const isOpen = this.openEvidenceIds.has(c.evidence_id);
     const evData = this.evidenceCache.get(c.evidence_id);
@@ -403,14 +688,24 @@ export class DiscoverConnectionsPanel {
         </div>
         <h4 class="discover-conn-title">${esc(c.title)}</h4>
         <p class="discover-conn-summary">${esc(c.explanation)}</p>
+        ${c.query_support ? `<p class="study-muted">Query support: ${esc(c.query_support.replace(/_/g, ' '))}${c.shared_witness_refs?.length ? ` · ${esc(c.shared_witness_refs.join(', '))}` : ''}</p>` : ''}
+        ${c.ranking_rationale?.why_ranked_high ? `
+          <p class="discover-ranking-rationale"><span class="study-muted">Ranking rationale:</span> ${esc(c.ranking_rationale.why_ranked_high)}</p>
+        ` : ''}
         <p class="discover-uncertainty">${esc(c.uncertainty_note)}</p>
         <div class="discover-chips-row">
-          ${c.passages.map(p => `<button type="button" class="discover-chip js-nav-passage" data-book="${p.book}" data-chapter="${p.chapter}" data-verse="${p.verse}" data-strongs="${esc(c.original_words[0]?.strongs || '')}">${esc(p.ref)} (${p.testament})</button>`).join('')}
+          ${c.passages.map(p => {
+            const label = p.mt_ref ? `${p.ref} [MT ${p.mt_ref}]` : p.ref;
+            return `<button type="button" class="discover-chip js-nav-passage" data-book="${p.book}" data-chapter="${p.chapter}" data-verse="${p.verse}" data-strongs="${esc(c.original_words[0]?.strongs || '')}">${esc(label)} (${p.testament})</button>`;
+          }).join('')}
           ${c.original_words.map(w => `<button type="button" class="discover-chip js-expand-node" data-node="lemma:${esc(w.strongs || w.transliteration)}" data-label="${esc(w.transliteration || w.gloss)}">${esc(w.lemma_script)} ${esc(w.transliteration)} (${esc(w.gloss)})</button>`).join('')}
         </div>
         <div class="discover-conn-actions">
           <button type="button" class="study-button js-toggle-evidence" data-evidence-id="${esc(c.evidence_id)}">${isOpen ? 'Hide evidence' : 'Inspect biblical evidence'}</button>
           <button type="button" class="study-button js-copy-path" data-conn-id="${esc(c.connection_id)}">Copy path</button>
+          <button type="button" class="study-button js-card-bridge" data-conn-id="${esc(c.connection_id)}" data-concepts="${esc(c.matched_concepts.join(' '))}">Bridge</button>
+          <button type="button" class="study-button js-card-compare" data-conn-id="${esc(c.connection_id)}" data-concepts="${esc(c.matched_concepts.join(' '))}">Compare</button>
+          <button type="button" class="study-button js-card-challenge" data-conn-id="${esc(c.connection_id)}">Challenge</button>
         </div>
         ${isOpen ? this.renderEvidenceDrawer(c.evidence_id, evData) : ''}
       </article>
@@ -436,10 +731,14 @@ export class DiscoverConnectionsPanel {
             seenWord.add(t.word_no);
             return true;
           });
+          const mtRefLabel = pd.passage.mt_ref ? ` [MT ${pd.passage.mt_ref}]` : '';
+          const editionLabel = pd.passage.verse === 0 || pd.passage.is_psalm_heading
+            ? '[Hebrew superscription gloss]'
+            : (pd.english_edition ? `[${pd.english_edition}]` : '[WEB]');
           return `
             <div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border)">
-              <button type="button" class="reference-link js-nav-passage" data-book="${pd.passage.book}" data-chapter="${pd.passage.chapter}" data-verse="${pd.passage.verse}">${esc(pd.passage.ref)} → Open in Reader</button>
-              ${pd.english_text ? `<p style="margin:4px 0;font-size:13px">${esc(pd.english_text)} <span class="study-muted">[WEB]</span></p>` : ''}
+              <button type="button" class="reference-link js-nav-passage" data-book="${pd.passage.book}" data-chapter="${pd.passage.chapter}" data-verse="${pd.passage.verse}">${esc(pd.passage.ref)}${esc(mtRefLabel)} → Open in Reader</button>
+              ${pd.english_text ? `<p style="margin:4px 0;font-size:13px">${esc(pd.english_text)} <span class="study-muted">${esc(editionLabel)}</span></p>` : ''}
               <div class="discover-token-strip">
                 ${dedupedTokens.slice(0, 26).map(tok => `<span class="discover-token-chip ${tok.is_highlighted ? 'is-hit' : ''}" title="${esc(tok.strongs)} · ${esc(tok.gloss)}"><strong>${esc(tok.surface)}</strong><br><small>${esc(tok.strongs)} ${esc(tok.gloss)}</small></span>`).join('')}
               </div>
@@ -465,6 +764,13 @@ export class DiscoverConnectionsPanel {
     this.resultsSlot.innerHTML = `
       ${res ? `
         <div class="discover-controls-bar">
+          <div class="discover-mode-bar">
+            <span class="study-muted">Mode:</span>
+            ${(['discover', 'bridge', 'compare', 'explain', 'challenge'] as const).map(m => `
+              <button type="button" class="discover-chip ${this.currentMode === m ? 'is-active' : ''} js-switch-mode" data-mode="${m}">${m.charAt(0).toUpperCase() + m.slice(1)}</button>
+            `).join('')}
+          </div>
+
           <div class="discover-chips-row" style="margin:0">
             ${(['all', 'explicit', 'lexical', 'xref', 'motif', 'orthographic'] as FilterBucket[]).map(fb => {
               const labels: Record<FilterBucket, string> = {
@@ -478,6 +784,7 @@ export class DiscoverConnectionsPanel {
               return `<button type="button" class="discover-chip ${this.activeFilter === fb ? 'is-active' : ''} js-filter-bucket" data-filter="${fb}">${labels[fb]}</button>`;
             }).join('')}
           </div>
+
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <form class="discover-add-concept js-add-concept-form">
               <input type="text" class="js-add-concept-input" placeholder="+ Add concept (e.g. fire)" aria-label="Add concept to investigation" />
@@ -489,35 +796,15 @@ export class DiscoverConnectionsPanel {
 
         <div class="discover-status-banner">
           <strong>Status: ${esc(res.status.toUpperCase())}</strong> · ${res.strongest_connections.length} of ${res.pagination.total_available} ranked connections shown · ${res.search_metadata.execution_ms} ms (${res.search_metadata.asset_requests_used} shard reads · ${res.search_metadata.exhaustive ? 'exhaustive' : 'bounded'})
+          ${this.currentMode !== 'discover' ? ` · <span class="discover-badge is-mode">Mode: ${esc(this.currentMode.toUpperCase())}</span>` : ''}
+          ${this.currentClusterId ? ` · <span class="study-muted">Cluster: ${esc(this.currentClusterId)}</span>` : ''}
         </div>
 
-        <div class="discover-resolved-row">
-          ${res.parsed_query.resolved_concepts.map(rc => `
-            <span class="discover-lemma-pill ${rc.matched ? '' : 'is-unresolved'}">
-              <strong>${esc(rc.input_token)}</strong>
-              ${rc.lemmas[0] ? `→ ${esc(rc.lemmas[0].lemma_script)} (${esc(rc.lemmas[0].strongs)})` : rc.matched ? `→ ${esc(rc.resolution_kind)}` : '→ no match'}
-            </span>
-          `).join('')}
-        </div>
+        ${this.renderConceptResolution(res.parsed_query.resolved_concepts)}
 
-        ${this.viewMode === 'map' || res.clusters.length >= 2 ? `
-          <div class="discover-section">
-            <h3>Concept Subclusters & Bridges</h3>
-            <div class="discover-clusters-grid">
-              ${res.clusters.map(cl => `
-                <div class="discover-cluster-card">
-                  <h4>${esc(cl.label)}</h4>
-                  <p class="study-muted">${esc(cl.summary)}</p>
-                  <div class="discover-chips-row">
-                    ${cl.anchor_nodes.map(n => `<button type="button" class="discover-chip js-expand-node" data-node="${esc(n.id)}" data-label="${esc(n.label)}">${esc(n.label)}</button>`).join('')}
-                  </div>
-                </div>
-              `).join('')}
-            </div>
-            ${res.bridges.map(b => `<div class="discover-bridge-banner"><strong>Bridge:</strong> ${esc(b.explanation)}</div>`).join('')}
-            ${this.viewMode === 'map' ? this.renderLightweightMap(res) : ''}
-          </div>
-        ` : ''}
+        ${res.iterative_analysis ? this.renderIterativeAnalysis(res.iterative_analysis) : ''}
+
+        ${this.renderClusters(res)}
 
         <div class="discover-section">
           <h3>Strongest Connections</h3>
@@ -578,6 +865,54 @@ export class DiscoverConnectionsPanel {
       });
     });
 
+    this.resultsSlot.querySelectorAll<HTMLButtonElement>('.js-switch-mode').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const m = btn.dataset.mode as DiscoveryMode;
+        if (m) {
+          this.currentMode = m;
+          void this.runDiscovery(this.currentQuery, false);
+        }
+      });
+    });
+
+    this.resultsSlot.querySelector<HTMLButtonElement>('.js-reset-mode')?.addEventListener('click', () => {
+      this.currentMode = 'discover';
+      this.currentClusterId = undefined;
+      this.compareTargets = undefined;
+      void this.runDiscovery(this.currentQuery, false);
+    });
+
+    this.resultsSlot.querySelectorAll<HTMLButtonElement>('.js-focus-lemma').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const lemma = btn.dataset.focusLemma;
+        if (lemma) {
+          this.focusLemma = this.focusLemma === lemma ? undefined : lemma;
+          void this.runDiscovery(this.currentQuery, false);
+        }
+      });
+    });
+
+    this.resultsSlot.querySelector<HTMLButtonElement>('.js-clear-focus')?.addEventListener('click', () => {
+      this.focusLemma = undefined;
+      void this.runDiscovery(this.currentQuery, false);
+    });
+
+    this.resultsSlot.querySelectorAll<HTMLButtonElement>('.js-expand-cluster').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const cid = btn.dataset.clusterId;
+        if (cid) {
+          this.currentClusterId = cid;
+          this.currentMode = 'expand';
+          void this.runDiscovery(this.currentQuery, true);
+        }
+      });
+    });
+
+    this.resultsSlot.querySelector<HTMLButtonElement>('.js-load-more-occurrences')?.addEventListener('click', e => {
+      const cursor = (e.currentTarget as HTMLButtonElement).dataset.cursor;
+      if (cursor) void this.loadMoreOccurrences(cursor);
+    });
+
     this.resultsSlot.querySelector<HTMLButtonElement>('.js-toggle-view')?.addEventListener('click', () => {
       this.viewMode = this.viewMode === 'cards' ? 'map' : 'cards';
       this.renderResults();
@@ -620,13 +955,50 @@ export class DiscoverConnectionsPanel {
       });
     });
 
+    this.resultsSlot.querySelectorAll<HTMLButtonElement>('.js-card-bridge').forEach(btn => {
+      btn.addEventListener('click', () => {
+        this.currentMode = 'bridge';
+        const concepts = btn.dataset.concepts?.trim();
+        if (concepts) {
+          void this.runDiscovery(concepts, true);
+        } else {
+          void this.runDiscovery(this.currentQuery, true);
+        }
+      });
+    });
+
+    this.resultsSlot.querySelectorAll<HTMLButtonElement>('.js-card-compare').forEach(btn => {
+      btn.addEventListener('click', () => {
+        this.currentMode = 'compare';
+        const concepts = btn.dataset.concepts?.trim().split(/\s+/).filter(Boolean);
+        this.compareTargets = concepts && concepts.length > 0 ? concepts : undefined;
+        void this.runDiscovery(this.currentQuery, true);
+      });
+    });
+
+    this.resultsSlot.querySelectorAll<HTMLButtonElement>('.js-card-challenge').forEach(btn => {
+      btn.addEventListener('click', () => {
+        this.currentMode = 'challenge';
+        void this.runDiscovery(this.currentQuery, true);
+      });
+    });
+
+    this.resultsSlot.querySelectorAll<HTMLButtonElement>('.js-inspect-word').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const strongs = btn.dataset.strongs;
+        if (strongs && this.callbacks.onInspectWordQuery) {
+          this.callbacks.onInspectWordQuery(strongs);
+        }
+      });
+    });
+
     this.resultsSlot.querySelectorAll<HTMLButtonElement>('.js-nav-passage').forEach(btn => {
       btn.addEventListener('click', () => {
         const book = Number(btn.dataset.book);
         const chapter = Number(btn.dataset.chapter);
         const verse = Number(btn.dataset.verse);
         const strongs = btn.dataset.strongs || undefined;
-        if (book && chapter && verse) {
+        if (Number.isFinite(book) && Number.isFinite(chapter) && Number.isFinite(verse) && book > 0 && chapter > 0 && verse >= 0) {
           this.awayFromDiscovery = true;
           this.renderReturnBar();
           this.callbacks.onNavigatePassage(book, chapter, verse, strongs);

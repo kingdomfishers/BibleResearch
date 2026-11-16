@@ -71,10 +71,10 @@ async function rpc(method, params = {}, extraHeaders = {}) {
 const init = await rpc('initialize', { protocolVersion: '2025-11-25', capabilities: {}, clientInfo: { name: 'verification', version: '1' } });
 assert.equal(init.payload.result.serverInfo.name, 'BibleResearch');
 const tools = (await rpc('tools/list')).payload.result.tools;
-assert.equal(tools.length, 22);
+assert.equal(tools.length, 41);
 assert.ok(tools.every(t => t.annotations.readOnlyHint && !t.annotations.destructiveHint));
 const prompts = (await rpc('prompts/list')).payload.result.prompts;
-assert.equal(prompts.length, 18);
+assert.equal(prompts.length, 22);
 const call = async (name, args) => (await rpc('tools/call', { name, arguments: args })).payload;
 const hydrated = (await call('get_verse_research', { p_request: { passages: [{ book: 1, chapter: 1, verse: 1 }] } })).result.structuredContent;
 assert.equal(hydrated.status, 'ok');
@@ -88,7 +88,7 @@ assert.equal(general.name, 'study_bible');
 assert.deepEqual([...general.workflow.expected_tools].sort(), tools.map(t => t.name).sort());
 assert.deepEqual(general.workflow.profiles.analysis, { mode: 'sample', limit: 5 });
 assert.deepEqual(general.workflow.routes.geography.starting_tools, ['get_verse_geography']);
-assert.ok(general.workflow.routes.relationships.starting_tools.includes('research_relationships'));
+assert.ok(general.workflow.routes.relationships.starting_tools.includes('discover_biblical_connections_v2'));
 assert.ok(general.workflow.routes.notes.starting_tools.includes('get_notes'));
 await call('get_verse_research', { profile: 'analysis', p_request: { passages: [{ book: 43, chapter: 1, verse: 1 }] } });
 const req2 = requests.filter(r => r.url.pathname.endsWith('/get_verse_research_v1')).at(-1);
@@ -144,8 +144,8 @@ assert.equal(preflight.headers.get('access-control-allow-origin'), '*');
 const health = await app(new Request('https://example/bible-mcp/health'));
 const healthJson = await health.json();
 assert.equal(healthJson.read_only, true);
-assert.equal(healthJson.tools, 22);
-assert.equal(healthJson.prompts, 18);
+assert.equal(healthJson.tools, 41);
+assert.equal(healthJson.prompts, 22);
 let attempts = 0;
 const retryReader = createDatabaseReader({ url: 'https://example.supabase.co', publicKey: 'sb_publishable_test' },
   async () => ++attempts === 1 ? new Response('Transient upstream failure', { status: 500 })

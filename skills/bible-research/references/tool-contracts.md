@@ -48,10 +48,11 @@ Word formation tools:
 - `inspect_word_formation(p_query, p_word_id?)`: Returns verified lexical formations, constituent components, documented roots, root relatives, and literary connections.
 - `suggest_word_connections(p_query, p_limit?, p_min_chars?)`: Returns exploratory consonantal candidate words. Never cite these as proven etymologies or shared roots.
 
-R10 Concept, Motif & Typology Discovery tools:
-- `discover_biblical_connections_v1(query, concepts?, filters?, limit?, cursor?, max_hops?)`: Multi-concept discovery across Hebrew/Greek lemmas, biblical passages, numbers, motifs, events, typology, and orthographic wordplay with ranked hierarchy (Tier 1 explicit identification/comparison -> Tier 7 orthographic resemblance), subclusters + bridges, and negative controls.
-- `get_connection_evidence_v1(evidence_id)`: Returns full original-language tokens, WEB public-domain text, orthographic decomposition, number classification, and source provenance for an R10 connection.
-- `expand_biblical_connection_v1(node_id, limit?, cursor?)`: Expands a node (motif, Strong's ID, passage, or concept) into its neighboring verified biblical connections and controls.
+Universal Biblical Discovery & Connection tools (R11 & R10):
+- `discover_biblical_connections_v2(query, concepts?, mode?, cluster_id?, focus_lemma?, compare_targets?, filters?, limit?, cursor?, max_hops?, release_id?)`: Universal discovery across any biblical concept, English word (e.g. lily, hyssop, pomegranate, cedar, door, oil, stone), Hebrew/Greek lemma/surface form, Strong's ID, number, passage (including Psalm verse 0 headings), or multi-concept query across all 31,203 verses. Supports iterative exploration modes (`discover`, `expand`, `bridge`, `compare`, `explain`, `challenge`), cluster drill-downs (`cluster_id`), lemma focusing (`focus_lemma`), direct target comparisons (`compare_targets`), evidence-ranked thematic and lemma clusters, homograph disambiguation, cross-references, and LXX bridges with full pagination.
+- `discover_biblical_connections_v1(query, concepts?, mode?, cluster_id?, focus_lemma?, compare_targets?, filters?, limit?, cursor?, max_hops?, release_id?)`: Backward-compatible discovery endpoint enhanced with optional R11 modes, cluster filtering, focus lemma, and comparison targets.
+- `get_connection_evidence_v1(evidence_id, release_id?)`: Returns full original-language tokens, WEB public-domain text, orthographic decomposition, number classification, and source provenance for a connection (`evidence_id` up to 220 chars, supporting `r11:cluster:...` and `r11:intersect:...` IDs).
+- `expand_biblical_connection_v1(node_id, limit?, cursor?, release_id?)`: Expands a node or cluster (`node_id` up to 192 chars, supporting motifs, Strong's lemmas, passages, concepts, and cluster IDs like `cluster:H7799:temple_and_sanctuary_architecture`) into neighboring verified biblical connections and controls.
 
 Legacy database tools return `source`, `rows`, and `page`. Word IDs are real
 positive database IDs, not Strong's numeric suffixes. `get_verse_chronology_v1`

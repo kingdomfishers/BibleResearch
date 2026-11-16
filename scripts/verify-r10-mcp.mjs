@@ -44,8 +44,8 @@ async function mcpRpc(method, params = {}) {
 }
 
 const listed = (await mcpRpc('tools/list')).result.tools.map(t => t.name);
-for (const name of ['discover_biblical_connections_v1', 'get_connection_evidence_v1', 'expand_biblical_connection_v1']) {
-  assert.ok(listed.includes(name), `Missing R10 MCP tool: ${name}`);
+for (const name of ['discover_biblical_connections_v1', 'discover_biblical_connections_v2', 'get_connection_evidence_v1', 'expand_biblical_connection_v1']) {
+  assert.ok(listed.includes(name), `Missing R10/R11 MCP tool: ${name}`);
 }
 const testA = (await mcpRpc('tools/call', { name: 'discover_biblical_connections_v1', arguments: { query: 'ruach, spirit, seven, eyes, lamps, menorah, oil, water, wind, directions' } })).result.structuredContent;
 assert.equal(testA.status, 'ok');
@@ -56,4 +56,28 @@ const testC = (await mcpRpc('tools/call', { name: 'get_connection_evidence_v1', 
 assert.equal(testC.evidence.orthographic_analysis.proven_common_root, false);
 const exp = (await mcpRpc('tools/call', { name: 'expand_biblical_connection_v1', arguments: { node_id: 'motif:lampstand' } })).result.structuredContent;
 assert.equal(exp.status, 'ok');
-console.log(`PASS R10 MCP server checks (${listed.length} tools registered, Tests A/B/C & expand verified cleanly).`);
+
+const testLily = (await mcpRpc('tools/call', { name: 'discover_biblical_connections_v2', arguments: { query: 'Lily' } })).result.structuredContent;
+assert.equal(testLily.status, 'ok');
+const lilyStr = JSON.stringify(testLily);
+for (const ref of ['1 Kings 7:26', '2 Chronicles 4:5', 'Psalms 45:0', 'Psalms 60:0', 'Psalms 69:0', 'Psalms 80:0', 'Hosea 14:5']) {
+  assert.ok(lilyStr.includes(ref), `Expected Lily results to include passage ${ref}`);
+}
+const susaSeparation = testLily.controls_and_alternatives?.some(c =>
+  c.kind === 'homograph_disambiguation' && c.explanation?.includes('H7800') && c.explanation?.includes('Susa')
+) || testLily.parsed_query?.resolved_concepts?.some(rc =>
+  rc.homograph_siblings?.some(h => h.bs === 'H7800' && h.gl === 'Susa')
+);
+assert.ok(susaSeparation, 'Expected homograph separation for Susa H7800');
+
+const clusterEvId = testLily.strongest_connections.find(c => c.evidence_id?.startsWith('r11:cluster:'))?.evidence_id;
+assert.ok(clusterEvId, 'Expected r11:cluster: evidence_id');
+const testClusterEv = (await mcpRpc('tools/call', { name: 'get_connection_evidence_v1', arguments: { evidence_id: clusterEvId } })).result.structuredContent;
+assert.equal(testClusterEv.status, 'ok');
+assert.equal(testClusterEv.evidence.evidence_id, clusterEvId);
+
+const expCluster = (await mcpRpc('tools/call', { name: 'expand_biblical_connection_v1', arguments: { node_id: 'cluster:H7799:temple_and_sanctuary_architecture' } })).result.structuredContent;
+assert.equal(expCluster.status, 'ok');
+assert.ok(expCluster.connections.length > 0);
+
+console.log(`PASS R10/R11 MCP server checks (${listed.length} tools registered, Tests A/B/C, Lily v2, cluster evidence & expand verified cleanly).`);
