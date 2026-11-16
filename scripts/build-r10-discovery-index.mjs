@@ -1,23 +1,28 @@
 #!/usr/bin/env node
 /**
- * R10 Deterministic Offline Discovery Index Builder
- * Builds compact, provenance-tracked indexes in .artifacts-r10/staging/v2/relationships/r10-v1.0/
+ * R11 Universal Discovery Index Builder
+ * Builds compact, provenance-tracked indexes in .artifacts-r10/staging/v2/relationships/r11-v1.0/
  * from verified pinned local sources (STEPBible, MACULA, MorphHB, CrossReferences-org excl. s21,
- * Theographic Bible Data, WEB public domain). Zero AI at build time; zero restricted fields.
+ * Swete Septuagint, Theographic Bible Data, WEB public domain). Zero AI at build time; zero restricted fields.
  */
 
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
+import { fileURLToPath } from 'node:url';
 
-const ROOT = process.cwd();
-const MAIN_ARTIFACTS = 'C:\\Projects\\BibleResearch\\.artifacts';
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const RELEASE_ID = 'r11-v1.0';
 const STATIC_TABLES = path.join(ROOT, '.artifacts', 'static-corpus', 'tables');
 const XREF_DIR = path.join(ROOT, '.artifacts-r10', 'sources', 'bible-cross-references', 'json');
-const CHRON_DIR = path.join(MAIN_ARTIFACTS, 'chronology-audit');
+const CHRON_DIR = fs.existsSync(path.join(ROOT, '.artifacts', 'chronology-audit'))
+  ? path.join(ROOT, '.artifacts', 'chronology-audit')
+  : 'C:\\Projects\\BibleResearch\\.artifacts\\chronology-audit';
 const ANNOT_DIR = path.join(ROOT, 'data', 'annotations');
-const OUT_ROOT = path.join(ROOT, '.artifacts-r10', 'staging', 'v2', 'relationships', 'r10-v1.0');
+const OUT_ROOT = path.join(ROOT, '.artifacts-r10', 'staging', 'v2', 'relationships', 'r11-v1.0');
+const R8_BY_LEMMA_DIR = path.join(ROOT, '.artifacts-r10', 'deploy-bundle', 'v2', 'relationships', 'r8-v1.1', 'by-lemma');
+const LXX_BRIDGE_PATH = path.join(ROOT, 'data', 'sources', 'bcv-lxx-bridge', 'lxx_bridge.tsv');
 
 const RESTRICTED_KEYS = new Set([
   'semantic_frame', 'frame', 'greekstrong', 'sdbh', 'lexdomain',
@@ -80,6 +85,23 @@ function normalizeAscii(s) {
     .trim();
 }
 
+function singularizeEn(w) {
+  if (!w || w.length <= 2) return w;
+  if (w.endsWith('ies') && w.length > 4) return w.slice(0, -3) + 'y';
+  if (w.endsWith('ves') && w.length > 4) return w.slice(0, -3) + 'f';
+  if (w.endsWith('sses') || w.endsWith('shes') || w.endsWith('ches') || w.endsWith('xes')) return w.slice(0, -2);
+  if (w.endsWith('s') && !w.endsWith('ss') && !w.endsWith('us') && !w.endsWith('is')) return w.slice(0, -1);
+  return w;
+}
+
+function pluralizeEn(w) {
+  if (!w || w.length <= 2) return w;
+  if (w.endsWith('y') && !/[aeiou]y$/.test(w)) return w.slice(0, -1) + 'ies';
+  if (w.endsWith('f')) return w.slice(0, -1) + 'ves';
+  if (w.endsWith('s') || w.endsWith('sh') || w.endsWith('ch') || w.endsWith('x')) return w + 'es';
+  return w + 's';
+}
+
 function readJsonlGzTable(tblName) {
   const dir = path.join(STATIC_TABLES, tblName);
   const files = fs.readdirSync(dir).filter(f => f.endsWith('.jsonl.gz')).sort();
@@ -129,8 +151,9 @@ function writeGzJson(relPath, payload) {
   const raw = Buffer.from(JSON.stringify(payload), 'utf8');
   const gz = zlib.gzipSync(raw, { level: 9 });
   fs.writeFileSync(fullPath, gz);
+  const prefix = `/v2/relationships/${RELEASE_ID}/${relPath.replaceAll('\\', '/')}`;
   return {
-    path: `/v2/relationships/r10-v1.0/${relPath.replaceAll('\\', '/')}`,
+    path: prefix,
     raw_bytes: raw.length,
     gz_bytes: gz.length,
     sha256_raw: crypto.createHash('sha256').update(raw).digest('hex'),
@@ -148,11 +171,11 @@ function writePlainJson(relPath, payload) {
 }
 
 const t0 = Date.now();
-console.log('R10 Index Build starting...');
+console.log(`R11 Index Build starting (${RELEASE_ID})...`);
 fs.rmSync(OUT_ROOT, { recursive: true, force: true });
 fs.mkdirSync(OUT_ROOT, { recursive: true });
 
-// 1. Load books & WEB English verses -> canonical coordinate map
+// 1. Load books
 const books = readJsonlGzTable('books');
 const bookById = new Map(books.map(b => [b.id, b]));
 const bookByUsfm = new Map(books.map(b => [b.usfm.toUpperCase(), b]));
@@ -162,7 +185,6 @@ for (const b of books) {
   bookByNameLower.set(b.usfm.toLowerCase(), b);
   bookByNameLower.set(b.name.toLowerCase().replace(/\s+/g, ''), b);
 }
-// Common aliases for book parsing
 const BOOK_ALIASES = new Map([
   ['gen', 1], ['ge', 1], ['gn', 1], ['genesis', 1],
   ['ex', 2], ['exo', 2], ['exod', 2], ['exodus', 2],
@@ -186,26 +208,80 @@ function coordKey(book, chapter, verse) {
 }
 function formatRef(book, chapter, verse) {
   const b = bookById.get(book);
-  return `${b ? b.name : `Book ${book}`} ${chapter}:${verse}`;
+  const bName = b ? b.name : `Book ${book}`;
+  if (verse !== undefined && verse !== null) {
+    return `${bName} ${chapter}:${verse}`;
+  }
+  return `${bName} ${chapter}`;
 }
 
+// 2. Load authoritative canonical coordinates FIRST from verses_immutable
+console.log('Loading authoritative canonical verses_immutable...');
+const canonVerses = readJsonlGzTable('verses_immutable');
+const verseIdByCoord = new Map();
+const coordByVerseId = new Map();
+const wordToVid = new Map();
+
+for (const v of canonVerses) {
+  const ck = coordKey(v.book, v.chapter, v.verse_nr);
+  verseIdByCoord.set(ck, v.id);
+  coordByVerseId.set(v.id, {
+    book: v.book,
+    chapter: v.chapter,
+    verse: v.verse_nr,
+    key: ck,
+    ref: formatRef(v.book, v.chapter, v.verse_nr),
+    word_ids: v.word_ids || [],
+    is_psalm_heading: v.book === 19 && v.verse_nr === 0,
+  });
+  if (v.word_ids) {
+    for (const wid of v.word_ids) {
+      wordToVid.set(wid, v.id);
+    }
+  }
+}
+console.log(`Loaded ${canonVerses.length} canonical verses, ${wordToVid.size} word mappings.`);
+
+// Load WEB English verses
 const englishByCoord = new Map();
 streamJsonlGzTable('reader_english_verses', r => {
   englishByCoord.set(coordKey(r.book, r.chapter, r.verse_nr), r.text);
 });
 
-// Load CrossReferences.org bible_verses.json -> map xref verse_id -> coordKey
+// Load versification mappings & hebrew_lxx_verse_map
+const mtRefByVid = new Map();
+const vidByLxxCoord = new Map();
+const lxxCoordByVid = new Map();
+
+const versificationMappings = readJsonlGzTable('versification_mappings');
+for (const vm of versificationMappings) {
+  const c = coordByVerseId.get(vm.canonical_verse_id);
+  if (c && (vm.to_chapter !== c.chapter || vm.to_verse_nr !== c.verse)) {
+    mtRefByVid.set(vm.canonical_verse_id, formatRef(vm.to_book, vm.to_chapter, vm.to_verse_nr));
+  }
+}
+
+streamJsonlGzTable('hebrew_lxx_verse_map', r => {
+  const k = `${r.lxx_book_no}:${r.lxx_chapter}:${r.lxx_verse_nr}`;
+  const vid = Number(r.canonical_verse_id);
+  vidByLxxCoord.set(k, vid);
+  lxxCoordByVid.set(vid, k);
+});
+
+// Load CrossReferences.org bible_verses.json -> map xref verse_id -> canonical coord
 const xrefVerses = JSON.parse(fs.readFileSync(path.join(XREF_DIR, 'bible_verses.json'), 'utf8'));
 const xrefVerseIdToCoord = new Map();
 for (const xv of xrefVerses) {
   const ch = Number(xv.bsb_ch || xv.kjv_ch);
   const vs = Number(xv.bsb_vs || xv.kjv_vs);
   if (xv.book_id && ch && vs) {
-    xrefVerseIdToCoord.set(xv.id, { book: xv.book_id, chapter: ch, verse: vs, key: coordKey(xv.book_id, ch, vs) });
+    const ck = coordKey(xv.book_id, ch, vs);
+    xrefVerseIdToCoord.set(xv.id, { book: xv.book_id, chapter: ch, verse: vs, key: ck });
   }
 }
 
-// 2. Load lemmas, senses, roots, lemma_root_links, lexical_connections
+// 3. Load lemmas, senses, roots, lexical_formations, canonical_entities, entity_relationships
+console.log('Loading lexical tables...');
 const lemmas = readJsonlGzTable('lemmas');
 const lemmaById = new Map(lemmas.map(l => [l.id, l]));
 const lemmasByBaseStrongs = new Map();
@@ -239,16 +315,140 @@ for (const rl of rootLinks) {
 const lexicalConnections = readJsonlGzTable('lexical_connections');
 const lxxAlignments = readJsonlGzTable('hebrew_lxx_word_alignments');
 
-// 3. Prepare per-book token storage & scan MACULA Hebrew + Greek once
-const verseIdByCoord = new Map();
-const coordByVerseId = new Map();
+// Formations & Entity Relationships pre-index
+const lexicalFormations = readJsonlGzTable('lexical_formations');
+const formationsByBs = new Map(); // bs -> formation[]
+const componentOfFormations = new Map(); // bs -> { formationBs, formation }[]
+
+for (const lf of lexicalFormations) {
+  const l = lemmaById.get(lf.lemma_id);
+  const bs = l ? baseStrongs(l.base_strongs) : (lf.source_record_id ? baseStrongs(lf.source_record_id) : '');
+  if (bs) {
+    if (!formationsByBs.has(bs)) formationsByBs.set(bs, []);
+    formationsByBs.get(bs).push(lf);
+  }
+  // Check if evidence_note mentions component Strong's like H7799
+  const matches = (lf.evidence_note || '').match(/\b[HG]?0*(\d{3,5})\b/g);
+  if (matches) {
+    for (const m of matches) {
+      const compBs = baseStrongs(m);
+      if (compBs && compBs !== bs) {
+        if (!componentOfFormations.has(compBs)) componentOfFormations.set(compBs, []);
+        componentOfFormations.get(compBs).push({ formationBs: bs, formation: lf });
+      }
+    }
+  }
+}
+
+const canonicalEntities = readJsonlGzTable('canonical_entities');
+const ceMap = new Map(canonicalEntities.map(e => [e.id, e]));
+const ceByLemmaId = new Map();
+for (const ce of canonicalEntities) {
+  if (ce.lemma_id) {
+    if (!ceByLemmaId.has(ce.lemma_id)) ceByLemmaId.set(ce.lemma_id, []);
+    ceByLemmaId.get(ce.lemma_id).push(ce);
+  }
+}
+
+const entityRelationships = readJsonlGzTable('entity_relationships');
+const entityRelsByLemmaId = new Map();
+for (const er of entityRelationships) {
+  const subCe = ceMap.get(er.subject_entity_id);
+  const objCe = ceMap.get(er.object_entity_id);
+  if (subCe?.lemma_id) {
+    if (!entityRelsByLemmaId.has(subCe.lemma_id)) entityRelsByLemmaId.set(subCe.lemma_id, []);
+    entityRelsByLemmaId.get(subCe.lemma_id).push({ rel: er, otherCe: objCe, role: 'subject' });
+  }
+  if (objCe?.lemma_id) {
+    if (!entityRelsByLemmaId.has(objCe.lemma_id)) entityRelsByLemmaId.set(objCe.lemma_id, []);
+    entityRelsByLemmaId.get(objCe.lemma_id).push({ rel: er, otherCe: subCe, role: 'object' });
+  }
+}
+
+// 4. Preload BCV LXX Bridge & Swete Words by canonical vid
+console.log('Loading LXX Bridge & Swete words...');
+const lxxBridgeRows = [];
+if (fs.existsSync(LXX_BRIDGE_PATH)) {
+  const lines = fs.readFileSync(LXX_BRIDGE_PATH, 'utf8').split('\n');
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    const parts = line.split('\t');
+    if (parts.length >= 3) {
+      lxxBridgeRows.push({
+        hebrew_strong: baseStrongs(parts[0]),
+        greek_strong: baseStrongs(parts[1]),
+        count: Number(parts[2]),
+      });
+    }
+  }
+}
+const lxxBridgeByBs = new Map();
+for (const row of lxxBridgeRows) {
+  if (!lxxBridgeByBs.has(row.hebrew_strong)) lxxBridgeByBs.set(row.hebrew_strong, []);
+  lxxBridgeByBs.get(row.hebrew_strong).push(row);
+  if (!lxxBridgeByBs.has(row.greek_strong)) lxxBridgeByBs.set(row.greek_strong, []);
+  lxxBridgeByBs.get(row.greek_strong).push(row);
+}
+
+const lxxWordsByVid = new Map();
+const lxxTextByVid = new Map();
+streamJsonlGzTable('lxx_swete_words', r => {
+  const k = `${r.book_no}:${r.chapter}:${r.verse_nr}`;
+  const vid = vidByLxxCoord.get(k);
+  if (vid) {
+    let arr = lxxWordsByVid.get(vid);
+    if (!arr) {
+      arr = [];
+      lxxWordsByVid.set(vid, arr);
+    }
+    arr.push(r.normalized_word);
+    let txt = lxxTextByVid.get(vid);
+    lxxTextByVid.set(vid, txt ? txt + ' ' + r.word_text : r.word_text);
+  }
+});
+console.log(`Indexed Swete words for ${lxxWordsByVid.size} canonical verses.`);
+
+// Preload r8-v1.1 summaries (clean only, zero restricted fields)
+console.log('Preloading r8-v1.1 lemma summaries...');
+const r8SummariesByBs = new Map(); // bs -> { outgoing: [], incoming: [] }
+if (fs.existsSync(R8_BY_LEMMA_DIR)) {
+  const r8Files = fs.readdirSync(R8_BY_LEMMA_DIR).filter(f => f.endsWith('.json.gz'));
+  for (const f of r8Files) {
+    const data = JSON.parse(zlib.gunzipSync(fs.readFileSync(path.join(R8_BY_LEMMA_DIR, f))).toString('utf8'));
+    for (const [k, v] of Object.entries(data.entries || {})) {
+      const bs = baseStrongs(k.replace(/^lemma:/, ''));
+      if (!bs) continue;
+      const cleanSums = [];
+      for (const s of [...(v.outgoing_summaries || []), ...(v.incoming_summaries || [])]) {
+        cleanSums.push({
+          predicate: s.predicate,
+          direction: s.direction,
+          display_label: s.display_label || s.predicate,
+          related_strongs: baseStrongs(s.related_lemma?.strongs_base || s.from_lemma?.strongs_base || ''),
+          related_script: s.related_lemma?.lemma_form || s.from_lemma?.lemma_form || '',
+          related_gloss: s.related_lemma?.gloss || s.from_lemma?.gloss || '',
+          occurrences: s.stats?.occurrences || 1,
+        });
+      }
+      if (cleanSums.length > 0) {
+        if (!r8SummariesByBs.has(bs)) r8SummariesByBs.set(bs, []);
+        r8SummariesByBs.get(bs).push(...cleanSums);
+      }
+    }
+  }
+}
+console.log(`Preloaded r8-v1.1 summaries for ${r8SummariesByBs.size} base Strong's.`);
+
+// 5. Prepare per-book token storage & scan MACULA Hebrew + Greek
 const tokensByBook = new Map(); // book -> Map<verse_id, token[]>
 for (let b = 1; b <= 66; b++) tokensByBook.set(b, new Map());
 
 const lemmaVerseHits = new Map(); // baseStrongs -> { count, sampleVerses: number[], verseSet: Set<number> }
-const numeralPairs = []; // extracted { verse_id, book, chapter, verse, num_val, num_strongs, noun_strongs, noun_lemma, noun_gloss, kind }
-const explicitIdentHits = []; // auto-detected from Greek/Hebrew copula/relative clauses
-const ntQuoteMarkers = []; // auto-detected NT formula markers
+const formsByLemma = new Map(); // bs -> Map<sf, { sf, tr, gl, mc, cnt, vid }>
+const numeralPairs = [];
+const explicitIdentHits = [];
+const ntQuoteMarkers = [];
 
 const HEBREW_NUMERALS = new Map([
   ['H0259', { val: 1, ord: false }], ['H7223', { val: 1, ord: true }],
@@ -259,10 +459,17 @@ const HEBREW_NUMERALS = new Map([
   ['H8337', { val: 6, ord: false }], ['H8345', { val: 6, ord: true }],
   ['H7651', { val: 7, ord: false }], ['H7637', { val: 7, ord: true }],
   ['H7657', { val: 70, ord: false }], ['H7659', { val: 7, ord: false, mult: true }],
-  ['H8083', { val: 8, ord: false }], ['H6235', { val: 10, ord: false }],
-  ['H6240', { val: 10, ord: false }], ['H8147', { val: 2, ord: false }],
+  ['H8083', { val: 8, ord: false }],
+  ['H8672', { val: 9, ord: false }],
+  ['H6235', { val: 10, ord: false }], ['H6240', { val: 10, ord: false }],
+  ['H6242', { val: 20, ord: false }],
+  ['H7970', { val: 30, ord: false }],
   ['H0705', { val: 40, ord: false }],
+  ['H2572', { val: 50, ord: false }],
+  ['H3967', { val: 100, ord: false }],
+  ['H0505', { val: 1000, ord: false }],
 ]);
+
 const GREEK_NUMERALS = new Map([
   ['G1520', { val: 1, ord: false }], ['G4413', { val: 1, ord: true }],
   ['G1417', { val: 2, ord: false }], ['G1208', { val: 2, ord: true }],
@@ -271,11 +478,17 @@ const GREEK_NUMERALS = new Map([
   ['G4002', { val: 5, ord: false }], ['G1803', { val: 6, ord: false }],
   ['G2033', { val: 7, ord: false }], ['G1442', { val: 7, ord: true }],
   ['G1440', { val: 70, ord: false }],
-  ['G1176', { val: 10, ord: false }], ['G1427', { val: 12, ord: false }],
-  ['G1428', { val: 12, ord: true }], ['G5062', { val: 40, ord: false }],
+  ['G1767', { val: 9, ord: false }],
+  ['G1176', { val: 10, ord: false }],
+  ['G1427', { val: 12, ord: false }], ['G1428', { val: 12, ord: true }],
+  ['G1501', { val: 20, ord: false }],
+  ['G5144', { val: 30, ord: false }],
+  ['G5062', { val: 40, ord: false }],
+  ['G4004', { val: 50, ord: false }],
+  ['G1540', { val: 100, ord: false }],
+  ['G5507', { val: 1000, ord: false }],
 ]);
 
-// Curated high-signal motif Strong's mapping for full 31k-verse deterministic motif tagging
 const MOTIF_STRONG_MAP = new Map([
   ['lampstand', { label: 'Lampstand (Menorah / Luchnia)', strongs: ['H4501', 'G3087'] }],
   ['lamp', { label: 'Lamp / Torch (Ner / Lampas)', strongs: ['H5216', 'H3940', 'G2985', 'G3088'] }],
@@ -304,7 +517,6 @@ for (const [mId, info] of MOTIF_STRONG_MAP.entries()) {
   }
 }
 
-// Track per-verse motif Strong's hits: verse_id -> Map<motifId, Set<strongs>>
 const verseMotifs = new Map();
 
 function classifyNumberKind(numInfo, nounStrongs, nounGloss) {
@@ -334,6 +546,7 @@ function recordVerseMotif(verseId, strongsCode) {
 }
 
 function recordLemmaHit(strongsCode, verseId) {
+  if (!strongsCode) return;
   let rec = lemmaVerseHits.get(strongsCode);
   if (!rec) {
     rec = { count: 0, verseSet: new Set(), sampleVerses: [] };
@@ -346,14 +559,38 @@ function recordLemmaHit(strongsCode, verseId) {
   }
 }
 
+function recordFormHit(bs, { sf, tr, gl, mc, vid }) {
+  if (!bs || !sf) return;
+  const cleanSf = String(sf).trim();
+  if (!cleanSf) return;
+  let fMap = formsByLemma.get(bs);
+  if (!fMap) {
+    fMap = new Map();
+    formsByLemma.set(bs, fMap);
+  }
+  let entry = fMap.get(cleanSf);
+  if (!entry) {
+    entry = { sf: cleanSf, tr: tr || '', gl: gl || '', mc: mc || '', cnt: 0, vid };
+    fMap.set(cleanSf, entry);
+  }
+  entry.cnt++;
+  if (!entry.gl && gl) entry.gl = gl;
+  if (!entry.tr && tr) entry.tr = tr;
+  if (!entry.mc && mc) entry.mc = mc;
+}
+
 // Stream MACULA Hebrew morphemes grouped by verse
 console.log('Scanning macula_hebrew_morphemes...');
-const currentHebVerse = new Map(); // canonical_verse_id -> { book, ch, vs, toks: [] }
+const currentHebVerse = new Map(); // canonical_verse_id -> { book, ch, vs, vid, toks: [] }
+
 streamJsonlGzTable('macula_hebrew_morphemes', r => {
   const vid = Number(r.canonical_verse_id);
-  const ck = coordKey(r.book, r.chapter_mt, r.verse_mt);
-  verseIdByCoord.set(ck, vid);
-  coordByVerseId.set(vid, { book: r.book, chapter: r.chapter_mt, verse: r.verse_mt, key: ck, ref: formatRef(r.book, r.chapter_mt, r.verse_mt) });
+  const c = coordByVerseId.get(vid);
+  if (!c) return;
+
+  if (r.chapter_mt !== c.chapter || r.verse_mt !== c.verse) {
+    mtRefByVid.set(vid, formatRef(c.book, r.chapter_mt, r.verse_mt));
+  }
 
   const bs = baseStrongs(r.strong_x ? `H${r.strong_x}` : '');
   if (bs) {
@@ -363,7 +600,7 @@ streamJsonlGzTable('macula_hebrew_morphemes', r => {
 
   let vObj = currentHebVerse.get(vid);
   if (!vObj) {
-    vObj = { book: r.book, ch: r.chapter_mt, vs: r.verse_mt, vid, toks: [] };
+    vObj = { book: c.book, ch: c.chapter, vs: c.verse, vid, toks: [] };
     currentHebVerse.set(vid, vObj);
   }
   vObj.toks.push({
@@ -378,7 +615,7 @@ streamJsonlGzTable('macula_hebrew_morphemes', r => {
   });
 });
 
-// Merge Hebrew morphemes into word tokens & extract Hebrew numeral+noun pairs
+// Merge Hebrew morphemes into word tokens & preserve simile and all_s
 for (const vObj of currentHebVerse.values()) {
   const byWord = new Map();
   for (const t of vObj.toks) {
@@ -389,24 +626,64 @@ for (const vObj of currentHebVerse.values()) {
     .sort((a, b) => a[0] - b[0])
     .map(([wNo, parts]) => {
       const content = parts.find(p => p.cl !== 'prep' && p.cl !== 'cj' && p.cl !== 'art') || parts[parts.length - 1];
+      const distinctS = [...new Set(parts.map(p => p.s).filter(Boolean))];
+      const mainS = content.s || distinctS[0] || '';
+      const all_s = distinctS.length > 1 ? distinctS : undefined;
+      const fullSf = parts.map(p => p.sf).join('');
+      const fullG = parts.map(p => p.g).filter(Boolean).join(' ');
+      const hasPrefixSim = parts.some(p => p.cl === 'prep' && stripDiacriticsHebrew(p.sf).startsWith('כ'));
+      const isSimWord = mainS === 'H3644' || hasPrefixSim;
+
+      // Record forms
+      if (mainS) recordFormHit(mainS, { sf: fullSf, tr: '', gl: fullG, mc: content.mc || '', vid: vObj.vid });
+      for (const p of parts) {
+        if (p.s && p.s !== mainS) recordFormHit(p.s, { sf: p.sf, tr: '', gl: p.g, mc: p.mc || '', vid: vObj.vid });
+      }
+
       return {
         wn: wNo,
-        sf: parts.map(p => p.sf).join(''),
+        sf: fullSf,
         lm: content.lm || '',
-        s: content.s || '',
-        g: parts.map(p => p.g).filter(Boolean).join(' '),
+        s: mainS,
+        ...(all_s ? { all_s } : {}),
+        g: fullG,
         cl: content.cl || '',
+        isSimWord,
       };
     });
-  tokensByBook.get(vObj.book).set(vObj.vid, wordList);
 
+  // Apply adjacent simile propagation
   for (let i = 0; i < wordList.length; i++) {
-    const wt = wordList[i];
-    const numInfo = HEBREW_NUMERALS.get(wt.s);
+    const w = wordList[i];
+    if (w.isSimWord) {
+      w.sim = true;
+      if (w.s === 'H3644') {
+        if (wordList[i + 1]) wordList[i + 1].sim = true;
+      }
+    }
+  }
+  // Strip internal flag
+  const cleanedWordList = wordList.map(({ isSimWord, ...rest }) => rest);
+  tokensByBook.get(vObj.book).set(vObj.vid, cleanedWordList);
+
+  // Extract Hebrew numeral+noun pairs
+  for (let i = 0; i < cleanedWordList.length; i++) {
+    const wt = cleanedWordList[i];
+    let numInfo = HEBREW_NUMERALS.get(wt.s);
+    let val = numInfo?.val;
+    let ord = numInfo?.ord ?? false;
+    let numS = wt.s;
+
+    // Check for compound twelve: H8147 + H6240
+    if (wt.s === 'H8147' && cleanedWordList[i + 1]?.s === 'H6240') {
+      val = 12;
+      numS = 'H8147+H6240';
+      numInfo = { val: 12, ord: false };
+    }
+
     if (!numInfo) continue;
-    // Check next 1-2 tokens for a counted noun
-    for (let j = i + 1; j <= Math.min(i + 2, wordList.length - 1); j++) {
-      const nt = wordList[j];
+    for (let j = i + 1; j <= Math.min(i + 2, cleanedWordList.length - 1); j++) {
+      const nt = cleanedWordList[j];
       if (nt.cl === 'noun' && nt.s) {
         const kind = classifyNumberKind(numInfo, nt.s, nt.g);
         numeralPairs.push({
@@ -414,9 +691,9 @@ for (const vObj of currentHebVerse.values()) {
           book: vObj.book,
           ch: vObj.ch,
           vs: vObj.vs,
-          val: numInfo.val,
-          ord: numInfo.ord,
-          num_s: wt.s,
+          val: val || numInfo.val,
+          ord,
+          num_s: numS,
           noun_s: nt.s,
           noun_lm: nt.lm,
           noun_g: nt.g,
@@ -429,14 +706,15 @@ for (const vObj of currentHebVerse.values()) {
 }
 currentHebVerse.clear();
 
-// Stream MACULA Greek tokens
+// Stream MACULA Greek tokens (Nestle1904 track only)
 console.log('Scanning macula_greek_tokens...');
 const currentGrcVerse = new Map();
+
 streamJsonlGzTable('macula_greek_tokens', r => {
+  if (r.edition_key && r.edition_key !== 'macula-greek-nestle1904') return;
   const vid = Number(r.canonical_verse_id);
-  const ck = coordKey(r.book, r.chapter, r.verse_nr);
-  verseIdByCoord.set(ck, vid);
-  coordByVerseId.set(vid, { book: r.book, chapter: r.chapter, verse: r.verse_nr, key: ck, ref: formatRef(r.book, r.chapter, r.verse_nr) });
+  const c = coordByVerseId.get(vid);
+  if (!c) return;
 
   const bs = baseStrongs(r.strongs ? `G${r.strongs}` : '');
   if (bs) {
@@ -446,7 +724,7 @@ streamJsonlGzTable('macula_greek_tokens', r => {
 
   let vObj = currentGrcVerse.get(vid);
   if (!vObj) {
-    vObj = { book: r.book, ch: r.chapter, vs: r.verse_nr, vid, toks: [] };
+    vObj = { book: c.book, ch: c.chapter, vs: c.verse, vid, toks: [] };
     currentGrcVerse.set(vid, vObj);
   }
   vObj.toks.push({
@@ -464,12 +742,32 @@ streamJsonlGzTable('macula_greek_tokens', r => {
 
 for (const vObj of currentGrcVerse.values()) {
   const sorted = vObj.toks.sort((a, b) => a.wn - b.wn);
-  tokensByBook.get(vObj.book).set(
-    vObj.vid,
-    sorted.map(t => ({ wn: t.wn, sf: t.sf, lm: t.lm, s: t.s, g: t.g, cl: t.cl, role: t.role || undefined }))
-  );
+  const wordList = sorted.map((t, idx) => {
+    const isSim = t.s === 'G5613';
+    if (t.s) recordFormHit(t.s, { sf: t.sf, tr: '', gl: t.g, mc: t.cl, vid: vObj.vid });
+    return {
+      wn: t.wn,
+      sf: t.sf,
+      lm: t.lm,
+      s: t.s,
+      g: t.g,
+      cl: t.cl,
+      role: t.role || undefined,
+      isSim,
+    };
+  });
 
-  // Extract Greek numeral+noun pairs (within 2 tokens in either direction)
+  // Apply adjacent simile propagation for Greek (ὡς G5613)
+  for (let i = 0; i < wordList.length; i++) {
+    if (wordList[i].isSim) {
+      wordList[i].sim = true;
+      if (wordList[i + 1]) wordList[i + 1].sim = true;
+    }
+  }
+  const cleanedWordList = wordList.map(({ isSim, ...rest }) => rest);
+  tokensByBook.get(vObj.book).set(vObj.vid, cleanedWordList);
+
+  // Extract Greek numeral+noun pairs
   for (let i = 0; i < sorted.length; i++) {
     const wt = sorted[i];
     const numInfo = GREEK_NUMERALS.get(wt.s);
@@ -498,7 +796,7 @@ for (const vObj of currentGrcVerse.values()) {
     }
   }
 
-  // Extract Greek copula + relative referent explicit identifications (e.g., Rev 4:5, Rev 5:6, Rev 1:20)
+  // Extract Greek copula + relative referent explicit identifications
   for (let i = 0; i < sorted.length - 1; i++) {
     const t = sorted[i];
     if (t.cl === 'pron' && t.ref && sorted[i + 1]?.s === 'G1510' && sorted[i + 1]?.role === 'vc') {
@@ -527,17 +825,93 @@ for (const vObj of currentGrcVerse.values()) {
   }
 }
 currentGrcVerse.clear();
-console.log(`Scanned MACULA: ${coordByVerseId.size} verses, ${numeralPairs.length} numeral+noun pairs, ${explicitIdentHits.length} copula-ident hits.`);
 
-// Fallback: populate any WEB verse missing from MACULA using coord map
-for (const [ck, text] of englishByCoord.entries()) {
-  if (!verseIdByCoord.has(ck)) {
-    const [b, ch, vs] = ck.split(':').map(Number);
-    const synthId = 900000 + b * 10000 + ch * 200 + vs;
-    verseIdByCoord.set(ck, synthId);
-    coordByVerseId.set(synthId, { book: b, chapter: ch, verse: vs, key: ck, ref: formatRef(b, ch, vs) });
+// 6. Backfill missing verses and STEP word_form_lemmas scan
+console.log('Backfilling missing verses & scanning word_form_lemmas...');
+const wordsById = new Map();
+streamJsonlGzTable('words_immutable', w => {
+  wordsById.set(w.id, w);
+  const vid = wordToVid.get(w.id);
+  if (vid) {
+    const bs = baseStrongs(w.strongs_nr);
+    if (bs) {
+      recordLemmaHit(bs, vid);
+      recordVerseMotif(vid, bs);
+      recordFormHit(bs, { sf: w.original_word, tr: w.transliteration, gl: w.english_translations?.[0], mc: w.grammar_code, vid });
+    }
+  }
+});
+
+const wflByWordId = new Map();
+streamJsonlGzTable('word_form_lemmas', r => {
+  let list = wflByWordId.get(r.word_id);
+  if (!list) {
+    list = [];
+    wflByWordId.set(r.word_id, list);
+  }
+  list.push(r);
+
+  const vid = wordToVid.get(r.word_id);
+  if (vid) {
+    const l = lemmaById.get(r.lemma_id);
+    const bs = baseStrongs(r.dstrongs_tag) || (l ? baseStrongs(l.base_strongs) : '');
+    if (bs) {
+      recordLemmaHit(bs, vid);
+      recordVerseMotif(vid, bs);
+      recordFormHit(bs, { sf: r.morpheme_surface, tr: '', gl: r.morpheme_gloss, mc: r.grammar_code, vid });
+    }
+  }
+});
+
+let backfilledCount = 0;
+for (const v of canonVerses) {
+  const bMap = tokensByBook.get(v.book);
+  if (!bMap.has(v.id)) {
+    backfilledCount++;
+    const wordList = (v.word_ids || []).map((wid, idx) => {
+      const w = wordsById.get(wid);
+      const wfls = wflByWordId.get(wid) || [];
+      const content = wfls.find(p => p.morpheme_role === 'stem') || wfls[0];
+      const lem = content ? lemmaById.get(content.lemma_id) : null;
+      const s = lem ? baseStrongs(lem.base_strongs) : baseStrongs(w?.strongs_nr);
+      const all_s_set = new Set();
+      for (const p of wfls) {
+        const pLem = lemmaById.get(p.lemma_id);
+        const pBs = pLem ? baseStrongs(pLem.base_strongs) : baseStrongs(p.dstrongs_tag);
+        if (pBs) all_s_set.add(pBs);
+      }
+      if (s) all_s_set.add(s);
+      const all_s = all_s_set.size > 1 ? [...all_s_set] : undefined;
+      const sf = w?.original_word || content?.morpheme_surface || '';
+      const lm = lem?.lemma_script || w?.original_word || '';
+      const glosses = [...new Set(wfls.map(p => p.morpheme_gloss).filter(Boolean))];
+      const g = glosses.join(' ') || w?.english_translations?.[0] || '';
+      const cl = content?.grammar_code || w?.grammar_code || '';
+      const hasSim = wfls.some(p => p.morpheme_role === 'prefix_preposition' && stripDiacriticsHebrew(p.morpheme_surface).startsWith('כ')) || s === 'H3644' || s === 'G5613';
+
+      if (s) {
+        recordLemmaHit(s, v.id);
+        recordFormHit(s, { sf, tr: w?.transliteration || '', gl: g, mc: cl, vid: v.id });
+      }
+      for (const bs of all_s_set) {
+        if (bs !== s) recordLemmaHit(bs, v.id);
+      }
+
+      return {
+        wn: idx + 1,
+        sf,
+        lm,
+        s,
+        ...(all_s ? { all_s } : {}),
+        g,
+        cl,
+        ...(hasSim ? { sim: true } : {}),
+      };
+    });
+    bMap.set(v.id, wordList);
   }
 }
+console.log(`Backfilled ${backfilledCount} verses missing from MACULA tokens.`);
 
 function resolveCoord(book, ch, vs) {
   const vid = verseIdByCoord.get(coordKey(book, ch, vs));
@@ -553,7 +927,6 @@ function resolveCoord(book, ch, vs) {
   };
 }
 
-// Helper for original_words array from base Strongs list
 function getOriginalWords(strongsList) {
   const out = [];
   const seen = new Set();
@@ -576,22 +949,26 @@ function getOriginalWords(strongsList) {
   return out;
 }
 
-// 4. Write per-book evidence-passages (66 files)
+// 7. Write per-book evidence-passages (66 files)
 console.log('Writing per-book evidence-passages (66 files)...');
 const manifestFiles = [];
 for (let b = 1; b <= 66; b++) {
   const bookMeta = bookById.get(b);
   const vMap = tokensByBook.get(b);
   const versesOut = {};
-  // Collect all coords for this book from englishByCoord + vMap
   for (const [vid, toks] of vMap.entries()) {
     const c = coordByVerseId.get(vid);
-    const eng = c ? (englishByCoord.get(c.key) || null) : null;
+    let eng = c ? (englishByCoord.get(c.key) || null) : null;
+    if (b === 19 && c?.verse === 0 && !eng) {
+      eng = `[Hebrew superscription gloss] ${toks.map(w => w.g).filter(Boolean).join(' ')}`.trim();
+    }
+    const mtRef = mtRefByVid.get(vid);
     versesOut[String(vid)] = {
       book: b,
       chapter: c?.chapter ?? 0,
       verse: c?.verse ?? 0,
       ref: c?.ref ?? '',
+      ...(mtRef ? { mt_ref: mtRef } : {}),
       en: eng,
       toks,
     };
@@ -605,11 +982,11 @@ for (let b = 1; b <= 66; b++) {
   }));
 }
 
-// 5. Convert ALL 63,663 CrossReferences.org links -> per-book bidirectional xref files (66 files, NO s21!)
+// 8. Convert ALL 63,663 CrossReferences.org links -> per-book bidirectional xref files (66 files, NO s21!)
 console.log('Building full 66-book CrossReferences index (excluding s21)...');
 const rawXrefs = JSON.parse(fs.readFileSync(path.join(XREF_DIR, 'cross_references.json'), 'utf8'));
 const xrefsByBook = new Map();
-for (let b = 1; b <= 66; b++) xrefsByBook.set(b, {}); // verse_id -> { out: [], in: [] }
+for (let b = 1; b <= 66; b++) xrefsByBook.set(b, {});
 let totalXrefPairs = 0;
 
 for (const row of rawXrefs) {
@@ -671,8 +1048,8 @@ for (let b = 1; b <= 66; b++) {
 }
 console.log(`Indexed ${totalXrefPairs} bidirectional cross-reference links (s21 stripped).`);
 
-// 6. Write numbers-index.json.gz
-const byNumValue = new Map(); // numberValue -> Map<noun_s, { noun_s, noun_lm, noun_g, kind, count, sample[] }>
+// 9. Write numbers-index.json.gz
+const byNumValue = new Map();
 for (const np of numeralPairs) {
   const key = String(np.val);
   if (!byNumValue.has(key)) byNumValue.set(key, new Map());
@@ -721,7 +1098,7 @@ manifestFiles.push(writeGzJson('r10/numbers-index.json.gz', {
   by_value: numbersIndexObj,
 }));
 
-// 7. Build explicit-and-typology.json.gz (deterministic §2A, §2B, §2G records verified against loaded MACULA tokens/LXX/xrefs)
+// 10. Build explicit-and-typology.json.gz
 const helperPassages = (...coords) => coords.map(([b, c, v, ev]) => {
   const p = resolveCoord(b, c, v);
   if (!p) throw new Error(`Failed to resolve passage ${b}:${c}:${v}`);
@@ -1107,7 +1484,7 @@ const crossLangBridges = [
   },
 ];
 
-// Candidate literary patterns (§2E) — explicitly labeled as candidate interpretive patterns!
+// Candidate literary patterns (§2E)
 const wellMarriageData = JSON.parse(fs.readFileSync(path.join(ANNOT_DIR, 'well-marriage.json'), 'utf8'));
 const candidatePatterns = [
   {
@@ -1157,7 +1534,7 @@ const candidatePatterns = [
   },
 ];
 
-// Add auto-detected Greek relative+copula identifications not already duplicated
+// Add auto-detected Greek relative+copula identifications
 const curatedIdsSeen = new Set(curatedEvidenceRecords.map(e => e.passages[0]?.verse_id));
 let autoCopulaCount = 0;
 for (const hit of explicitIdentHits) {
@@ -1189,9 +1566,9 @@ manifestFiles.push(writeGzJson('r10/explicit-and-typology.json.gz', {
   schema_version: 1,
   records: [...curatedEvidenceRecords, ...crossLangBridges, ...candidatePatterns],
 }));
-console.log(`Indexed ${curatedEvidenceRecords.length + crossLangBridges.length + candidatePatterns.length} explicit/typology/bridge/pattern records (${autoCopulaCount} auto-extracted copula clauses).`);
+console.log(`Indexed ${curatedEvidenceRecords.length + crossLangBridges.length + candidatePatterns.length} explicit/typology/bridge/pattern records.`);
 
-// 8. Build motifs-and-patterns.json.gz + Theographic Events
+// 11. Build motifs-and-patterns.json.gz + Theographic Events
 const chronEvents = JSON.parse(fs.readFileSync(path.join(CHRON_DIR, 'events.json'), 'utf8'));
 const chronVerses = JSON.parse(fs.readFileSync(path.join(CHRON_DIR, 'verses.json'), 'utf8'));
 const chronVerseIdToPassage = new Map();
@@ -1214,7 +1591,6 @@ for (const ev of chronEvents) {
   const passages = (ev.fields.verses || []).map(vid => chronVerseIdToPassage.get(vid)).filter(Boolean).slice(0, 12);
   if (passages.length === 0) continue;
   const terms = normalizeAscii(title).split(/\s+/).filter(w => w.length >= 3);
-  // Add helpful synonyms for critical events
   if (/red sea/i.test(title)) terms.push('exodus', 'crossing', 'sea', 'baptism');
   if (/creation/i.test(title)) terms.push('genesis', 'earth', 'light', 'spirit');
   if (/passover/i.test(title)) terms.push('lamb', 'blood', 'door', 'exodus');
@@ -1230,7 +1606,6 @@ for (const ev of chronEvents) {
   });
 }
 
-// Aggregate motif verse counts & top verses
 const motifCatalog = {};
 for (const [mId, info] of MOTIF_STRONG_MAP.entries()) {
   const matchingVerses = [];
@@ -1262,8 +1637,7 @@ for (const [mId, info] of MOTIF_STRONG_MAP.entries()) {
   };
 }
 
-// Compute co-occurring motif pairs in the same verse (for general multi-motif discovery!)
-const motifCooccurrences = {}; // "mA|mB" -> top 12 verses
+const motifCooccurrences = {};
 for (const [vid, mMap] of verseMotifs.entries()) {
   if (mMap.size < 2) continue;
   const mIds = [...mMap.keys()].sort();
@@ -1276,7 +1650,6 @@ for (const [vid, mMap] of verseMotifs.entries()) {
     }
   }
 }
-// Keep pairs with >= 2 verses, compactly mapped to passage refs
 const compactPairs = {};
 for (const [pk, val] of Object.entries(motifCooccurrences)) {
   if (val.count >= 1) {
@@ -1298,7 +1671,7 @@ manifestFiles.push(writeGzJson('r10/motifs-and-patterns.json.gz', {
 }));
 console.log(`Indexed ${Object.keys(motifCatalog).length} motifs, ${Object.keys(compactPairs).length} motif co-occurrence pairs, ${indexedEvents.length} events.`);
 
-// 9. Build orthographic consonantal overlap shards (64 buckets) for Hebrew lemmas
+// 12. Build orthographic consonantal overlap shards (64 buckets) for Hebrew lemmas
 console.log('Building Hebrew orthographic overlap & root shards (64 shards)...');
 const hebrewByBase = new Map();
 for (const l of lemmas) {
@@ -1321,7 +1694,6 @@ for (const h of hebList) {
   byConsSkeleton.get(h.cons).push(h);
 }
 
-// For every Hebrew lemma (content >= 2 consonants), find same-skeleton homographs + documented root relatives + exact subsequence neighbors (capped to top 12)
 for (const h of hebList) {
   const sameCons = (byConsSkeleton.get(h.cons) || []).filter(x => x.bs !== h.bs).slice(0, 6);
   const sharedRoot = [];
@@ -1339,7 +1711,6 @@ for (const h of hebList) {
   }
   const subsequences = [];
   if (h.cons.length === 3) {
-    // Check 2-consonant contiguous substrings (like אדם -> דם) or 4-char extensions containing h.cons (like אדם -> אדמה)
     for (let start = 0; start <= 1; start++) {
       const sub2 = h.cons.slice(start, start + 2);
       for (const cand of (byConsSkeleton.get(sub2) || []).slice(0, 4)) {
@@ -1381,14 +1752,13 @@ for (let i = 0; i < 64; i++) {
   manifestFiles.push(writeGzJson(`r10/orthographic/shard-${bHex}.json.gz`, { schema_version: 1, bucket: bHex, entries: orthShards[i] }));
 }
 
-// 10. Build sharded lemma-lookup (64 shards) + hot concept-index.json.gz
-console.log('Building sharded lemma-lookup (64 shards) & hot concept-index...');
+// 13. Build comprehensive sharded lemma-lookup (64 shards)
+console.log('Building comprehensive sharded lemma-lookup (64 shards)...');
 const lookupShards = new Array(64).fill(null).map(() => new Map());
-const hotTerms = {};
 
-function addLookupToken(token, entry) {
+function addLookupToken(token, baseEntry, matchRank) {
   const norm = normalizeAscii(token);
-  if (!norm || norm.length < 2) return;
+  if (!norm || norm.length < 2 || STOPWORDS.has(norm)) return;
   const bIdx = parseInt(bucketHex64(norm), 16);
   const shard = lookupShards[bIdx];
   let list = shard.get(norm);
@@ -1396,8 +1766,67 @@ function addLookupToken(token, entry) {
     list = [];
     shard.set(norm, list);
   }
-  if (!list.some(e => e.bs === entry.bs) && list.length < 18) {
-    list.push(entry);
+  const existing = list.find(e => e.lk === baseEntry.lk);
+  if (existing) {
+    if (matchRank > existing.match_rank) existing.match_rank = matchRank;
+  } else if (list.length < 32) {
+    list.push({ ...baseEntry, match_rank: matchRank });
+  }
+
+  // Singular / Plural English variants
+  const sing = singularizeEn(norm);
+  if (sing !== norm && sing.length >= 2 && !STOPWORDS.has(sing)) {
+    const sIdx = parseInt(bucketHex64(sing), 16);
+    const sShard = lookupShards[sIdx];
+    let sList = sShard.get(sing);
+    if (!sList) {
+      sList = [];
+      sShard.set(sing, sList);
+    }
+    const sExist = sList.find(e => e.lk === baseEntry.lk);
+    const rankAdj = Math.max(40, matchRank - 5);
+    if (sExist) {
+      if (rankAdj > sExist.match_rank) sExist.match_rank = rankAdj;
+    } else if (sList.length < 32) {
+      sList.push({ ...baseEntry, match_rank: rankAdj });
+    }
+  }
+
+  const plur = pluralizeEn(norm);
+  if (plur !== norm && plur.length >= 2 && !STOPWORDS.has(plur)) {
+    const pIdx = parseInt(bucketHex64(plur), 16);
+    const pShard = lookupShards[pIdx];
+    let pList = pShard.get(plur);
+    if (!pList) {
+      pList = [];
+      pShard.set(plur, pList);
+    }
+    const pExist = pList.find(e => e.lk === baseEntry.lk);
+    const rankAdj = Math.max(40, matchRank - 5);
+    if (pExist) {
+      if (rankAdj > pExist.match_rank) pExist.match_rank = rankAdj;
+    } else if (pList.length < 32) {
+      pList.push({ ...baseEntry, match_rank: rankAdj });
+    }
+  }
+
+  // Transliteration double-consonant variant (e.g. shoshanim <-> shoshannim)
+  const dblN = norm.includes('nn') ? norm.replace(/nn/g, 'n') : (norm.includes('n') ? norm.replace(/n/g, 'nn') : null);
+  if (dblN && dblN !== norm && dblN.length >= 2 && !STOPWORDS.has(dblN)) {
+    const dIdx = parseInt(bucketHex64(dblN), 16);
+    const dShard = lookupShards[dIdx];
+    let dList = dShard.get(dblN);
+    if (!dList) {
+      dList = [];
+      dShard.set(dblN, dList);
+    }
+    const dExist = dList.find(e => e.lk === baseEntry.lk);
+    const rankAdj = Math.max(50, matchRank - 5);
+    if (dExist) {
+      if (rankAdj > dExist.match_rank) dExist.match_rank = rankAdj;
+    } else if (dList.length < 32) {
+      dList.push({ ...baseEntry, match_rank: rankAdj });
+    }
   }
 }
 
@@ -1408,25 +1837,46 @@ for (const l of lemmas) {
   const hit = lemmaVerseHits.get(bs);
   const count = hit?.count ?? 0;
   const senseList = sensesByLemmaId.get(l.id) || [];
-  const gloss = senseList[0]?.short_gloss || l.lemma_stripped;
-  const entry = {
+  const primaryGloss = senseList[0]?.short_gloss || l.lemma_stripped || '';
+  const pos = l.primary_pos || '';
+  const is_prop = Boolean(pos && (pos.includes('--L') || pos.includes('--P') || pos.includes('-L') || pos.includes('-P')));
+
+  const baseEntry = {
     bs,
     lk: l.lemma_key,
     lang: l.language === 'grc' ? 'grc' : 'hbo',
     sc: l.lemma_script,
     tr: l.transliteration,
-    gl: gloss,
+    gl: primaryGloss,
     cnt: count,
+    is_prop,
     vs: (hit?.sampleVerses || []).slice(0, 12),
   };
 
-  addLookupToken(bs, entry);
-  addLookupToken(l.transliteration, entry);
+  // 1. Strong's identifier (rank 100)
+  addLookupToken(bs, baseEntry, 100);
+  if (l.base_strongs && l.base_strongs !== bs) addLookupToken(l.base_strongs, baseEntry, 100);
+
+  // 2. Primary gloss (rank 90)
+  addLookupToken(primaryGloss, baseEntry, 90);
+  for (const w of normalizeAscii(primaryGloss).split(/[^a-z0-9]+/)) {
+    if (w.length >= 2 && !STOPWORDS.has(w)) addLookupToken(w, baseEntry, 90);
+  }
+
+  // 3. Transliteration (rank 85)
+  if (l.transliteration) {
+    addLookupToken(l.transliteration, baseEntry, 85);
+    for (const tw of normalizeAscii(l.transliteration).split(/[^a-z0-9]+/)) {
+      if (tw.length >= 3) addLookupToken(tw, baseEntry, 80);
+    }
+  }
+
+  // 4. Pointed & stripped original script (rank 85)
   if (l.language === 'grc') {
-    addLookupToken(stripDiacriticsGreek(l.lemma_script), entry);
+    addLookupToken(stripDiacriticsGreek(l.lemma_script), baseEntry, 85);
   } else {
     const hs = stripDiacriticsHebrew(l.lemma_stripped || l.lemma_script);
-    if (hs) {
+    if (hs && hs.length >= 2) {
       const bIdx = parseInt(bucketHex64(hs), 16);
       const shard = lookupShards[bIdx];
       let list = shard.get(hs);
@@ -1434,29 +1884,612 @@ for (const l of lemmas) {
         list = [];
         shard.set(hs, list);
       }
-      if (!list.some(e => e.bs === entry.bs) && list.length < 18) list.push(entry);
+      const existing = list.find(e => e.lk === baseEntry.lk);
+      if (existing) {
+        if (85 > existing.match_rank) existing.match_rank = 85;
+      } else if (list.length < 32) {
+        list.push({ ...baseEntry, match_rank: 85 });
+      }
     }
   }
-  for (const w of normalizeAscii(gloss).split(/[^a-z0-9]+/)) {
-    if (w.length >= 2 && !STOPWORDS.has(w)) {
-      addLookupToken(w, entry);
+
+  // 5. Attested surface forms from MACULA / STEP
+  const fMap = formsByLemma.get(bs);
+  if (fMap) {
+    for (const f of fMap.values()) {
+      if (f.tr) addLookupToken(f.tr, baseEntry, 80);
+      if (l.language === 'grc') {
+        const gsf = stripDiacriticsGreek(f.sf);
+        if (gsf && gsf.length >= 2) addLookupToken(gsf, baseEntry, 80);
+      } else {
+        const hsf = stripDiacriticsHebrew(f.sf);
+        if (hsf && hsf.length >= 2) {
+          const bIdx = parseInt(bucketHex64(hsf), 16);
+          const shard = lookupShards[bIdx];
+          let list = shard.get(hsf);
+          if (!list) {
+            list = [];
+            shard.set(hsf, list);
+          }
+          const existing = list.find(e => e.lk === baseEntry.lk);
+          if (existing) {
+            if (80 > existing.match_rank) existing.match_rank = 80;
+          } else if (list.length < 32) {
+            list.push({ ...baseEntry, match_rank: 80 });
+          }
+        }
+      }
+      if (f.gl) {
+        for (const w of normalizeAscii(f.gl).split(/[^a-z0-9]+/)) {
+          if (w.length >= 2 && !STOPWORDS.has(w)) addLookupToken(w, baseEntry, 65);
+        }
+      }
+    }
+  }
+
+  // 6. Secondary senses and definition text <= 120 chars (rank 75 / 50)
+  for (const s of senseList) {
+    if (s.short_gloss && s.short_gloss !== primaryGloss) {
+      addLookupToken(s.short_gloss, baseEntry, 75);
+      for (const w of normalizeAscii(s.short_gloss).split(/[^a-z0-9]+/)) {
+        if (w.length >= 2 && !STOPWORDS.has(w)) addLookupToken(w, baseEntry, 75);
+      }
+    }
+    if (s.definition_text && s.definition_text.length <= 120) {
+      for (const w of normalizeAscii(s.definition_text).split(/[^a-z0-9]+/)) {
+        if (w.length >= 3 && !STOPWORDS.has(w)) addLookupToken(w, baseEntry, 50);
+      }
     }
   }
 }
 
-// Sort shard entries by frequency desc and trim
+// Sort shard entries by (match_rank DESC, is_prop ASC, cnt DESC) and cap to 24
 for (let i = 0; i < 64; i++) {
   const shard = lookupShards[i];
   const entries = [];
   for (const [k, arr] of shard.entries()) {
-    arr.sort((a, b) => b.cnt - a.cnt);
-    entries.push([k, arr.length > 12 ? arr.slice(0, 12) : arr]);
+    arr.sort((a, b) => (b.match_rank - a.match_rank) || ((a.is_prop ? 1 : 0) - (b.is_prop ? 1 : 0)) || (b.cnt - a.cnt));
+    entries.push([k, arr.length > 24 ? arr.slice(0, 24) : arr]);
   }
   const bHex = i.toString(16).padStart(2, '0');
   manifestFiles.push(writeGzJson(`r10/lemma-lookup/shard-${bHex}.json.gz`, { schema_version: 1, bucket: bHex, entries }));
 }
+console.log('Saved 64 lemma-lookup shards.');
 
-// Build hot concept-index.json.gz covering curated terms + aliases + biblical numbers + transliterations + top nouns
+// 14. Build Corpus-Wide Lemma Profiles (64 shards, shard-00..3f.json.gz)
+console.log('Building corpus-wide lemma profiles (64 shards)...');
+
+// Compute document frequency & IDF across all canonical verses
+const TOTAL_CANONICAL_VERSES = 31203;
+const idfMap = new Map();
+for (const [bs, rec] of lemmaVerseHits.entries()) {
+  const df = rec.verseSet.size;
+  const idf = Math.log(TOTAL_CANONICAL_VERSES / Math.max(1, df));
+  idfMap.set(bs, idf);
+}
+
+// Determine all unique base Strong's to profile
+const profileStrongsSet = new Set();
+for (const bs of lemmaVerseHits.keys()) {
+  if (bs) profileStrongsSet.add(bs);
+}
+for (const bs of lemmasByBaseStrongs.keys()) {
+  if (bs) profileStrongsSet.add(bs);
+}
+
+const profileShards = new Array(64).fill(null).map(() => ({}));
+const ARCH_STRONGS = new Set([
+  'H1004', 'H1964', 'H4908', 'H5982', 'H3805', 'H3220', 'H4501', 'H4196',
+  'H0727', 'H3563', 'H8193', 'H4639', 'H0730', 'H6086', 'H2091', 'H5178', 'H7416',
+]);
+
+function getVerseCategory(vid, c, verseTokens) {
+  const b = c.book;
+  const ch = c.chapter;
+  const vs = c.verse;
+  if (b === 19 && vs === 0) {
+    return 'psalm_superscription';
+  }
+  const isArchSection = (b === 2 && ch >= 25 && ch <= 40) ||
+                        (b === 11 && ch >= 6 && ch <= 8) ||
+                        (b === 14 && ch >= 3 && ch <= 4) ||
+                        (b === 26 && ch >= 40 && ch <= 48);
+  const hasArchWord = (b <= 14 || b === 26) && (verseTokens || []).some(t => ARCH_STRONGS.has(t.s) || (t.all_s && t.all_s.some(s => ARCH_STRONGS.has(s))));
+  if (isArchSection || hasArchWord) {
+    return 'temple_and_sanctuary_architecture';
+  }
+  if (b >= 2 && b <= 5) {
+    return 'torah_ritual_and_covenant_law';
+  }
+  if (b >= 18 && b <= 22) {
+    return 'poetic_imagery_and_similes';
+  }
+  if (b >= 23 && b <= 39) {
+    return 'prophetic_imagery_and_oracles';
+  }
+  if (b >= 40 && b <= 44) {
+    return 'gospel_and_nt_teaching';
+  }
+  if (b >= 45 && b <= 66) {
+    return 'epistolary_and_apocalyptic';
+  }
+  return 'historical_narrative';
+}
+
+// Pre-index Greek lemmas by gloss words for O(1) Swete LXX witness candidate matching
+const grcLemmasByGlossWord = new Map();
+for (const [gBs, gList] of lemmasByBaseStrongs.entries()) {
+  if (!gBs.startsWith('G')) continue;
+  const gCand = gList[0];
+  const gGloss = sensesByLemmaId.get(gCand.id)?.[0]?.short_gloss || gCand.lemma_stripped || '';
+  const gWords = normalizeAscii(gGloss).split(/\s+/).filter(w => w.length >= 3 && !STOPWORDS.has(w));
+  for (const w of gWords) {
+    let list = grcLemmasByGlossWord.get(w);
+    if (!list) {
+      list = [];
+      grcLemmasByGlossWord.set(w, list);
+    }
+    if (!list.some(x => x.base_strongs === gCand.base_strongs)) list.push(gCand);
+  }
+}
+
+// Pre-compute Swete LXX witnesses bidirectionally (Hebrew <-> Greek)
+console.log('Pre-computing Swete LXX witnesses...');
+const sweteWitnessByBs = new Map();
+
+for (const [bs, rec] of lemmaVerseHits.entries()) {
+  if (!bs.startsWith('H')) continue;
+  if (rec.verseSet.size > 250) continue;
+  const cand = lemmasByBaseStrongs.get(bs)?.[0];
+  if (!cand) continue;
+  const gl = sensesByLemmaId.get(cand.id)?.[0]?.short_gloss || cand.lemma_stripped || '';
+  const primaryWords = normalizeAscii(gl).split(/\s+/).filter(w => w.length >= 3 && !STOPWORDS.has(w));
+  const seenGrcCand = new Set();
+  const grcCandidates = [];
+  for (const w of primaryWords) {
+    for (const gCand of (grcLemmasByGlossWord.get(w) || [])) {
+      if (!seenGrcCand.has(gCand.base_strongs)) {
+        seenGrcCand.add(gCand.base_strongs);
+        grcCandidates.push(gCand);
+        if (grcCandidates.length >= 8) break;
+      }
+    }
+    if (grcCandidates.length >= 8) break;
+  }
+  const vidsArr = [...rec.verseSet];
+  for (const gCand of grcCandidates) {
+    const gBs = baseStrongs(gCand.base_strongs);
+    const stem = (gCand.lemma_stripped || '').slice(0, 4);
+    if (stem.length >= 3) {
+      let matchCount = 0;
+      const sampleMatchRefs = [];
+      for (const vid of vidsArr) {
+        const lxxWords = lxxWordsByVid.get(vid);
+        if (lxxWords && lxxWords.some(w => w.startsWith(stem))) {
+          matchCount++;
+          if (sampleMatchRefs.length < 4) {
+            const c = coordByVerseId.get(vid);
+            if (c) sampleMatchRefs.push(c.ref);
+          }
+        }
+      }
+      if (matchCount > 0) {
+        if (!sweteWitnessByBs.has(bs)) sweteWitnessByBs.set(bs, []);
+        sweteWitnessByBs.get(bs).push({
+          type: 'lxx_swete_witness',
+          target_strongs: gBs,
+          script: gCand.lemma_script,
+          gloss: sensesByLemmaId.get(gCand.id)?.[0]?.short_gloss || gCand.lemma_stripped,
+          count: matchCount,
+          sample_refs: sampleMatchRefs,
+        });
+        if (!sweteWitnessByBs.has(gBs)) sweteWitnessByBs.set(gBs, []);
+        sweteWitnessByBs.get(gBs).push({
+          type: 'lxx_swete_witness',
+          target_strongs: bs,
+          script: cand.lemma_script,
+          gloss: gl,
+          count: matchCount,
+          sample_refs: sampleMatchRefs,
+        });
+      }
+    }
+  }
+}
+console.log(`Pre-computed Swete witnesses for ${sweteWitnessByBs.size} base Strong's.`);
+
+let totalProfilesBuilt = 0;
+
+for (const bs of profileStrongsSet) {
+  const cand = lemmasByBaseStrongs.get(bs)?.[0] || lemmaByKey.get(bs);
+  const lk = cand ? cand.lemma_key : `lemma:${bs}`;
+  const lang = cand ? (cand.language === 'grc' ? 'grc' : 'hbo') : (bs.startsWith('G') ? 'grc' : 'hbo');
+  const sc = cand ? cand.lemma_script : '';
+  const tr = cand ? cand.transliteration : '';
+  const pos = cand ? (cand.primary_pos || '') : '';
+  const senseList = cand ? (sensesByLemmaId.get(cand.id) || []) : [];
+  const gl = senseList[0]?.short_gloss || cand?.lemma_stripped || '';
+  const entity_kind = pos.includes('--L') ? 'place' : pos.includes('--P') ? 'person' : pos.includes('--G') ? 'gentilic' : pos.includes('--T') ? 'title' : 'common';
+
+  const hitRec = lemmaVerseHits.get(bs);
+  const allVidsSorted = hitRec ? [...hitRec.verseSet].sort((a, b) => a - b) : [];
+  const allVidsSet = new Set(allVidsSorted);
+
+  // Forms
+  const fMap = formsByLemma.get(bs);
+  const topFormsSorted = fMap ? [...fMap.values()].sort((a, b) => b.cnt - a.cnt) : [];
+
+  // Partition verses into evidence clusters (100% of allVidsSorted, no drops)
+  const clusterBuckets = new Map(); // category -> vid[]
+  for (const vid of allVidsSorted) {
+    const c = coordByVerseId.get(vid);
+    if (!c) continue;
+    const vTokens = tokensByBook.get(c.book)?.get(vid);
+    const cat = getVerseCategory(vid, c, vTokens);
+    if (!clusterBuckets.has(cat)) clusterBuckets.set(cat, []);
+    clusterBuckets.get(cat).push(vid);
+  }
+
+  const evidenceClusters = [];
+  for (const [category, cVids] of clusterBuckets.entries()) {
+    // Dynamic human-readable label
+    let label = '';
+    const bookSet = new Set();
+    const chMap = new Map(); // bookName -> Set<chapter>
+    for (const vid of cVids) {
+      const c = coordByVerseId.get(vid);
+      if (c) {
+        const bMeta = bookById.get(c.book);
+        const bName = bMeta ? bMeta.name : `Book ${c.book}`;
+        bookSet.add(bName);
+        if (!chMap.has(bName)) chMap.set(bName, new Set());
+        chMap.get(bName).add(c.chapter);
+      }
+    }
+    const bookSummary = [...chMap.entries()].slice(0, 3).map(([bName, chs]) => `${bName} ${[...chs].slice(0, 4).join(', ')}`).join(' · ');
+
+    if (category === 'psalm_superscription') {
+      const pRefs = cVids.map(vid => coordByVerseId.get(vid)?.ref).filter(Boolean);
+      label = `Psalm Superscriptions / Headings (${pRefs.slice(0, 4).join(', ')})`;
+    } else if (category === 'temple_and_sanctuary_architecture') {
+      label = `Temple & Sanctuary Architecture (${bookSummary || [...bookSet].join(' · ')})`;
+    } else if (category === 'torah_ritual_and_covenant_law') {
+      label = `Torah Ritual & Covenant Law (${bookSummary || [...bookSet].join(' · ')})`;
+    } else if (category === 'poetic_imagery_and_similes') {
+      label = `Poetic Imagery & Similes (${bookSummary || [...bookSet].join(' · ')})`;
+    } else if (category === 'prophetic_imagery_and_oracles') {
+      label = `Prophetic Imagery & Oracles (${bookSummary || [...bookSet].join(' · ')})`;
+    } else if (category === 'gospel_and_nt_teaching') {
+      label = `Gospel & NT Teaching (${bookSummary || [...bookSet].join(' · ')})`;
+    } else if (category === 'epistolary_and_apocalyptic') {
+      label = `Epistolary & Apocalyptic Writings (${bookSummary || [...bookSet].join(' · ')})`;
+    } else {
+      label = `Historical Narrative (${bookSummary || [...bookSet].join(' · ')})`;
+    }
+
+    // Collocated content words sorted by idf * hits
+    const collocWordMap = new Map(); // otherBs -> verseCount
+    for (const vid of cVids) {
+      const c = coordByVerseId.get(vid);
+      if (!c) continue;
+      const vTokens = tokensByBook.get(c.book)?.get(vid) || [];
+      const vBsSet = new Set();
+      for (const t of vTokens) {
+        if (t.s && t.s !== bs) vBsSet.add(t.s);
+        if (t.all_s) {
+          for (const s of t.all_s) if (s !== bs) vBsSet.add(s);
+        }
+      }
+      for (const otherBs of vBsSet) {
+        const idf = idfMap.get(otherBs) || 0;
+        if (idf >= 2.0) {
+          collocWordMap.set(otherBs, (collocWordMap.get(otherBs) || 0) + 1);
+        }
+      }
+    }
+
+    const collocated_words = [...collocWordMap.entries()]
+      .map(([otherBs, hits]) => {
+        const idf = idfMap.get(otherBs) || 0;
+        const otherCand = lemmasByBaseStrongs.get(otherBs)?.[0];
+        if (!otherCand) return null;
+        const oPos = otherCand.primary_pos || '';
+        if (oPos.includes('prep') || oPos.includes('cj') || oPos.includes('art') || oPos.includes('pron')) return null;
+        return {
+          bs: otherBs,
+          sc: otherCand.lemma_script,
+          tr: otherCand.transliteration,
+          gl: sensesByLemmaId.get(otherCand.id)?.[0]?.short_gloss || otherCand.lemma_stripped,
+          hits,
+          score: Number((idf * hits).toFixed(2)),
+        };
+      })
+      .filter(Boolean)
+      .sort((a, b) => b.score - a.score || b.hits - a.hits)
+      .slice(0, 8);
+
+    // Sample passages
+    const sample_passages = [];
+    let hasSimileInCluster = false;
+    for (const vid of cVids.slice(0, 8)) {
+      const c = coordByVerseId.get(vid);
+      if (!c) continue;
+      const vTokens = tokensByBook.get(c.book)?.get(vid) || [];
+      const hasSim = vTokens.some(t => t.sim && (t.s === bs || (t.all_s && t.all_s.includes(bs))));
+      if (hasSim) hasSimileInCluster = true;
+      let snippet = englishByCoord.get(c.key) || '';
+      if (c.book === 19 && c.verse === 0 && !snippet) {
+        snippet = `[Hebrew superscription gloss] ${vTokens.map(w => w.g).filter(Boolean).join(' ')}`.trim();
+      }
+      const mtRef = mtRefByVid.get(vid);
+      sample_passages.push({
+        verse_id: vid,
+        ref: c.ref,
+        ...(mtRef ? { mt_ref: mtRef } : {}),
+        book: c.book,
+        chapter: c.chapter,
+        verse: c.verse,
+        testament: c.book <= 39 ? 'OT' : 'NT',
+        snippet,
+        has_simile: hasSim,
+      });
+    }
+
+    // Cross-references
+    const xrefTargets = [];
+    const seenXrefVids = new Set();
+    for (const vid of cVids) {
+      const c = coordByVerseId.get(vid);
+      if (!c) continue;
+      const vXrefs = xrefsByBook.get(c.book)?.[String(vid)];
+      if (vXrefs?.out) {
+        for (const outG of vXrefs.out) {
+          for (const tgt of outG.targets || []) {
+            if (!seenXrefVids.has(tgt.to_vid)) {
+              seenXrefVids.add(tgt.to_vid);
+              const isSameLemma = allVidsSet.has(tgt.to_vid);
+              xrefTargets.push({
+                from_vid: vid,
+                to_vid: tgt.to_vid,
+                to_ref: tgt.to_ref,
+                phrase: outG.phrase,
+                is_same_lemma: isSameLemma,
+              });
+            }
+          }
+        }
+      }
+    }
+    xrefTargets.sort((a, b) => (b.is_same_lemma ? 1 : 0) - (a.is_same_lemma ? 1 : 0));
+
+    // Data-driven summary
+    const attestedSfs = [...new Set(cVids.flatMap(vid => {
+      const vTokens = tokensByBook.get(coordByVerseId.get(vid)?.book)?.get(vid) || [];
+      return vTokens.filter(t => t.s === bs || (t.all_s && t.all_s.includes(bs))).map(t => t.sf);
+    }))];
+    const topCollocGlosses = collocated_words.map(w => w.gl).filter(Boolean);
+
+    let summaryText = `Attested in ${cVids.length} verse${cVids.length === 1 ? '' : 's'} (${sample_passages.slice(0, 4).map(p => p.ref).join(', ')}${cVids.length > 4 ? '...' : ''}) with surface forms: ${attestedSfs.slice(0, 4).join(', ')}.`;
+    if (topCollocGlosses.length > 0) {
+      summaryText += ` Co-occurs with: ${topCollocGlosses.slice(0, 4).join(', ')}.`;
+    }
+    if (category === 'psalm_superscription') {
+      summaryText += ` Psalm heading / musical or liturgical superscription; whether the term refers to a tune, instrument, liturgical occasion, or floral motif is uncertain in source text.`;
+    } else if (category === 'temple_and_sanctuary_architecture') {
+      summaryText += ` Occurs in sanctuary or Temple architectural descriptions and sacred vessel ornamentation.`;
+    }
+
+    evidenceClusters.push({
+      cluster_id: `${bs}:${category}`,
+      category,
+      label,
+      summary: summaryText,
+      vids: cVids,
+      sample_passages,
+      collocated_words,
+      has_simile: hasSimileInCluster,
+      xrefs: xrefTargets.slice(0, 8),
+    });
+  }
+
+  // Grammatical relations from r8-v1.1
+  const r8List = r8SummariesByBs.get(bs) || [];
+  const topGramRels = r8List
+    .sort((a, b) => b.occurrences - a.occurrences)
+    .slice(0, 16);
+
+  // Lexical relations (roots, formations, entity_relationships)
+  const topLexRels = [];
+  const seenLexKeys = new Set();
+
+  if (cand) {
+    // 1. Roots
+    for (const rl of rootsByLemmaId.get(cand.id) || []) {
+      const rObj = rootById.get(rl.root_id);
+      for (const otherLid of (lemmasByRootId.get(rl.root_id) || []).slice(0, 6)) {
+        if (otherLid !== cand.id) {
+          const otherLem = lemmaById.get(otherLid);
+          if (otherLem) {
+            const otherBs = baseStrongs(otherLem.base_strongs);
+            const k = `root:${otherBs}`;
+            if (!seenLexKeys.has(k)) {
+              seenLexKeys.add(k);
+              topLexRels.push({
+                type: 'shares_root',
+                root: rObj?.root_script || '',
+                target_strongs: otherBs,
+                script: otherLem.lemma_script,
+                gloss: sensesByLemmaId.get(otherLem.id)?.[0]?.short_gloss || otherLem.lemma_stripped,
+              });
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // 2. Formations
+  for (const lf of formationsByBs.get(bs) || []) {
+    const k = `form:${lf.analysis_key || lf.id}`;
+    if (!seenLexKeys.has(k)) {
+      seenLexKeys.add(k);
+      topLexRels.push({
+        type: `formation_${lf.formation_type || 'compound'}`,
+        target_strongs: bs,
+        gloss: lf.whole_word_gloss || undefined,
+        note: lf.evidence_note || undefined,
+      });
+    }
+  }
+  for (const comp of componentOfFormations.get(bs) || []) {
+    const k = `comp:${comp.formationBs}`;
+    if (!seenLexKeys.has(k)) {
+      seenLexKeys.add(k);
+      topLexRels.push({
+        type: 'formation_component_of',
+        target_strongs: comp.formationBs,
+        note: comp.formation.evidence_note || undefined,
+      });
+    }
+  }
+
+  // 3. Entity relationships
+  if (cand) {
+    for (const erItem of entityRelsByLemmaId.get(cand.id) || []) {
+      const otherCe = erItem.otherCe;
+      if (otherCe?.lemma_id) {
+        const otherLem = lemmaById.get(otherCe.lemma_id);
+        if (otherLem) {
+          const otherBs = baseStrongs(otherLem.base_strongs);
+          const k = `er:${otherBs}:${erItem.rel.relation_type}`;
+          if (!seenLexKeys.has(k)) {
+            seenLexKeys.add(k);
+            topLexRels.push({
+              type: erItem.rel.relation_type,
+              target_strongs: otherBs,
+              label: otherCe.display_label || otherLem.lemma_script,
+            });
+          }
+        }
+      }
+    }
+  }
+
+  // LXX relations (bcv-lxx-bridge + aligned/Swete witnesses)
+  const topLxxRels = [];
+  const seenLxxKeys = new Set();
+
+  for (const row of (lxxBridgeByBs.get(bs) || []).slice(0, 8)) {
+    const targetStrong = bs.startsWith('H') ? row.greek_strong : row.hebrew_strong;
+    const targetCand = lemmasByBaseStrongs.get(targetStrong)?.[0];
+    const k = `bridge:${targetStrong}`;
+    if (!seenLxxKeys.has(k)) {
+      seenLxxKeys.add(k);
+      topLxxRels.push({
+        type: 'bcv_lxx_bridge',
+        target_strongs: targetStrong,
+        script: targetCand?.lemma_script || '',
+        gloss: sensesByLemmaId.get(targetCand?.id)?.[0]?.short_gloss || targetCand?.lemma_stripped || '',
+        count: row.count,
+      });
+    }
+  }
+
+  // Swete LXX witness (pre-computed bidirectionally)
+  for (const sw of (sweteWitnessByBs.get(bs) || [])) {
+    const k = `swete:${sw.target_strongs}`;
+    if (!seenLxxKeys.has(k)) {
+      seenLxxKeys.add(k);
+      topLxxRels.push(sw);
+    }
+  }
+
+  if (bs.startsWith('H') && cand) {
+    // LXX Psalm heading witness
+    for (const vid of allVidsSorted) {
+      const c = coordByVerseId.get(vid);
+      if (c?.book === 19 && c?.verse === 0) {
+        const lxxTxt = lxxTextByVid.get(vid);
+        if (lxxTxt) {
+          topLxxRels.push({
+            type: 'lxx_heading_witness',
+            ref: c.ref,
+            lxx_text: lxxTxt,
+          });
+        }
+      }
+    }
+  }
+
+  // Homograph siblings (same skeleton in Hebrew, homographs in Greek)
+  const homograph_siblings = [];
+  if (cand) {
+    if (lang === 'hbo' || lang === 'arc') {
+      const cons = stripDiacriticsHebrew(cand.lemma_stripped || cand.lemma_script);
+      const sibs = byConsSkeleton.get(cons) || [];
+      for (const sib of sibs) {
+        if (sib.bs !== bs) {
+          homograph_siblings.push({
+            bs: sib.bs,
+            lk: sib.lemma_key,
+            sc: sib.script,
+            tr: sib.tr,
+            gl: sib.gloss,
+          });
+        }
+      }
+      // Also check if same base Strongs has other lemma keys (e.g. H7799 vs H7799A)
+      for (const otherL of (lemmasByBaseStrongs.get(bs) || [])) {
+        if (otherL.id !== cand.id) {
+          homograph_siblings.push({
+            bs,
+            lk: otherL.lemma_key,
+            sc: otherL.lemma_script,
+            tr: otherL.transliteration,
+            gl: sensesByLemmaId.get(otherL.id)?.[0]?.short_gloss || otherL.lemma_stripped,
+          });
+        }
+      }
+    }
+  }
+
+  const profile = {
+    bs,
+    lk,
+    lang,
+    sc,
+    tr,
+    gl,
+    pos,
+    entity_kind,
+    senses: senseList.slice(0, 6).map(s => ({ key: s.sense_key, gl: s.short_gloss, note: s.usage_note || undefined })),
+    total_verses: allVidsSorted.length,
+    all_vids: allVidsSorted,
+    forms: topFormsSorted.slice(0, 30),
+    clusters: evidenceClusters,
+    grammatical_relations: topGramRels.slice(0, 16),
+    lexical_relations: topLexRels.slice(0, 12),
+    lxx_relations: topLxxRels.slice(0, 12),
+    homograph_siblings: homograph_siblings.slice(0, 8),
+  };
+
+  const bHex = bucketHex64(bs);
+  const bIdx = parseInt(bHex, 16);
+  profileShards[bIdx][bs] = profile;
+  totalProfilesBuilt++;
+}
+
+for (let i = 0; i < 64; i++) {
+  const bHex = i.toString(16).padStart(2, '0');
+  manifestFiles.push(writeGzJson(`r10/lemma-profiles/shard-${bHex}.json.gz`, {
+    schema_version: 1,
+    bucket: bHex,
+    entries: profileShards[i],
+  }));
+}
+console.log(`Saved ${totalProfilesBuilt} lemma profiles into 64 shards.`);
+
+// 15. Build hot concept-index.json.gz
 const MANUAL_ALIASES = {
   ruach: { strongs: ['H7307'], motifs: ['spirit_wind_breath', 'directions_winds'], note: 'Hebrew רוּחַ (wind, breath, Spirit, direction)' },
   pneuma: { strongs: ['G4151'], motifs: ['spirit_wind_breath'], note: 'Greek πνεῦμα (Spirit, breath, wind)' },
@@ -1512,6 +2545,7 @@ const MANUAL_ALIASES = {
   exodus: { passages: helperPassages([2, 12, 7], [2, 14, 21]) },
   zechariah: { passages: helperPassages([38, 4, 2], [38, 4, 6], [38, 4, 10]) },
 };
+const hotTerms = {};
 for (const [term, def] of Object.entries(MANUAL_ALIASES)) {
   hotTerms[term] = {
     ...def,
@@ -1525,9 +2559,9 @@ manifestFiles.push(writeGzJson('r10/concept-index.json.gz', {
   book_names: books.map(b => ({ id: b.id, name: b.name, usfm: b.usfm, chapters: b.total_chapters })),
 }));
 
-// 11. Write R10 manifests
+// 16. Write R11 manifests
 const manifestPayload = {
-  release_id: 'r10-v1.0',
+  release_id: RELEASE_ID,
   schema_version: '1.0.0',
   generated_at: new Date().toISOString(),
   inherits_release: 'r9b-v1.0',
@@ -1540,6 +2574,7 @@ const manifestPayload = {
     motifs: Object.keys(motifCatalog).length,
     motif_pairs: Object.keys(compactPairs).length,
     events: indexedEvents.length,
+    lemma_profiles: totalProfilesBuilt,
     total_r10_files: manifestFiles.length + 3,
   },
   licenses: [
@@ -1547,6 +2582,7 @@ const manifestPayload = {
     'MACULA Hebrew & Greek (Clear Bible, CC BY 4.0)',
     'MorphHB (CC BY 4.0)',
     'CrossReferences.org / OpenBible (CC BY 4.0; s21 excluded)',
+    'Swete Septuagint (Public Domain)',
     'Theographic Bible Data (CC BY-SA 4.0)',
     'World English Bible (Public Domain)',
   ],
@@ -1556,9 +2592,9 @@ const manifestPayload = {
 writePlainJson('manifest.json', manifestPayload);
 writeGzJson('manifest.json.gz', manifestPayload);
 writeGzJson('runtime-manifest.json.gz', {
-  release_id: 'r10-v1.0',
+  release_id: RELEASE_ID,
   inherits_release: 'r9b-v1.0',
-  r10_base: '/v2/relationships/r10-v1.0/r10',
+  r10_base: `/v2/relationships/${RELEASE_ID}/r10`,
   hash_algorithm: 'fnv1a64_mod64',
   buckets: 64,
   counts: manifestPayload.counts,
@@ -1566,4 +2602,4 @@ writeGzJson('runtime-manifest.json.gz', {
 
 const elapsed = ((Date.now() - t0) / 1000).toFixed(2);
 const totalGzBytes = manifestFiles.reduce((a, f) => a + f.gz_bytes, 0);
-console.log(`R10 Index Build COMPLETE in ${elapsed}s: ${manifestFiles.length + 3} files, ${(totalGzBytes / (1024 * 1024)).toFixed(2)} MiB total compressed.`);
+console.log(`R11 Index Build COMPLETE in ${elapsed}s: ${manifestFiles.length + 3} files, ${(totalGzBytes / (1024 * 1024)).toFixed(2)} MiB total compressed.`);
