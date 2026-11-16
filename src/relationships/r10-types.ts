@@ -72,6 +72,8 @@ export interface R10OriginalWordRef {
 export interface R10PassageRef {
   verse_id: number;
   ref: string;
+  mt_ref?: string;
+  is_psalm_heading?: boolean;
   book: number;
   chapter: number;
   verse: number;
@@ -115,6 +117,11 @@ export interface R10ResolvedConcept {
     | 'unresolved';
   candidate_nodes: R10Node[];
   lemmas: R10OriginalWordRef[];
+  sense_candidates?: Array<{ key: string; gl: string; note?: string }>;
+  homograph_siblings?: Array<{ bs: string; lk?: string; sc: string; tr: string; gl: string }>;
+  forms?: Array<{ sf: string; tr: string; gl: string; mc?: string; cnt: number }>;
+  total_verses?: number;
+  entity_kind?: string;
   ambiguity_note?: string;
 }
 
@@ -183,6 +190,15 @@ export interface R10ConnectionSummary {
   original_words: R10OriginalWordRef[];
   witness_count: number;
   penalties_applied: string[];
+  cluster_id?: string;
+  ranking_rationale?: {
+    base_tier_score: number;
+    specificity_bonus: number;
+    witness_bonus: number;
+    penalties: string[];
+    final_score: number;
+    why_ranked_high: string;
+  };
 }
 
 export interface R10PathStep {
@@ -213,10 +229,15 @@ export interface R10ConnectionPath {
 export interface R10Cluster {
   cluster_id: string;
   label: string;
+  category?: string;
   concepts: string[];
   anchor_nodes: R10Node[];
   connection_ids: string[];
   summary: string;
+  total_passages?: number;
+  passages?: R10PassageRef[];
+  uncertainty_note?: string;
+  collocated_words?: Array<{ bs: string; sc: string; tr: string; gl: string; hits: number; score: number }>;
 }
 
 export interface R10ClusterBridge {
@@ -248,6 +269,10 @@ export interface R10ControlOrWarning {
 export interface DiscoverConnectionsQuery {
   query: string;
   concepts?: string[];
+  mode?: 'discover' | 'expand' | 'bridge' | 'compare' | 'explain' | 'challenge';
+  cluster_id?: string;
+  focus_lemma?: string;
+  compare_targets?: string[];
   filters?: {
     predicates?: R10Predicate[];
     max_tier?: R10EvidenceTier;
@@ -298,6 +323,22 @@ export interface DiscoverConnectionsResult {
     asset_requests_used: number;
     execution_ms: number;
     source_attribution: string[];
+  };
+  iterative_analysis?: {
+    mode: string;
+    explanation?: string;
+    comparison?: any;
+    bridges?: any[];
+    challenges?: R10ControlOrWarning[];
+    lemma_occurrences?: {
+      strongs: string;
+      total_verses: number;
+      offset: number;
+      returned: number;
+      next_cursor: string | null;
+      has_more: boolean;
+      passages: R10PassageRef[];
+    };
   };
 }
 

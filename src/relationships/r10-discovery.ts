@@ -1,11 +1,12 @@
 /**
  * R10 Biblical Concept, Motif & Typology Discovery Runtime Engine
+ * Upgraded to power Universal R11 Discovery Engine (`r11-v1.0`).
  * Runs identically in Cloudflare Workers (via AssetReader) and Node.js tests.
  * Two-stage bounded execution:
  *   Stage 1: Parse NL / concept lists / refs -> resolve original-language & motif/event candidates
- *   Stage 2: Score & verify evidence records, build subclusters + bridges, synthesize live
- *            xref/number/orthographic/motif witnesses, apply hierarchy & coincidence penalties,
- *            attach negative controls & alternative explanations.
+ *   Stage 1.5: Parallel bounded profile loading from sharded `lemma-profiles`
+ *   Stage 2: Universal evidence synthesis, dynamic clusters, grammatical relations, LXX bridges,
+ *            lexical formations, cross-references, multi-concept intersections, complete occurrence pagination.
  */
 
 import { computeBucketHex } from './adjacency-loader.ts';
@@ -20,21 +21,41 @@ import type {
   R10ConnectionPath,
   R10ConnectionSummary,
   R10ControlOrWarning,
+  R10EpistemicClass,
   R10EvidenceRecord,
   R10EvidenceTier,
   R10Node,
   R10NumberKind,
   R10OriginalWordRef,
   R10PassageRef,
+  R10Predicate,
   R10ResolvedConcept,
 } from './r10-types.ts';
 
-export const DEFAULT_R10_RELEASE = 'r10-v1.0';
+export const DEFAULT_R10_RELEASE = 'r11-v1.0';
 
 const DEFAULT_LIMIT = 10;
 const MAX_LIMIT = 25;
-const MAX_SUBREQUEST_BUDGET = 28;
-const MAX_EVIDENCE_BOOKS = 6;
+const MAX_SUBREQUEST_BUDGET = 45;
+const MAX_EVIDENCE_BOOKS = 8;
+
+const BOOK_VID_STARTS = [
+  1, 1534, 2747, 3606, 4894, 5853, 6511, 7129, 7214, 8024,
+  8719, 9535, 10254, 11196, 12018, 12298, 12704, 12871, 13941, 16518,
+  17433, 17655, 17772, 19064, 20428, 20582, 21855, 22212, 22409, 22482,
+  22628, 22649, 22697, 22802, 22849, 22905, 22958, 22996, 23207, 23262,
+  24330, 25003, 26152, 27030, 28033, 28465, 28902, 29158, 29307, 29462,
+  29566, 29661, 29750, 29797, 29910, 29993, 30039, 30064, 30367, 30475,
+  30580, 30641, 30746, 30759, 30774, 30799,
+];
+
+function bookForVid(vid: number): number {
+  if (vid < 1) return 1;
+  for (let i = BOOK_VID_STARTS.length - 1; i >= 0; i--) {
+    if (vid >= BOOK_VID_STARTS[i]) return i + 1;
+  }
+  return 1;
+}
 
 const TIER_BASE_SCORE: Record<R10EvidenceTier, number> = {
   1: 950,
@@ -66,33 +87,6 @@ const NUMBER_WORDS: Record<string, number> = {
   '10': 10, '12': 12, '40': 40, '70': 70,
 };
 
-const CLUSTER_TOPICS: Array<{ id: string; label: string; summary: string; concepts: string[] }> = [
-  {
-    id: 'cluster:lampstand_vision',
-    label: 'Sanctuary Lampstand, Seven Lamps & Seven Spirits Vision',
-    summary: 'Prophetic & apocalyptic throne/sanctuary imagery linking menorah (מְנוֹרָה / λυχνία), seven lamps, olive oil, YHWH’s seven eyes, and the seven Spirits of God.',
-    concepts: ['seven', 'lamps', 'lamp', 'menorah', 'lampstand', 'oil', 'eyes', 'eye', 'fire', 'revelation', 'zechariah', 'spirit', 'spirits', '7'],
-  },
-  {
-    id: 'cluster:ruach_wind_water',
-    label: 'Ruach / Pneuma: Spirit, Wind, Breath, Directions & Living Water',
-    summary: 'Lexical and thematic connections across Hebrew רוּחַ and Greek πνεῦμα (Spirit, wind, breath, four winds/directions) interacting with creation and living water.',
-    concepts: ['ruach', 'pneuma', 'spirit', 'spirits', 'wind', 'winds', 'breath', 'directions', 'direction', 'four', 'water', 'waters', 'river', 'rivers', 'creation', 'genesis'],
-  },
-  {
-    id: 'cluster:exodus_typology',
-    label: 'Exodus Deliverance & NT Typology (Red Sea / Passover / Baptism)',
-    summary: 'Historical Exodus events explicitly interpreted by NT authors as typological comparisons (1 Cor 10:1–2; 1 Cor 5:7; John 19:36; 1 Pet 1:19).',
-    concepts: ['red', 'sea', 'exodus', 'baptism', 'baptized', 'passover', 'lamb', 'blood', 'door', 'doorpost', 'doorposts', 'jesus', 'christ', 'cloud', 'moses'],
-  },
-  {
-    id: 'cluster:orthographic_wordplay',
-    label: 'Hebrew Consonantal Wordplay & Orthographic Analysis',
-    summary: 'Evaluates shared consonantal sequences (אָדָם ↔ אֲדָמָה Gen 2:7 wordplay vs אָדָם ↔ דָּם non-etymological consonantal overlap) and homographs.',
-    concepts: ['adam', 'dam', 'adamah', 'ground', 'blood', 'wordplay', 'root', 'ayin', 'spring', 'eye', 'אדם', 'דם', 'אדמה'],
-  },
-];
-
 function normalizeToken(raw: string): string {
   return String(raw || '')
     .normalize('NFD')
@@ -108,6 +102,21 @@ function stripPossessive(w: string): string {
     return w;
   }
   return w;
+}
+
+function getSingularForm(word: string): string | null {
+  const w = word.toLowerCase();
+  if (w.endsWith('ies') && w.length > 4) return w.slice(0, -3) + 'y';
+  if (w.endsWith('es') && w.length > 4) {
+    if (w.endsWith('shes') || w.endsWith('ches') || w.endsWith('xes') || w.endsWith('sses')) {
+      return w.slice(0, -2);
+    }
+    return w.slice(0, -1);
+  }
+  if (w.endsWith('s') && !w.endsWith('ss') && w.length > 3) {
+    return w.slice(0, -1);
+  }
+  return null;
 }
 
 function confidenceFromRecord(r: R10EvidenceRecord): R10ConnectionSummary['confidence_label'] {
@@ -159,6 +168,54 @@ interface ConceptIndexData {
   book_names: Array<{ id: number; name: string; usfm: string; chapters: number }>;
 }
 
+export interface LemmaProfile {
+  bs: string;
+  lk: string;
+  lang: 'hbo' | 'grc';
+  sc: string;
+  tr: string;
+  gl: string;
+  pos: string;
+  entity_kind?: string;
+  senses: Array<{ key: string; gl: string; note?: string }>;
+  total_verses: number;
+  all_vids: number[];
+  forms: Array<{ sf: string; tr: string; gl: string; mc?: string; cnt: number; vid?: number }>;
+  clusters: Array<{
+    cluster_id: string;
+    category: string;
+    label: string;
+    summary: string;
+    vids: number[];
+    sample_passages: Array<{
+      verse_id: number;
+      ref: string;
+      mt_ref?: string;
+      book: number;
+      chapter: number;
+      verse: number;
+      testament: 'OT' | 'NT';
+      snippet: string;
+      has_simile: boolean;
+    }>;
+    collocated_words: Array<{ bs: string; sc: string; tr: string; gl: string; hits: number; score: number }>;
+    has_simile: boolean;
+    xrefs: Array<{ from_vid: number; to_vid: number; to_ref: string; phrase: string; is_same_lemma: boolean }>;
+  }>;
+  grammatical_relations: Array<{
+    predicate: string;
+    direction: 'incoming' | 'outgoing';
+    display_label: string;
+    related_strongs: string;
+    related_script: string;
+    related_gloss: string;
+    occurrences: number;
+  }>;
+  lexical_relations: any[];
+  lxx_relations: any[];
+  homograph_siblings: Array<{ bs: string; lk?: string; sc: string; tr: string; gl: string }>;
+}
+
 function parsePassageReferences(rawQuery: string, bookNames: ConceptIndexData['book_names']): Array<{ refText: string; book: number; chapter: number; verse: number | null; endVerse?: number }> {
   const out: Array<{ refText: string; book: number; chapter: number; verse: number | null; endVerse?: number }> = [];
   const bookLookup = new Map<string, number>();
@@ -183,8 +240,8 @@ function parsePassageReferences(rawQuery: string, bookNames: ConceptIndexData['b
     const bid = bookLookup.get(bName) ?? bookLookup.get(bName.replace(/s$/, ''));
     if (!bid) continue;
     const ch = Number(m[2]);
-    const vs = m[3] ? Number(m[3]) : null;
-    const endVs = m[4] ? Number(m[4]) : undefined;
+    const vs = m[3] !== undefined ? Number(m[3]) : null;
+    const endVs = m[4] !== undefined ? Number(m[4]) : undefined;
     out.push({ refText: m[0], book: bid, chapter: ch, verse: vs, endVerse: endVs });
   }
   return out;
@@ -199,7 +256,7 @@ function tokenizeTerms(query: DiscoverConnectionsQuery): string[] {
   }
   const cleaned = String(query.query || '')
     .replace(/([A-Za-z]+)'s\b/g, '$1')
-    .replace(/[?,;()[\]{}"]/g, ' ');
+    .replace(/[?:,;()[\]{}"]/g, ' ');
   for (const part of cleaned.split(/[\s,/]+/)) {
     if (part.trim()) rawList.push(part.trim());
   }
@@ -252,16 +309,16 @@ export async function discoverBiblicalConnections(
     const bk = conceptIdx.book_names.find(b => b.id === pr.book);
     return {
       verse_id: 0,
-      ref: `${bk?.name || `Book ${pr.book}`} ${pr.chapter}${pr.verse ? `:${pr.verse}` : ''}`,
+      ref: `${bk?.name || `Book ${pr.book}`} ${pr.chapter}${pr.verse !== null ? `:${pr.verse}` : ''}`,
       book: pr.book,
       chapter: pr.chapter,
-      verse: pr.verse ?? 1,
+      verse: pr.verse !== null ? pr.verse : 1,
       end_verse: pr.endVerse,
       testament: pr.book <= 39 ? 'OT' : 'NT',
+      is_psalm_heading: pr.book === 19 && pr.verse === 0,
     };
   });
 
-  // Resolve concepts via hot concept-index + events + bounded sharded lemma-lookup
   const resolvedConcepts: R10ResolvedConcept[] = [];
   const missingConcepts: string[] = [];
   const matchedStrongs = new Set<string>();
@@ -269,21 +326,93 @@ export async function discoverBiblicalConnections(
   const matchedNumbers = new Set<number>();
   const matchedEvents: any[] = [];
   const lemmaCache = new Map<string, any>();
+  const controls: R10ControlOrWarning[] = [];
 
-  // Skip chapter/verse numbers that belonged to explicit passage refs (like "10", "1", "2" in "1 Cor 10:1-2")
+  // Passage hydration helper
+  const bookCache = new Map<number, any>();
+  async function loadBookData(bookId: number): Promise<any> {
+    if (bookCache.has(bookId)) return bookCache.get(bookId);
+    const pad = String(bookId).padStart(2, '0');
+    const data = await readR10Json<{ verses?: Record<string, any> }>(
+      reader, releaseId, `evidence-passages/book-${pad}.json.gz`, budget
+    );
+    const verses = data?.verses || null;
+    bookCache.set(bookId, verses);
+    return verses;
+  }
+
+  async function hydratePassageByVid(vid: number): Promise<R10PassageRef | null> {
+    const book = bookForVid(vid);
+    const verses = await loadBookData(book);
+    const v = verses?.[String(vid)];
+    if (!v) {
+      const bkName = conceptIdx?.book_names?.find(b => b.id === book)?.name || `Book ${book}`;
+      return {
+        verse_id: vid,
+        ref: `${bkName} (vid ${vid})`,
+        book,
+        chapter: 1,
+        verse: 1,
+        testament: book <= 39 ? 'OT' : 'NT',
+      };
+    }
+    return {
+      verse_id: vid,
+      ref: v.ref,
+      mt_ref: v.mt_ref,
+      book: v.book,
+      chapter: v.chapter,
+      verse: v.verse,
+      testament: v.book <= 39 ? 'OT' : 'NT',
+      snippet: v.en,
+      is_psalm_heading: v.book === 19 && v.verse === 0,
+    };
+  }
+
+
+
   const refTokensToIgnore = new Set<string>();
   for (const pr of parsedRefs) {
     refTokensToIgnore.add(String(pr.chapter));
-    if (pr.verse) refTokensToIgnore.add(String(pr.verse));
+    if (pr.verse !== null && pr.verse !== undefined) refTokensToIgnore.add(String(pr.verse));
     if (pr.endVerse) refTokensToIgnore.add(String(pr.endVerse));
+    const bk = conceptIdx.book_names.find(b => b.id === pr.book);
+    if (bk) {
+      refTokensToIgnore.add(bk.name.toLowerCase());
+      refTokensToIgnore.add(bk.usfm.toLowerCase());
+      refTokensToIgnore.add(bk.name.toLowerCase().replace(/s$/, ''));
+    }
   }
 
+  // Hydrate explicit passage references
+  for (const ep of explicitPassages) {
+    const verses = await loadBookData(ep.book);
+    if (verses) {
+      for (const [vKey, vVal] of Object.entries(verses) as [string, any][]) {
+        if (vVal.chapter === ep.chapter && vVal.verse === ep.verse) {
+          ep.verse_id = Number(vKey);
+          ep.snippet = vVal.en;
+          ep.mt_ref = vVal.mt_ref;
+          for (const t of vVal.toks || []) {
+            if (t.s && !['H0853', 'H0854', 'H4480', 'H0413', 'H5921', 'H0518', 'H3588'].includes(t.s)) {
+              matchedStrongs.add(t.s);
+            }
+          }
+          break;
+        }
+      }
+    }
+  }
+
+  // Sharded lemma-lookup loader with caching
   const shardMemo = new Map<string, Map<string, any[]>>();
-  async function lookupShardToken(tok: string): Promise<any[]> {
-    const normKey = tok.toLowerCase();
+  async function fetchShard(key: string): Promise<any[]> {
+    const normKey = key.toLowerCase();
     const bHex = computeBucketHex('fnv1a64_mod64', 64, normKey);
     if (!shardMemo.has(bHex)) {
-      const shard = await readR10Json(reader, releaseId, `lemma-lookup/shard-${bHex}.json.gz`, budget);
+      const shard = await readR10Json<{ entries?: Array<[string, any[]]> }>(
+        reader, releaseId, `lemma-lookup/shard-${bHex}.json.gz`, budget
+      );
       const map = new Map<string, any[]>();
       if (shard?.entries) {
         for (const [k, arr] of shard.entries) map.set(k, arr);
@@ -293,6 +422,21 @@ export async function discoverBiblicalConnections(
     return shardMemo.get(bHex)?.get(normKey) || [];
   }
 
+  async function lookupShardToken(tok: string): Promise<any[]> {
+    const rawKey = /^[HG]\d+$/i.test(tok) ? tok.toLowerCase() : tok.toLowerCase();
+    let hits = await fetchShard(rawKey);
+    if (hits.length === 0) {
+      const sing = getSingularForm(rawKey);
+      if (sing && sing !== rawKey) {
+        hits = await fetchShard(sing);
+      }
+    }
+    return hits;
+  }
+
+  const isExplicitProperQuery = /\b(susa|shushan|persia|palace|citadel|city|capital|person|place)\b/i.test(query.query || '');
+
+  // Stage 1: Resolve concepts via aliases + sharded lemma-lookup
   for (const term of extractedTerms) {
     if (/^\d+$/.test(term) && refTokensToIgnore.has(term) && !NUMBER_WORDS[term]) continue;
     const lower = term.toLowerCase();
@@ -302,10 +446,63 @@ export async function discoverBiblicalConnections(
       e.keywords?.includes(lower) && (lower.length >= 4 || ['red', 'sea'].includes(lower))
     ).slice(0, 4);
 
-    if (alias || numVal !== undefined) {
-      const lemmas: R10OriginalWordRef[] = (alias?.original_words || []).map(w => ({ ...w }));
+    const shardHits = await lookupShardToken(term);
+
+    // Proper-Name vs Common-Noun Guard:
+    // If English concept matches both common nouns (!h.is_prop) and proper places/persons (h.is_prop),
+    // keep non-proper entries as primary resolved lemmas unless query explicitly names a proper place/person.
+    const nonPropShard = shardHits.filter(h => !h.is_prop);
+    const propShard = shardHits.filter(h => h.is_prop);
+    let primaryShardHits = shardHits;
+    const excludedProper: any[] = [];
+    if (nonPropShard.length > 0 && !isExplicitProperQuery) {
+      primaryShardHits = nonPropShard;
+      excludedProper.push(...propShard);
+    }
+
+    if (alias || primaryShardHits.length > 0 || numVal !== undefined || evHits.length > 0) {
+      const lemmas: R10OriginalWordRef[] = [];
       const nodes: R10Node[] = [];
+      const homographSiblings: Array<{ bs: string; lk?: string; sc: string; tr: string; gl: string }> = [];
+
+      // Add primary shard hits first
+      for (const h of primaryShardHits.slice(0, 5)) {
+        matchedStrongs.add(h.bs);
+        const ow: R10OriginalWordRef = {
+          lemma_key: h.lk,
+          strongs: h.bs,
+          language: h.lang,
+          lemma_script: h.sc,
+          transliteration: h.tr,
+          gloss: h.gl,
+        };
+        lemmaCache.set(h.bs, ow);
+        lemmas.push(ow);
+      }
+
+      // Merge alias original words without duplicate Strong's
+      if (alias?.original_words) {
+        for (const aw of alias.original_words) {
+          if (aw.strongs) matchedStrongs.add(aw.strongs);
+          if (!lemmas.some(l => l.strongs === aw.strongs)) {
+            lemmas.push({ ...aw });
+            if (aw.strongs) lemmaCache.set(aw.strongs, aw);
+          }
+        }
+      }
       for (const s of alias?.strongs || []) matchedStrongs.add(s);
+
+      // Handle excluded proper-name homographs
+      for (const ep of excludedProper) {
+        homographSiblings.push({ bs: ep.bs, lk: ep.lk, sc: ep.sc, tr: ep.tr, gl: ep.gl });
+        controls.push({
+          control_id: `ctrl:homograph_proper:${ep.bs}`,
+          kind: 'homograph_disambiguation',
+          title: `Homograph distinction: Common noun "${term}" vs proper name ${ep.gl} (${ep.bs})`,
+          explanation: `Original script ${ep.sc} can designate both the botanical / common entity "${term}" and proper entity "${ep.gl}" (${ep.bs}). Separated by default to prevent geographical or personal confounding.`,
+        });
+      }
+
       for (const m of alias?.motifs || []) {
         matchedMotifs.add(m);
         const mInfo = motifsData.motifs[m];
@@ -332,11 +529,10 @@ export async function discoverBiblicalConnections(
         });
       }
       for (const w of lemmas) {
-        lemmaCache.set(w.strongs || '', w);
         nodes.push({
           id: `lemma:${w.strongs}`,
           kind: 'lemma',
-          label: `${w.lemma_script} (${w.transliteration})`,
+          label: `${w.lemma_script} (${w.transliteration || w.gloss})`,
           subtitle: w.gloss,
           language: w.language,
           strongs: w.strongs,
@@ -345,51 +541,9 @@ export async function discoverBiblicalConnections(
           transliteration: w.transliteration,
           gloss: w.gloss,
           epistemic_class: 'documented_lexical_relationship',
-          grounding_source: 'STEPBible',
+          grounding_source: 'STEPBible + MACULA',
         });
       }
-      resolvedConcepts.push({
-        input_token: term,
-        normalized: lower,
-        matched: true,
-        resolution_kind: numVal !== undefined ? 'number' : (alias?.motifs?.length ? 'motif' : 'english_concept'),
-        candidate_nodes: nodes,
-        lemmas,
-        ambiguity_note: alias?.note,
-      });
-      continue;
-    }
-
-    // Fallback: look up in sharded lemma-lookup within subrequest budget
-    const hits = await lookupShardToken(/^[HG]\d+$/i.test(term) ? term.toUpperCase() : lower);
-    if (hits.length > 0 || evHits.length > 0) {
-      const lemmas: R10OriginalWordRef[] = hits.slice(0, 5).map(h => {
-        matchedStrongs.add(h.bs);
-        const ow: R10OriginalWordRef = {
-          lemma_key: h.lk,
-          strongs: h.bs,
-          language: h.lang,
-          lemma_script: h.sc,
-          transliteration: h.tr,
-          gloss: h.gl,
-        };
-        lemmaCache.set(h.bs, ow);
-        return ow;
-      });
-      const nodes: R10Node[] = lemmas.map(w => ({
-        id: `lemma:${w.strongs}`,
-        kind: 'lemma',
-        label: `${w.lemma_script} (${w.transliteration})`,
-        subtitle: w.gloss,
-        language: w.language,
-        strongs: w.strongs,
-        lemma_key: w.lemma_key,
-        lemma_script: w.lemma_script,
-        transliteration: w.transliteration,
-        gloss: w.gloss,
-        epistemic_class: 'documented_lexical_relationship',
-        grounding_source: 'STEPBible + MACULA',
-      }));
       for (const eh of evHits) {
         matchedEvents.push(eh);
         nodes.push({
@@ -401,14 +555,20 @@ export async function discoverBiblicalConnections(
           grounding_source: 'Theographic Bible Data',
         });
       }
+
+      const resKind = /^[HG]\d+$/i.test(term)
+        ? 'strongs'
+        : (numVal !== undefined ? 'number' : (alias?.motifs?.length ? 'motif' : 'english_concept'));
+
       resolvedConcepts.push({
         input_token: term,
         normalized: lower,
         matched: true,
-        resolution_kind: /^[HG]\d+$/i.test(term) ? 'strongs' : (hits.length ? 'english_concept' : 'event'),
+        resolution_kind: resKind,
         candidate_nodes: nodes,
         lemmas,
-        ambiguity_note: hits.length > 3 ? `Multiple original-language candidates (${hits.slice(0, 3).map(h => h.sc).join(', ')}...)` : undefined,
+        homograph_siblings: homographSiblings.length > 0 ? homographSiblings : undefined,
+        ambiguity_note: alias?.note || (primaryShardHits.length > 3 ? `Multiple original-language candidates (${primaryShardHits.slice(0, 3).map(h => h.sc).join(', ')}...)` : undefined),
       });
     } else if (!/^\d+$/.test(term)) {
       missingConcepts.push(term);
@@ -423,18 +583,611 @@ export async function discoverBiblicalConnections(
     }
   }
 
-  // Stage 2: Score & gather candidate evidence records
+  // Stage 1.5: Parallel bounded profile loading from sharded `lemma-profiles` for up to 6 primary resolved Strong's codes
+  const profileStrongsToLoad = [...matchedStrongs].slice(0, 6);
+  const profileBuckets = new Map<string, string[]>();
+  for (const bs of profileStrongsToLoad) {
+    const bHex = computeBucketHex('fnv1a64_mod64', 64, bs);
+    if (!profileBuckets.has(bHex)) profileBuckets.set(bHex, []);
+    profileBuckets.get(bHex)!.push(bs);
+  }
+
+  const profileShardMemo = new Map<string, Record<string, LemmaProfile>>();
+  await Promise.all(
+    [...profileBuckets.keys()].map(async bHex => {
+      const shard = await readR10Json<{ entries?: Record<string, LemmaProfile> }>(
+        reader, releaseId, `lemma-profiles/shard-${bHex}.json.gz`, budget
+      );
+      if (shard?.entries) {
+        profileShardMemo.set(bHex, shard.entries);
+      }
+    })
+  );
+
+  const loadedProfiles: LemmaProfile[] = [];
+  const profileByStrongs = new Map<string, LemmaProfile>();
+  for (const bs of profileStrongsToLoad) {
+    const bHex = computeBucketHex('fnv1a64_mod64', 64, bs);
+    const prof = profileShardMemo.get(bHex)?.[bs];
+    if (prof) {
+      loadedProfiles.push(prof);
+      profileByStrongs.set(bs, prof);
+    }
+  }
+
+  // Enrich resolved concepts with profile details
+  for (const rc of resolvedConcepts) {
+    const prof = rc.lemmas.map(l => profileByStrongs.get(l.strongs || '')).find(Boolean);
+    if (prof) {
+      rc.sense_candidates = prof.senses;
+      rc.forms = prof.forms;
+      rc.total_verses = prof.total_verses;
+      rc.entity_kind = prof.entity_kind;
+      if (prof.homograph_siblings?.length) {
+        const existing = rc.homograph_siblings || [];
+        const combined = [...existing];
+        for (const sib of prof.homograph_siblings) {
+          if (!combined.some(x => x.bs === sib.bs)) combined.push(sib);
+        }
+        rc.homograph_siblings = combined;
+        for (const sib of prof.homograph_siblings) {
+          if (!controls.some(c => c.control_id === `ctrl:homograph_sibling:${prof.bs}:${sib.bs}`)) {
+            controls.push({
+              control_id: `ctrl:homograph_sibling:${prof.bs}:${sib.bs}`,
+              kind: 'homograph_disambiguation',
+              title: `Homograph sibling: ${prof.sc} (${prof.gl} · ${prof.bs}) vs ${sib.sc} (${sib.gl} · ${sib.bs})`,
+              explanation: `Hebrew consonantal skeleton for ${prof.sc} (${prof.bs}) is shared with ${sib.sc} (${sib.bs}, "${sib.gl}"). Preserved separately to prevent confounding distinct biblical concepts.`,
+            });
+          }
+        }
+      }
+    }
+  }
+
+
+
+  // Stage 2: Candidate evidence generation
   const allCandidates: R10EvidenceRecord[] = [];
   const queryTermSet = new Set(extractedTerms.map(t => t.toLowerCase()));
   const multiConcept = extractedTerms.filter(t => !refTokensToIgnore.has(t)).length >= 2 || parsedRefs.length >= 2;
+  const clusters: R10Cluster[] = [];
+  const bridges: R10ClusterBridge[] = [];
+  const crossReferencesOut: DiscoverConnectionsResult['related_discoveries']['cross_references'] = [];
 
+  // A. Evidence-Derived Clusters & Relations from loaded lemma-profiles
+  for (const prof of loadedProfiles) {
+    const idfBonus = Math.max(0, Math.round((Math.log(31203 / Math.max(1, prof.total_verses)) - 3) * 18));
+    const hubPenalty = prof.total_verses > 250 && !multiConcept ? 140 : 0;
+
+    // A. Clusters
+    for (const cl of prof.clusters || []) {
+      const anchorNodes: R10Node[] = [
+        {
+          id: `lemma:${prof.bs}`,
+          kind: 'lemma',
+          label: `${prof.sc} (${prof.tr})`,
+          subtitle: prof.gl,
+          language: prof.lang,
+          strongs: prof.bs,
+          lemma_key: prof.lk,
+          lemma_script: prof.sc,
+          transliteration: prof.tr,
+          gloss: prof.gl,
+          epistemic_class: 'direct_textual_evidence',
+          grounding_source: 'STEPBible + MACULA',
+        },
+        ...cl.sample_passages.slice(0, 3).map(p => ({
+          id: `passage:${p.ref}`,
+          kind: 'passage' as const,
+          label: p.ref,
+          passage: {
+            verse_id: p.verse_id,
+            ref: p.ref,
+            mt_ref: p.mt_ref,
+            book: p.book,
+            chapter: p.chapter,
+            verse: p.verse,
+            testament: p.testament,
+            snippet: p.snippet,
+            is_psalm_heading: p.book === 19 && p.verse === 0,
+          },
+          epistemic_class: 'direct_textual_evidence' as const,
+          grounding_source: 'MACULA',
+        })),
+      ];
+
+      clusters.push({
+        cluster_id: cl.cluster_id,
+        label: cl.label,
+        category: cl.category,
+        concepts: [prof.gl, prof.sc],
+        anchor_nodes: anchorNodes,
+        connection_ids: [`r11:cluster:${cl.cluster_id}`],
+        summary: cl.summary,
+        total_passages: cl.vids.length,
+        passages: cl.sample_passages.map(p => ({
+          verse_id: p.verse_id,
+          ref: p.ref,
+          mt_ref: p.mt_ref,
+          book: p.book,
+          chapter: p.chapter,
+          verse: p.verse,
+          testament: p.testament,
+          snippet: p.snippet,
+          is_psalm_heading: p.book === 19 && p.verse === 0,
+        })),
+        uncertainty_note: cl.category === 'psalm_superscription'
+          ? 'Psalm heading / musical or liturgical superscription; whether the expression denotes a tune, instrument, or floral motif is uncertain in source text.'
+          : 'Evidence-derived semantic cluster grouping attested verses by shared vocabulary and genre.',
+        collocated_words: cl.collocated_words,
+      });
+
+      let tier: R10EvidenceTier = 3;
+      let predicate: R10Predicate = 'verified_lexical_grammatical';
+      let epistemicClass: R10EpistemicClass = 'direct_textual_evidence';
+      let limitations = ['Evidence-derived corpus cluster based on syntactic and lexical co-occurrence.'];
+
+      if (cl.category === 'temple_and_sanctuary_architecture') {
+        const hasArchColloc = (cl.collocated_words || []).some(w =>
+          ['pillar', 'cup', 'brim', 'handbreadth', 'thickness', 'bath', 'deed'].some(k => w.gl.toLowerCase().includes(k))
+        ) || (cl.xrefs || []).length > 0;
+        tier = hasArchColloc ? 2 : 3;
+        predicate = 'verified_lexical_grammatical';
+        limitations = ['Sanctuary and Temple architecture descriptions; physical ornamentation rather than metaphorical or typological discourse.'];
+      } else if (cl.category === 'psalm_superscription') {
+        tier = 3;
+        predicate = 'verified_lexical_grammatical';
+        epistemicClass = 'documented_lexical_relationship';
+        limitations = ['Psalm heading / musical or liturgical superscription; whether the expression denotes a tune, instrument, or floral motif is uncertain in source text.'];
+      } else if (['poetic_imagery_and_similes', 'prophetic_imagery_and_oracles', 'gospel_and_nt_teaching'].includes(cl.category)) {
+        if (cl.has_simile) {
+          tier = 2;
+          predicate = 'explicit_comparison';
+          limitations = ['Explicit comparative simile in biblical text; context determines the extent of figurative correspondence.'];
+        } else {
+          tier = 3;
+          predicate = 'verified_lexical_grammatical';
+          limitations = ['Attested imagery in poetic or prophetic discourse.'];
+        }
+      }
+
+      const baseScore = TIER_BASE_SCORE[tier];
+      const witnessBonus = Math.min(80, cl.vids.length * 6);
+      const specificityBonus = idfBonus + (cl.has_simile ? 30 : 0);
+      const finalScore = Math.max(10, baseScore + specificityBonus + witnessBonus - hubPenalty);
+
+      const clusterVids = new Set(cl.vids);
+      const matchingForms = (prof.forms || []).filter(f => f.vid && clusterVids.has(f.vid));
+      const originalWords: R10OriginalWordRef[] = [
+        {
+          lemma_key: prof.lk,
+          strongs: prof.bs,
+          language: prof.lang,
+          lemma_script: prof.sc,
+          transliteration: prof.tr,
+          gloss: prof.gl,
+        },
+        ...matchingForms.slice(0, 3).map(f => ({
+          lemma_key: prof.lk,
+          strongs: prof.bs,
+          language: prof.lang,
+          lemma_script: f.sf,
+          transliteration: f.tr,
+          gloss: f.gl,
+        })),
+      ];
+
+      allCandidates.push({
+        evidence_id: `r11:cluster:${cl.cluster_id}`,
+        predicate,
+        evidence_tier: tier,
+        epistemic_class: epistemicClass,
+        title: cl.label,
+        summary: cl.summary,
+        source_node_id: `lemma:${prof.bs}`,
+        target_node_id: `cluster:${cl.cluster_id}`,
+        passages: cl.sample_passages.map(p => ({
+          verse_id: p.verse_id,
+          ref: p.ref,
+          mt_ref: p.mt_ref,
+          book: p.book,
+          chapter: p.chapter,
+          verse: p.verse,
+          testament: p.testament,
+          snippet: p.snippet,
+          is_psalm_heading: p.book === 19 && p.verse === 0,
+        })),
+        original_words: originalWords,
+        matched_terms: [prof.gl, prof.sc, prof.bs],
+        limitations,
+        provenance: {
+          source_dataset: 'MACULA Hebrew & Greek + STEPBible',
+          source_record_ids: cl.sample_passages.map(p => p.ref),
+          license: 'CC BY 4.0',
+          derivation_method: 'evidence_derived_semantic_cluster',
+        },
+        score_components: {
+          base_tier_score: baseScore,
+          specificity_bonus: specificityBonus,
+          witness_bonus: witnessBonus,
+          common_word_penalty: hubPenalty,
+          number_coincidence_penalty: 0,
+          orthographic_penalty: 0,
+          final_score: finalScore,
+        },
+      });
+
+      // E. Cross-References from cluster
+      for (const xr of (cl.xrefs || []).slice(0, 4)) {
+        const fromP: R10PassageRef = {
+          verse_id: xr.from_vid,
+          ref: cl.sample_passages.find(p => p.verse_id === xr.from_vid)?.ref || `Verse ${xr.from_vid}`,
+          book: bookForVid(xr.from_vid),
+          chapter: 1,
+          verse: 1,
+          testament: bookForVid(xr.from_vid) <= 39 ? 'OT' : 'NT',
+        };
+        const toP: R10PassageRef = {
+          verse_id: xr.to_vid,
+          ref: xr.to_ref,
+          book: bookForVid(xr.to_vid),
+          chapter: 1,
+          verse: 1,
+          testament: bookForVid(xr.to_vid) <= 39 ? 'OT' : 'NT',
+        };
+        crossReferencesOut.push({
+          from_ref: fromP.ref,
+          to_ref: xr.to_ref,
+          anchor_phrase: xr.phrase,
+          from_passage: fromP,
+          to_passage: toP,
+        });
+        allCandidates.push({
+          evidence_id: `r11:xref:${xr.from_vid}:${xr.to_vid}`,
+          predicate: 'cross_reference_witness',
+          evidence_tier: 4,
+          epistemic_class: 'verified_cross_reference',
+          title: `Cross-reference witness: ${fromP.ref} → ${xr.to_ref} ("${xr.phrase}")`,
+          summary: `Canonical cross-reference connects ${fromP.ref} and ${xr.to_ref} sharing anchor phrase "${xr.phrase}" (${xr.is_same_lemma ? 'same original lemma' : 'intertextual thematic witness'}).`,
+          source_node_id: `passage:${fromP.ref}`,
+          target_node_id: `passage:${xr.to_ref}`,
+          passages: [fromP, toP],
+          original_words: [{ lemma_key: prof.lk, strongs: prof.bs, language: prof.lang, lemma_script: prof.sc, transliteration: prof.tr, gloss: prof.gl }],
+          matched_terms: [prof.gl, xr.phrase],
+          limitations: ['Cross-reference witness documents ancient editorial or intertextual connection; thematic scope must be verified from context.'],
+          provenance: {
+            source_dataset: 'CrossReferences.org / OpenBible',
+            source_record_ids: [fromP.ref, xr.to_ref],
+            license: 'CC BY 4.0',
+            derivation_method: 'canonical_cross_reference_graph',
+          },
+          score_components: {
+            base_tier_score: TIER_BASE_SCORE[4],
+            specificity_bonus: idfBonus,
+            witness_bonus: 30,
+            common_word_penalty: hubPenalty,
+            number_coincidence_penalty: 0,
+            orthographic_penalty: 0,
+            final_score: Math.max(10, TIER_BASE_SCORE[4] + idfBonus + 30 - hubPenalty),
+          },
+        });
+      }
+    }
+
+    // B. Direct Grammatical Relations
+    const nonFuncGram = (prof.grammatical_relations || []).filter(gr =>
+      gr.occurrences >= 1 && !['H0853', 'H0854', 'H4480', 'H0413', 'H5921', 'H0518', 'H3588'].includes(gr.related_strongs)
+    ).slice(0, 5);
+
+    for (const gr of nonFuncGram) {
+      const gTier: R10EvidenceTier = gr.occurrences >= 2 ? 2 : 3;
+      const gBase = TIER_BASE_SCORE[gTier];
+      const gSpec = idfBonus + 25;
+      const gWit = Math.min(40, gr.occurrences * 8);
+      allCandidates.push({
+        evidence_id: `r11:gram:${prof.bs}:${gr.predicate}:${gr.related_strongs}`,
+        predicate: 'verified_lexical_grammatical',
+        evidence_tier: gTier,
+        epistemic_class: 'direct_textual_evidence',
+        title: `${gr.display_label}: ${prof.sc} (${prof.tr}) ↔ ${gr.related_script} ("${gr.related_gloss}", ${gr.occurrences}×)`,
+        summary: `Syntactic dependency analysis identifies direct grammatical connection (${gr.display_label}) between ${prof.sc} (${prof.bs}) and ${gr.related_script} (${gr.related_strongs}, "${gr.related_gloss}") across ${gr.occurrences} occurrences.`,
+        source_node_id: `lemma:${prof.bs}`,
+        target_node_id: `lemma:${gr.related_strongs}`,
+        passages: prof.clusters?.[0]?.sample_passages?.slice(0, 3).map(p => ({
+          verse_id: p.verse_id,
+          ref: p.ref,
+          mt_ref: p.mt_ref,
+          book: p.book,
+          chapter: p.chapter,
+          verse: p.verse,
+          testament: p.testament,
+          snippet: p.snippet,
+          is_psalm_heading: p.book === 19 && p.verse === 0,
+        })) || [],
+        original_words: [
+          { lemma_key: prof.lk, strongs: prof.bs, language: prof.lang, lemma_script: prof.sc, transliteration: prof.tr, gloss: prof.gl },
+          { strongs: gr.related_strongs, language: prof.lang, lemma_script: gr.related_script, transliteration: '', gloss: gr.related_gloss },
+        ],
+        matched_terms: [prof.gl, gr.related_gloss, prof.bs, gr.related_strongs],
+        limitations: ['Syntactic construct/argument relation; contextual meaning varies by passage.'],
+        provenance: {
+          source_dataset: 'MACULA Hebrew/Greek Syntactic Trees',
+          source_record_ids: [prof.bs, gr.related_strongs],
+          license: 'CC BY 4.0',
+          derivation_method: 'syntactic_dependency_relation',
+        },
+        score_components: {
+          base_tier_score: gBase,
+          specificity_bonus: gSpec,
+          witness_bonus: gWit,
+          common_word_penalty: hubPenalty,
+          number_coincidence_penalty: 0,
+          orthographic_penalty: 0,
+          final_score: Math.max(10, gBase + gSpec + gWit - hubPenalty),
+        },
+      });
+    }
+
+    // C. Documented LXX Bridges
+    for (let idx = 0; idx < Math.min(6, (prof.lxx_relations || []).length); idx++) {
+      const rel = prof.lxx_relations[idx];
+      let relTitle = `Septuagint (LXX) bridge: ${prof.sc} (${prof.bs})`;
+      let relSummary = `Documented Septuagint translation relationship for ${prof.sc}.`;
+      if (rel.type === 'lxx_swete_witness') {
+        relTitle = `Septuagint (LXX) bridge: ${prof.sc} (${prof.bs}) → ${rel.script} (${rel.target_strongs}, "${rel.gloss}") across ${rel.count} passages`;
+        relSummary = `Ancient Greek Septuagint translates Hebrew ${prof.sc} (${prof.bs}) as Greek ${rel.script} (${rel.target_strongs}) in ${rel.count} occurrences (${(rel.sample_refs || []).slice(0, 4).join(', ')}). Establishes documented Greek translation bridge.`;
+      } else if (rel.type === 'lxx_heading_witness') {
+        relTitle = `Septuagint superscription witness for ${rel.ref}: ${prof.sc} (${prof.bs})`;
+        relSummary = `In ${rel.ref}, the Septuagint renders the Hebrew title containing ${prof.sc} as: "${rel.lxx_text}". Witnesses ancient translation understanding of this superscription.`;
+      } else if (rel.type === 'bcv_lxx_bridge' || rel.type === 'word_alignment') {
+        relTitle = `Septuagint alignment witness: ${prof.sc} (${prof.bs}) → ${rel.script || rel.target_strongs}`;
+        relSummary = `Documented LXX lexical alignment linking ${prof.sc} (${prof.bs}) with Greek witness ${rel.script || rel.target_strongs}.`;
+      }
+      allCandidates.push({
+        evidence_id: `r11:lxx:${prof.bs}:${idx}`,
+        predicate: 'cross_language_bridge',
+        evidence_tier: 3,
+        epistemic_class: 'documented_lexical_relationship',
+        title: relTitle,
+        summary: relSummary,
+        source_node_id: `lemma:${prof.bs}`,
+        target_node_id: rel.target_strongs ? `lemma:${rel.target_strongs}` : `concept:lxx:${prof.bs}`,
+        passages: (rel.sample_refs || (rel.ref ? [rel.ref] : [])).slice(0, 4).map((rf: string) => ({
+          verse_id: 0,
+          ref: rf,
+          book: 0,
+          chapter: 1,
+          verse: 1,
+          testament: 'OT' as const,
+        })),
+        original_words: [
+          { lemma_key: prof.lk, strongs: prof.bs, language: prof.lang, lemma_script: prof.sc, transliteration: prof.tr, gloss: prof.gl },
+          ...(rel.target_strongs ? [{ strongs: rel.target_strongs, language: 'grc' as const, lemma_script: rel.script || '', transliteration: '', gloss: rel.gloss || '' }] : []),
+        ],
+        matched_terms: [prof.gl, prof.sc, rel.gloss || ''].filter(Boolean),
+        limitations: ['Historical Septuagint translation choice; reflects Alexandrian Jewish understanding of the Hebrew text.'],
+        provenance: {
+          source_dataset: 'Swete LXX / Hatch-Redpath / STEPBible',
+          source_record_ids: (rel.sample_refs || [rel.ref || prof.bs]),
+          license: 'CC BY 4.0',
+          derivation_method: 'lxx_swete_alignment',
+        },
+        score_components: {
+          base_tier_score: TIER_BASE_SCORE[3],
+          specificity_bonus: idfBonus + 20,
+          witness_bonus: Math.min(30, (rel.count || 1) * 5),
+          common_word_penalty: hubPenalty,
+          number_coincidence_penalty: 0,
+          orthographic_penalty: 0,
+          final_score: Math.max(10, TIER_BASE_SCORE[3] + idfBonus + 20 + Math.min(30, (rel.count || 1) * 5) - hubPenalty),
+        },
+      });
+    }
+
+    // D. Lexical relations
+    for (let idx = 0; idx < Math.min(5, (prof.lexical_relations || []).length); idx++) {
+      const lrel = prof.lexical_relations[idx];
+      allCandidates.push({
+        evidence_id: `r11:lex:${prof.bs}:${idx}`,
+        predicate: 'verified_lexical_grammatical',
+        evidence_tier: 3,
+        epistemic_class: 'documented_lexical_relationship',
+        title: `Lexical relation (${lrel.type.replace(/_/g, ' ')}): ${prof.sc} (${prof.bs}) ↔ ${lrel.label || `${lrel.script} (${lrel.target_strongs})`}`,
+        summary: `Morphological and root derivation analysis links ${prof.sc} (${prof.bs}) to ${lrel.label || `${lrel.script || ''} (${lrel.target_strongs || ''}, "${lrel.gloss || ''}")`}.`,
+        source_node_id: `lemma:${prof.bs}`,
+        target_node_id: lrel.target_strongs ? `lemma:${lrel.target_strongs}` : `root:${lrel.root || prof.bs}`,
+        passages: [],
+        original_words: [
+          { lemma_key: prof.lk, strongs: prof.bs, language: prof.lang, lemma_script: prof.sc, transliteration: prof.tr, gloss: prof.gl },
+          ...(lrel.target_strongs ? [{ strongs: lrel.target_strongs, language: prof.lang, lemma_script: lrel.script || '', transliteration: '', gloss: lrel.gloss || '' }] : []),
+        ],
+        matched_terms: [prof.gl, prof.sc, lrel.gloss || ''].filter(Boolean),
+        limitations: ['Lexical root derivation reflects shared etymological origin; semantic usage in specific verses diverges.'],
+        provenance: {
+          source_dataset: 'STEPBible TBESH/TBESG Lexicon',
+          source_record_ids: [prof.bs, lrel.target_strongs || ''].filter(Boolean),
+          license: 'CC BY 4.0',
+          derivation_method: 'lexical_root_derivation',
+        },
+        score_components: {
+          base_tier_score: TIER_BASE_SCORE[3],
+          specificity_bonus: idfBonus + 15,
+          witness_bonus: 20,
+          common_word_penalty: hubPenalty,
+          number_coincidence_penalty: 0,
+          orthographic_penalty: 0,
+          final_score: Math.max(10, TIER_BASE_SCORE[3] + idfBonus + 15 + 20 - hubPenalty),
+        },
+      });
+    }
+  }
+
+  // F. Multi-Concept Dynamic Intersections & Bridges (when >= 2 distinct concept term groups resolve to lemma profiles)
+  const conceptGroups: Array<{ term: string; profiles: LemmaProfile[]; vids: Set<number> }> = [];
+  for (const rc of resolvedConcepts) {
+    if (!rc.matched) continue;
+    const groupProfs = rc.lemmas
+      .map(l => profileByStrongs.get(l.strongs || ''))
+      .filter((p): p is LemmaProfile => Boolean(p));
+    if (groupProfs.length > 0) {
+      const combinedVids = new Set<number>();
+      for (const p of groupProfs) {
+        for (const v of p.all_vids) combinedVids.add(v);
+      }
+      conceptGroups.push({ term: rc.input_token, profiles: groupProfs, vids: combinedVids });
+    }
+  }
+
+  if (conceptGroups.length >= 2) {
+    for (let i = 0; i < conceptGroups.length; i++) {
+      for (let j = i + 1; j < conceptGroups.length; j++) {
+        const gA = conceptGroups[i];
+        const gB = conceptGroups[j];
+        const sharedVids = [...gA.vids].filter(v => gB.vids.has(v));
+
+        // 1. Same-verse intersections
+        if (sharedVids.length > 0) {
+          for (const vid of sharedVids.slice(0, 6)) {
+            const p = await hydratePassageByVid(vid);
+            if (!p) continue;
+            const pA = gA.profiles[0];
+            const pB = gB.profiles[0];
+            const evId = `r11:intersect:verse:${pA.bs}:${pB.bs}:${vid}`;
+            allCandidates.push({
+              evidence_id: evId,
+              predicate: 'verified_lexical_grammatical',
+              evidence_tier: 2,
+              epistemic_class: 'direct_textual_evidence',
+              title: `Direct textual convergence: "${gA.term}" + "${gB.term}" in ${p.ref}`,
+              summary: `Scripture text contains both ${pA.sc} ("${pA.gl}") and ${pB.sc} ("${pB.gl}") in the same verse (${p.ref}): "${p.snippet || ''}". Direct primary witness of co-occurrence.`,
+              source_node_id: `lemma:${pA.bs}`,
+              target_node_id: `lemma:${pB.bs}`,
+              passages: [p],
+              original_words: [
+                { lemma_key: pA.lk, strongs: pA.bs, language: pA.lang, lemma_script: pA.sc, transliteration: pA.tr, gloss: pA.gl },
+                { lemma_key: pB.lk, strongs: pB.bs, language: pB.lang, lemma_script: pB.sc, transliteration: pB.tr, gloss: pB.gl },
+              ],
+              matched_terms: [gA.term, gB.term, pA.gl, pB.gl],
+              limitations: ['Direct intra-verse co-occurrence establishes textual contact; syntax and discourse function determine relationship.'],
+              provenance: {
+                source_dataset: 'MACULA Hebrew & Greek',
+                source_record_ids: [p.ref],
+                license: 'CC BY 4.0',
+                derivation_method: 'exact_verse_lemma_intersection',
+              },
+              score_components: {
+                base_tier_score: TIER_BASE_SCORE[2],
+                specificity_bonus: 180,
+                witness_bonus: Math.min(50, sharedVids.length * 6),
+                common_word_penalty: 0,
+                number_coincidence_penalty: 0,
+                orthographic_penalty: 0,
+                final_score: TIER_BASE_SCORE[2] + 180 + Math.min(50, sharedVids.length * 6),
+              },
+            });
+          }
+        }
+
+        // 2. Pericope window intersections (1 <= |vidA - vidB| <= 4 in same book)
+        const pericopePairs: Array<[number, number]> = [];
+        const arrA = [...gA.vids].slice(0, 50);
+        const arrB = [...gB.vids].slice(0, 50);
+        for (const vA of arrA) {
+          for (const vB of arrB) {
+            const diff = Math.abs(vA - vB);
+            if (diff >= 1 && diff <= 4 && bookForVid(vA) === bookForVid(vB)) {
+              pericopePairs.push([vA, vB]);
+              if (pericopePairs.length >= 3) break;
+            }
+          }
+          if (pericopePairs.length >= 3) break;
+        }
+
+        for (const [vA, vB] of pericopePairs) {
+          const pA = await hydratePassageByVid(vA);
+          const pB = await hydratePassageByVid(vB);
+          if (pA && pB) {
+            const profA = gA.profiles[0];
+            const profB = gB.profiles[0];
+            allCandidates.push({
+              evidence_id: `r11:intersect:pericope:${vA}:${vB}`,
+              predicate: 'shared_motif',
+              evidence_tier: 4,
+              epistemic_class: 'shared_motif_evidence',
+              title: `Close pericope proximity: "${gA.term}" (${pA.ref}) ↔ "${gB.term}" (${pB.ref})`,
+              summary: `Original-language terms ${profA.sc} and ${profB.sc} appear within ${Math.abs(vA - vB)} verse(s) of each other in the same literary context (${pA.ref} and ${pB.ref}).`,
+              source_node_id: `passage:${pA.ref}`,
+              target_node_id: `passage:${pB.ref}`,
+              passages: [pA, pB],
+              original_words: [
+                { lemma_key: profA.lk, strongs: profA.bs, language: profA.lang, lemma_script: profA.sc, transliteration: profA.tr, gloss: profA.gl },
+                { lemma_key: profB.lk, strongs: profB.bs, language: profB.lang, lemma_script: profB.sc, transliteration: profB.tr, gloss: profB.gl },
+              ],
+              matched_terms: [gA.term, gB.term],
+              limitations: ['Localized proximity within the same pericope shows shared discourse setting without demanding direct grammatical coordination.'],
+              provenance: {
+                source_dataset: 'MACULA Hebrew & Greek',
+                source_record_ids: [pA.ref, pB.ref],
+                license: 'CC BY 4.0',
+                derivation_method: 'pericope_window_intersection',
+              },
+              score_components: {
+                base_tier_score: TIER_BASE_SCORE[4],
+                specificity_bonus: 90,
+                witness_bonus: 20,
+                common_word_penalty: 0,
+                number_coincidence_penalty: 0,
+                orthographic_penalty: 0,
+                final_score: TIER_BASE_SCORE[4] + 90 + 20,
+              },
+            });
+          }
+        }
+
+        // 3. Shared collocation / xref bridges
+        const profA = gA.profiles[0];
+        const profB = gB.profiles[0];
+        const collocA = new Map<string, { sc: string; gl: string; score: number }>();
+        for (const cl of profA.clusters || []) {
+          for (const cw of cl.collocated_words || []) collocA.set(cw.bs, { sc: cw.sc, gl: cw.gl, score: cw.score });
+        }
+        for (const cl of profB.clusters || []) {
+          for (const cw of cl.collocated_words || []) {
+            if (collocA.has(cw.bs)) {
+              const bBridgeId = `bridge:concept:${profA.bs}:${profB.bs}:${cw.bs}`;
+              if (!bridges.some(b => b.bridge_id === bBridgeId)) {
+                const bridgeNode: R10Node = {
+                  id: `lemma:${cw.bs}`,
+                  kind: 'lemma',
+                  label: `${cw.sc} (${cw.gl})`,
+                  strongs: cw.bs,
+                  epistemic_class: 'direct_textual_evidence',
+                  grounding_source: 'STEPBible + MACULA',
+                };
+                bridges.push({
+                  bridge_id: bBridgeId,
+                  from_cluster_id: profA.clusters?.[0]?.cluster_id || profA.bs,
+                  to_cluster_id: profB.clusters?.[0]?.cluster_id || profB.bs,
+                  bridging_node: bridgeNode,
+                  evidence_id: `r11:bridge:${profA.bs}:${profB.bs}:${cw.bs}`,
+                  evidence_tier: 4,
+                  explanation: `Both "${gA.term}" and "${gB.term}" significantly co-occur with ${cw.sc} ("${cw.gl}" · ${cw.bs}) in scriptural contexts.`,
+                });
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Explicit and typology records matching query
   for (const rec of explicitData.records || []) {
     const recTerms = new Set((rec.matched_terms || []).map((t: string) => t.toLowerCase()));
     const matchedQueryTerms: string[] = [];
     for (const qt of queryTermSet) {
       if (recTerms.has(qt)) matchedQueryTerms.push(qt);
     }
-    // Also match on Strong's IDs or explicit passage books/chapters
     const matchedStrongsLabels: string[] = [];
     for (const ow of rec.original_words || []) {
       if (ow.strongs && matchedStrongs.has(ow.strongs) && !matchedStrongsLabels.includes(ow.strongs)) {
@@ -451,9 +1204,7 @@ export async function discoverBiblicalConnections(
 
     const totalHits = matchedQueryTerms.length + Math.min(2, strongsOverlap) + passageOverlap * 2;
     if (totalHits === 0) continue;
-    // If single query hit and it's only a generic single word on a massive explicit comparison, require stronger relevance unless it's a control or passage match
     if (multiConcept && matchedQueryTerms.length < 1 && strongsOverlap < 1 && passageOverlap === 0) continue;
-    // Auto-extracted copula hits in multi-concept queries must match at least 2 distinct query concepts or an explicit passage ref
     if (rec.evidence_id?.startsWith('r10:ident:auto:') && multiConcept && matchedQueryTerms.length < 2 && passageOverlap === 0) continue;
 
     const effectiveConceptMatches = new Set([
@@ -488,7 +1239,7 @@ export async function discoverBiblicalConnections(
     });
   }
 
-  // Synthesize dynamic motif pair evidence (for general motif discovery across all 31k verses)
+  // Synthesize dynamic motif pair evidence
   const motifArray = [...matchedMotifs];
   for (let i = 0; i < motifArray.length; i++) {
     for (let j = i + 1; j < motifArray.length; j++) {
@@ -531,12 +1282,11 @@ export async function discoverBiblicalConnections(
     }
   }
 
-  // Dynamic Number Entity checks (bounded) when numbers are queried
+  // Dynamic Number Entity checks
   if (matchedNumbers.size > 0 && numbersData?.by_value) {
     for (const nVal of matchedNumbers) {
       const bucket = numbersData.by_value[String(nVal)];
       if (!bucket) continue;
-      // Find groups relevant to query lemmas or top symbolic groups
       const relevantGroups = (bucket.groups || []).filter((g: any) =>
         matchedStrongs.has(g.noun_s) ||
         queryTermSet.has(normalizeToken(g.noun_g).split(/\s+/)[0] || '') ||
@@ -590,62 +1340,17 @@ export async function discoverBiblicalConnections(
     }
   }
 
-  // Dynamic Orthographic shard lookup when Hebrew lemmas appear
+  // Dynamic Orthographic shard lookup
   const hebStrongs = [...matchedStrongs].filter(s => s.startsWith('H')).slice(0, 3);
   const orthDetails: any[] = [];
   for (const hs of hebStrongs) {
     const bHex = computeBucketHex('fnv1a64_mod64', 64, hs);
-    const orthShard = await readR10Json(reader, releaseId, `orthographic/shard-${bHex}.json.gz`, budget);
+    const orthShard = await readR10Json<{ entries?: Record<string, any> }>(reader, releaseId, `orthographic/shard-${bHex}.json.gz`, budget);
     const entry = orthShard?.entries?.[hs];
     if (entry) orthDetails.push(entry);
   }
 
-  // Dynamic CrossReferences.org lookup for explicit parsed passage refs (or top anchors)
-  const crossReferencesOut: DiscoverConnectionsResult['related_discoveries']['cross_references'] = [];
-  const xrefBooksToCheck = [...new Set(parsedRefs.map(p => p.book))].slice(0, 3);
-  for (const bk of xrefBooksToCheck) {
-    const pad = String(bk).padStart(2, '0');
-    const xData = await readR10Json(reader, releaseId, `xrefs/book-${pad}.json.gz`, budget);
-    if (!xData?.by_verse) continue;
-    const reqPr = parsedRefs.find(p => p.book === bk);
-    for (const vData of Object.values(xData.by_verse) as any[]) {
-      for (const o of vData.out || []) {
-        for (const t of (o.targets || []).slice(0, 4)) {
-          if (reqPr && !t.to_ref.includes(String(reqPr.chapter))) {
-            // keep cross-book refs first
-          }
-          if (crossReferencesOut.length < 18) {
-            const p0 = explicitPassages.find(p => p.book === bk);
-            crossReferencesOut.push({
-              from_ref: p0?.ref || `Book ${bk}`,
-              to_ref: t.to_ref,
-              anchor_phrase: o.phrase,
-              from_passage: p0 || { verse_id: 0, ref: `Book ${bk}`, book: bk, chapter: reqPr?.chapter || 1, verse: reqPr?.verse || 1, testament: bk <= 39 ? 'OT' : 'NT' },
-              to_passage: { verse_id: t.to_vid, ref: t.to_ref, book: t.to_b, chapter: t.to_c, verse: t.to_v, end_verse: t.to_end_v, testament: t.to_b <= 39 ? 'OT' : 'NT' },
-            });
-          }
-        }
-      }
-    }
-  }
-  // Also attach curated cross-references from matched passages when no passage ref was typed
-  if (crossReferencesOut.length === 0) {
-    for (const c of allCandidates.slice(0, 3)) {
-      const p0 = c.passages[0];
-      const p1 = c.passages[1];
-      if (p0 && p1) {
-        crossReferencesOut.push({
-          from_ref: p0.ref,
-          to_ref: p1.ref,
-          anchor_phrase: c.predicate.replace(/_/g, ' '),
-          from_passage: p0,
-          to_passage: p1,
-        });
-      }
-    }
-  }
-
-  // Apply query filters
+  // Filter and rank candidates
   const filters = query.filters || {};
   let filtered = allCandidates.filter(c => {
     if (filters.predicates?.length && !filters.predicates.includes(c.predicate)) return false;
@@ -659,19 +1364,99 @@ export async function discoverBiblicalConnections(
 
   filtered.sort((a, b) => b.score_components.final_score - a.score_components.final_score || a.evidence_tier - b.evidence_tier);
 
-  // Deduplicate by evidence_id
   const uniqueMap = new Map<string, R10EvidenceRecord>();
   for (const item of filtered) {
     if (!uniqueMap.has(item.evidence_id)) uniqueMap.set(item.evidence_id, item);
   }
   const rankedAll = [...uniqueMap.values()];
+
+  // G. Complete Occurrence Pagination
+  const focusProf = (query.focus_lemma ? profileByStrongs.get(query.focus_lemma) : null) ||
+    loadedProfiles[0] || null;
+
+  let targetVids: number[] = [];
+  if (focusProf) {
+    if (query.cluster_id) {
+      const cl = focusProf.clusters?.find(c => c.cluster_id === query.cluster_id);
+      targetVids = cl ? cl.vids : focusProf.all_vids;
+    } else {
+      targetVids = focusProf.all_vids;
+    }
+  }
+
+  const occLimit = limit;
+  const occOffset = offset;
+  const pagedOccVids = targetVids.slice(occOffset, occOffset + occLimit);
+  const hasMoreOcc = occOffset + occLimit < targetVids.length;
+
+  const hydratedOccPassages: R10PassageRef[] = [];
+  for (const vid of pagedOccVids) {
+    const p = await hydratePassageByVid(vid);
+    if (p) hydratedOccPassages.push(p);
+  }
+
+  // When expanding or paging through occurrences, synthesize individual occurrence evidence cards
+  if ((query.mode === 'expand' || query.focus_lemma || query.cluster_id || offset >= rankedAll.length) && focusProf) {
+    for (const p of hydratedOccPassages) {
+      const occEvId = `r11:occ:${focusProf.bs}:${p.verse_id}`;
+      if (!uniqueMap.has(occEvId)) {
+        const rec: R10EvidenceRecord = {
+          evidence_id: occEvId,
+          predicate: 'verified_lexical_grammatical',
+          evidence_tier: 3,
+          epistemic_class: 'direct_textual_evidence',
+          title: `Attested occurrence: ${focusProf.sc} (${focusProf.tr}) in ${p.ref}`,
+          summary: `Attested biblical occurrence of ${focusProf.sc} (${focusProf.bs}, "${focusProf.gl}") in ${p.ref}: "${p.snippet || ''}".`,
+          source_node_id: `lemma:${focusProf.bs}`,
+          target_node_id: `passage:${p.ref}`,
+          passages: [p],
+          original_words: [{
+            strongs: focusProf.bs,
+            lemma_key: focusProf.lk,
+            language: focusProf.lang,
+            lemma_script: focusProf.sc,
+            transliteration: focusProf.tr,
+            gloss: focusProf.gl,
+          }],
+          matched_terms: [focusProf.gl, focusProf.sc, focusProf.bs],
+          limitations: ['Individual verse occurrence; context defines specific grammatical role and semantic nuance.'],
+          provenance: {
+            source_dataset: 'MACULA + STEPBible',
+            source_record_ids: [p.ref],
+            license: 'CC BY 4.0',
+            derivation_method: 'canonical_verse_attestation',
+          },
+          score_components: {
+            base_tier_score: 760,
+            specificity_bonus: 60,
+            witness_bonus: 10,
+            common_word_penalty: 0,
+            number_coincidence_penalty: 0,
+            orthographic_penalty: 0,
+            final_score: 830,
+          },
+        };
+        rankedAll.push(rec);
+        uniqueMap.set(occEvId, rec);
+      }
+    }
+  }
+
   const pagedRecords = rankedAll.slice(offset, offset + limit);
 
+  // H. Summaries with Research-Grade Rationale
   const summaries: R10ConnectionSummary[] = pagedRecords.map(r => {
     const penalties: string[] = [];
     if (r.score_components.common_word_penalty > 0) penalties.push(`common_word_penalty(-${r.score_components.common_word_penalty})`);
     if (r.score_components.number_coincidence_penalty > 0) penalties.push(`number_coincidence_penalty(-${r.score_components.number_coincidence_penalty})`);
     if (r.score_components.orthographic_penalty > 0) penalties.push(`orthographic_penalty(-${r.score_components.orthographic_penalty})`);
+
+    const whyRationale = `Tier ${r.evidence_tier} (${r.epistemic_class.replace(/_/g, ' ')}). Base score ${r.score_components.base_tier_score} with specificity bonus +${r.score_components.specificity_bonus} and witness corroboration +${r.score_components.witness_bonus} across ${r.passages.length} attested passages.${penalties.length > 0 ? ` Penalties: ${penalties.join(', ')}.` : ''}`;
+
+    const clusterIdMatch = r.evidence_id.startsWith('r11:cluster:')
+      ? r.evidence_id.replace('r11:cluster:', '')
+      : undefined;
+
     return {
       connection_id: r.evidence_id,
       evidence_id: r.evidence_id,
@@ -688,57 +1473,24 @@ export async function discoverBiblicalConnections(
       original_words: r.original_words,
       witness_count: Math.max(1, r.provenance?.source_record_ids?.length || r.passages.length),
       penalties_applied: penalties,
+      cluster_id: clusterIdMatch,
+      ranking_rationale: {
+        base_tier_score: r.score_components.base_tier_score,
+        specificity_bonus: r.score_components.specificity_bonus,
+        witness_bonus: r.score_components.witness_bonus,
+        penalties,
+        final_score: r.score_components.final_score,
+        why_ranked_high: whyRationale,
+      },
     };
   });
 
-  // Build non-linear Subclusters + Bridges for multi-concept queries
-  const clusters: R10Cluster[] = [];
-  const bridges: R10ClusterBridge[] = [];
-  for (const topic of CLUSTER_TOPICS) {
-    const overlap = extractedTerms.filter(t => topic.concepts.includes(t.toLowerCase()));
-    if (overlap.length === 0) continue;
-    const clConnIds = summaries.filter(s => s.matched_concepts.some(c => topic.concepts.includes(c)) || overlap.some(o => s.title.toLowerCase().includes(o))).map(s => s.connection_id);
-    if (clConnIds.length === 0) continue;
-    const anchorNodes: R10Node[] = [];
-    const seenNode = new Set<string>();
-    for (const s of summaries.filter(x => clConnIds.includes(x.connection_id)).slice(0, 4)) {
-      for (const w of s.original_words.slice(0, 2)) {
-        const nid = `lemma:${w.strongs}`;
-        if (!seenNode.has(nid)) {
-          seenNode.add(nid);
-          anchorNodes.push({
-            id: nid, kind: 'lemma', label: `${w.lemma_script} (${w.gloss})`,
-            strongs: w.strongs, lemma_key: w.lemma_key, language: w.language,
-            epistemic_class: s.epistemic_class, grounding_source: 'STEPBible',
-          });
-        }
-      }
-      if (s.passages[0] && !seenNode.has(`passage:${s.passages[0].ref}`)) {
-        seenNode.add(`passage:${s.passages[0].ref}`);
-        anchorNodes.push({
-          id: `passage:${s.passages[0].ref}`, kind: 'passage', label: s.passages[0].ref,
-          passage: s.passages[0], epistemic_class: s.epistemic_class, grounding_source: 'MACULA',
-        });
-      }
-    }
-    clusters.push({
-      cluster_id: topic.id,
-      label: topic.label,
-      concepts: overlap,
-      anchor_nodes: anchorNodes.slice(0, 6),
-      connection_ids: clConnIds,
-      summary: topic.summary,
-    });
-  }
-
-  if (clusters.length >= 2) {
-    // Identify shared bridging node (e.g. Spirit H7307 / G4151 between Lampstand Vision and Ruach/Wind/Water)
+  // Multi-cluster bridges if not already populated
+  if (clusters.length >= 2 && bridges.length === 0) {
     for (let i = 0; i < clusters.length - 1; i++) {
       const cA = clusters[i];
       const cB = clusters[i + 1];
-      const bridgeNode = cA.anchor_nodes.find(n => ['lemma:H7307', 'lemma:G4151', 'lemma:H4325', 'lemma:G5204'].includes(n.id)) ||
-        cB.anchor_nodes.find(n => ['lemma:H7307', 'lemma:G4151', 'lemma:H4325', 'lemma:G5204'].includes(n.id)) ||
-        cA.anchor_nodes[0];
+      const bridgeNode = cA.anchor_nodes.find(n => n.kind === 'lemma') || cB.anchor_nodes.find(n => n.kind === 'lemma') || cA.anchor_nodes[0];
       if (bridgeNode) {
         bridges.push({
           bridge_id: `bridge:${cA.cluster_id}:${cB.cluster_id}`,
@@ -753,7 +1505,7 @@ export async function discoverBiblicalConnections(
     }
   }
 
-  // Construct bounded Connection Paths from top evidence records
+  // Construct Connection Paths from top evidence records
   const connectionPaths: R10ConnectionPath[] = pagedRecords.slice(0, 6).map(r => {
     const startP = r.passages[0];
     const endP = r.passages[r.passages.length - 1];
@@ -787,15 +1539,13 @@ export async function discoverBiblicalConnections(
     };
   });
 
-  // Negative Controls & Alternative Explanations
-  const controls: R10ControlOrWarning[] = [];
+  // Additional thematic controls
   if (matchedMotifs.has('lampstand') || matchedMotifs.has('lamp') || queryTermSet.has('seven')) {
     controls.push({
       control_id: 'ctrl:rev1_20_vs_rev4_5',
       kind: 'distinct_context_warning',
       title: 'Distinct imagery control: Rev 1:20 lampstands (λυχνίαι = churches) vs Rev 4:5 lamps (λαμπάδες = Spirits)',
       explanation: 'Revelation explicitly gives different referents for the seven lampstands (Rev 1:20 = seven churches) and the seven burning lamps (Rev 4:5 = seven Spirits of God). Do not merge all "seven + lamp" references into one meaning.',
-      passages: rankedAll.find(r => r.evidence_id === 'r10:ident:rev1_20_lampstands_churches_control')?.passages,
     });
   }
   if (queryTermSet.has('seven') || queryTermSet.has('7') || queryTermSet.has('four') || queryTermSet.has('4')) {
@@ -803,7 +1553,7 @@ export async function discoverBiblicalConnections(
       control_id: 'ctrl:number_coincidence_guard',
       kind: 'number_coincidence_warning',
       title: 'Number coincidence guard: shared numeral alone does not prove theological connection',
-      explanation: 'Ordinal occurrences (e.g., 7th day), temporal durations (7 days), and unrelated ordinary counts are separated from symbolic vision counts (Zech 4:2/10; Rev 4:5; Rev 5:6) and penalized when context differs.',
+      explanation: 'Ordinal occurrences, temporal durations, and unrelated ordinary counts are separated from symbolic vision counts and penalized when context differs.',
     });
   }
   if (queryTermSet.has('baptism') || queryTermSet.has('sea') || queryTermSet.has('exodus')) {
@@ -811,7 +1561,7 @@ export async function discoverBiblicalConnections(
       control_id: 'ctrl:exod14_event_vs_paul_typology',
       kind: 'alternative_explanation',
       title: 'Historical event vs later NT typology (Exodus 14 vs 1 Corinthians 10:1–2)',
-      explanation: 'Exodus 14 narrates Israel’s historical deliverance without baptism vocabulary; Paul in 1 Cor 10:1–2 explicitly introduces the typological lens ("baptized into Moses in the cloud and in the sea"). Avoid reading later baptismal symbolism into every Exodus 14 detail.',
+      explanation: 'Exodus 14 narrates historical deliverance without baptism vocabulary; Paul in 1 Cor 10:1–2 introduces the typological comparison. Avoid reading later baptismal symbolism into every Exodus 14 detail.',
     });
   }
   if (queryTermSet.has('adam') && queryTermSet.has('dam') || hebStrongs.some(s => s === 'H0120' || s === 'H1818')) {
@@ -819,15 +1569,7 @@ export async function discoverBiblicalConnections(
       control_id: 'ctrl:adam_dam_not_etymology',
       kind: 'orthographic_false_positive_warning',
       title: 'Orthographic false-etymology guard: אָדָם (adam) vs דָּם (dam)',
-      explanation: 'While אָדָם (ʾ-d-m) orthographically contains the letters ד-ם (d-m, blood), STEPBible/BDB treat them as distinct lexical entries with NO proven common historical root. Contrast this weak spelling overlap with the explicit Hebrew wordplay אָדָם ↔ אֲדָמָה (ground) in Gen 2:7.',
-    });
-  }
-  if (queryTermSet.has('eye') || queryTermSet.has('eyes') || queryTermSet.has('ayin') || queryTermSet.has('well')) {
-    controls.push({
-      control_id: 'ctrl:homograph_ayin_or_well',
-      kind: 'homograph_disambiguation',
-      title: 'Homograph & type-scene control: עַיִן (eye vs spring) and well narratives (Gen 21:19)',
-      explanation: 'Hebrew עַיִן (H5869) serves as both "eye" (Zech 4:10) and "spring/well" (Gen 24:13). Likewise, well episodes like Gen 21:19 (Hagar) are survival/covenant scenes, not betrothal type-scenes.',
+      explanation: 'While אָדָם (ʾ-d-m) orthographically contains ד-ם (d-m, blood), STEPBible/BDB treat them as distinct lexical entries with NO proven common historical root. Contrast this weak spelling overlap with the explicit Hebrew wordplay אָדָם ↔ אֲדָמָה (ground) in Gen 2:7.',
     });
   }
   if (missingConcepts.length > 0) {
@@ -839,7 +1581,6 @@ export async function discoverBiblicalConnections(
     });
   }
 
-  // Additional discovered orthography warnings from shards
   for (const od of orthDetails) {
     if (od.homographs?.length) {
       controls.push({
@@ -849,6 +1590,43 @@ export async function discoverBiblicalConnections(
         explanation: `${od.script} (${od.cons}) shares its unpointed consonantal skeleton with distinct entry ${od.homographs.map((h: any) => `${h.script} (${h.bs} "${h.gloss}")`).join(', ')}.`,
       });
     }
+  }
+
+  // I. Iterative Analysis Mode Construction
+  const effectiveMode = query.mode || 'discover';
+  const iterativeAnalysis: DiscoverConnectionsResult['iterative_analysis'] = {
+    mode: effectiveMode,
+  };
+
+  if (effectiveMode === 'expand') {
+    iterativeAnalysis.explanation = `Expanded deep occurrence analysis for ${focusProf ? `${focusProf.sc} (${focusProf.bs}, "${focusProf.gl}")` : query.query}. Total attested canonical verses: ${targetVids.length}.`;
+  } else if (effectiveMode === 'bridge') {
+    iterativeAnalysis.explanation = `Conceptual bridge analysis connecting distinct semantic domains via intermediate original-language hubs.`;
+    iterativeAnalysis.bridges = bridges;
+  } else if (effectiveMode === 'compare') {
+    iterativeAnalysis.explanation = `Comparative distribution across canonical corpora and semantic clusters.`;
+    iterativeAnalysis.comparison = {
+      targets: query.compare_targets || extractedTerms,
+      clusters: clusters.map(c => ({ id: c.cluster_id, label: c.label, passages_count: c.total_passages })),
+      differences: 'Examines genre variations (narrative architecture vs poetic imagery vs superscriptions) and canonical testament distribution.',
+    };
+  } else if (effectiveMode === 'explain') {
+    iterativeAnalysis.explanation = `Hermeneutical rationale: synthesis of Tier 1-3 source-grounded evidence records, separating direct grammatical/textual facts from later interpretive traditions.`;
+  } else if (effectiveMode === 'challenge') {
+    iterativeAnalysis.explanation = `Negative controls, disambiguation guards, and homograph boundaries.`;
+    iterativeAnalysis.challenges = controls;
+  }
+
+  if (focusProf && targetVids.length > 0) {
+    iterativeAnalysis.lemma_occurrences = {
+      strongs: focusProf.bs,
+      total_verses: targetVids.length,
+      offset: occOffset,
+      returned: hydratedOccPassages.length,
+      next_cursor: hasMoreOcc ? String(occOffset + occLimit) : null,
+      has_more: hasMoreOcc,
+      passages: hydratedOccPassages,
+    };
   }
 
   const totalAvailable = rankedAll.length;
@@ -912,6 +1690,7 @@ export async function discoverBiblicalConnections(
         'World English Bible (Public Domain)',
       ],
     },
+    iterative_analysis: iterativeAnalysis,
   };
 }
 
@@ -921,17 +1700,361 @@ export async function getConnectionEvidence(
   releaseId: string = DEFAULT_R10_RELEASE
 ): Promise<ConnectionEvidenceResult> {
   const budget = { used: 0, max: MAX_SUBREQUEST_BUDGET };
-  const explicitData = await readR10Json(reader, releaseId, 'explicit-and-typology.json.gz', budget) as { records: any[] } | null;
-  let record: R10EvidenceRecord | null = (explicitData?.records || []).find((r: any) => r.evidence_id === evidenceId) || null;
+  let record: R10EvidenceRecord | null = null;
+  const targetStrongs = new Set<string>();
 
-  // Support synthesized evidence IDs (motifpair or number entities)
+  const bookCache = new Map<number, any>();
+  async function loadBookData(bookId: number): Promise<any> {
+    if (bookCache.has(bookId)) return bookCache.get(bookId);
+    const pad = String(bookId).padStart(2, '0');
+    const data = await readR10Json<{ verses?: Record<string, any> }>(
+      reader, releaseId, `evidence-passages/book-${pad}.json.gz`, budget
+    );
+    const verses = data?.verses || null;
+    bookCache.set(bookId, verses);
+    return verses;
+  }
+
+  async function hydratePassageByVid(vid: number): Promise<R10PassageRef | null> {
+    const book = bookForVid(vid);
+    const verses = await loadBookData(book);
+    const v = verses?.[String(vid)];
+    if (!v) {
+      return {
+        verse_id: vid,
+        ref: `Verse ${vid}`,
+        book,
+        chapter: 1,
+        verse: 1,
+        testament: book <= 39 ? 'OT' : 'NT',
+      };
+    }
+    return {
+      verse_id: vid,
+      ref: v.ref,
+      mt_ref: v.mt_ref,
+      book: v.book,
+      chapter: v.chapter,
+      verse: v.verse,
+      testament: v.book <= 39 ? 'OT' : 'NT',
+      snippet: v.en,
+      is_psalm_heading: v.book === 19 && v.verse === 0,
+    };
+  }
+
+  // Handle R11 synthesized dynamic evidence IDs
+  if (evidenceId.startsWith('r11:cluster:')) {
+    const clId = evidenceId.replace('r11:cluster:', '');
+    const bs = clId.split(':')[0];
+    targetStrongs.add(bs);
+    const bHex = computeBucketHex('fnv1a64_mod64', 64, bs);
+    const shard = await readR10Json<{ entries?: Record<string, LemmaProfile> }>(
+      reader, releaseId, `lemma-profiles/shard-${bHex}.json.gz`, budget
+    );
+    const prof = shard?.entries?.[bs];
+    const cl = prof?.clusters?.find((c: any) => c.cluster_id === clId);
+    if (prof && cl) {
+      let tier: R10EvidenceTier = 3;
+      let predicate: R10Predicate = 'verified_lexical_grammatical';
+      let epistemicClass: R10EpistemicClass = 'direct_textual_evidence';
+      let limitations = ['Evidence-derived corpus cluster based on syntactic and lexical co-occurrence.'];
+
+      if (cl.category === 'temple_and_sanctuary_architecture') {
+        const hasArchColloc = (cl.collocated_words || []).some((w: any) =>
+          ['pillar', 'cup', 'brim', 'handbreadth', 'thickness', 'bath', 'deed'].some(k => w.gl.toLowerCase().includes(k))
+        ) || (cl.xrefs || []).length > 0;
+        tier = hasArchColloc ? 2 : 3;
+        limitations = ['Sanctuary and Temple architecture descriptions; physical ornamentation rather than metaphorical or typological discourse.'];
+      } else if (cl.category === 'psalm_superscription') {
+        tier = 3;
+        epistemicClass = 'documented_lexical_relationship';
+        limitations = ['Psalm heading / musical or liturgical superscription; whether the expression denotes a tune, instrument, or floral motif is uncertain in source text.'];
+      } else if (['poetic_imagery_and_similes', 'prophetic_imagery_and_oracles', 'gospel_and_nt_teaching'].includes(cl.category)) {
+        if (cl.has_simile) {
+          tier = 2;
+          predicate = 'explicit_comparison';
+          limitations = ['Explicit comparative simile in biblical text; context determines the extent of figurative correspondence.'];
+        } else {
+          tier = 3;
+          limitations = ['Attested imagery in poetic or prophetic discourse.'];
+        }
+      }
+
+      record = {
+        evidence_id: evidenceId,
+        predicate,
+        evidence_tier: tier,
+        epistemic_class: epistemicClass,
+        title: cl.label,
+        summary: cl.summary,
+        source_node_id: `lemma:${prof.bs}`,
+        target_node_id: `cluster:${cl.cluster_id}`,
+        passages: cl.sample_passages.map((p: any) => ({
+          verse_id: p.verse_id,
+          ref: p.ref,
+          mt_ref: p.mt_ref,
+          book: p.book,
+          chapter: p.chapter,
+          verse: p.verse,
+          testament: p.testament,
+          snippet: p.snippet,
+          is_psalm_heading: p.book === 19 && p.verse === 0,
+        })),
+        original_words: [
+          { lemma_key: prof.lk, strongs: prof.bs, language: prof.lang, lemma_script: prof.sc, transliteration: prof.tr, gloss: prof.gl },
+        ],
+        matched_terms: [prof.gl, prof.sc, prof.bs],
+        limitations,
+        provenance: {
+          source_dataset: 'MACULA Hebrew & Greek + STEPBible',
+          source_record_ids: cl.sample_passages.map((p: any) => p.ref),
+          license: 'CC BY 4.0',
+          derivation_method: 'evidence_derived_semantic_cluster',
+        },
+        score_components: {
+          base_tier_score: TIER_BASE_SCORE[tier],
+          specificity_bonus: 80,
+          witness_bonus: 40,
+          common_word_penalty: 0,
+          number_coincidence_penalty: 0,
+          orthographic_penalty: 0,
+          final_score: TIER_BASE_SCORE[tier] + 120,
+        },
+      };
+    }
+  } else if (evidenceId.startsWith('r11:gram:')) {
+    const [, , bs, pred, relStrongs] = evidenceId.split(':');
+    targetStrongs.add(bs);
+    targetStrongs.add(relStrongs);
+    const bHex = computeBucketHex('fnv1a64_mod64', 64, bs);
+    const shard = await readR10Json<{ entries?: Record<string, LemmaProfile> }>(
+      reader, releaseId, `lemma-profiles/shard-${bHex}.json.gz`, budget
+    );
+    const prof = shard?.entries?.[bs];
+    const gr = prof?.grammatical_relations?.find((g: any) => g.predicate === pred && g.related_strongs === relStrongs);
+    if (prof && gr) {
+      const gTier: R10EvidenceTier = gr.occurrences >= 2 ? 2 : 3;
+      record = {
+        evidence_id: evidenceId,
+        predicate: 'verified_lexical_grammatical',
+        evidence_tier: gTier,
+        epistemic_class: 'direct_textual_evidence',
+        title: `${gr.display_label}: ${prof.sc} (${prof.tr}) ↔ ${gr.related_script} ("${gr.related_gloss}", ${gr.occurrences}×)`,
+        summary: `Syntactic dependency analysis identifies direct grammatical connection (${gr.display_label}) between ${prof.sc} (${prof.bs}) and ${gr.related_script} (${gr.related_strongs}, "${gr.related_gloss}") across ${gr.occurrences} occurrences.`,
+        source_node_id: `lemma:${prof.bs}`,
+        target_node_id: `lemma:${gr.related_strongs}`,
+        passages: prof.clusters?.[0]?.sample_passages?.slice(0, 3).map((p: any) => ({
+          verse_id: p.verse_id,
+          ref: p.ref,
+          mt_ref: p.mt_ref,
+          book: p.book,
+          chapter: p.chapter,
+          verse: p.verse,
+          testament: p.testament,
+          snippet: p.snippet,
+          is_psalm_heading: p.book === 19 && p.verse === 0,
+        })) || [],
+        original_words: [
+          { lemma_key: prof.lk, strongs: prof.bs, language: prof.lang, lemma_script: prof.sc, transliteration: prof.tr, gloss: prof.gl },
+          { strongs: gr.related_strongs, language: prof.lang, lemma_script: gr.related_script, transliteration: '', gloss: gr.related_gloss },
+        ],
+        matched_terms: [prof.gl, gr.related_gloss, prof.bs, gr.related_strongs],
+        limitations: ['Syntactic construct/argument relation; contextual meaning varies by passage.'],
+        provenance: {
+          source_dataset: 'MACULA Hebrew/Greek Syntactic Trees',
+          source_record_ids: [prof.bs, gr.related_strongs],
+          license: 'CC BY 4.0',
+          derivation_method: 'syntactic_dependency_relation',
+        },
+        score_components: {
+          base_tier_score: TIER_BASE_SCORE[gTier],
+          specificity_bonus: 80,
+          witness_bonus: 20,
+          common_word_penalty: 0,
+          number_coincidence_penalty: 0,
+          orthographic_penalty: 0,
+          final_score: TIER_BASE_SCORE[gTier] + 100,
+        },
+      };
+    }
+  } else if (evidenceId.startsWith('r11:occ:')) {
+    const [, , bs, vidStr] = evidenceId.split(':');
+    targetStrongs.add(bs);
+    const vid = Number(vidStr);
+    const bHex = computeBucketHex('fnv1a64_mod64', 64, bs);
+    const shard = await readR10Json<{ entries?: Record<string, LemmaProfile> }>(
+      reader, releaseId, `lemma-profiles/shard-${bHex}.json.gz`, budget
+    );
+    const prof = shard?.entries?.[bs];
+    const p = await hydratePassageByVid(vid);
+    if (prof && p) {
+      record = {
+        evidence_id: evidenceId,
+        predicate: 'verified_lexical_grammatical',
+        evidence_tier: 3,
+        epistemic_class: 'direct_textual_evidence',
+        title: `Attested occurrence: ${prof.sc} (${prof.tr}) in ${p.ref}`,
+        summary: `Attested biblical occurrence of ${prof.sc} (${prof.bs}, "${prof.gl}") in ${p.ref}: "${p.snippet || ''}".`,
+        source_node_id: `lemma:${prof.bs}`,
+        target_node_id: `passage:${p.ref}`,
+        passages: [p],
+        original_words: [
+          { lemma_key: prof.lk, strongs: prof.bs, language: prof.lang, lemma_script: prof.sc, transliteration: prof.tr, gloss: prof.gl },
+        ],
+        matched_terms: [prof.gl, prof.sc, prof.bs],
+        limitations: ['Individual verse occurrence; context defines specific grammatical role and semantic nuance.'],
+        provenance: {
+          source_dataset: 'MACULA + STEPBible',
+          source_record_ids: [p.ref],
+          license: 'CC BY 4.0',
+          derivation_method: 'canonical_verse_attestation',
+        },
+        score_components: {
+          base_tier_score: 760,
+          specificity_bonus: 60,
+          witness_bonus: 10,
+          common_word_penalty: 0,
+          number_coincidence_penalty: 0,
+          orthographic_penalty: 0,
+          final_score: 830,
+        },
+      };
+    }
+  } else if (evidenceId.startsWith('r11:intersect:verse:')) {
+    const [, , , bsA, bsB, vidStr] = evidenceId.split(':');
+    targetStrongs.add(bsA);
+    targetStrongs.add(bsB);
+    const vid = Number(vidStr);
+    const p = await hydratePassageByVid(vid);
+    if (p) {
+      record = {
+        evidence_id: evidenceId,
+        predicate: 'verified_lexical_grammatical',
+        evidence_tier: 2,
+        epistemic_class: 'direct_textual_evidence',
+        title: `Direct textual convergence in ${p.ref}`,
+        summary: `Scripture text contains both ${bsA} and ${bsB} in the same verse (${p.ref}): "${p.snippet || ''}".`,
+        source_node_id: `lemma:${bsA}`,
+        target_node_id: `lemma:${bsB}`,
+        passages: [p],
+        original_words: [],
+        matched_terms: [bsA, bsB],
+        limitations: ['Direct intra-verse co-occurrence establishes textual contact; syntax and discourse function determine relationship.'],
+        provenance: {
+          source_dataset: 'MACULA Hebrew & Greek',
+          source_record_ids: [p.ref],
+          license: 'CC BY 4.0',
+          derivation_method: 'exact_verse_lemma_intersection',
+        },
+        score_components: {
+          base_tier_score: 860,
+          specificity_bonus: 180,
+          witness_bonus: 40,
+          common_word_penalty: 0,
+          number_coincidence_penalty: 0,
+          orthographic_penalty: 0,
+          final_score: 1080,
+        },
+      };
+    }
+  } else if (evidenceId.startsWith('r11:lxx:')) {
+    const [, , bs, idxStr] = evidenceId.split(':');
+    targetStrongs.add(bs);
+    const bHex = computeBucketHex('fnv1a64_mod64', 64, bs);
+    const shard = await readR10Json<{ entries?: Record<string, LemmaProfile> }>(
+      reader, releaseId, `lemma-profiles/shard-${bHex}.json.gz`, budget
+    );
+    const prof = shard?.entries?.[bs];
+    const rel = prof?.lxx_relations?.[Number(idxStr)];
+    if (prof && rel) {
+      if (rel.target_strongs) targetStrongs.add(rel.target_strongs);
+      record = {
+        evidence_id: evidenceId,
+        predicate: 'cross_language_bridge',
+        evidence_tier: 3,
+        epistemic_class: 'documented_lexical_relationship',
+        title: rel.type === 'lxx_heading_witness' ? `Septuagint superscription witness for ${rel.ref}: ${prof.sc}` : `Septuagint (LXX) bridge: ${prof.sc} (${prof.bs}) → ${rel.script || ''} (${rel.target_strongs || ''})`,
+        summary: rel.type === 'lxx_heading_witness' ? `In ${rel.ref}, the Septuagint renders the Hebrew title containing ${prof.sc} as: "${rel.lxx_text}".` : `Septuagint translates Hebrew ${prof.sc} as Greek ${rel.script} across ${rel.count || 1} passages.`,
+        source_node_id: `lemma:${prof.bs}`,
+        target_node_id: rel.target_strongs ? `lemma:${rel.target_strongs}` : `concept:lxx:${prof.bs}`,
+        passages: [],
+        original_words: [
+          { lemma_key: prof.lk, strongs: prof.bs, language: prof.lang, lemma_script: prof.sc, transliteration: prof.tr, gloss: prof.gl },
+        ],
+        matched_terms: [prof.gl, prof.sc, rel.gloss || ''].filter(Boolean),
+        limitations: ['Historical Septuagint translation choice; reflects Alexandrian Jewish understanding of the Hebrew text.'],
+        provenance: {
+          source_dataset: 'Swete LXX / Hatch-Redpath / STEPBible',
+          source_record_ids: (rel.sample_refs || [rel.ref || prof.bs]),
+          license: 'CC BY 4.0',
+          derivation_method: 'lxx_swete_alignment',
+        },
+        score_components: {
+          base_tier_score: 760,
+          specificity_bonus: 60,
+          witness_bonus: 20,
+          common_word_penalty: 0,
+          number_coincidence_penalty: 0,
+          orthographic_penalty: 0,
+          final_score: 840,
+        },
+      };
+    }
+  } else if (evidenceId.startsWith('r11:xref:')) {
+    const [, , fVidStr, tVidStr] = evidenceId.split(':');
+    const fVid = Number(fVidStr);
+    const tVid = Number(tVidStr);
+    const p1 = await hydratePassageByVid(fVid);
+    const p2 = await hydratePassageByVid(tVid);
+    if (p1 && p2) {
+      record = {
+        evidence_id: evidenceId,
+        predicate: 'cross_reference_witness',
+        evidence_tier: 4,
+        epistemic_class: 'verified_cross_reference',
+        title: `Cross-reference witness: ${p1.ref} → ${p2.ref}`,
+        summary: `Canonical cross-reference connects ${p1.ref} and ${p2.ref}.`,
+        source_node_id: `passage:${p1.ref}`,
+        target_node_id: `passage:${p2.ref}`,
+        passages: [p1, p2],
+        original_words: [],
+        matched_terms: [p1.ref, p2.ref],
+        limitations: ['Cross-reference witness documents ancient editorial or intertextual connection.'],
+        provenance: {
+          source_dataset: 'CrossReferences.org / OpenBible',
+          source_record_ids: [p1.ref, p2.ref],
+          license: 'CC BY 4.0',
+          derivation_method: 'canonical_cross_reference_graph',
+        },
+        score_components: {
+          base_tier_score: 650,
+          specificity_bonus: 40,
+          witness_bonus: 20,
+          common_word_penalty: 0,
+          number_coincidence_penalty: 0,
+          orthographic_penalty: 0,
+          final_score: 710,
+        },
+      };
+    }
+  }
+
+  // Fallback to explicitData
+  if (!record) {
+    const explicitData = await readR10Json(reader, releaseId, 'explicit-and-typology.json.gz', budget) as { records: any[] } | null;
+    record = (explicitData?.records || []).find((r: any) => r.evidence_id === evidenceId) || null;
+  }
+
+  // Support synthesized motif pairs
   if (!record && evidenceId.startsWith('r10:synth:motifpair:')) {
     const parts = evidenceId.split(':');
     const a = parts[3], b = parts[4];
-    const motifsData = await readR10Json(reader, releaseId, 'motifs-and-patterns.json.gz', budget) as any;
+    const motifsData = await readR10Json<{ motif_pairs?: Record<string, any>; motifs?: Record<string, any> }>(
+      reader, releaseId, 'motifs-and-patterns.json.gz', budget
+    );
     const pair = motifsData?.motif_pairs?.[`${a}|${b}`];
     if (pair) {
-      const mA = motifsData.motifs[a], mB = motifsData.motifs[b];
+      const mA = motifsData.motifs?.[a], mB = motifsData.motifs?.[b];
       record = {
         evidence_id: evidenceId,
         predicate: 'shared_motif',
@@ -951,7 +2074,7 @@ export async function getConnectionEvidence(
     }
   } else if (!record && evidenceId.startsWith('r10:synth:num:')) {
     const [, , , valStr, nounS, kind] = evidenceId.split(':');
-    const numbersData = await readR10Json(reader, releaseId, 'numbers-index.json.gz', budget) as any;
+    const numbersData = await readR10Json<any>(reader, releaseId, 'numbers-index.json.gz', budget);
     const grp = (numbersData?.by_value?.[valStr]?.groups || []).find((g: any) => g.noun_s === nounS && g.kind === kind);
     if (grp) {
       const passages = (grp.samples || []).slice(0, 6).map((s: any) => ({ verse_id: s.vid, ref: s.ref, book: s.book, chapter: s.ch, verse: s.vs, testament: s.book <= 39 ? 'OT' : 'NT' as const }));
@@ -979,18 +2102,19 @@ export async function getConnectionEvidence(
     return { schema_version: 1, status: 'not_found', release_id: releaseId, evidence: null, passage_details: [] };
   }
 
-  const targetStrongs = new Set((record.original_words || []).map(w => w.strongs).filter(Boolean));
-  const booksNeeded = [...new Set((record.passages || []).map(p => p.book))].slice(0, MAX_EVIDENCE_BOOKS);
-  const bookCache = new Map<number, any>();
+  for (const ow of record.original_words || []) {
+    if (ow.strongs) targetStrongs.add(ow.strongs);
+  }
+
+  const booksNeeded = [...new Set((record.passages || []).map(p => p.book).filter(b => b > 0))].slice(0, MAX_EVIDENCE_BOOKS);
   await Promise.all(booksNeeded.map(async b => {
-    const pad = String(b).padStart(2, '0');
-    const data = await readR10Json(reader, releaseId, `evidence-passages/book-${pad}.json.gz`, budget);
-    if (data?.verses) bookCache.set(b, data.verses);
+    await loadBookData(b);
   }));
 
   const passageDetails = (record.passages || []).slice(0, 6).map(p => {
     const bVerses = bookCache.get(p.book);
-    const vData = bVerses?.[String(p.verse_id)] || Object.values(bVerses || {}).find((v: any) => v.chapter === p.chapter && v.verse === p.verse);
+    const vData = (p.verse_id ? bVerses?.[String(p.verse_id)] : null) ||
+      Object.values(bVerses || {}).find((v: any) => v.chapter === p.chapter && v.verse === p.verse);
     const tokens = (vData?.toks || []).map((t: any) => ({
       word_no: t.wn,
       surface: t.sf,
@@ -1001,7 +2125,11 @@ export async function getConnectionEvidence(
       is_highlighted: targetStrongs.has(t.s),
     }));
     return {
-      passage: p,
+      passage: {
+        ...p,
+        mt_ref: vData?.mt_ref ?? p.mt_ref,
+        is_psalm_heading: p.book === 19 && (p.verse === 0 || vData?.verse === 0),
+      },
       english_text: vData?.en || p.snippet || null,
       english_edition: vData?.en ? 'World English Bible (Public Domain)' : null,
       original_tokens: tokens,
@@ -1027,11 +2155,27 @@ export async function expandBiblicalConnection(
   options: { limit?: number; cursor?: string | null; release_id?: string } = {}
 ): Promise<ExpandConnectionResult> {
   const releaseId = options.release_id || DEFAULT_R10_RELEASE;
-  const seedQuery = nodeId
-    .replace(/^(motif:|lemma:|passage:|event:|concept:|number:)/, '')
+  let seedQuery = nodeId
+    .replace(/^(motif:|lemma:|passage:|event:|concept:|number:|cluster:)/, '')
     .replace(/_/g, ' ');
+
+  let clusterId: string | undefined;
+  let focusLemma: string | undefined;
+
+  if (nodeId.startsWith('cluster:')) {
+    clusterId = nodeId.replace(/^cluster:/, '');
+    focusLemma = clusterId.split(':')[0];
+    seedQuery = focusLemma;
+  } else if (nodeId.startsWith('lemma:')) {
+    focusLemma = nodeId.replace(/^lemma:/, '');
+    seedQuery = focusLemma;
+  }
+
   const discovery = await discoverBiblicalConnections(reader, {
     query: seedQuery,
+    mode: 'expand',
+    cluster_id: clusterId,
+    focus_lemma: focusLemma,
     limit: options.limit ?? 8,
     cursor: options.cursor ?? null,
     release_id: releaseId,
@@ -1042,7 +2186,7 @@ export async function expandBiblicalConnection(
     kind: nodeId.startsWith('motif:') ? 'motif' : nodeId.startsWith('lemma:') ? 'lemma' : nodeId.startsWith('passage:') ? 'passage' : 'concept',
     label: seedQuery,
     epistemic_class: 'direct_textual_evidence',
-    grounding_source: 'R10 index expansion',
+    grounding_source: 'R11 index expansion',
   };
 
   return {
