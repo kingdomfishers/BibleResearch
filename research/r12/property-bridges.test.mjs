@@ -34,4 +34,4 @@ assert.equal(findPropertyBridges(index,'not-found').coverage,'unknown_anchor');
 assert.throws(()=>buildPropertyIndex([p('x','material','COPPER','bad',{rights_status:'unverified'})]));
 assert.throws(()=>buildPropertyIndex([p('x','material','COPPER','bad',{source_ref:''})]));
 assert.ok(lamp.diagnostics.indexed_claims>0);
-console.log('property-bridges: 11 assertions passed');
+console.log('property-bridges: 12 assertions passed');
