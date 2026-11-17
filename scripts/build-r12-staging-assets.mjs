@@ -309,7 +309,44 @@ async function main() {
           for (const field of ['outgoing_summaries', 'incoming_summaries']) {
             for (const sum of entry[field] || []) {
               if (Array.isArray(sum.sample_relations)) {
-                sum.sample_relations = sum.sample_relations.map(fixRelationRecord);
+                const fixedRels = sum.sample_relations.map(fixRelationRecord);
+                sum.evidence_ids = fixedRels.map(r => r.relation_id).filter(Boolean);
+                sum.sample_passages = [...new Set(fixedRels.map(r => r.canonical_ref).filter(Boolean))].map(reference => ({
+                  reference,
+                  coords: fixedRels.find(r => r.canonical_ref === reference)?.coords || null,
+                }));
+                sum.sample_relations = fixedRels.slice(0, 1).map(r => ({
+                  relation_id: r.relation_id,
+                  summary_id: r.summary_id,
+                  canonical_ref: r.canonical_ref,
+                  coords: r.coords,
+                  edition: r.edition,
+                  predicate: r.predicate,
+                  inverse_predicate: r.inverse_predicate,
+                  quality: r.quality,
+                  subject: r.subject ? {
+                    lemma_id: r.subject.lemma_id,
+                    token_id: r.subject.token_id,
+                    source_token_id: r.subject.source_token_id,
+                    word_id: r.subject.word_id,
+                    word_position: r.subject.word_position,
+                    surface_form: r.subject.surface_form,
+                    word_id_status: r.subject.word_id_status,
+                  } : null,
+                  object: r.object ? {
+                    lemma_id: r.object.lemma_id,
+                    token_id: r.object.token_id,
+                    source_token_id: r.object.source_token_id,
+                    word_id: r.object.word_id,
+                    word_position: r.object.word_position,
+                    surface_form: r.object.surface_form,
+                    word_id_status: r.object.word_id_status,
+                  } : null,
+                }));
+              }
+              if (sum.related_lemma) {
+                sum.from_lemma = null;
+                sum.to_lemma = null;
               }
             }
           }
@@ -350,6 +387,38 @@ async function main() {
     });
   }
 
+  // Build 64-bucket chapter-lite shards (compact WEB text + token coordinates) so cold Worker reads stay < 350 KiB instead of 3-8 MiB
+  const chapterLiteBuckets = Array.from({ length: 64 }, () => ({}));
+  const chaptersDir = path.join(OUT_BUNDLE, 'v1', 'chapters');
+  for (const chFile of fs.readdirSync(chaptersDir).filter(x => /^b\d+-c\d+\.json\.gz$/.test(x)).sort()) {
+    const m = /^b(\d+)-c(\d+)\.json\.gz$/.exec(chFile);
+    if (!m) continue;
+    const chKey = `${m[1]}:${m[2]}`;
+    const bIdx = parseInt(bucketHex(64, chKey), 16);
+    const chData = readGzJson(path.join(chaptersDir, chFile));
+    const versesOut = {};
+    for (const [vNr, vObj] of Object.entries(chData.verses || {})) {
+      const webp = (vObj.english_editions || []).find(e => e.edition_id === 'webp-2026-11');
+      const toks = (vObj.tokens || []).map(t => [
+        Number(t.word_position),
+        t.word_id ?? null,
+        t.surface_form || null,
+        t.base_strongs || null,
+        (t.morphemes || []).map(mr => [mr.morpheme_role || '', mr.lemma_key || '']),
+      ]);
+      versesOut[vNr] = { web: webp ? webp.text : null, t: toks };
+    }
+    chapterLiteBuckets[bIdx][chKey] = versesOut;
+  }
+  for (let i = 0; i < 64; i++) {
+    const bHex = i.toString(16).padStart(2, '0');
+    writeGzJson(path.join(r8Dst, 'chapter-lite', `shard-${bHex}.json.gz`), {
+      schema_version: '1.0',
+      bucket: bHex,
+      chapters: chapterLiteBuckets[i],
+    });
+  }
+
   for (const metaFile of ['uncovered-lemmas.json.gz', 'coverage-report.json.gz', 'quality-report.json.gz']) {
     const obj = readGzJson(path.join(r8Src, metaFile));
     if (obj.release_version) obj.release_version = 'r8-v1.2';
@@ -362,6 +431,8 @@ async function main() {
     ...r8Manifest.sharding,
     word_id_index: true,
     word_id_index_buckets: 64,
+    chapter_lite_index: true,
+    chapter_lite_buckets: 64,
   };
   r8Manifest.fixes_applied = ['QA-01/QA-04/QA-07/QA-10: exact occurrence STEP word_id, 1-based canonical word_position, actual surface_form, source_token_id provenance'];
   writeGzJson(path.join(r8Dst, 'manifest.json.gz'), r8Manifest);

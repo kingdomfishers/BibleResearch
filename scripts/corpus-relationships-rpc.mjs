@@ -865,12 +865,31 @@ async function resolveLemmaV2(params, resolver, loadUncovered, ctx = null, gramB
     }
 
     const gramBase = await getGramBase();
-    const [chShard, pShard] = await Promise.all([
-      ctx.loadJsonShard(ctx.env, `/v1/chapters/b${book}-c${chapter}.json.gz`),
+    const chBucket = gramBase
+      ? Number(BigInt('0x' + fnv1a64Hex(`${book}:${chapter}`)) % 64n).toString(16).padStart(2, '0')
+      : null;
+    const [liteShard, pShard] = await Promise.all([
+      chBucket ? ctx.loadJsonShard(ctx.env, `${gramBase}/chapter-lite/shard-${chBucket}.json.gz`) : Promise.resolve(null),
       ctx.loadJsonShard(ctx.env, `${gramBase}/passages/b${book}-c${chapter}.json.gz`),
     ]);
 
-    const chTok = chShard?.verses?.[String(verse)]?.tokens?.find(t => Number(t.word_position) === position) || null;
+    let chTok = null;
+    const liteVerse = liteShard?.chapters?.[`${book}:${chapter}`]?.[String(verse)];
+    if (liteVerse && Array.isArray(liteVerse.t)) {
+      const tup = liteVerse.t.find(row => Number(row[0]) === position);
+      if (tup) {
+        chTok = {
+          word_position: Number(tup[0]),
+          word_id: tup[1] ?? null,
+          surface_form: tup[2] ?? null,
+          base_strongs: tup[3] ?? null,
+          morphemes: Array.isArray(tup[4]) ? tup[4].map(m => ({ morpheme_role: m[0] || '', lemma_key: m[1] || '' })) : [],
+        };
+      }
+    } else {
+      const chShard = await ctx.loadJsonShard(ctx.env, `/v1/chapters/b${book}-c${chapter}.json.gz`);
+      chTok = chShard?.verses?.[String(verse)]?.tokens?.find(t => Number(t.word_position) === position) || null;
+    }
 
     let r8Match = null;
     for (const ed of edCandidates) {
@@ -966,7 +985,11 @@ async function resolveLemmaV2(params, resolver, loadUncovered, ctx = null, gramB
           if (!stemKeys.includes(c)) stemKeys.push(c);
         }
       }
-      for (const k of morphemeKeys) await getProfile(k);
+      const targetKeysForProfile = stemKeys.length > 0 ? stemKeys : morphemeKeys;
+      for (const k of targetKeysForProfile) await getProfile(k);
+      for (const k of morphemeKeys) {
+        if (!resolver.lemmas?.[k] && resolver.loadProfile) await resolver.loadProfile(k);
+      }
       const canonicalAll = canonicalizeCandidateIds(morphemeKeys);
       const canonicalStem = canonicalizeCandidateIds(stemKeys);
       const stepWordId = chTok?.word_id ?? (r8Match?.word_id ?? null);

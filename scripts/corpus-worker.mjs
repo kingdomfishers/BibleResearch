@@ -18,6 +18,7 @@
 
 import { withCorpusSecurity } from './corpus-security.mjs';
 import {
+  fnv1a64Hex,
   handleDiscoverBiblicalConnectionsV1,
   handleDiscoverRelationshipPathsV1,
   handleExpandBiblicalConnectionV1,
@@ -800,7 +801,6 @@ async function handleLookupSeptuagintByCanonicalVerseV1(env, params) {
 }
 
 async function handleGetReaderPassagesV1(env, params) {
-  await ensureCatalog(env);
   const passages = params.p_passages;
   if (!Array.isArray(passages) || passages.length < 1 || passages.length > 12) {
     return { status: 'invalid_request' };
@@ -822,10 +822,18 @@ async function handleGetReaderPassagesV1(env, params) {
     const b = Number(p.book);
     const c = Number(p.chapter);
     const v = Number(p.verse);
-    const chShard = await loadJsonShard(env, `/v1/chapters/b${b}-c${c}.json.gz`);
-    const vEntry = chShard?.verses?.[String(v)];
-    const webp = (vEntry?.english_editions || []).find((e) => e.edition_id === 'webp-2026-11');
-    const text = webp ? webp.text : null;
+    const chBucket = Number(BigInt('0x' + fnv1a64Hex(`${b}:${c}`)) % 64n).toString(16).padStart(2, '0');
+    const liteShard = await loadJsonShard(env, `/v2/relationships/r8-v1.2/chapter-lite/shard-${chBucket}.json.gz`);
+    const liteVerse = liteShard?.chapters?.[`${b}:${c}`]?.[String(v)];
+    let text = null;
+    if (liteVerse && 'web' in liteVerse) {
+      text = liteVerse.web ?? null;
+    } else {
+      const chShard = await loadJsonShard(env, `/v1/chapters/b${b}-c${c}.json.gz`);
+      const vEntry = chShard?.verses?.[String(v)];
+      const webp = (vEntry?.english_editions || []).find((e) => e.edition_id === 'webp-2026-11');
+      text = webp ? webp.text : null;
+    }
     out.push({
       passage: p,
       text,
