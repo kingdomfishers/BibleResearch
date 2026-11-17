@@ -2,7 +2,7 @@
 
 **Date:** 2026-11-17  
 **Purpose:** One-time high-reasoning architectural handoff and first executable slice, followed by low-cost scoped implementation tasks.  
-**Authoritative environment:** Windows local checkout \`C:\Projects\BibleResearch-r10\` (user's newest local R11/R12 code), not GitHub main.  
+**Authoritative environment:** Windows local checkout `C:\Projects\BibleResearch-r10` (user's newest local R11/R12 code), not GitHub main.  
 **Current user-reported state:** D1.1–D1.3 undertaken and **D1.3 finished**. Inspect completion evidence and do not rerun completed phases without a concrete regression.  
 **Desired outcome:** Functional, explorable hidden biblical relationships in a live test build and through ChatGPT MCP, as early as possible.
 
@@ -10,7 +10,7 @@
 
 You (Astra) must do **both** of the following in this session:
 
-**A. Architectural work (your highest-leverage reasoning):** Reconcile actual local code and status with this directive and research handoff, make difficult compatibility decisions, rewrite the R12 section of \`TASKS.md\` as a shorter, implementation-complete, dependency-aware execution queue, and synchronize a byte-identical backup \`R12TASKS.md\`. The tasks must be **self-contained implementation prompts** designed to be executed by lower-cost models, not high-level tickets.
+**A. Architectural work (your highest-leverage reasoning):** Reconcile actual local code and status with this directive and research handoff, make difficult compatibility decisions, rewrite the R12 section of `TASKS.md` as a shorter, implementation-complete, dependency-aware execution queue, and synchronize a byte-identical backup `R12TASKS.md`. The tasks must be **self-contained implementation prompts** designed to be executed by lower-cost models, not high-level tickets.
 
 **B. Immediate implementation:** After the queue is safely updated, **execute the earliest unblocked end-to-end vertical slice**, not another proposal: exact word occurrence click -> existing direct typed evidence neighbors -> compact UI and MCP/Worker response -> actual proof expansion if available. Choose the smallest source-compatible increment that results in visible functionality. Complete tests, create a commit, **push your feature branch**, and deploy to an appropriate live *test* environment if its existing safe configuration allows. If a public-facing deployment requires credentials/access that cannot be provisioned safely or the current source is incomplete, still finish a verified local milestone, push it, and report the exact blocker. Do not stop after planning unless no safe code change is possible.
 
@@ -19,17 +19,17 @@ You (Astra) must do **both** of the following in this session:
 ## 1. Read the exact sources; authority and concurrency
 
 Read in this order, only as much as actually required:
-1. \`AGENTS.md\` and its referenced pre-code/post-code instructions, current Git status/branch, existing unfinished changes, current local \`TASKS.md\`.
+1. `AGENTS.md` and its referenced pre-code/post-code instructions, current Git status/branch, existing unfinished changes, current local `TASKS.md`.
 2. [R12_Plan.md](https://github.com/kingdomfishers/BibleResearch/blob/main/R12_Plan.md) — comprehensive discovery architecture, algorithms, resource/licensing research, deployment boundaries.
 3. [research/r12/README.md](https://github.com/kingdomfishers/BibleResearch/blob/main/research/r12/README.md), [R12_DB_DESIGN.md](https://github.com/kingdomfishers/BibleResearch/blob/main/research/r12/R12_DB_DESIGN.md), [evidence-contract.schema.json](https://github.com/kingdomfishers/BibleResearch/blob/main/research/r12/evidence-contract.schema.json), [data-sources.json](https://github.com/kingdomfishers/BibleResearch/blob/main/research/r12/data-sources.json).
-4. Relevant sections only of local \`RELATIONSHIP_ARCHITECTURE.md\` v5, and of R11 audit/157 fixtures.
+4. Relevant sections only of local `RELATIONSHIP_ARCHITECTURE.md` v5, and of R11 audit/157 fixtures.
 5. Existing local R8/R9C/R10/R11 implementations around the exact changes (avoid whole-repo searches that repeat previous work).
 
-**Local checkout wins.** Main on GitHub is older than the user's local R11/R12 worktree. The R12 research folder was published separately on GitHub main. Bring those **specific research files** into local by a safe method (e.g. \`git fetch\` plus \`git show origin/main:research/r12/FILE > ...\` on Windows, or targeted downloads); do **not** merge/checkout older main over the local branch. Do not assume remote R11 branch exists. Preserve unrelated in-progress changes.
+**Local checkout wins.** Main on GitHub is older than the user's local R11/R12 worktree. The R12 research folder was published separately on GitHub main. Bring those **specific research files** into local by a safe method (e.g. `git fetch` plus `git show origin/main:research/r12/FILE > ...` on Windows, or targeted downloads); do **not** merge/checkout older main over the local branch. Do not assume remote R11 branch exists. Preserve unrelated in-progress changes.
 
 Task status may have evolved: user reports D1.3 finished. Verify D1.1–D1.3 against local report and logs, record actual DONE/PARTIAL/BLOCKED. Treat **D1.3 as reported complete**, no gratuitous rerun or reimplementation. D1.4 holdout can be reduced to an early narrow guard plus independent later final release test; never delete protected original fixtures.
 
-**Backup invariant:** \`TASKS.md\` remains the authoritative task queue; \`R12TASKS.md\` is an **identical copy of the *entire* file**, not an R12 excerpt. After updating task status, recopy and verify SHA-256 equality. Commit/push both. Only one agent writes these two files at a time.
+**Backup invariant:** `TASKS.md` remains the authoritative task queue; `R12TASKS.md` is an **identical copy of the *entire* file**, not an R12 excerpt. After updating task status, recopy and verify SHA-256 equality. Commit/push both. Only one agent writes these two files at a time.
 
 ## 2. The product, precisely
 
@@ -38,7 +38,7 @@ BibleResearch is a **discovery instrument**. For *any indexed Hebrew or Greek or
 - Explore **ranked 2–5 meaningful-hop paths** across lexical senses, grammar, statements, images, numbers, events, physical-world properties and verses. Clicking an intermediate node continues exploration; alternative independent proof routes remain available.
 - Discover **unanticipated spelling overlap** (e.g. אדם / דם), candidate etymological/derivational leads, shared roots, polysemy, form relationships and possible wordplay. Treat form similarity as **candidate**, not historical etymology.
 - Discover **structural parallels** using attested scene roles and rarity-weighted feature matching, e.g. Hagar's seeing/water encounters, without hardcoding Hagar or other examples.
-- Reveal the distinct textual pathways through \`ruach\` (spirit/wind/breath/direction), lamp/menorah, Spirit, seven lamps and seven eyes (Exodus 25, Zechariah 4, Revelation 4–5), without collapsing Rev 1:20 lampstands/churches with Rev 4:5 lamps/spirits.
+- Reveal the distinct textual pathways through `ruach` (spirit/wind/breath/direction), lamp/menorah, Spirit, seven lamps and seven eyes (Exodus 25, Zechariah 4, Revelation 4–5), without collapsing Rev 1:20 lampstands/churches with Rev 4:5 lamps/spirits.
 - Use **external semantic and physical knowledge** as candidate bridges (source-backed water/material/light/fire/anatomy concepts) after the core product functions. Do not assert that science is scripture.
 - Expose the same data through an excellent, mobile-friendly **WordInspector/DiscoverConnections UI** and **BibleResearch MCP**, including a paged exploratory tail beyond the top-ranked 24 cards so human researchers and ChatGPT can pursue overlooked relations.
 
@@ -53,7 +53,7 @@ The project already has:
 - R10/R11 discover functionality, WordInspector.ts, DiscoverConnections.ts, r10-rpc.ts, Worker corpus gateway, MCP wrappers.
 - Supabase canonical identity/senses/roots/forms/concepts/notes/source-rights registry; immutable static corpus belongs in Cloudflare assets.
 
-**Read-only live schema findings:** Supabase already has ~82,485 canonical entities, ~26,179 lexical senses, 744 lexical formations, ~15,642 entity relationships, ~8,864 concept_properties and ~2,119 concept_external_links. The latter properties/links overwhelmingly encode **geographical metadata**, not the desired physics/material/light knowledge. Do not re-import geography as a supposed "scientific concept graph" or create bulk PostgreSQL graph tables. \`research/r12/R12_DB_DESIGN.md\` has exact observed reuse.
+**Read-only live schema findings:** Supabase already has ~82,485 canonical entities, ~26,179 lexical senses, 744 lexical formations, ~15,642 entity relationships, ~8,864 concept_properties and ~2,119 concept_external_links. The latter properties/links overwhelmingly encode **geographical metadata**, not the desired physics/material/light knowledge. Do not re-import geography as a supposed "scientific concept graph" or create bulk PostgreSQL graph tables. `research/r12/R12_DB_DESIGN.md` has exact observed reuse.
 
 Do not start another independent discovery algorithm stack. Extend existing R9C traversal and existing Cloudflare static asset manifests/reader with offline-generated adjacency/recommendations/proofs; maintain legacy release compatibility. Do not rebuild immutable MACULA/R8 resources without measured need. Identity joins do not consume *semantic* hop count, but a separate physical transition/read bound prevents runaway search.
 
@@ -61,12 +61,12 @@ Do not start another independent discovery algorithm stack. Extend existing R9C 
 
 Published source and focused tests under [research/r12](https://github.com/kingdomfishers/BibleResearch/tree/main/research/r12):
 
-1. \`orthographic-candidates.mjs\` + tests: generic Hebrew consonantal/Greek spelling similarity; matched-character explanation; no invented derivation. Integrate as an **offline compiler pass**, backed by canonical word-form/lemma identifiers, not glosses.
-2. \`structural-candidates.mjs\` + tests: rare-feature postings + IDF-weighted Jaccard; accepts **already extracted** MACULA/R8 statement/scene features, does not parse Hebrew or infer participants. Integrate to existing pattern compiler with exact witness IDs and scene/edition scope.
-3. \`property-bridges.mjs\` + tests: bounded physical-world assertion joins; verified vs candidate mapping and publisher source/rights; rejects geocoding identifiers as properties and generic hypernym hub flooding. No assertion of biblical symbolism.
-4. \`proof-ranker.mjs\` + tests: provenance-aware evidence scoring/convergence/diversity/MMR; takes paths from existing R9C, no second traversal engine.
+1. `orthographic-candidates.mjs` + tests: generic Hebrew consonantal/Greek spelling similarity; matched-character explanation; no invented derivation. Integrate as an **offline compiler pass**, backed by canonical word-form/lemma identifiers, not glosses.
+2. `structural-candidates.mjs` + tests: rare-feature postings + IDF-weighted Jaccard; accepts **already extracted** MACULA/R8 statement/scene features, does not parse Hebrew or infer participants. Integrate to existing pattern compiler with exact witness IDs and scene/edition scope.
+3. `property-bridges.mjs` + tests: bounded physical-world assertion joins; verified vs candidate mapping and publisher source/rights; rejects geocoding identifiers as properties and generic hypernym hub flooding. No assertion of biblical symbolism.
+4. `proof-ranker.mjs` + tests: provenance-aware evidence scoring/convergence/diversity/MMR; takes paths from existing R9C, no second traversal engine.
 
-Also \`evidence-contract.schema.json\`, \`data-sources.json\`, database design and read-only SQL. These are **starting code**, not certified live features. Their isolated synthetic tests passed in a JavaScript smoke harness; *verify them against the local Node/TS toolchain, correct defects and adapt to actual source/graph contracts*. Avoid naively adopting the prototype ranker if the local R9C ranker already contains equivalent logic: transplant only missing units, retaining **one authoritative implementation**.
+Also `evidence-contract.schema.json`, `data-sources.json`, database design and read-only SQL. These are **starting code**, not certified live features. Their isolated synthetic tests passed in a JavaScript smoke harness; *verify them against the local Node/TS toolchain, correct defects and adapt to actual source/graph contracts*. Avoid naively adopting the prototype ranker if the local R9C ranker already contains equivalent logic: transplant only missing units, retaining **one authoritative implementation**.
 
 **Implementation order:** first existing direct graph -> UI/MCP; then existing-graph offline multihop + evidence; then import these four prototype feature passes and rerun a real-source pilot; only then pilot licensed **Open English WordNet** (modern semantic classes) and a compact **Wikidata** structured property extract. ENVO/ChEBI/PATO/Uberon/Pleiades/Sefaria only on measured missing information, not as a universal import prerequisite.
 
@@ -121,7 +121,7 @@ Produce a compact **model assignment matrix**, not a long market survey. Default
 
 For routine tasks prepare a one-message launch prompt:
 
-> In \`C:\Projects\BibleResearch-r10\`, follow AGENTS.md; execute task [ID] in the latest local TASKS.md. Its contract, exact files and tests are authoritative. Work only in those files; no new architecture or repeated broad research. Implement complete feature, run named targeted tests, publish commit to current feature branch, update TASKS.md + identical R12TASKS.md, and write the concise ChatGPT checkpoint. Stop and report exact blocker if a required dependency is missing.
+> In `C:\Projects\BibleResearch-r10`, follow AGENTS.md; execute task [ID] in the latest local TASKS.md. Its contract, exact files and tests are authoritative. Work only in those files; no new architecture or repeated broad research. Implement complete feature, run named targeted tests, publish commit to current feature branch, update TASKS.md + identical R12TASKS.md, and write the concise ChatGPT checkpoint. Stop and report exact blocker if a required dependency is missing.
 
 ## 8. Parallelism with genuinely less cost
 
@@ -133,7 +133,7 @@ Potential: independently test scene/lexical extractors while UI adapter works on
 
 The user explicitly wants **every accepted task committed and pushed to GitHub**, and has authorized **test deployment** because the product's public launch has not happened. This supersedes the old blanket R12 "no push/deploy" execution rule; update that rule in local TASKS.md.
 
-**Important verified fact:** the currently connected GitHub repository \`kingdomfishers/BibleResearch\` is **PUBLIC** as of this planning session, despite the user's statement that the project is not publicly launched. **Never assume the repository itself is private**. Ask for/arrange private repo access policy separately if needed; do not push keys, secrets, personal notes, confidential docs, restricted corpus data, local absolute credentials, .env files or large generated data. Inspect staged files before EVERY push. A workers.dev preview URL is not protected merely because unadvertised. Use Cloudflare Access/auth or a verified already-private staging hostname if confidentiality is required; otherwise label it public test deployment, and keep responses free of private data.
+**Important verified fact:** the currently connected GitHub repository `kingdomfishers/BibleResearch` is **PUBLIC** as of this planning session, despite the user's statement that the project is not publicly launched. **Never assume the repository itself is private**. Ask for/arrange private repo access policy separately if needed; do not push keys, secrets, personal notes, confidential docs, restricted corpus data, local absolute credentials, .env files or large generated data. Inspect staged files before EVERY push. A workers.dev preview URL is not protected merely because unadvertised. Use Cloudflare Access/auth or a verified already-private staging hostname if confidentiality is required; otherwise label it public test deployment, and keep responses free of private data.
 
 **Git operations:** preserve working tree and existing user branches, make narrow commits with task IDs, no force push, no blind main merge, no history rewrite. Create/push a correctly tracked remote feature branch if the local branch is not on GitHub. Prefer one clearly named R12 integration branch; preserve existing protected branches. If branch policy requires PR, create it rather than bypass it. On a testable checkpoint push source and necessary eligible public static assets; do not push generated licensed/private corpora or release keys.
 
@@ -143,7 +143,7 @@ The user explicitly wants **every accepted task committed and pushed to GitHub**
 
 ## 10. After every task, make ChatGPT independent verification possible
 
-Create and maintain \`research/r12/CHATGPT_CHECKPOINT.md\` **in the current implementation branch**, updated on each accepted task and pushed with the code. This is a *short, append-by-task evidence ledger*, not a multi-thousand-line transcript. Include:
+Create and maintain `research/r12/CHATGPT_CHECKPOINT.md` **in the current implementation branch**, updated on each accepted task and pushed with the code. This is a *short, append-by-task evidence ledger*, not a multi-thousand-line transcript. Include:
 - Task ID, status DONE/PARTIAL/BLOCKED, local workspace commit SHA, GitHub branch and URL, deployment release/preview URL.
 - Exact change summary, source/data release hash, tests with pass/fail count, known limitations.
 - A reproducible public/demo-safe **MCP tool invocation** (actual existing name + input JSON) and/or API request of small size, with expected **real** response fields and where to find actual proof IDs.
@@ -167,7 +167,7 @@ To keep tokens low: agents should **not paste full logs**. The durable GitHub ch
 
 ## 12. Final output for this Astra session
 
-1. Updated authoritative local \`TASKS.md\` containing optimized R12 execution tasks; \`R12TASKS.md\` exact full-file backup, hashes verified.
+1. Updated authoritative local `TASKS.md` containing optimized R12 execution tasks; `R12TASKS.md` exact full-file backup, hashes verified.
 2. Task migration map, accurate D1.1–D1.3 completion evidence, shortest dependency/parallel graph, model+effort matrix.
 3. A first **implemented** end-to-end milestone on real project data (at minimum the earliest feasible direct-relationship UI+MCP slice), with targeted tests, new commit and GitHub push. If safe staging deploy feasible, actual preview URL and observed health/MCP results.
 4. Updated short ChatGPT checkpoint in repository with exact copyable independent-research test cases.
