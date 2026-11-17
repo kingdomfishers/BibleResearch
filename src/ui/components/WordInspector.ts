@@ -57,8 +57,11 @@ export function createWordInspector(
     const gematria = word.gematria ?? calculateGematria(word.original_word);
     const metaRow = el('div', 'inspector-word-meta');
     const discoverBtn = action('Discover Biblical Connections →', () => {
-      const seed = [word.transliteration, selected.english?.split('/')[0], word.strongs_nr].filter(Boolean).join(' ');
-      onDiscoverConnectionsForWord?.(seed);
+      const seed = selected.lemmaId ?? word.strongs_nr;
+      if (onDiscoverConnectionsForWord) {
+        close();
+        onDiscoverConnectionsForWord(seed);
+      }
     }, 'study-button primary');
     discoverBtn.style.marginTop = '8px';
     discoverBtn.style.width = '100%';
@@ -76,7 +79,7 @@ export function createWordInspector(
     if (data.lexemes.length > 1) {
       const meanings = el('div', 'lexeme-possibilities');
       meanings.append(el('strong', '', 'Unified Word · Meanings in Different Verses'),
-        status('Homographs are unified as a single focus word: explore its different meanings and nuances across Scripture.'));
+        status('These lexical identities share a word form. Their meanings remain distinct; passage context does not assign an unattested sense.'));
       for (const lexeme of data.lexemes) {
         const row = el('div', 'homograph-meaning-row');
         row.append(el('p', '', `${lexeme.extended_strongs} — ${lexeme.primary_gloss}`));
@@ -175,7 +178,8 @@ export function createWordInspector(
       }
     } : undefined,
   });
-  element.append(lexicalGraph.element, wordNotes.element);
+  summary.after(lexicalGraph.element);
+  element.append(wordNotes.element);
 
   // === @section:logic:inspect ===
   async function inspect(next: Selection, remember = true) {
@@ -206,6 +210,19 @@ export function createWordInspector(
     currentData = result.data;
     renderSummary(result.data.word, result.data, next); renderOccurrences(result.data);
     const strongs = result.data.word.strongs_nr;
+    // Direct evidence must not wait for optional formation/candidate lookups.
+    // Keep the passage captured before the reader request, not a later navigation.
+    const singleExtendedStrongs =
+      result.data.lexemes?.length === 1 ? result.data.lexemes[0].extended_strongs ?? undefined : undefined;
+    void lexicalGraph.loadForWord(next.id, strongs, [], {
+      book: currentPassage.book,
+      chapter: currentPassage.chapter,
+      verse: currentPassage.verse,
+      position: next.position,
+      extendedStrongs: singleExtendedStrongs,
+      preferredLemmaId: next.lemmaId,
+    });
+    void renderConnections(next.id, strongs, request);
     const [formationRes, candsRes] = await Promise.all([
       BibleRPC.lookupWordFormation(strongs, next.id),
       BibleRPC.suggestOrthographicCandidates(strongs, 8, 2),
@@ -217,20 +234,8 @@ export function createWordInspector(
     renderCategorizedConnections(categorized, formationRes.data, candsRes.data?.candidate_connections ?? [], (targetId, opts) => {
       void inspect({ id: targetId, ...opts });
     });
-    void renderConnections(next.id, strongs, request);
-    const curPassage = appState.getPassage();
-    const singleExtendedStrongs =
-      result.data.lexemes?.length === 1 ? result.data.lexemes[0].extended_strongs ?? undefined : undefined;
-    void lexicalGraph.loadForWord(next.id, strongs, [], {
-      book: curPassage.book,
-      chapter: curPassage.chapter,
-      verse: curPassage.verse,
-      position: next.position,
-      extendedStrongs: singleExtendedStrongs,
-      preferredLemmaId: next.lemmaId,
-    });
     const curOcc = result.data.occurrences?.find(
-      o => o.book === curPassage.book && o.chapter === curPassage.chapter && o.verse === curPassage.verse
+      o => o.book === currentPassage.book && o.chapter === currentPassage.chapter && o.verse === currentPassage.verse
     );
     void wordNotes.setWord(next.id, curOcc?.verse_id ?? null, next.position ?? null);
   }

@@ -123,6 +123,13 @@ export function prepareR10DeployAssets(options = {}) {
     console.log('[R11-DEPLOY-PREP] Activated v2/relationships/active.json -> r11-v1.0 inside bundle.');
   }
 
+  // Legacy RPCs need coverage metadata, but not the 18 MiB full resolver.
+  // Reuse R9B's existing 1024 resolver shards for identity lookups at runtime.
+  const resolver = readGzipJson(path.join(outDir, 'v2/relationships/r8-v1.1/resolver-index.json.gz'));
+  const { lemmas, by_strongs_base, by_strongs_extended, by_word_id, by_surface_form, by_transliteration, ...resolverMeta } = resolver;
+  const resolverMetaPath = path.join(outDir, 'v2/relationships/r9b-v1.0/resolver/legacy-meta.json.gz');
+  fs.writeFileSync(resolverMetaPath, zlib.gzipSync(Buffer.from(JSON.stringify(resolverMeta)), { level: 9 }));
+
   const allFiles = walkFiles(outDir);
   let totalBytes = 0;
   let maxFile = { rel: '', size: 0 };

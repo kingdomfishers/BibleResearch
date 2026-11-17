@@ -42,7 +42,7 @@
 
 .discover-autocomplete {
   position: absolute;
-  top: 48px;
+  top: calc(100% + 4px);
   left: 0;
   right: 0;
   max-width: 560px;

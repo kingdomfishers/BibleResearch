@@ -350,6 +350,7 @@ export class DiscoverConnectionsPanel {
       query: this.currentQuery,
       mode: 'expand',
       focus_lemma: strongs,
+      cluster_id: this.currentClusterId,
       cursor,
       limit: 10,
     });
@@ -359,7 +360,7 @@ export class DiscoverConnectionsPanel {
       const currentOcc = this.result.iterative_analysis.lemma_occurrences;
       this.result.iterative_analysis.lemma_occurrences = {
         ...nextOcc,
-        passages: [...currentOcc.passages, ...nextOcc.passages],
+        passages: [...new Map([...currentOcc.passages, ...nextOcc.passages].map(p => [p.verse_id, p])).values()],
       };
     }
     this.renderResults();

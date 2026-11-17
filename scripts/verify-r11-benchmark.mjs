@@ -72,7 +72,27 @@ for (const lemma of sample) {
   const extra = [...retrieved].filter(v => !expected.has(v));
   results.push({ lemma, expected: expected.size, retrieved: retrieved.size, recall: (expected.size - missing.length) / expected.size, missing, extra, pages, ms: Math.round(performance.now() - start) });
 }
-const report = { seed: 1152026, ground_truth: 'Pinned MACULA Hebrew + Nestle1904 + STEP words and morphemes, distinct canonical verse IDs', results,
+const pairs = [];
+for (const lemma of sample.slice(0, 15)) {
+  const vid = [...truth.get(lemma)][0];
+  const partners = [...truth].filter(([key, vids]) => key !== lemma && !excluded.has(key) && vids.has(vid)).map(([key]) => key).sort();
+  if (!partners.length) continue;
+  const partner = partners[Math.floor(random() * partners.length)];
+  const response = await discoverBiblicalConnections(reader, { query: `${lemma} ${partner}`, limit: 25 });
+  const direct = response.strongest_connections.filter(c => c.evidence_id.startsWith('r11:intersect:verse:'));
+  assert.ok(direct.length, `${lemma} + ${partner}: missed source-attested joint witness`);
+  let unsupported = 0;
+  for (const connection of direct) {
+    for (const passage of connection.passages) {
+      if (!truth.get(lemma).has(passage.verse_id) || !truth.get(partner).has(passage.verse_id)) unsupported++;
+    }
+  }
+  assert.equal(unsupported, 0, `${lemma} + ${partner}: unsupported same-verse claim`);
+  assert.equal(response.strongest_connections[0].query_support, 'all_concepts');
+  pairs.push({ lemma, partner, source_vid: vid, direct_connections_checked: direct.length, unsupported,
+    top_support: response.strongest_connections[0].query_support, globally_exhaustive: response.search_metadata.exhaustive });
+}
+const report = { seed: 1152026, ground_truth: 'Pinned MACULA Hebrew + Nestle1904 + STEP words and morphemes, distinct canonical verse IDs', results, pairs,
   limitations: ['Connection precision and interpretive ranking require separate semantic evaluation; direct recall is not connection precision.', 'STEP backfills may add legitimate witnesses beyond MACULA ground truth.'] };
 fs.mkdirSync('.artifacts-r10/benchmarks', { recursive: true });
 fs.writeFileSync('.artifacts-r10/benchmarks/holdout.json', JSON.stringify(report, null, 2));

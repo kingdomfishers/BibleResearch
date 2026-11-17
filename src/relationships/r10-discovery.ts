@@ -9,7 +9,7 @@
  *            lexical formations, cross-references, multi-concept intersections, complete occurrence pagination.
  */
 
-import { computeBucketHex } from './adjacency-loader.ts';
+import { fnv1a64Hex, computeBucketHex } from './adjacency-loader.ts';
 import type { AssetReader } from './adjacency-loader.ts';
 import type {
   ConnectionEvidenceResult,
@@ -168,21 +168,68 @@ async function readR10Json<T = any>(
   reader: AssetReader,
   releaseId: string,
   relPath: string,
-  budget: { used: number; max: number; missing?: string[] }
+  budget: ReadBudget
 ): Promise<T | null> {
-  if (budget.used >= budget.max) return null;
+  budget.pages ||= new Map();
+  if (budget.pages.has(relPath)) return budget.pages.get(relPath)!;
+  if (budget.used >= budget.max) { budget.missing?.push(`budget:${relPath}`); return null; }
   budget.used++;
   const fullPath = `/v2/relationships/${releaseId}/r10/${relPath}`;
-  const res = await reader.readJson(fullPath);
-  if (!res) budget.missing?.push(fullPath);
-  // Legacy window-based copula extraction cannot establish identity: relative
-  // clauses may describe location, possession, marriage, or numerical attributes.
-  // Quarantine the entire unverified family, including evidence-by-ID access.
-  if (relPath === 'explicit-and-typology.json.gz' && res?.data) {
-    const data = res.data as { records?: Array<{ evidence_id?: string }> };
-    return { ...data, records: (data.records || []).filter(r => !r.evidence_id?.startsWith('r10:ident:auto:')) } as T;
+  const pending = reader.readJson(fullPath).then(res => {
+    if (!res) {
+      budget.missing?.push(fullPath);
+      // Missing R11 fast metadata never grants permission for a legacy book scan.
+      // Explicit older release IDs retain their original reader contract.
+      if (relPath === 'fast-manifest.json.gz' && releaseId === DEFAULT_R10_RELEASE) return { selective: true, profile_buckets: 1024, verse_chunk_size: 64 };
+      return null;
+    }
+    // Quarantine unverified legacy window-based copula records on every access.
+    if (relPath === 'explicit-and-typology.json.gz') {
+      const data = res.data as { records?: Array<{ evidence_id?: string }> };
+      return { ...data, records: (data.records || []).filter(r => !r.evidence_id?.startsWith('r10:ident:auto:')) };
+    }
+    return res.data;
+  });
+  budget.pages.set(relPath, pending);
+  return (await pending) as T | null;
+}
+
+interface FastManifest { profile_buckets: number; verse_chunk_size: number; selective?: boolean }
+type ReadBudget = { used: number; max: number; missing?: string[]; pages?: Map<string, Promise<any>> };
+
+/** Read only the deterministic key branch; missing pages never trigger legacy scans. */
+export async function readSelectiveKey(reader: AssetReader, release: string, namespace: string, key: string, budget: ReadBudget): Promise<any> {
+  const hash = BigInt('0x' + fnv1a64Hex(key)).toString(2).padStart(64, '0');
+  let prefix = hash.slice(0, namespace === 'refs' ? 7 : 8);
+  for (;;) {
+    const page = await readR10Json<any>(reader, release, `selective/${namespace}/${prefix}.json.gz`, budget);
+    if (!page) return null;
+    if (page.routes) {
+      const route = page.routes.find((value: string) => hash.startsWith(value));
+      if (!route || route.length <= prefix.length) return null;
+      prefix = route;
+    } else if (page.split) {
+      const digit = hash[prefix.length];
+      if (!digit || !page.split.includes(digit)) return null;
+      prefix += digit;
+    } else if (page.continuation) {
+      if (page.continuation.key !== key) return null;
+      let serialized = '';
+      for (const rel of page.continuation.pages) {
+        const part = await readR10Json<{ text: string }>(reader, release, rel, budget);
+        if (!part) return null;
+        serialized += part.text;
+      }
+      return JSON.parse(serialized);
+    } else return page.entries?.[key] ?? null;
   }
-  return (res?.data as T) ?? null;
+}
+
+async function readProfile(reader: AssetReader, release: string, manifest: FastManifest | null, bs: string, budget: ReadBudget): Promise<LemmaProfile | null> {
+  if (manifest?.selective) return readSelectiveKey(reader, release, 'profiles', bs, budget);
+  const bucket = computeBucketHex(manifest ? 'fnv1a64_mod1024' : 'fnv1a64_mod64', manifest?.profile_buckets || 64, bs);
+  const shard = await readR10Json<{ entries?: Record<string, LemmaProfile> }>(reader, release, `${manifest ? 'fast-profiles' : 'lemma-profiles'}/shard-${bucket}.json.gz`, budget);
+  return shard?.entries?.[bs] || null;
 }
 
 interface ConceptIndexData {
@@ -321,11 +368,12 @@ export async function discoverBiblicalConnections(
   const limit = Math.max(1, Math.min(MAX_LIMIT, Number(query.limit ?? DEFAULT_LIMIT)));
   const offset = Math.max(0, Number.parseInt(String(query.cursor || '0'), 10) || 0);
 
-  const [conceptIdx, explicitData, motifsData, numbersData] = await Promise.all([
+  const [conceptIdx, explicitData, motifsData, numbersData, fastManifest] = await Promise.all([
     readR10Json(reader, releaseId, 'concept-index.json.gz', budget) as Promise<ConceptIndexData | null>,
     readR10Json(reader, releaseId, 'explicit-and-typology.json.gz', budget) as Promise<{ records: any[] } | null>,
     readR10Json(reader, releaseId, 'motifs-and-patterns.json.gz', budget) as Promise<{ motifs: Record<string, any>; motif_pairs: Record<string, any>; events: any[] } | null>,
     readR10Json(reader, releaseId, 'numbers-index.json.gz', budget) as Promise<{ by_value: Record<string, any> } | null>,
+    readR10Json<FastManifest>(reader, releaseId, 'fast-manifest.json.gz', budget),
   ]);
 
   if (!conceptIdx || !explicitData || !motifsData) {
@@ -360,6 +408,7 @@ export async function discoverBiblicalConnections(
   const controls: R10ControlOrWarning[] = [];
 
   // Passage hydration helper
+  const fastVerseCache = new Map<number, any>();
   const bookCache = new Map<number, any>();
   async function loadBookData(bookId: number): Promise<any> {
     if (bookCache.has(bookId)) return bookCache.get(bookId);
@@ -374,19 +423,23 @@ export async function discoverBiblicalConnections(
 
   async function hydratePassageByVid(vid: number): Promise<R10PassageRef | null> {
     const book = bookForVid(vid);
-    const verses = await loadBookData(book);
-    const v = verses?.[String(vid)];
-    if (!v) {
-      const bkName = conceptIdx?.book_names?.find(b => b.id === book)?.name || `Book ${book}`;
-      return {
-        verse_id: vid,
-        ref: `${bkName} (vid ${vid})`,
-        book,
-        chapter: 1,
-        verse: 1,
-        testament: book <= 39 ? 'OT' : 'NT',
-      };
+    let v;
+    if (fastManifest?.selective) {
+      v = await readSelectiveKey(reader, releaseId, 'verses', String(vid), budget);
+      if (v) bookCache.set(book, { ...(bookCache.get(book) || {}), [String(vid)]: v });
+    } else if (fastManifest) {
+      const chunk = Math.floor((vid - 1) / fastManifest.verse_chunk_size);
+      if (!fastVerseCache.has(chunk)) {
+        const data = await readR10Json<{ verses: Record<string, any> }>(reader, releaseId, `fast-verses/chunk-${chunk.toString(16).padStart(3, '0')}.json.gz`, budget);
+        fastVerseCache.set(chunk, data?.verses || {});
+      }
+      v = fastVerseCache.get(chunk)?.[String(vid)];
+      if (v) bookCache.set(book, { ...(bookCache.get(book) || {}), [String(vid)]: v });
+    } else {
+      const verses = await loadBookData(book);
+      v = verses?.[String(vid)];
     }
+    if (!v) return null;
     return {
       verse_id: vid,
       ref: v.ref,
@@ -417,7 +470,12 @@ export async function discoverBiblicalConnections(
 
   // Hydrate explicit passage references
   for (const ep of explicitPassages) {
-    const verses = await loadBookData(ep.book);
+    let verses;
+    if (fastManifest?.selective) {
+      const vid = await readSelectiveKey(reader, releaseId, 'refs', `${ep.book}:${ep.chapter}:${ep.verse}`, budget);
+      if (vid) await hydratePassageByVid(Number(vid));
+      verses = bookCache.get(ep.book);
+    } else verses = await loadBookData(ep.book);
     if (verses) {
       for (const [vKey, vVal] of Object.entries(verses) as [string, any][]) {
         if (vVal.chapter === ep.chapter && vVal.verse === ep.verse) {
@@ -439,6 +497,7 @@ export async function discoverBiblicalConnections(
   const shardMemo = new Map<string, Map<string, any[]>>();
   async function fetchShard(key: string): Promise<any[]> {
     const normKey = key.toLowerCase();
+    if (fastManifest?.selective) return (await readSelectiveKey(reader, releaseId, 'lookup', normKey, budget)) || [];
     const bHex = computeBucketHex('fnv1a64_mod64', 64, normKey);
     if (!shardMemo.has(bHex)) {
       const shard = await readR10Json<{ entries?: Array<[string, any[]]> }>(
@@ -483,13 +542,28 @@ export async function discoverBiblicalConnections(
       b.match_rank - a.match_rank || b.cnt - a.cnt);
 
     // Proper-Name vs Common-Noun Guard:
-    // If English concept matches both common nouns (!h.is_prop) and proper places/persons (h.is_prop),
-    // keep non-proper entries as primary resolved lemmas unless query explicitly names a proper place/person.
+    // 1) If propShard has an exact gloss match (e.g. "hagar" -> H1904 "Hagar") and nonPropShard has
+    //    NO exact gloss match (e.g. H1481 "to sojourn" matched only via transliteration/surface),
+    //    select the exact proper-name entries and keep non-proper transliteration collisions separate.
+    // 2) Conversely, if nonPropShard matches and propShard has no exact gloss match (e.g. "lily" -> H7799 vs H7800 "Susa"),
+    //    keep non-proper entries as primary unless query explicitly asks for a proper place/person.
     const nonPropShard = shardHits.filter(h => !h.is_prop);
     const propShard = shardHits.filter(h => h.is_prop);
+    const exactProperMatches = propShard.filter(h => normalizeToken(h.gl || '') === lower);
+    const exactNonPropMatches = nonPropShard.filter(h => normalizeToken(h.gl || '') === lower);
     let primaryShardHits = shardHits;
     const excludedProper: any[] = [];
-    if (nonPropShard.length > 0 && !isExplicitProperQuery) {
+    if (exactProperMatches.length > 0 && exactNonPropMatches.length === 0) {
+      primaryShardHits = exactProperMatches;
+      for (const np of nonPropShard) {
+        controls.push({
+          control_id: `ctrl:proper_vs_translit:${np.bs}:${lower}`,
+          kind: 'homograph_disambiguation',
+          title: `Proper name "${term}" (${exactProperMatches[0].bs}) separated from lexical match ${np.sc} ("${np.gl}", ${np.bs})`,
+          explanation: `Query term "${term}" matches proper entity ${exactProperMatches.map(x => `${x.sc} (${x.bs})`).join(', ')} directly by gloss; non-proper entry ${np.sc} (${np.bs}, "${np.gl}") is kept separate so unrelated passages are not mislabeled as "${term}".`,
+        });
+      }
+    } else if (nonPropShard.length > 0 && !isExplicitProperQuery && exactProperMatches.length === 0) {
       primaryShardHits = nonPropShard;
       excludedProper.push(...propShard);
     }
@@ -628,34 +702,11 @@ export async function discoverBiblicalConnections(
     }
   }
   const profileStrongsToLoad = [...new Set([...prioritized, ...matchedStrongs])].slice(0, 6);
-  const profileBuckets = new Map<string, string[]>();
-  for (const bs of profileStrongsToLoad) {
-    const bHex = computeBucketHex('fnv1a64_mod64', 64, bs);
-    if (!profileBuckets.has(bHex)) profileBuckets.set(bHex, []);
-    profileBuckets.get(bHex)!.push(bs);
-  }
-
-  const profileShardMemo = new Map<string, Record<string, LemmaProfile>>();
-  await Promise.all(
-    [...profileBuckets.keys()].map(async bHex => {
-      const shard = await readR10Json<{ entries?: Record<string, LemmaProfile> }>(
-        reader, releaseId, `lemma-profiles/shard-${bHex}.json.gz`, budget
-      );
-      if (shard?.entries) {
-        profileShardMemo.set(bHex, shard.entries);
-      }
-    })
-  );
-
   const loadedProfiles: LemmaProfile[] = [];
   const profileByStrongs = new Map<string, LemmaProfile>();
   for (const bs of profileStrongsToLoad) {
-    const bHex = computeBucketHex('fnv1a64_mod64', 64, bs);
-    const prof = profileShardMemo.get(bHex)?.[bs];
-    if (prof) {
-      loadedProfiles.push(prof);
-      profileByStrongs.set(bs, prof);
-    }
+    const prof = await readProfile(reader, releaseId, fastManifest, bs, budget);
+    if (prof) { loadedProfiles.push(prof); profileByStrongs.set(bs, prof); }
   }
 
   // Enrich resolved concepts with profile details
@@ -1093,8 +1144,87 @@ export async function discoverBiblicalConnections(
           for (const vid of sharedVids.slice(0, 6)) {
             const p = await hydratePassageByVid(vid);
             if (!p) continue;
-            const pA = gA.profiles.find(p => p.all_vids.includes(vid))!;
-            const pB = gB.profiles.find(p => p.all_vids.includes(vid))!;
+            const pA = gA.profiles.find(pr => pr.all_vids.includes(vid))!;
+            const pB = gB.profiles.find(pr => pr.all_vids.includes(vid))!;
+            const vData = bookCache.get(p.book)?.[String(vid)];
+            const toks: any[] = vData?.toks || [];
+
+            if (pA.bs === pB.bs) {
+              const seenWn = new Set<number>();
+              const sameToks = toks.filter(t => {
+                if (t.s !== pA.bs || seenWn.has(t.wn)) return false;
+                seenWn.add(t.wn);
+                return true;
+              });
+              if (sameToks.length >= 2) {
+                allCandidates.push({
+                  evidence_id: `r11:repeat:verse:${pA.bs}:${vid}`,
+                  predicate: 'verified_lexical_grammatical',
+                  evidence_tier: 3,
+                  epistemic_class: 'direct_textual_evidence',
+                  title: `Repeated lemma in ${p.ref}: ${pA.sc} (${pA.bs}, ${sameToks.length}×)`,
+                  summary: `${p.ref} attests ${sameToks.length} distinct token occurrences of the same lemma ${pA.sc} (${pA.bs}, "${pA.gl}") at word positions ${sameToks.map(t => t.wn).join(', ')}.`,
+                  source_node_id: `lemma:${pA.bs}`,
+                  target_node_id: `passage:${p.ref}`,
+                  passages: [p],
+                  original_words: [
+                    { lemma_key: pA.lk, strongs: pA.bs, language: pA.lang, lemma_script: pA.sc, transliteration: pA.tr, gloss: pA.gl },
+                  ],
+                  matched_terms: [gA.term, gB.term, pA.gl],
+                  limitations: ['Repetition of a single canonical lemma across distinct verse tokens; context determines whether each occurrence carries the same or distinct contextual sense.'],
+                  provenance: {
+                    source_dataset: 'MACULA Hebrew & Greek',
+                    source_record_ids: sameToks.map(t => `${p.ref}#${t.wn}`),
+                    license: 'CC BY 4.0',
+                    derivation_method: 'repeated_lemma_distinct_tokens',
+                  },
+                  score_components: {
+                    base_tier_score: TIER_BASE_SCORE[3],
+                    specificity_bonus: 110,
+                    witness_bonus: Math.min(40, sameToks.length * 10),
+                    common_word_penalty: 0,
+                    number_coincidence_penalty: 0,
+                    orthographic_penalty: 0,
+                    final_score: TIER_BASE_SCORE[3] + 110 + Math.min(40, sameToks.length * 10),
+                  },
+                });
+              } else if (gA.term !== gB.term) {
+                const singleWn = sameToks[0]?.wn;
+                allCandidates.push({
+                  evidence_id: `r11:polysemy:${pA.bs}:${vid}`,
+                  predicate: 'interpretive_hypothesis',
+                  evidence_tier: 5,
+                  epistemic_class: 'documented_lexical_relationship',
+                  title: `Single-token polysemy notice: "${gA.term}" and "${gB.term}" map to one ${pA.sc} (${pA.bs}) token in ${p.ref}`,
+                  summary: `Both "${gA.term}" and "${gB.term}" resolve to the single lemma ${pA.sc} (${pA.bs}, "${pA.gl}"), which occurs once in ${p.ref}${singleWn ? ` (word ${singleWn})` : ''}. Lexical polysemy is not two independent co-occurring words.`,
+                  source_node_id: `lemma:${pA.bs}`,
+                  target_node_id: `lemma:${pA.bs}`,
+                  passages: [p],
+                  original_words: [
+                    { lemma_key: pA.lk, strongs: pA.bs, language: pA.lang, lemma_script: pA.sc, transliteration: pA.tr, gloss: pA.gl },
+                  ],
+                  matched_terms: [gA.term, gB.term, pA.gl],
+                  limitations: ['Single source occurrence only; multiple English glosses of one polysemous word do not establish independent textual convergence.'],
+                  provenance: {
+                    source_dataset: 'MACULA Hebrew & Greek + STEPBible',
+                    source_record_ids: [singleWn ? `${p.ref}#${singleWn}` : p.ref],
+                    license: 'CC BY 4.0',
+                    derivation_method: 'single_token_polysemy_notice',
+                  },
+                  score_components: {
+                    base_tier_score: TIER_BASE_SCORE[5],
+                    specificity_bonus: 40,
+                    witness_bonus: 0,
+                    common_word_penalty: 0,
+                    number_coincidence_penalty: 0,
+                    orthographic_penalty: 0,
+                    final_score: TIER_BASE_SCORE[5] + 40,
+                  },
+                });
+              }
+              continue;
+            }
+
             const evId = `r11:intersect:verse:${pA.bs}:${pB.bs}:${vid}`;
             allCandidates.push({
               evidence_id: evId,
@@ -1142,8 +1272,12 @@ export async function discoverBiblicalConnections(
             const vB = arrB[bIndex];
             const diff = Math.abs(vA - vB);
             if (diff >= 1 && diff <= 4 && bookForVid(vA) === bookForVid(vB)) {
-              pericopePairs.push([vA, vB]);
-              if (pericopePairs.length >= 3) break;
+              const pA = gA.profiles.find(pr => pr.all_vids.includes(vA));
+              const pB = gB.profiles.find(pr => pr.all_vids.includes(vB));
+              if (pA && pB && pA.bs !== pB.bs) {
+                pericopePairs.push([vA, vB]);
+                if (pericopePairs.length >= 3) break;
+              }
             }
           }
           if (pericopePairs.length >= 3) break;
@@ -1447,13 +1581,15 @@ export async function discoverBiblicalConnections(
   const occLimit = limit;
   const occOffset = offset;
   const pagedOccVids = targetVids.slice(occOffset, occOffset + occLimit);
-  const hasMoreOcc = occOffset + occLimit < targetVids.length;
+  let hasMoreOcc = occOffset + occLimit < targetVids.length;
 
   const hydratedOccPassages: R10PassageRef[] = [];
   for (const vid of pagedOccVids) {
     const p = await hydratePassageByVid(vid);
-    if (p) hydratedOccPassages.push(p);
+    if (!p) break;
+    hydratedOccPassages.push(p);
   }
+  hasMoreOcc = occOffset + hydratedOccPassages.length < targetVids.length;
 
   // When expanding or paging through occurrences, synthesize individual occurrence evidence cards
   if ((query.mode === 'expand' || query.focus_lemma || query.cluster_id || offset >= rankedAll.length) && focusProf) {
@@ -1685,7 +1821,7 @@ export async function discoverBiblicalConnections(
       total_verses: targetVids.length,
       offset: occOffset,
       returned: hydratedOccPassages.length,
-      next_cursor: hasMoreOcc ? String(occOffset + occLimit) : null,
+      next_cursor: hasMoreOcc ? String(occOffset + hydratedOccPassages.length) : null,
       has_more: hasMoreOcc,
       passages: hydratedOccPassages,
     };
@@ -1744,6 +1880,10 @@ export async function discoverBiblicalConnections(
       connection_state: totalAvailable ? 'connections_found' : 'no_higher_order_connections',
       completeness_state: budget.used >= budget.max ? 'resource_limits_reached' : budget.missing.length ? 'missing_source_coverage' : 'search_incomplete',
       missing_assets: budget.missing,
+      occurrence_scope: focusProf ? { lemma: focusProf.bs, total_verses: targetVids.length,
+        page_complete: hydratedOccPassages.length === pagedOccVids.length,
+        pagination_complete: !hasMoreOcc && hydratedOccPassages.length === pagedOccVids.length,
+        source_scope: 'Indexed canonical verse witnesses from MACULA Hebrew, Nestle1904 and STEP; LXX correspondences reported separately.' } : undefined,
       bounded_by: [
         `limit=${limit}`,
         `max_subrequests=${budget.max}`,
@@ -1768,10 +1908,12 @@ export async function getConnectionEvidence(
   evidenceId: string,
   releaseId: string = DEFAULT_R10_RELEASE
 ): Promise<ConnectionEvidenceResult> {
-  const budget = { used: 0, max: MAX_SUBREQUEST_BUDGET };
+  const budget = { used: 0, max: MAX_SUBREQUEST_BUDGET, missing: [] as string[] };
+  const fastManifest = await readR10Json<FastManifest>(reader, releaseId, 'fast-manifest.json.gz', budget);
   let record: R10EvidenceRecord | null = null;
   const targetStrongs = new Set<string>();
 
+  const fastVerseCache = new Map<number, any>();
   const bookCache = new Map<number, any>();
   async function loadBookData(bookId: number): Promise<any> {
     if (bookCache.has(bookId)) return bookCache.get(bookId);
@@ -1786,18 +1928,23 @@ export async function getConnectionEvidence(
 
   async function hydratePassageByVid(vid: number): Promise<R10PassageRef | null> {
     const book = bookForVid(vid);
-    const verses = await loadBookData(book);
-    const v = verses?.[String(vid)];
-    if (!v) {
-      return {
-        verse_id: vid,
-        ref: `Verse ${vid}`,
-        book,
-        chapter: 1,
-        verse: 1,
-        testament: book <= 39 ? 'OT' : 'NT',
-      };
+    let v;
+    if (fastManifest?.selective) {
+      v = await readSelectiveKey(reader, releaseId, 'verses', String(vid), budget);
+      if (v) bookCache.set(book, { ...(bookCache.get(book) || {}), [String(vid)]: v });
+    } else if (fastManifest) {
+      const chunk = Math.floor((vid - 1) / fastManifest.verse_chunk_size);
+      if (!fastVerseCache.has(chunk)) {
+        const data = await readR10Json<{ verses: Record<string, any> }>(reader, releaseId, `fast-verses/chunk-${chunk.toString(16).padStart(3, '0')}.json.gz`, budget);
+        fastVerseCache.set(chunk, data?.verses || {});
+      }
+      v = fastVerseCache.get(chunk)?.[String(vid)];
+      if (v) bookCache.set(book, { ...(bookCache.get(book) || {}), [String(vid)]: v });
+    } else {
+      const verses = await loadBookData(book);
+      v = verses?.[String(vid)];
     }
+    if (!v) return null;
     return {
       verse_id: vid,
       ref: v.ref,
@@ -1816,11 +1963,7 @@ export async function getConnectionEvidence(
     const clId = evidenceId.replace('r11:cluster:', '');
     const bs = clId.split(':')[0];
     targetStrongs.add(bs);
-    const bHex = computeBucketHex('fnv1a64_mod64', 64, bs);
-    const shard = await readR10Json<{ entries?: Record<string, LemmaProfile> }>(
-      reader, releaseId, `lemma-profiles/shard-${bHex}.json.gz`, budget
-    );
-    const prof = shard?.entries?.[bs];
+    const prof = await readProfile(reader, releaseId, fastManifest, bs, budget);
     const cl = prof?.clusters?.find((c: any) => c.cluster_id === clId);
     if (prof && cl) {
       let tier: R10EvidenceTier = 3;
@@ -1895,11 +2038,7 @@ export async function getConnectionEvidence(
     const [, , bs, pred, relStrongs] = evidenceId.split(':');
     targetStrongs.add(bs);
     targetStrongs.add(relStrongs);
-    const bHex = computeBucketHex('fnv1a64_mod64', 64, bs);
-    const shard = await readR10Json<{ entries?: Record<string, LemmaProfile> }>(
-      reader, releaseId, `lemma-profiles/shard-${bHex}.json.gz`, budget
-    );
-    const prof = shard?.entries?.[bs];
+    const prof = await readProfile(reader, releaseId, fastManifest, bs, budget);
     const gr = prof?.grammatical_relations?.find((g: any) => g.predicate === pred && g.related_strongs === relStrongs);
     if (prof && gr) {
       const gTier: R10EvidenceTier = gr.occurrences >= 2 ? 2 : 3;
@@ -1950,11 +2089,7 @@ export async function getConnectionEvidence(
     const [, , bs, vidStr] = evidenceId.split(':');
     targetStrongs.add(bs);
     const vid = Number(vidStr);
-    const bHex = computeBucketHex('fnv1a64_mod64', 64, bs);
-    const shard = await readR10Json<{ entries?: Record<string, LemmaProfile> }>(
-      reader, releaseId, `lemma-profiles/shard-${bHex}.json.gz`, budget
-    );
-    const prof = shard?.entries?.[bs];
+    const prof = await readProfile(reader, releaseId, fastManifest, bs, budget);
     const p = await hydratePassageByVid(vid);
     if (prof && p) {
       record = {
@@ -1996,6 +2131,24 @@ export async function getConnectionEvidence(
     const vid = Number(vidStr);
     const p = await hydratePassageByVid(vid);
     if (p) {
+      const vData = bookCache.get(p.book)?.[String(vid)];
+      const toks: any[] = vData?.toks || [];
+      if (bsA === bsB) {
+        const distinctWn = new Set(toks.filter(t => t.s === bsA).map(t => t.wn));
+        if (distinctWn.size < 2) {
+          return {
+            schema_version: 1,
+            status: 'not_found',
+            release_id: releaseId,
+            evidence: null,
+            passage_details: [],
+            coverage: {
+              state: 'available',
+              missing_assets: budget.missing,
+            },
+          };
+        }
+      }
       record = {
         evidence_id: evidenceId,
         predicate: 'verified_lexical_grammatical',
@@ -2026,14 +2179,58 @@ export async function getConnectionEvidence(
         },
       };
     }
+  } else if (evidenceId.startsWith('r11:polysemy:')) {
+    const [, , bs, vidStr] = evidenceId.split(':');
+    targetStrongs.add(bs);
+    const vid = Number(vidStr);
+    const prof = await readProfile(reader, releaseId, fastManifest, bs, budget);
+    const p = await hydratePassageByVid(vid);
+    if (prof && p) {
+      record = {
+        evidence_id: evidenceId,
+        predicate: 'interpretive_hypothesis',
+        evidence_tier: 5,
+        epistemic_class: 'documented_lexical_relationship',
+        title: `Single-token polysemy notice for ${prof.sc} (${prof.bs}) in ${p.ref}`,
+        summary: `Lexical polysemy across glosses of ${prof.sc} (${prof.bs}, "${prof.gl}") in ${p.ref}: "${p.snippet || ''}". One attested token does not establish independent co-occurrence.`,
+        source_node_id: `lemma:${prof.bs}`,
+        target_node_id: `lemma:${prof.bs}`,
+        passages: [p],
+        original_words: [{ lemma_key: prof.lk, strongs: prof.bs, language: prof.lang, lemma_script: prof.sc, transliteration: prof.tr, gloss: prof.gl }],
+        matched_terms: [prof.bs, prof.gl],
+        limitations: ['Single source occurrence only; multiple English glosses of one polysemous word do not establish independent textual convergence.'],
+        provenance: { source_dataset: 'MACULA Hebrew & Greek + STEPBible', source_record_ids: [p.ref], license: 'CC BY 4.0', derivation_method: 'single_token_polysemy_notice' },
+        score_components: { base_tier_score: TIER_BASE_SCORE[5], specificity_bonus: 40, witness_bonus: 0, common_word_penalty: 0, number_coincidence_penalty: 0, orthographic_penalty: 0, final_score: TIER_BASE_SCORE[5] + 40 },
+      };
+    }
+  } else if (evidenceId.startsWith('r11:repeat:verse:')) {
+    const [, , , bs, vidStr] = evidenceId.split(':');
+    targetStrongs.add(bs);
+    const vid = Number(vidStr);
+    const prof = await readProfile(reader, releaseId, fastManifest, bs, budget);
+    const p = await hydratePassageByVid(vid);
+    if (prof && p) {
+      record = {
+        evidence_id: evidenceId,
+        predicate: 'verified_lexical_grammatical',
+        evidence_tier: 3,
+        epistemic_class: 'direct_textual_evidence',
+        title: `Repeated lemma in ${p.ref}: ${prof.sc} (${prof.bs})`,
+        summary: `Distinct token occurrences of ${prof.sc} (${prof.bs}, "${prof.gl}") in ${p.ref}: "${p.snippet || ''}".`,
+        source_node_id: `lemma:${prof.bs}`,
+        target_node_id: `passage:${p.ref}`,
+        passages: [p],
+        original_words: [{ lemma_key: prof.lk, strongs: prof.bs, language: prof.lang, lemma_script: prof.sc, transliteration: prof.tr, gloss: prof.gl }],
+        matched_terms: [prof.bs, prof.gl],
+        limitations: ['Repetition of a single canonical lemma across distinct verse tokens.'],
+        provenance: { source_dataset: 'MACULA Hebrew & Greek', source_record_ids: [p.ref], license: 'CC BY 4.0', derivation_method: 'repeated_lemma_distinct_tokens' },
+        score_components: { base_tier_score: TIER_BASE_SCORE[3], specificity_bonus: 110, witness_bonus: 20, common_word_penalty: 0, number_coincidence_penalty: 0, orthographic_penalty: 0, final_score: TIER_BASE_SCORE[3] + 130 },
+      };
+    }
   } else if (evidenceId.startsWith('r11:lxx:')) {
     const [, , bs, idxStr] = evidenceId.split(':');
     targetStrongs.add(bs);
-    const bHex = computeBucketHex('fnv1a64_mod64', 64, bs);
-    const shard = await readR10Json<{ entries?: Record<string, LemmaProfile> }>(
-      reader, releaseId, `lemma-profiles/shard-${bHex}.json.gz`, budget
-    );
-    const prof = shard?.entries?.[bs];
+    const prof = await readProfile(reader, releaseId, fastManifest, bs, budget);
     const rel = prof?.lxx_relations?.[Number(idxStr)];
     if (prof && rel) {
       if (rel.target_strongs) targetStrongs.add(rel.target_strongs);
@@ -2168,7 +2365,8 @@ export async function getConnectionEvidence(
   }
 
   if (!record) {
-    return { schema_version: 1, status: 'not_found', release_id: releaseId, evidence: null, passage_details: [] };
+    return { schema_version: 1, status: 'not_found', release_id: releaseId, evidence: null, passage_details: [],
+      coverage: { state: budget.used >= budget.max ? 'resource_limits_reached' : budget.missing.length ? 'missing_source_coverage' : 'available', missing_assets: budget.missing } };
   }
 
   for (const ow of record.original_words || []) {
@@ -2176,9 +2374,14 @@ export async function getConnectionEvidence(
   }
 
   const booksNeeded = [...new Set((record.passages || []).map(p => p.book).filter(b => b > 0))].slice(0, MAX_EVIDENCE_BOOKS);
-  await Promise.all(booksNeeded.map(async b => {
-    await loadBookData(b);
-  }));
+  if (fastManifest) {
+    for (const p of record.passages.slice(0, 6)) {
+      const vid = p.verse_id || (fastManifest.selective ? Number(await readSelectiveKey(reader, releaseId, 'refs', `${p.book}:${p.chapter}:${p.verse}`, budget)) : 0);
+      if (vid) await hydratePassageByVid(vid);
+    }
+  } else {
+    await Promise.all(booksNeeded.map(async b => { await loadBookData(b); }));
+  }
 
   const passageDetails = (record.passages || []).slice(0, 6).map(p => {
     const bVerses = bookCache.get(p.book);
@@ -2211,6 +2414,7 @@ export async function getConnectionEvidence(
     release_id: releaseId,
     evidence: record,
     passage_details: passageDetails,
+    coverage: { state: budget.used >= budget.max ? 'resource_limits_reached' : budget.missing.length ? 'missing_source_coverage' : 'available', missing_assets: budget.missing },
     notes_overlay_hint: {
       has_interpretive_layer: false,
       separation_notice: 'Source textual evidence is strictly separated from unreviewed DLM or personal research notes.',

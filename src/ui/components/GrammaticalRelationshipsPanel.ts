@@ -322,13 +322,16 @@ function renderHeaderAndControls(
     focusBox.append(bdi);
     if (res.focus.gloss) focusBox.append(el('span', 'study-muted', ` · "${res.focus.gloss}"`));
     if (res.resolved_occurrence) {
+      // The Worker resolver emits `position`; older payloads used `word_position`.
+      const occ = res.resolved_occurrence as { reference: string; word_position?: number; position?: number };
+      const pos = occ.position ?? occ.word_position;
       focusBox.append(
-        el(
-          'span',
-          'rel-badge',
-          `Matched ${res.resolved_occurrence.reference}#${res.resolved_occurrence.word_position}`,
-        ),
+        el('span', 'rel-badge', `Matched ${occ.reference}${pos != null ? `#${pos}` : ''}`),
       );
+    } else {
+      const scope = el('span', 'rel-badge', 'Lemma-wide · no clause match for this token');
+      scope.title = 'No clause relation was recorded for the clicked token; these groups describe every attested use of this lemma, not necessarily this occurrence.';
+      focusBox.append(scope);
     }
     controls.append(focusBox);
   }

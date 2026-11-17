@@ -41,56 +41,48 @@ let cachedVerseByCoord = null;
 let cachedBooksById = null;
 let cachedLxxBooksByNo = null;
 const shardLru = new Map();
-const MAX_LRU_SHARDS = 8;
+let shardInflightCount = 0;
+const MAX_LRU_SHARDS = 64;
+const MAX_LRU_BYTES = 16 * 1024 * 1024;
+let shardLruBytes = 0;
+let r12TraceIsolateId;
 
-function setLru(key, val) {
-  if (
-    key.includes('/passages/') ||
-    key.includes('/evidence/') ||
-    key.includes('/v1/chapters/') ||
-    key.includes('/by-lemma/') ||
-    key.includes('/fast-by-lemma/') ||
-    key.includes('/by-hebrew-lemma/') ||
-    key.includes('/by-greek-lemma/') ||
-    key.includes('/fast-by-hebrew/') ||
-    key.includes('/fast-by-greek/') ||
-    key.includes('/contextual/pages/') ||
-    key.includes('/sharded-contextual/') ||
-    key.includes('/sharded-edges/') ||
-    key.includes('/fast-edges/') ||
-    key.includes('/resolver/by-key/') ||
-    key.includes('/resolver/english-tokens/') ||
-    key.includes('/lemma-lookup/') ||
-    key.includes('/lemma-profiles/') ||
-    key.includes('/orthographic/') ||
-    key.includes('/xrefs/') ||
-    key.includes('/evidence-passages/')
-  ) {
-    return;
-  }
-  if (shardLru.has(key)) shardLru.delete(key);
-  shardLru.set(key, val);
-  if (shardLru.size > MAX_LRU_SHARDS) {
+export function shardCacheStats() { return { entries: shardLru.size, decoded_bytes: shardLruBytes, inflight: shardInflightCount }; }
+function setLru(key, data, bytes, trace) {
+  if (bytes > MAX_LRU_BYTES) { if (trace) trace.cache_skips++; return; }
+  const previous = shardLru.get(key);
+  if (previous) { shardLruBytes -= previous.bytes; shardLru.delete(key); }
+  shardLru.set(key, { data, bytes }); shardLruBytes += bytes;
+  if (trace) trace.cache_stores++;
+  while (shardLru.size > MAX_LRU_SHARDS || shardLruBytes > MAX_LRU_BYTES) {
     const oldest = shardLru.keys().next().value;
-    shardLru.delete(oldest);
+    shardLruBytes -= shardLru.get(oldest).bytes; shardLru.delete(oldest);
+    if (trace) trace.cache_evictions++;
   }
 }
 
 async function readAssetBytes(env, assetPath) {
+  const trace = env.__r12Trace;
+  if (trace) trace.asset_reads++;
   const url = new URL(assetPath, 'https://corpus.internal');
   const req = new Request(url.toString(), {
     method: 'GET',
     headers: { 'Accept-Encoding': 'identity' },
   });
   const res = await env.ASSETS.fetch(req);
-  if (!res.ok) return null;
+  if (!res.ok) {
+    if (trace) trace.missing_shards.push({ path: assetPath, status: res.status });
+    return null;
+  }
   const buf = await res.arrayBuffer();
+  if (trace) trace.encoded_bytes += buf.byteLength;
   return new Uint8Array(buf);
 }
 
-async function decompressGzipIfNeeded(bytes) {
+async function decompressGzipIfNeeded(bytes, trace) {
   if (!bytes || bytes.length < 2) return bytes;
   if (bytes[0] === 0x1f && bytes[1] === 0x8b) {
+    if (trace) trace.phases.gzip_decode++;
     const ds = new DecompressionStream('gzip');
     const stream = new Response(bytes).body.pipeThrough(ds);
     const outBuf = await new Response(stream).arrayBuffer();
@@ -99,21 +91,50 @@ async function decompressGzipIfNeeded(bytes) {
   return bytes;
 }
 
-async function loadJsonShardWithBytes(env, assetPath) {
+function decodeJsonShard(bytes) {
+  return new TextDecoder('utf-8').decode(bytes);
+}
+
+function parseJsonShard(text) {
+  return JSON.parse(text);
+}
+
+export async function loadJsonShardWithBytes(env, assetPath) {
+  const trace = env.__r12Trace;
+  // I/O promises stay request-local; only completed JSON is shared across requests.
+  const inflight = env.__assetInflight ||= new Map();
   const gzPath = assetPath.endsWith('.gz') ? assetPath : `${assetPath}.gz`;
   if (shardLru.has(gzPath)) {
     const val = shardLru.get(gzPath);
     shardLru.delete(gzPath);
     shardLru.set(gzPath, val);
-    return { data: val, bytes: 0 };
+    if (trace) {
+      trace.cache_hits++;
+      trace.assets.push({ path: gzPath, cache_hit: true, decoded_bytes: 0 });
+    }
+    return { data: val.data, bytes: 0 };
   }
-  const rawBytes = await readAssetBytes(env, gzPath);
-  if (!rawBytes) return null;
-  const decodedBytes = await decompressGzipIfNeeded(rawBytes);
-  const text = new TextDecoder('utf-8').decode(decodedBytes);
-  const parsed = JSON.parse(text);
-  setLru(gzPath, parsed);
-  return { data: parsed, bytes: decodedBytes.length };
+  if (inflight.has(gzPath)) {
+    const result = await inflight.get(gzPath);
+    if (trace) { trace.cache_hits++; trace.assets.push({ path: gzPath, cache_hit: true, inflight: true, decoded_bytes: 0 }); }
+    return result ? { data: result.data, bytes: 0 } : null;
+  }
+  const pending = (async () => {
+    const rawBytes = await readAssetBytes(env, gzPath);
+    if (!rawBytes) return null;
+    const decodedBytes = await decompressGzipIfNeeded(rawBytes, trace);
+    const parsed = parseJsonShard(decodeJsonShard(decodedBytes));
+    if (trace) {
+      trace.decoded_bytes += decodedBytes.length;
+      trace.phases.text_decode++; trace.phases.json_parse++;
+      trace.assets.push({ path: gzPath, cache_hit: false, encoded_bytes: rawBytes.length, decoded_bytes: decodedBytes.length });
+    }
+    setLru(gzPath, parsed, decodedBytes.length, trace);
+    return { data: parsed, bytes: decodedBytes.length };
+  })();
+  inflight.set(gzPath, pending); shardInflightCount++;
+  try { return await pending; }
+  finally { inflight.delete(gzPath); shardInflightCount--; }
 }
 
 async function loadJsonShard(env, assetPath) {
@@ -647,6 +668,7 @@ async function handleLookupSeptuagintPassageV1(env, params) {
   const tokens = (lxxShard?.words || [])
     .filter(
       (w) =>
+        !w.is_chapter_heading_marker &&
         w.chapter === chapter &&
         (w.chapter_suffix || '') === chSuffix &&
         (verseNr === null || (w.verse_nr === verseNr && (w.verse_suffix || '') === vSuffix))
@@ -660,6 +682,8 @@ async function handleLookupSeptuagintPassageV1(env, params) {
       ordinal: w.ordinal,
       word_text: w.word_text,
       normalized_word: w.normalized_word,
+      ...(w.raw_source_word_text ? { raw_source_word_text: w.raw_source_word_text } : {}),
+      ...(w.chapter_heading_marker ? { chapter_heading_marker: w.chapter_heading_marker } : {}),
       source_record_id: w.source_record_id,
       source_release_key: w.source_release_key,
       source_edition_key: w.source_edition_key,
@@ -1346,6 +1370,7 @@ async function handleCompareHebrewSeptuagintPassageV1(env, params) {
     lxxWords = (lxxShard?.words || [])
       .filter(
         (sw) =>
+          !sw.is_chapter_heading_marker &&
           sw.chapter === lxxChapter &&
           (lxxChSuffix === '' || (sw.chapter_suffix || '') === lxxChSuffix) &&
           sw.verse_nr === lxxVerseNr &&
@@ -1356,6 +1381,8 @@ async function handleCompareHebrewSeptuagintPassageV1(env, params) {
         lxx_word_id: sw.id,
         word_text: sw.word_text,
         normalized_word: sw.normalized_word,
+        ...(sw.raw_source_word_text ? { raw_source_word_text: sw.raw_source_word_text } : {}),
+        ...(sw.chapter_heading_marker ? { chapter_heading_marker: sw.chapter_heading_marker } : {}),
         alignment_status: 'unmatched',
         aligned_hebrew_ordinals: [],
       }));
@@ -2599,4 +2626,26 @@ const corpusWorker = {
   },
 };
 
-export default withCorpusSecurity(corpusWorker);
+const securedCorpusWorker = withCorpusSecurity(corpusWorker);
+export default {
+  async fetch(request, env, ctx) {
+    env = { ...env, __assetInflight: new Map() };
+    // Enabled only by the generated local profiler config; no body/query/secret logging.
+    const requestId = request.headers.get('X-R12-Trace-Id');
+    if (env.R12_TRACE_ENABLED !== '1' || !requestId || !/^[a-zA-Z0-9:_-]{1,100}$/.test(requestId)) {
+      return securedCorpusWorker.fetch(request, env, ctx);
+    }
+    r12TraceIsolateId ??= crypto.randomUUID();
+    const trace = {
+      request_id: requestId, isolate_id: r12TraceIsolateId,
+      asset_reads: 0, encoded_bytes: 0, decoded_bytes: 0, cache_hits: 0,
+      cache_stores: 0, cache_skips: 0, cache_evictions: 0, missing_shards: [], assets: [],
+      phases: { gzip_decode: 0, text_decode: 0, json_parse: 0, r10_reader: 0 },
+    };
+    const response = await securedCorpusWorker.fetch(request, { ...env, __r12Trace: trace }, ctx);
+    trace.cache = shardCacheStats();
+    const headers = new Headers(response.headers);
+    headers.set('X-R12-Trace', JSON.stringify(trace));
+    return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+  },
+};

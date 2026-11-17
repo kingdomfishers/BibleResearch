@@ -114,7 +114,7 @@ function makePeerButton(
     btn.replaceChildren(bdi);
     return btn;
   }
-  if (lemmaKey && !lemmaKey.startsWith('lemma:') && onEndpointDrill) {
+  if (lemmaKey && onEndpointDrill) {
     const btn = action('', () => onEndpointDrill(lemmaKey), 'text-action rel-card__target-btn');
     btn.replaceChildren(bdi);
     return btn;
@@ -430,6 +430,7 @@ export function createLexicalRelationshipsSection(
   props: LexicalRelationshipsSectionProps
 ): LexicalRelationshipsSectionHandle {
   const details = el('details', 'study-disclosure lexical-rels');
+  details.open = true;
   const summaryEl = el('summary', '', 'Relationships · 4 Evidence Layers');
   const body = el('div', 'lexical-rels__body');
   const tabBar = el('div', 'r9b-layer-tabs');
@@ -443,6 +444,7 @@ export function createLexicalRelationshipsSection(
   let ctxCount: number | null = null;
   let lxxCount: number | null = null;
   let reqCounter = 0;
+  let loadFailed = false;
 
   let currentBaseParams: {
     wordId: number;
@@ -498,8 +500,9 @@ export function createLexicalRelationshipsSection(
 
   function updateSummaryAndTabs() {
     const fmt = (n: number | null) => (n === null ? '…' : n.toLocaleString());
-    summaryEl.textContent =
-      gramCount === null && lexCount === null && ctxCount === null && lxxCount === null
+    summaryEl.textContent = loadFailed
+      ? 'Relationships · temporarily unavailable'
+      : gramCount === null && lexCount === null && ctxCount === null && lxxCount === null
         ? 'Relationships · 4 Evidence Layers'
         : `Relationships · Gram (${fmt(gramCount)}) · Lex (${fmt(lexCount)}) · Ctx (${fmt(ctxCount)}) · LXX (${fmt(lxxCount)})`;
 
@@ -782,11 +785,12 @@ export function createLexicalRelationshipsSection(
     renderLxxPanel();
   }
 
-  body.append(tabBar, gramPanel.element, lexBox, ctxBox, lxxBox, explorePanel.element);
+  // Lexical/root evidence is the direct word-to-word layer; show it before the (often long) clause-role list.
+  body.append(tabBar, lexBox, gramPanel.element, ctxBox, lxxBox, explorePanel.element);
   details.append(summaryEl, body);
   updateSummaryAndTabs();
 
-  return {
+  const handle: LexicalRelationshipsSectionHandle = {
     element: details,
     async loadForWord(
       wordId: number,
@@ -795,6 +799,9 @@ export function createLexicalRelationshipsSection(
       context: GrammaticalWordContext = {}
     ): Promise<void> {
       const current = ++reqCounter;
+      details.open = true;
+      loadFailed = false;
+      activeTab = 'all';
       gramCount = null;
       lexCount = null;
       ctxCount = null;
@@ -826,10 +833,31 @@ export function createLexicalRelationshipsSection(
         lxx_limit: 25,
       });
 
-      const [, unifiedRes] = await Promise.all([gramPromise, unifiedPromise]);
+      // Grammar renders independently; a slow grammar request must not hide
+      // lexical/contextual evidence that has already arrived.
+      void gramPromise;
+      const unifiedRes = await unifiedPromise;
       if (current !== reqCounter) return;
 
       const uData = unifiedRes.data;
+      // A gateway/transport failure is not "no relationships": say so, never fall through
+      // to the legacy lexical lookup (same gateway) whose empty answer would read as absence.
+      if (unifiedRes.source === 'unavailable' || uData.status === 'unavailable') {
+        const detail = unifiedRes.error ?? uData.error_message ?? 'gateway unavailable';
+        loadFailed = true;
+        const failure = (title: string) => {
+          const retry = action('Retry', () => {
+            if (currentBaseParams) void handle.loadForWord(currentBaseParams.wordId, currentBaseParams.strongsNr, currentBaseParams.notes, currentBaseParams.context);
+          }, 'editor-btn editor-btn--sm');
+          return [el('h4', 'rel-subheading', title), status(`Relationships could not be loaded (${detail}). This is a retrieval failure, not evidence that none exist.`), retry];
+        };
+        lexBox.replaceChildren(...failure('Lexical Relationships (Roots, Senses & Formations)'));
+        ctxBox.replaceChildren(el('h4', 'rel-subheading', 'Contextual Associations (Co-occurrence & Proximity)'), status('Unavailable — same retrieval failure.'));
+        lxxBox.replaceChildren(el('h4', 'rel-subheading', 'Septuagint (LXX) Translation Candidates'), status('Unavailable — same retrieval failure.'));
+        updateSummaryAndTabs();
+        return;
+      }
+      loadFailed = false;
       if (uData.focus?.lemma_id) {
         currentBaseParams.lemmaId = uData.focus.lemma_id;
         explorePanel.setSource(
@@ -891,6 +919,7 @@ export function createLexicalRelationshipsSection(
     },
     clear(): void {
       reqCounter++;
+      loadFailed = false;
       currentBaseParams = null;
       gramCount = null;
       lexCount = null;
@@ -907,4 +936,5 @@ export function createLexicalRelationshipsSection(
       explorePanel.clear();
     },
   };
+  return handle;
 }

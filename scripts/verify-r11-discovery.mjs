@@ -71,6 +71,18 @@ async function run() {
     assert.equal(result.status, 'not_found', `Unsupported identification remains accessible: ${id}`);
   }
   console.log(`Quarantined ${autoIds.length} unsupported auto-identifications, including relative/location/numerical contexts.`);
+  const numeric = await discoverBiblicalConnections(reader, { query: 'one hundred' });
+  assert.deepEqual(numeric.parsed_query.extracted_terms, ['100']);
+  assert.ok(numeric.strongest_connections.some(c => c.number_classification || c.predicate === 'numbered_entity'));
+  const unavailableReader = { async readJson(name) {
+    if (name.includes('/fast-verses/')) return null;
+    return reader.readJson(name);
+  }};
+  const missingSource = await discoverBiblicalConnections(unavailableReader, { query: 'H7799', mode: 'expand', focus_lemma: 'H7799', limit: 6 });
+  assert.equal(missingSource.iterative_analysis.lemma_occurrences.returned, 0);
+  assert.equal(missingSource.iterative_analysis.lemma_occurrences.next_cursor, '0');
+  assert.equal(missingSource.search_metadata.completeness_state, 'missing_source_coverage');
+  assert.equal(missingSource.search_metadata.occurrence_scope.page_complete, false);
 
   // Test 1: "Lily"
   console.log('1. Testing "Lily"...');

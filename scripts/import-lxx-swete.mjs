@@ -36,6 +36,65 @@ function sha256File(filepath) {
   return hash.digest('hex');
 }
 
+function toRomanNumeral(num) {
+  const vals = [
+    [1000, 'M'], [900, 'CM'], [500, 'D'], [400, 'CD'], [100, 'C'],
+    [90, 'XC'], [50, 'L'], [40, 'XL'], [10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I'],
+  ];
+  let out = '';
+  let n = num;
+  for (const [v, s] of vals) {
+    while (n >= v) {
+      out += s;
+      n -= v;
+    }
+  }
+  return out;
+}
+
+// Separate confirmed Swete chapter-boundary Roman numerals without touching Greek OCR or legitimate words.
+function separateSweteChapterBoundaryMarkers(words) {
+  for (let i = 0; i < words.length; i++) {
+    const w = words[i];
+    const prev = i > 0 ? words[i - 1] : null;
+    const next = i + 1 < words.length ? words[i + 1] : null;
+    const rom = w.chapter >= 1 ? toRomanNumeral(w.chapter) : '';
+    const romNext = w.chapter >= 1 ? toRomanNumeral(w.chapter + 1) : '';
+    if (
+      w.chapter >= 1 &&
+      w.verse_nr === 1 &&
+      w.ordinal === 1 &&
+      rom &&
+      w.word_text.startsWith(rom) &&
+      w.word_text.length > rom.length &&
+      /[\u0370-\u03FF\u1F00-\u1FFF]/.test(w.word_text[rom.length]) &&
+      prev &&
+      prev.chapter === w.chapter - 1 &&
+      prev.word_text.endsWith(rom)
+    ) {
+      w.raw_source_word_text = w.word_text;
+      w.chapter_heading_marker = rom;
+      w.word_text = w.word_text.slice(rom.length);
+      w.normalized_word = stripGreekDiacritics(w.word_text);
+    }
+    if (
+      romNext &&
+      w.word_text.endsWith(romNext) &&
+      w.word_text.length > romNext.length &&
+      /[\u0370-\u03FF\u1F00-\u1FFF]/.test(w.word_text[w.word_text.length - romNext.length - 1]) &&
+      next &&
+      next.chapter === w.chapter + 1 &&
+      next.verse_nr === 1 &&
+      (next.raw_source_word_text || next.word_text).startsWith(romNext)
+    ) {
+      w.raw_source_word_text = w.word_text;
+      w.chapter_heading_marker = romNext;
+      w.word_text = w.word_text.slice(0, w.word_text.length - romNext.length);
+      w.normalized_word = stripGreekDiacritics(w.word_text);
+    }
+  }
+}
+
 // Mirroring public.strip_greek_diacritics in JavaScript
 function stripGreekDiacritics(text) {
   if (!text) return '';
@@ -263,6 +322,8 @@ async function main() {
         source_edition_id: editionId,
       });
     }
+
+    separateSweteChapterBoundaryMarkers(wordsToInsert);
 
     // Ingest in batches
     for (let b = 0; b < wordsToInsert.length; b += BATCH_SIZE) {

@@ -22,6 +22,7 @@ export interface DatabaseConfig {
   agentKey?: string;
 }
 const DEFAULT_CORPUS_URL = 'https://bibleresearch-corpus.kingdomfishers-custom.workers.dev';
+const DEFAULT_STAGING_CORPUS_URL = 'https://bibleresearch-corpus-staging.kingdomfishers-custom.workers.dev';
 const corpusRpcs = new Set([
   'lookup_septuagint_passage_v1',
   'lookup_syntax_tree_v1',
@@ -122,7 +123,11 @@ function isPublicKey(key: string): boolean {
     return JSON.parse(atob(payload.padEnd(Math.ceil(payload.length / 4) * 4, '='))).role === 'anon';
   } catch { return false; }
 }
-export function createDatabaseReader(config: DatabaseConfig, fetcher: typeof fetch = fetch): DatabaseReader {
+export function createDatabaseReader(
+  config: DatabaseConfig,
+  fetcher: typeof fetch = fetch,
+  resolveCorpusUrl?: () => string | undefined,
+): DatabaseReader {
   const base = new URL(config.url);
   if (!['https:', 'http:'].includes(base.protocol) || !isPublicKey(config.publicKey)) {
     throw new Error('BibleResearch requires a Supabase URL and public publishable/anon key.');
@@ -132,7 +137,7 @@ export function createDatabaseReader(config: DatabaseConfig, fetcher: typeof fet
     const single = singlePacketRpcs.has(name) || name === 'get_word_details';
     const pageLimit = single ? 1 : limit;
     const pageOffset = single ? 0 : offset;
-    const corpusBase = (config.corpusUrl || DEFAULT_CORPUS_URL).replace(/\/+$/, '');
+    const corpusBase = (resolveCorpusUrl?.() || config.corpusUrl || DEFAULT_CORPUS_URL).replace(/\/+$/, '');
     if (corpusRpcs.has(name)) {
       try {
         const corpReq: RequestInit = {
@@ -143,8 +148,10 @@ export function createDatabaseReader(config: DatabaseConfig, fetcher: typeof fet
         };
         const corpUrl = `${corpusBase}/v1/rpc/${name}`;
         let corpRes = await fetcher(corpUrl, corpReq);
-        if ([500, 502, 503, 504].includes(corpRes.status)) {
+        for (let attempt = 0; attempt < 2 && [500, 502, 503, 504].includes(corpRes.status); attempt++) {
           await corpRes.body?.cancel();
+          const backoffMs = 60 * (attempt + 1) + Math.floor(Math.random() * 80);
+          await new Promise(resolve => setTimeout(resolve, backoffMs));
           corpRes = await fetcher(corpUrl, {
             ...corpReq,
             signal: AbortSignal.timeout(8000),
@@ -230,8 +237,13 @@ export function createDatabaseReader(config: DatabaseConfig, fetcher: typeof fet
 
 // === @section:logic:transport ===
 export function createApp(config: DatabaseConfig, fetcher: typeof fetch = fetch) {
-  const read = createDatabaseReader(config, fetcher);
   let requestHeaders: Headers | undefined;
+  let requestPath = '/';
+  const read = createDatabaseReader(config, fetcher, () => {
+    if (config.corpusUrl) return config.corpusUrl;
+    if (requestPath.includes('bible-mcp-staging')) return DEFAULT_STAGING_CORPUS_URL;
+    return DEFAULT_CORPUS_URL;
+  });
   let writer: NotesWriter | null = null;
   if (config.serviceRoleKey) {
     writer = createNotesWriter({
@@ -249,7 +261,9 @@ export function createApp(config: DatabaseConfig, fetcher: typeof fetch = fetch)
     return server;
   }, { maxRequestBodySize: 32768 });
   const paths = new Set(['/', '/mcp', '/bible-mcp', '/bible-mcp/mcp',
-    '/functions/v1/bible-mcp', '/functions/v1/bible-mcp/mcp']);
+    '/functions/v1/bible-mcp', '/functions/v1/bible-mcp/mcp',
+    '/bible-mcp-staging', '/bible-mcp-staging/mcp',
+    '/functions/v1/bible-mcp-staging', '/functions/v1/bible-mcp-staging/mcp']);
   const withCors = (response: Response) => {
     const headers = new Headers(response.headers);
     for (const [key, value] of Object.entries(cors)) headers.set(key, value);
@@ -259,6 +273,7 @@ export function createApp(config: DatabaseConfig, fetcher: typeof fetch = fetch)
   };
   return async (request: Request): Promise<Response> => {
     const path = new URL(request.url).pathname.replace(/\/+$/, '') || '/';
+    requestPath = path;
     if (request.method === 'OPTIONS') return withCors(new Response(null, { status: 204 }));
     if (request.method === 'GET' && path.endsWith('/health')) {
       const writesEnabled = Boolean(writer);
@@ -271,6 +286,7 @@ export function createApp(config: DatabaseConfig, fetcher: typeof fetch = fetch)
         authentication: config.agentKey ? 'bearer' : 'none',
         read_only: !writesEnabled,
         writes: writesEnabled ? 'enabled' : 'disabled',
+        corpus_target: config.corpusUrl ? 'custom' : (path.includes('bible-mcp-staging') ? 'staging' : 'production'),
         tools: totalTools,
         prompts: Object.keys(PROMPTS).length,
       }));

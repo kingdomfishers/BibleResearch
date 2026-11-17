@@ -17,6 +17,10 @@ for (const active_release of ['r10-v1.0', 'r11-v1.0']) {
     assert.equal(result.release_version, 'r9b-v1.0');
     assert.notEqual(result.status, 'unavailable', JSON.stringify(result));
     assert.notEqual(result.status, 'release_not_found');
+    for (const summary of result.summaries || []) {
+      assert.ok(summary.related_lemma?.lemma_id, 'Legacy UI related-lemma identity contract');
+      assert.ok(Array.isArray(summary.sample_passages), 'Legacy UI passage sample contract');
+    }
   }
   for (const [book, chapter, verse] of [[1, 1, 2], [11, 7, 26]]) {
     const result = await handleQueryRelationshipsV2(ctx, { op: 'passage_frames', book, chapter, verse });

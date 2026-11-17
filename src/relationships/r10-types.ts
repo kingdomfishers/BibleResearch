@@ -327,6 +327,7 @@ export interface DiscoverConnectionsResult {
     connection_state?: 'connections_found' | 'no_higher_order_connections';
     completeness_state?: 'search_incomplete' | 'resource_limits_reached' | 'missing_source_coverage';
     missing_assets?: string[];
+    occurrence_scope?: { lemma: string; total_verses: number; page_complete: boolean; pagination_complete: boolean; source_scope: string };
     bounded_by: string[];
     asset_requests_used: number;
     execution_ms: number;
@@ -351,6 +352,7 @@ export interface DiscoverConnectionsResult {
 }
 
 export interface ConnectionEvidenceResult {
+  coverage?: { state: 'resource_limits_reached' | 'missing_source_coverage' | 'available'; missing_assets: string[] };
   schema_version: 1;
   status: 'ok' | 'not_found';
   release_id: string;

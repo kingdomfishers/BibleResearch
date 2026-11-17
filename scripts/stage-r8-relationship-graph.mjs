@@ -255,6 +255,55 @@ export async function stageR8RelationshipGraph(options = {}) {
     wordIdsByLemmaKey.get(lk).add(wfl.word_id);
   }
 
+  // Load occurrence crosswalk maps so frames/relations receive exact STEP word_id, 1-based canonical position, and surface_form
+  const verseWordPos = new Map();
+  for (const v of readTableGz('verses_immutable')) {
+    const m = new Map();
+    (v.word_ids || []).forEach((wid, idx) => {
+      if (!m.has(wid)) m.set(wid, []);
+      m.get(wid).push(idx + 1);
+    });
+    verseWordPos.set(v.id, m);
+  }
+  const wordSurfaceById = new Map();
+  for (const w of readTableGz('words_immutable')) {
+    if (w.id && w.original_word) wordSurfaceById.set(w.id, w.original_word);
+  }
+  const hebTokenOcc = new Map();
+  for (const m of readTableGz('macula_hebrew_morphemes')) {
+    if (m.macula_id) hebTokenOcc.set(m.macula_id, { word_id: m.word_id ?? null, cvid: m.canonical_verse_id ?? null, word_no: m.word_no ?? null });
+  }
+  const grkTokenOcc = new Map();
+  for (const g of readTableGz('macula_greek_tokens')) {
+    if (g.edition_key && g.xml_id) grkTokenOcc.set(`${g.edition_key}:${g.xml_id}`, { word_id: g.step_word_id ?? null, cvid: g.canonical_verse_id ?? null });
+  }
+  const resolveTokenOcc = (edition, tokenId, fallbackSurface = null) => {
+    const parsedPos = parseTokenPosition(tokenId);
+    if (!tokenId) return { word_id: null, word_position: null, word_id_status: 'unresolved', surface_form: fallbackSurface };
+    const isHeb = edition === 'macula-hebrew-wlc' || String(tokenId).startsWith('o');
+    const rec = isHeb ? hebTokenOcc.get(tokenId) : grkTokenOcc.get(`${edition}:${tokenId}`);
+    if (!rec || rec.word_id == null) {
+      return { word_id: null, word_position: parsedPos, word_id_status: 'unresolved', surface_form: fallbackSurface };
+    }
+    const stepWid = Number(rec.word_id);
+    const posList = rec.cvid != null ? verseWordPos.get(Number(rec.cvid))?.get(stepWid) : null;
+    let canonicalPos = parsedPos;
+    if (posList?.length) {
+      if (posList.length === 1) canonicalPos = posList[0];
+      else if (parsedPos && posList.includes(parsedPos)) canonicalPos = parsedPos;
+      else if (rec.word_no && posList.includes(rec.word_no)) canonicalPos = rec.word_no;
+      else canonicalPos = posList[0];
+    } else if (rec.word_no) {
+      canonicalPos = rec.word_no;
+    }
+    return {
+      word_id: stepWid,
+      word_position: canonicalPos,
+      word_id_status: 'verified_occurrence',
+      surface_form: wordSurfaceById.get(stepWid) || fallbackSurface || null,
+    };
+  };
+
   // 3. Load lanes & by-lemma metadata
   console.log('Loading lanes and lemma index metadata...');
   const lanes = JSON.parse(fs.readFileSync(path.join(INPUT_DIR, 'lanes', 'lexical-and-contextual-lanes.json'), 'utf8'));
@@ -469,6 +518,8 @@ export async function stageR8RelationshipGraph(options = {}) {
     const objPos = parseTokenPosition(rel.object_token_id);
     const subjProf = lemmaProfiles[rel.subject_lemma_id] || null;
     const objProf = lemmaProfiles[rel.object_lemma_id] || null;
+    const subjOcc = resolveTokenOcc(ed, rel.subject_token_id, subjProf?.lemma_form || null);
+    const objOcc = resolveTokenOcc(ed, rel.object_token_id, objProf?.lemma_form || null);
     return {
       relation_id: rel.relation_id,
       summary_id: meta.summary_id || null,
@@ -488,9 +539,11 @@ export async function stageR8RelationshipGraph(options = {}) {
       subject: {
         lemma_id: rel.subject_lemma_id,
         token_id: rel.subject_token_id,
-        word_id: subjProf?.primary_word_id || null,
-        word_position: subjPos,
-        surface_form: subjProf?.lemma_form || null,
+        source_token_id: rel.subject_token_id,
+        word_id: subjOcc.word_id,
+        word_position: subjOcc.word_position,
+        word_id_status: subjOcc.word_id_status,
+        surface_form: subjOcc.surface_form,
         lemma_form: subjProf?.lemma_form || null,
         transliteration: subjProf?.transliteration || null,
         gloss: subjProf?.gloss || null,
@@ -498,9 +551,11 @@ export async function stageR8RelationshipGraph(options = {}) {
       object: {
         lemma_id: rel.object_lemma_id,
         token_id: rel.object_token_id,
-        word_id: objProf?.primary_word_id || null,
-        word_position: objPos,
-        surface_form: objProf?.lemma_form || null,
+        source_token_id: rel.object_token_id,
+        word_id: objOcc.word_id,
+        word_position: objOcc.word_position,
+        word_id_status: objOcc.word_id_status,
+        surface_form: objOcc.surface_form,
         lemma_form: objProf?.lemma_form || null,
         transliteration: objProf?.transliteration || null,
         gloss: objProf?.gloss || null,
@@ -594,15 +649,17 @@ export async function stageR8RelationshipGraph(options = {}) {
           };
         }
         const predProf = fr.predicate?.lemma_id ? lemmaProfiles[fr.predicate.lemma_id] : null;
-        const predPos = parseTokenPosition(fr.predicate?.token_id);
+        const predOcc = fr.predicate ? resolveTokenOcc(ed, fr.predicate.token_id, fr.predicate.source_form || predProf?.lemma_form || null) : null;
         const enrichedRoles = (fr.roles || []).map(r => {
           const rProf = r.lemma_id ? lemmaProfiles[r.lemma_id] : null;
-          const rPos = parseTokenPosition(r.head_token_id);
+          const rOcc = resolveTokenOcc(ed, r.head_token_id, rProf?.lemma_form || null);
           return {
             ...r,
-            word_id: rProf?.primary_word_id || null,
-            word_position: rPos,
-            surface_form: rProf?.lemma_form || null,
+            ...(r.head_token_id ? { source_token_id: r.head_token_id } : {}),
+            word_id: rOcc.word_id,
+            word_position: rOcc.word_position,
+            word_id_status: rOcc.word_id_status,
+            surface_form: rOcc.surface_form,
             lemma_form: rProf?.lemma_form || null,
             transliteration: rProf?.transliteration || null,
             gloss: rProf?.gloss || null,
@@ -613,8 +670,11 @@ export async function stageR8RelationshipGraph(options = {}) {
           ...fr,
           predicate: fr.predicate ? {
             ...fr.predicate,
-            word_id: predProf?.primary_word_id || null,
-            word_position: predPos,
+            ...(fr.predicate.token_id ? { source_token_id: fr.predicate.token_id } : {}),
+            word_id: predOcc.word_id,
+            word_position: predOcc.word_position,
+            word_id_status: predOcc.word_id_status,
+            surface_form: predOcc.surface_form,
             lemma_form: predProf?.lemma_form || null,
             transliteration: predProf?.transliteration || null,
             gloss: predProf?.gloss || null,

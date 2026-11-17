@@ -9,6 +9,7 @@ dist/
 .artifacts-r9b/
 .artifacts-r9c/
 .artifacts-r10/
+.artifacts-r12/
 scratch/
 __pycache__/
 *.pyc
