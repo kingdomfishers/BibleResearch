@@ -363,3 +363,70 @@ Minimal execution prompt once Astra has integrated the queue:
 
 ---
 **Handoff version:** 1.0 — 2026-11-17. This is a ready-to-execute research plan and design specification, not a benchmark report or implementation completion certificate.
+
+
+## 12. Additional work completed in ChatGPT (2026-11-17)
+
+This appendix records working, separately published research assets. The authoritative newer local R12 checkout remains untouched. The assets are **research prototypes**, not assertions of production integration.
+
+### 12.1 Executable algorithm components and tests
+
+- [Orthographic candidate generator](research/r12/orthographic-candidates.mjs): Hebrew consonantal and Greek unaccented form normalization, inverted bigram postings, bounded candidate retrieval, stable scoring and matched-character spans. Candidate edges are explicitly labeled ORTHOGRAPHIC_SIMILARITY / HYPOTHESIS. Identical spelling never proves a shared lexeme or etymology.
+- [Orthographic tests](research/r12/orthographic-candidates.test.mjs): Hebrew Adam/dam, Greek diacritics, pointed/unpointed Hebrew, same-spelling distinct IDs, common single-letter negative cases and cross-language exclusions.
+- [Structural scene candidate generator](research/r12/structural-candidates.mjs): typed participant/action/object/location feature postings, capped IDF-weighted Jaccard, minimum informative-feature overlap, bounded candidate pool and source-lineage deduplication.
+- [Structural tests](research/r12/structural-candidates.test.mjs): Hagar-like independent scenes, rejected duplicate annotations, generic/unrelated negatives and explicit hypothesis labeling.
+- [Prototype README](research/r12/README.md): exact commands, integration guidance and known limitations.
+
+The two prototype test files were executed locally under Node 22 and passed (18 source-level assertions across two files). **The GitHub files still need a fresh run in the authoritative local repository** and integration with actual corpus IDs. Synthetic input tests are not empirical claims of biblical pattern discovery or full-corpus recall.
+
+**Astra should reuse these helpers or transplant their pure functions into existing R12 compilation passes**, rather than designing another form detector or scene candidate matcher. The upstream MACULA/R8 extractor must still supply correct roles, scenes, senses and source evidence; these helper functions do not parse original-language grammar. They must not become a second discovery engine.
+
+### 12.2 Eleven-source machine-readable pilot and rights catalog
+
+The new [data-sources.json](research/r12/data-sources.json) records license, source URL, priority, optional download, proposed relations, allowed scope and risk for eleven resources. No dataset has yet been downloaded or imported. The catalog is a triage aid, **not** an authorization to redistribute every source field.
+
+Added scientifically useful source candidates after the first handoff:
+
+- **ENVO (Environment Ontology)**, native content CC0: structured classes of environments, environmental materials and systems (official source: https://obofoundry.org/ontology/envo.html). A natural fit for water, springs, rivers, wilderness and wind, subject to validated biblical-sense mapping.
+- **Uberon**, CC BY 3.0 per OBO registry: anatomical terms and part/whole relations (https://obofoundry.org/ontology/uberon.html), useful for eyes, bodies and tissues.
+- **PATO**, CC BY 3.0: *vocabulary of qualities*, such as color, temperature and size (https://obofoundry.org/ontology/pato.html). PATO does NOT assert that a particular biblical object has one of those qualities. Such a property must come from a separate sourced assertion.
+
+Avoid importing whole OWL dependency closures: external imported ontology modules may have different licenses from the root. Pin release, source record IDs, allowed fields, SHA-256 and attribution *before* publication.
+
+Source confirmations from primary documentation:
+
+- Open English WordNet 2025 publishes JSON, XML/LMF and RDF downloads and is CC BY 4.0 (with original WordNet attribution): https://en-word.net/downloads . The common-lexeme 2025 release is a suitable small pilot, not a biblical Hebrew lexicon.
+- Wikidata structured namespace facts are CC0: https://www.wikidata.org/wiki/Wikidata:Licensing . The short SPARQL wdt form loses qualifiers, while full p/ps/pq statement paths carry rank and qualifier detail; use claim-level statements for historical or conditional assertions: https://www.wikidata.org/wiki/Wikidata:SPARQL_query_service/queries .
+- ChEBI publishes CC BY 4.0 chemical classifications: https://www.ebi.ac.uk/chebi/about .
+- Pleiades distributes archival ancient-places data under CC BY 3.0: https://pleiades.stoa.org/downloads .
+- Sefaria **links metadata** is CC BY; **texts have independent licenses**: https://developers.sefaria.org/docs/usage-of-our-name-and-logo .
+
+### 12.3 Conditions for physical-world discovery
+
+A high-interest world-property path has several epistemically different transitions:
+
+1. A Bible token is attested in a specific passage with original language, scope and edition.
+2. A biblical sense is mapped to an external physical or semantic class, with verified or candidate status.
+3. An external source reports a class relationship or physical property with provenance, temporal/conditional scope and rights.
+4. A distinct biblical sense or occurrence is attached to that class through its own independently verifiable mapping.
+5. The algorithm suggests a relationship worth investigating. This is **not** an explicit biblical identification or proof of authorial intent.
+
+A class hierarchy alone is not a physics rule. ENVO naming a WATER_SOURCE, Uberon naming an EYE and PATO naming HOT do not establish that a particular passage asserts those attributes. Distinguish typological object, material, component, emission, physical process and actual quoted identification.
+
+Prevent generic bridge flooding: highly frequent classes (THING, OBJECT, PHYSICAL_ENTITY, generic MATERIAL), shared basic properties and low-specificity gloss mappings should not dominate the top-24. Retain them in paged exploratory evidence when potentially useful. External-property edges never count as independent **biblical textual attestations**.
+
+### 12.4 Concrete zero-new-AI-architecture checkpoints
+
+**Checkpoint A — direct evidence in UI/MCP:** One Hebrew and one Greek clicked occurrence with correct canonical IDs returns bounded R9B direct graph neighbors, typed evidence and original-language witnesses in both WordInspector and MCP. Requires no extra dataset.
+
+**Checkpoint B — existing-graph multihop:** Extend R9C offline search, precompute a representative set of anchors and show a real multihop proof, independent routes, completeness metadata and exploratory pagination through the existing UI/MCP. This is the principal early product milestone.
+
+**Checkpoint C — generic form/pattern candidates:** Feed the two published helpers with actual STEP/MACULA frames and source-local crosswalk IDs, emit source-traceable candidate graph edges and rerun the exact same pilot. Record recall, false positives, hub effects, coverage and new candidate mechanisms. No example-specific production rules.
+
+**Checkpoint D — external semantics and science:** Import a limited licensed WordNet sense network and Wikidata property graph for verified mapped anchors, then check whether **new** useful paths appear beyond already indexed relations. Only add ENVO/ChEBI/Uberon/PATO/Pleiades after a measured gap. No full dumps or paid APIs required.
+
+### 12.5 Scope remaining for Astra
+
+Only the **newer local worktree** can establish D1.1–D1.3 completion, actual R12 type definitions, current reader and MCP interfaces, current shard headroom, source crosswalk accuracy and Worker CPU budgets. Astra must perform those local tasks, wire helpers into existing R12 passes and prepare real-source validation. No production deployment or database mutation was performed here.
+
+**What is now done without Astra credits:** reusable candidate algorithms and tests; eleven-source machine-readable rights triage; additional free science ontologies research; concrete integration priorities and falsifiable acceptance checkpoints. Do not repeat that broad research unless a specific source/version/license conflict appears.
