@@ -16,6 +16,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
+import { packLemmaShard } from './relationship-shard-codec.mjs';
 
 const REPO_ROOT = path.resolve('.');
 const BASE_BUNDLE = path.join(REPO_ROOT, '.artifacts-r10', 'deploy-bundle');
@@ -63,7 +64,10 @@ function writeGzJson(filePath, data) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   const raw = Buffer.from(JSON.stringify(data), 'utf8');
   const gz = zlib.gzipSync(raw, { level: 9, mtime: 0 });
-  fs.writeFileSync(filePath, gz);
+  // Staging may share hardlinks with the preserved base bundle. Replace the
+  // directory entry rather than mutating the shared inode.
+  fs.writeFileSync(filePath + '.r12-tmp', gz);
+  fs.renameSync(filePath + '.r12-tmp', filePath);
   return {
     uncompressed_bytes: raw.length,
     compressed_bytes: gz.length,
@@ -315,34 +319,7 @@ async function main() {
                   reference,
                   coords: fixedRels.find(r => r.canonical_ref === reference)?.coords || null,
                 }));
-                sum.sample_relations = fixedRels.slice(0, 1).map(r => ({
-                  relation_id: r.relation_id,
-                  summary_id: r.summary_id,
-                  canonical_ref: r.canonical_ref,
-                  coords: r.coords,
-                  edition: r.edition,
-                  predicate: r.predicate,
-                  inverse_predicate: r.inverse_predicate,
-                  quality: r.quality,
-                  subject: r.subject ? {
-                    lemma_id: r.subject.lemma_id,
-                    token_id: r.subject.token_id,
-                    source_token_id: r.subject.source_token_id,
-                    word_id: r.subject.word_id,
-                    word_position: r.subject.word_position,
-                    surface_form: r.subject.surface_form,
-                    word_id_status: r.subject.word_id_status,
-                  } : null,
-                  object: r.object ? {
-                    lemma_id: r.object.lemma_id,
-                    token_id: r.object.token_id,
-                    source_token_id: r.object.source_token_id,
-                    word_id: r.object.word_id,
-                    word_position: r.object.word_position,
-                    surface_form: r.object.surface_form,
-                    word_id_status: r.object.word_id_status,
-                  } : null,
-                }));
+                delete sum.sample_relations;
               }
               if (sum.related_lemma) {
                 sum.from_lemma = null;
@@ -352,7 +329,7 @@ async function main() {
           }
         }
       }
-      writeGzJson(path.join(dstSub, item.rel), data);
+      writeGzJson(path.join(dstSub, item.rel), sub === 'by-lemma' ? packLemmaShard(data) : data);
     }
   }
 

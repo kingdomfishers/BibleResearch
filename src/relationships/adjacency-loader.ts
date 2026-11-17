@@ -87,7 +87,9 @@ export async function createNodeFsAssetReader(roots: string[]): Promise<AssetRea
 
   return {
     async readJson(assetPath: string): Promise<AssetReadResult | null> {
-      const rel = assetPath.replace(/^\/+/, '');
+      const [asset, rangeText] = assetPath.split('#bytes=');
+      const range = rangeText?.match(/^(\d+)-(\d+)$/);
+      const rel = asset.replace(/^\/+/, '');
       for (const root of roots) {
         const candidates = [path.join(root, rel)];
         if (rel.endsWith('.json.gz')) {
@@ -95,7 +97,8 @@ export async function createNodeFsAssetReader(roots: string[]): Promise<AssetRea
         }
         for (const filePath of candidates) {
           try {
-            const raw = await fs.readFile(filePath);
+            let raw = await fs.readFile(filePath);
+            if (range) raw = raw.subarray(Number(range[1]), Number(range[2]) + 1);
             const isGz = raw.length >= 2 && raw[0] === 0x1f && raw[1] === 0x8b;
             const text = (isGz ? zlib.gunzipSync(raw) : raw).toString('utf8');
             return { data: JSON.parse(text), bytes: raw.length };

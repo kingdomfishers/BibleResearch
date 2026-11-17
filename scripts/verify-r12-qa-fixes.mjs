@@ -12,6 +12,8 @@ import worker from './corpus-worker.mjs';
 const args = process.argv.slice(2);
 const bIdx = args.indexOf('--bundle');
 const BUNDLE_DIR = path.resolve(bIdx >= 0 ? args[bIdx + 1] : '.artifacts-r10/deploy-bundle');
+const LIVE_URL = process.env.R12_QA_CORPUS_URL?.replace(/\/+$/, '');
+if (LIVE_URL) assert.equal(new URL(LIVE_URL).hostname, 'bibleresearch-corpus-staging.kingdomfishers-custom.workers.dev');
 
 function createBundleEnv(bundleDir) {
   return {
@@ -31,12 +33,13 @@ function createBundleEnv(bundleDir) {
 const env = createBundleEnv(BUNDLE_DIR);
 
 async function rpc(op, body = {}) {
-  const req = new Request(`https://corpus.internal/v1/rpc/${op}`, {
+  const req = new Request(`${LIVE_URL || 'https://corpus.internal'}/v1/rpc/${op}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
-  const res = await worker.fetch(req, env, {});
+  const res = LIVE_URL ? await fetch(req) : await worker.fetch(req, env, {});
+  if (LIVE_URL) assert.equal(res.headers.get('X-BibleResearch-Release'), 'r12-witnesses-1');
   const text = await res.text();
   let json = null;
   try {
@@ -60,7 +63,7 @@ async function check(name, fn) {
 }
 
 async function main() {
-  console.log(`Running QA regression checks against bundle: ${BUNDLE_DIR}\n`);
+  console.log(`Running QA regression checks against ${LIVE_URL ? `LIVE staging: ${LIVE_URL}` : `LOCAL bundle: ${BUNDLE_DIR}`}\n`);
 
   // QA-01 / QA-04 / QA-10: Genesis 1:2 exact occurrence identities & R8 frames
   await check('QA-01/04: GEN 1:2 pos 9 H7307 resolves word_id=130555 and surface וְר֣וּחַ', async () => {

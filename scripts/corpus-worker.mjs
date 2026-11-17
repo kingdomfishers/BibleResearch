@@ -17,6 +17,7 @@
  */
 
 import { withCorpusSecurity } from './corpus-security.mjs';
+import { packedShardEntry } from './relationship-shard-codec.mjs';
 import {
   fnv1a64Hex,
   handleDiscoverBiblicalConnectionsV1,
@@ -66,16 +67,28 @@ async function readAssetBytes(env, assetPath) {
   const trace = env.__r12Trace;
   if (trace) trace.asset_reads++;
   const url = new URL(assetPath, 'https://corpus.internal');
+  const range = /^#bytes=(\d+)-(\d+)$/.exec(url.hash);
+  url.hash = '';
   const req = new Request(url.toString(), {
     method: 'GET',
-    headers: { 'Accept-Encoding': 'identity' },
+    headers: { 'Accept-Encoding': 'identity', ...(range ? { Range: `bytes=${range[1]}-${range[2]}` } : {}) },
   });
   const res = await env.ASSETS.fetch(req);
   if (!res.ok) {
     if (trace) trace.missing_shards.push({ path: assetPath, status: res.status });
     return null;
   }
-  const buf = await res.arrayBuffer();
+  let buf = await res.arrayBuffer();
+  if (range) {
+    const start = Number(range[1]), end = Number(range[2]);
+    if (res.status === 206) {
+      const returned = /^bytes (\d+)-(\d+)\/(\d+)$/.exec(res.headers.get('Content-Range') || '');
+      if (!returned || Number(returned[1]) !== start || Number(returned[2]) !== end || Number(returned[3]) <= end || buf.byteLength !== end - start + 1) throw new Error('Invalid packed asset range');
+    } else if (res.status === 200 && buf.byteLength > end) {
+      // Read-only filesystem fixtures may not implement HTTP Range.
+      buf = buf.slice(start, end + 1);
+    } else throw new Error('Packed asset range unavailable');
+  }
   if (trace) trace.encoded_bytes += buf.byteLength;
   return new Uint8Array(buf);
 }
@@ -104,7 +117,7 @@ export async function loadJsonShardWithBytes(env, assetPath) {
   const trace = env.__r12Trace;
   // I/O promises stay request-local; only completed JSON is shared across requests.
   const inflight = env.__assetInflight ||= new Map();
-  const gzPath = assetPath.endsWith('.gz') ? assetPath : `${assetPath}.gz`;
+  const gzPath = assetPath.endsWith('.gz') || assetPath.includes('#bytes=') ? assetPath : `${assetPath}.gz`;
   if (shardLru.has(gzPath)) {
     const val = shardLru.get(gzPath);
     shardLru.delete(gzPath);
@@ -824,7 +837,8 @@ async function handleGetReaderPassagesV1(env, params) {
     const v = Number(p.verse);
     const chBucket = Number(BigInt('0x' + fnv1a64Hex(`${b}:${c}`)) % 64n).toString(16).padStart(2, '0');
     const liteShard = await loadJsonShard(env, `/v2/relationships/r8-v1.2/chapter-lite/shard-${chBucket}.json.gz`);
-    const liteVerse = liteShard?.chapters?.[`${b}:${c}`]?.[String(v)];
+    const liteChapter = await packedShardEntry(liteShard, `${b}:${c}`, '/v2/relationships/r8-v1.2', p => loadJsonShard(env, p));
+    const liteVerse = liteChapter?.[String(v)];
     let text = null;
     if (liteVerse && 'web' in liteVerse) {
       text = liteVerse.web ?? null;
@@ -2641,7 +2655,15 @@ export default {
     // Enabled only by the generated local profiler config; no body/query/secret logging.
     const requestId = request.headers.get('X-R12-Trace-Id');
     if (env.R12_TRACE_ENABLED !== '1' || !requestId || !/^[a-zA-Z0-9:_-]{1,100}$/.test(requestId)) {
-      return securedCorpusWorker.fetch(request, env, ctx);
+      const response = await securedCorpusWorker.fetch(request, env, ctx);
+      if (!env.R12_RELEASE_ID) return response;
+      const headers = new Headers(response.headers);
+      headers.set('X-BibleResearch-Release', env.R12_RELEASE_ID);
+      headers.set('X-BibleResearch-Assets', env.R12_ASSET_SHA256 || 'unidentified');
+      headers.set('X-BibleResearch-Version', env.WORKER_VERSION?.id || 'unidentified');
+      headers.set('X-BibleResearch-Commit', env.R12_SOURCE_COMMIT || 'unidentified');
+      headers.set('Access-Control-Expose-Headers', 'X-BibleResearch-Release, X-BibleResearch-Assets, X-BibleResearch-Version, X-BibleResearch-Commit');
+      return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
     }
     r12TraceIsolateId ??= crypto.randomUUID();
     const trace = {

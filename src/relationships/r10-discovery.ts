@@ -194,8 +194,20 @@ async function readR10Json<T = any>(
   return (await pending) as T | null;
 }
 
-interface FastManifest { profile_buckets: number; verse_chunk_size: number; selective?: boolean }
+interface FastManifest { profile_buckets: number; verse_chunk_size: number; selective?: boolean; packed?: boolean }
 type ReadBudget = { used: number; max: number; missing?: string[]; pages?: Map<string, Promise<any>> };
+
+async function readR10Key(reader: AssetReader, release: string, file: string, key: string, field: string, budget: ReadBudget): Promise<any> {
+  const index = await readR10Json<any>(reader, release, file, budget);
+  if (index?.schema_version === 'r10-packed-1') {
+    const entry = index.entries?.[key];
+    if (!entry) return null;
+    const [blob, start, length] = entry;
+    return readR10Json(reader, release, `${blob}#bytes=${start}-${start + length - 1}`, budget);
+  }
+  const values = index?.[field];
+  return Array.isArray(values) ? values.find((pair: any[]) => pair[0] === key)?.[1] : values?.[key];
+}
 
 /** Read only the deterministic key branch; missing pages never trigger legacy scans. */
 export async function readSelectiveKey(reader: AssetReader, release: string, namespace: string, key: string, budget: ReadBudget): Promise<any> {
@@ -228,6 +240,7 @@ export async function readSelectiveKey(reader: AssetReader, release: string, nam
 async function readProfile(reader: AssetReader, release: string, manifest: FastManifest | null, bs: string, budget: ReadBudget): Promise<LemmaProfile | null> {
   if (manifest?.selective) return readSelectiveKey(reader, release, 'profiles', bs, budget);
   const bucket = computeBucketHex(manifest ? 'fnv1a64_mod1024' : 'fnv1a64_mod64', manifest?.profile_buckets || 64, bs);
+  if (manifest?.packed) return readR10Key(reader, release, `fast-profiles/shard-${bucket}.json.gz`, bs, 'entries', budget);
   const shard = await readR10Json<{ entries?: Record<string, LemmaProfile> }>(reader, release, `${manifest ? 'fast-profiles' : 'lemma-profiles'}/shard-${bucket}.json.gz`, budget);
   return shard?.entries?.[bs] || null;
 }
@@ -286,6 +299,9 @@ export interface LemmaProfile {
     related_script: string;
     related_gloss: string;
     occurrences: number;
+    independent_witness_count?: number;
+    witnesses?: Array<{ relation_id: string; clause_key: string; edition: string; subject_token_id: string; object_token_id: string; passage: R10PassageRef }>;
+    witness_status?: string;
   }>;
   lexical_relations: any[];
   lxx_relations: any[];
@@ -424,7 +440,11 @@ export async function discoverBiblicalConnections(
   async function hydratePassageByVid(vid: number): Promise<R10PassageRef | null> {
     const book = bookForVid(vid);
     let v;
-    if (fastManifest?.selective) {
+    if (fastManifest?.packed) {
+      const chunk = Math.floor((vid - 1) / fastManifest.verse_chunk_size);
+      v = await readR10Key(reader, releaseId, `fast-verses/chunk-${chunk.toString(16).padStart(3, '0')}.json.gz`, String(vid), 'verses', budget);
+      if (v) bookCache.set(book, { ...(bookCache.get(book) || {}), [String(vid)]: v });
+    } else if (fastManifest?.selective) {
       v = await readSelectiveKey(reader, releaseId, 'verses', String(vid), budget);
       if (v) bookCache.set(book, { ...(bookCache.get(book) || {}), [String(vid)]: v });
     } else if (fastManifest) {
@@ -456,6 +476,7 @@ export async function discoverBiblicalConnections(
 
 
   const refTokensToIgnore = new Set<string>();
+  const contextVerseIds = new Set<number>();
   for (const pr of parsedRefs) {
     refTokensToIgnore.add(String(pr.chapter));
     if (pr.verse !== null && pr.verse !== undefined) refTokensToIgnore.add(String(pr.verse));
@@ -475,6 +496,12 @@ export async function discoverBiblicalConnections(
       const vid = await readSelectiveKey(reader, releaseId, 'refs', `${ep.book}:${ep.chapter}:${ep.verse}`, budget);
       if (vid) await hydratePassageByVid(Number(vid));
       verses = bookCache.get(ep.book);
+    } else if (fastManifest?.packed) {
+      const bookFile = `evidence-passages/book-${String(ep.book).padStart(2, '0')}.json.gz`;
+      const index = await readR10Json<any>(reader, releaseId, bookFile, budget);
+      for (const vid of index?.chapter_vids?.[String(ep.chapter)] || []) contextVerseIds.add(Number(vid));
+      const v = await readR10Key(reader, releaseId, bookFile, `${ep.chapter}:${ep.verse}`, 'verses', budget);
+      if (v) { await hydratePassageByVid(Number(v.verse_id)); verses = bookCache.get(ep.book); }
     } else verses = await loadBookData(ep.book);
     if (verses) {
       for (const [vKey, vVal] of Object.entries(verses) as [string, any][]) {
@@ -497,6 +524,10 @@ export async function discoverBiblicalConnections(
   const shardMemo = new Map<string, Map<string, any[]>>();
   async function fetchShard(key: string): Promise<any[]> {
     const normKey = key.toLowerCase();
+    if (fastManifest?.packed) {
+      const bucket = computeBucketHex('fnv1a64_mod64', 64, normKey);
+      return (await readR10Key(reader, releaseId, `lemma-lookup/shard-${bucket}.json.gz`, normKey, 'entries', budget)) || [];
+    }
     if (fastManifest?.selective) return (await readSelectiveKey(reader, releaseId, 'lookup', normKey, budget)) || [];
     const bHex = computeBucketHex('fnv1a64_mod64', 64, normKey);
     if (!shardMemo.has(bHex)) {
@@ -536,7 +567,9 @@ export async function discoverBiblicalConnections(
       e.keywords?.includes(lower) && (lower.length >= 4 || ['red', 'sea'].includes(lower))
     ).slice(0, 4);
 
+    const hasContextWitness = (hit: any) => (hit.vs || []).some((vid: number) => contextVerseIds.has(Number(vid)));
     const shardHits = (await lookupShardToken(term)).sort((a, b) =>
+      Number(hasContextWitness(b)) - Number(hasContextWitness(a)) ||
       Number(b.cnt > 0) - Number(a.cnt > 0) ||
       Number(normalizeToken(b.gl || '') === lower) - Number(normalizeToken(a.gl || '') === lower) ||
       b.match_rank - a.match_rank || b.cnt - a.cnt);
@@ -574,7 +607,8 @@ export async function discoverBiblicalConnections(
       const homographSiblings: Array<{ bs: string; lk?: string; sc: string; tr: string; gl: string }> = [];
 
       // Add primary shard hits first
-      for (const h of primaryShardHits.slice(0, 5)) {
+      const distinctPrimary = primaryShardHits.filter((h, i, all) => all.findIndex(x => x.bs === h.bs) === i);
+      for (const h of distinctPrimary.slice(0, 5)) {
         matchedStrongs.add(h.bs);
         const ow: R10OriginalWordRef = {
           lemma_key: h.lk,
@@ -675,8 +709,11 @@ export async function discoverBiblicalConnections(
         resolution_kind: resKind,
         candidate_nodes: nodes,
         lemmas,
+        sense_candidates: primaryShardHits.length > distinctPrimary.length ? primaryShardHits.map(h => ({ key: h.lk || h.bs, gl: h.gl, note: 'Lexical candidate; this name or sense has not been assigned to a particular occurrence.' })) : undefined,
         homograph_siblings: homographSiblings.length > 0 ? homographSiblings : undefined,
-        ambiguity_note: alias?.note || (primaryShardHits.length > 3 ? `Multiple original-language candidates (${primaryShardHits.slice(0, 3).map(h => h.sc).join(', ')}...)` : undefined),
+        ambiguity_note: contextVerseIds.size && primaryShardHits.some(hasContextWitness)
+          ? 'Candidates attested in the referenced chapter are preferred. Sampled lexical occurrences do not establish which person or sense an individual token denotes; alternatives remain available.'
+          : alias?.note || (primaryShardHits.length > 3 ? `Multiple original-language candidates (${primaryShardHits.slice(0, 3).map(h => h.sc).join(', ')}...)` : undefined),
       });
     } else if (!/^\d+$/.test(term)) {
       missingConcepts.push(term);
@@ -970,43 +1007,33 @@ export async function discoverBiblicalConnections(
 
     // B. Direct Grammatical Relations
     const nonFuncGram = (prof.grammatical_relations || []).filter(gr =>
-      gr.occurrences >= 1 && !['H0853', 'H0854', 'H4480', 'H0413', 'H5921', 'H0518', 'H3588'].includes(gr.related_strongs)
+      gr.occurrences >= 1 && (gr.witnesses === undefined || gr.witnesses.length > 0) && !['H0853', 'H0854', 'H4480', 'H0413', 'H5921', 'H0518', 'H3588'].includes(gr.related_strongs)
     ).slice(0, 5);
 
     for (const gr of nonFuncGram) {
-      const gTier: R10EvidenceTier = gr.occurrences >= 2 ? 2 : 3;
+      const gTier: R10EvidenceTier = (gr.independent_witness_count ?? gr.occurrences) >= 2 ? 2 : 3;
       const gBase = TIER_BASE_SCORE[gTier];
       const gSpec = idfBonus + 25;
-      const gWit = Math.min(40, gr.occurrences * 8);
+      const gWit = Math.min(40, (gr.independent_witness_count ?? gr.occurrences) * 8);
       allCandidates.push({
         evidence_id: `r11:gram:${prof.bs}:${gr.predicate}:${gr.related_strongs}`,
         predicate: 'verified_lexical_grammatical',
         evidence_tier: gTier,
         epistemic_class: 'direct_textual_evidence',
         title: `${gr.display_label}: ${prof.sc} (${prof.tr}) ↔ ${gr.related_script} ("${gr.related_gloss}", ${gr.occurrences}×)`,
-        summary: `Syntactic dependency analysis identifies direct grammatical connection (${gr.display_label}) between ${prof.sc} (${prof.bs}) and ${gr.related_script} (${gr.related_strongs}, "${gr.related_gloss}") across ${gr.occurrences} occurrences.`,
+        summary: `Syntactic dependency analysis identifies direct grammatical connection (${gr.display_label}) between ${prof.sc} (${prof.bs}) and ${gr.related_script} (${gr.related_strongs}, "${gr.related_gloss}") across ${gr.occurrences} indexed occurrences.${gr.independent_witness_count !== undefined ? ` ${gr.independent_witness_count} distinct canonical source clauses pass token-position verification; parallel editions are counted once.` : ''}`,
         source_node_id: `lemma:${prof.bs}`,
         target_node_id: `lemma:${gr.related_strongs}`,
-        passages: prof.clusters?.[0]?.sample_passages?.slice(0, 3).map(p => ({
-          verse_id: p.verse_id,
-          ref: p.ref,
-          mt_ref: p.mt_ref,
-          book: p.book,
-          chapter: p.chapter,
-          verse: p.verse,
-          testament: p.testament,
-          snippet: p.snippet,
-          is_psalm_heading: p.book === 19 && p.verse === 0,
-        })) || [],
+        passages: gr.witnesses?.map(w => w.passage) || [],
         original_words: [
           { lemma_key: prof.lk, strongs: prof.bs, language: prof.lang, lemma_script: prof.sc, transliteration: prof.tr, gloss: prof.gl },
           { strongs: gr.related_strongs, language: prof.lang, lemma_script: gr.related_script, transliteration: '', gloss: gr.related_gloss },
         ],
         matched_terms: [prof.gl, gr.related_gloss, prof.bs, gr.related_strongs],
-        limitations: ['Syntactic construct/argument relation; contextual meaning varies by passage.'],
+        limitations: [gr.witnesses ? `Exact source relations; ${gr.independent_witness_count} distinct canonical clause witnesses. Parallel editions and mirrored paths do not add independent support.` : 'Legacy aggregate without attached matching witnesses; inspect grammatical relationship evidence before citing.', 'Syntactic construct/argument relation; shared grammar alone establishes no theological or authorial significance.'],
         provenance: {
           source_dataset: 'MACULA Hebrew/Greek Syntactic Trees',
-          source_record_ids: [prof.bs, gr.related_strongs],
+          source_record_ids: gr.witnesses?.map(w => w.relation_id) || [],
           license: 'CC BY 4.0',
           derivation_method: 'syntactic_dependency_relation',
         },
@@ -1929,7 +1956,11 @@ export async function getConnectionEvidence(
   async function hydratePassageByVid(vid: number): Promise<R10PassageRef | null> {
     const book = bookForVid(vid);
     let v;
-    if (fastManifest?.selective) {
+    if (fastManifest?.packed) {
+      const chunk = Math.floor((vid - 1) / fastManifest.verse_chunk_size);
+      v = await readR10Key(reader, releaseId, `fast-verses/chunk-${chunk.toString(16).padStart(3, '0')}.json.gz`, String(vid), 'verses', budget);
+      if (v) bookCache.set(book, { ...(bookCache.get(book) || {}), [String(vid)]: v });
+    } else if (fastManifest?.selective) {
       v = await readSelectiveKey(reader, releaseId, 'verses', String(vid), budget);
       if (v) bookCache.set(book, { ...(bookCache.get(book) || {}), [String(vid)]: v });
     } else if (fastManifest) {
@@ -2040,37 +2071,27 @@ export async function getConnectionEvidence(
     targetStrongs.add(relStrongs);
     const prof = await readProfile(reader, releaseId, fastManifest, bs, budget);
     const gr = prof?.grammatical_relations?.find((g: any) => g.predicate === pred && g.related_strongs === relStrongs);
-    if (prof && gr) {
-      const gTier: R10EvidenceTier = gr.occurrences >= 2 ? 2 : 3;
+    if (prof && gr && (gr.witnesses === undefined || gr.witnesses.length > 0)) {
+      const gTier: R10EvidenceTier = (gr.independent_witness_count ?? gr.occurrences) >= 2 ? 2 : 3;
       record = {
         evidence_id: evidenceId,
         predicate: 'verified_lexical_grammatical',
         evidence_tier: gTier,
         epistemic_class: 'direct_textual_evidence',
         title: `${gr.display_label}: ${prof.sc} (${prof.tr}) ↔ ${gr.related_script} ("${gr.related_gloss}", ${gr.occurrences}×)`,
-        summary: `Syntactic dependency analysis identifies direct grammatical connection (${gr.display_label}) between ${prof.sc} (${prof.bs}) and ${gr.related_script} (${gr.related_strongs}, "${gr.related_gloss}") across ${gr.occurrences} occurrences.`,
+        summary: `Syntactic dependency analysis identifies direct grammatical connection (${gr.display_label}) between ${prof.sc} (${prof.bs}) and ${gr.related_script} (${gr.related_strongs}, "${gr.related_gloss}") across ${gr.occurrences} indexed occurrences.${gr.independent_witness_count !== undefined ? ` ${gr.independent_witness_count} distinct canonical source clauses pass token-position verification; parallel editions are counted once.` : ''}`,
         source_node_id: `lemma:${prof.bs}`,
         target_node_id: `lemma:${gr.related_strongs}`,
-        passages: prof.clusters?.[0]?.sample_passages?.slice(0, 3).map((p: any) => ({
-          verse_id: p.verse_id,
-          ref: p.ref,
-          mt_ref: p.mt_ref,
-          book: p.book,
-          chapter: p.chapter,
-          verse: p.verse,
-          testament: p.testament,
-          snippet: p.snippet,
-          is_psalm_heading: p.book === 19 && p.verse === 0,
-        })) || [],
+        passages: gr.witnesses?.map(w => w.passage) || [],
         original_words: [
           { lemma_key: prof.lk, strongs: prof.bs, language: prof.lang, lemma_script: prof.sc, transliteration: prof.tr, gloss: prof.gl },
           { strongs: gr.related_strongs, language: prof.lang, lemma_script: gr.related_script, transliteration: '', gloss: gr.related_gloss },
         ],
         matched_terms: [prof.gl, gr.related_gloss, prof.bs, gr.related_strongs],
-        limitations: ['Syntactic construct/argument relation; contextual meaning varies by passage.'],
+        limitations: [gr.witnesses ? `Exact source relations; ${gr.independent_witness_count} distinct canonical clause witnesses. Parallel editions and mirrored paths do not add independent support.` : 'Legacy aggregate without attached matching witnesses; inspect grammatical relationship evidence before citing.', 'Syntactic construct/argument relation; shared grammar alone establishes no theological or authorial significance.'],
         provenance: {
           source_dataset: 'MACULA Hebrew/Greek Syntactic Trees',
-          source_record_ids: [prof.bs, gr.related_strongs],
+          source_record_ids: gr.witnesses?.map(w => w.relation_id) || [],
           license: 'CC BY 4.0',
           derivation_method: 'syntactic_dependency_relation',
         },

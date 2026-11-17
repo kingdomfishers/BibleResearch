@@ -50,11 +50,13 @@ Use this index to locate code, then search the relevant paths with rg. Read a fi
 - Supabase initialization/auth: [supabase.ts](src/api/supabase.ts). SQL contracts/history: [supabase/migrations/](supabase/migrations/); locate the latest relevant function definition with rg rather than loading every migration.
 - REST contract: [supabase/openapi.json](supabase/openapi.json).
 - Worker entry: [corpus-worker.mjs](scripts/corpus-worker.mjs); restricted fields: [corpus-security.mjs](scripts/corpus-security.mjs); config: [wrangler.corpus.jsonc](wrangler.corpus.jsonc).
+- R12 staging increment: [prepare-r12-increment.mjs](scripts/prepare-r12-increment.mjs) attaches token-verified grammatical witnesses and packs derived records; [relationship-shard-codec.mjs](scripts/relationship-shard-codec.mjs) reads the compact layouts. [verify-r12-increment.mjs](scripts/verify-r12-increment.mjs) compares the frozen discovery baseline; [verify-r12-staging-live.mjs](scripts/verify-r12-staging-live.mjs) runs read-only concurrent staging and MCP checks.
 - Boundary/runbook: [ARCHITECTURE.md](ARCHITECTURE.md), [STATIC_CORPUS_MIGRATION.md](STATIC_CORPUS_MIGRATION.md).
 
 ## MCP and integrations
 
 - Transport/database reader: [index.ts](supabase/functions/bible-mcp/index.ts), createApp, createDatabaseReader, logic:transport.
+- Isolated public staging MCP: [staging.ts](supabase/functions/bible-mcp/staging.ts), fixed corpus-only routing with no database or notes tools; boundary tests: [verify-r12-staging-mcp.test.ts](scripts/verify-r12-staging-mcp.test.ts).
 - Tools/catalog: [catalog.ts](supabase/functions/bible-mcp/catalog.ts); workflow: [research-workflow.ts](supabase/functions/bible-mcp/research-workflow.ts), [workflow-contract.ts](supabase/functions/bible-mcp/workflow-contract.ts), [research-lenses.ts](supabase/functions/bible-mcp/research-lenses.ts).
 - Research hydration/syntax: [verse-hydrated.ts](supabase/functions/bible-mcp/verse-hydrated.ts), [syntax-research.ts](supabase/functions/bible-mcp/syntax-research.ts).
 - Notes: [notes-tools.ts](supabase/functions/bible-mcp/notes-tools.ts), [notes-write.ts](supabase/functions/bible-mcp/notes-write.ts), [dlm-notes.ts](supabase/functions/bible-mcp/dlm-notes.ts).

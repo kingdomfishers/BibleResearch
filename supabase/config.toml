@@ -9,3 +9,8 @@ enable_anonymous_sign_ins = true
 enabled = true
 verify_jwt = false
 entrypoint = "./functions/bible-mcp/index.ts"
+
+[functions.bible-mcp-staging]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/bible-mcp/staging.ts"

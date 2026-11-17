@@ -8,6 +8,7 @@
  */
 
 import { ShardedAdjacencyLoader } from '../src/relationships/adjacency-loader.ts';
+import { lemmaShardEntry, packedShardEntry } from './relationship-shard-codec.mjs';
 import { resolveResearchConcept } from '../src/relationships/concept-resolver.ts';
 import { discoverMultiHopPaths } from '../src/relationships/multihop-search.ts';
 import {
@@ -730,6 +731,9 @@ async function resolveLemmaV2(params, resolver, loadUncovered, ctx = null, gramB
     for (const k of Object.keys(resolver.lemmas || {})) {
       if (k.toLowerCase() === low) return k;
     }
+    // Uncovered entries use canonical lemma keys. A bare Strong's number or
+    // English query cannot match one; resolve those through the sharded index.
+    if (!rawKey.toLowerCase().startsWith('lemma:')) return null;
     const unc = await loadUncovered();
     if (unc?.entries?.[rawKey]) return rawKey;
     for (const k of Object.keys(unc?.entries || {})) {
@@ -874,7 +878,8 @@ async function resolveLemmaV2(params, resolver, loadUncovered, ctx = null, gramB
     ]);
 
     let chTok = null;
-    const liteVerse = liteShard?.chapters?.[`${book}:${chapter}`]?.[String(verse)];
+    const liteChapter = await packedShardEntry(liteShard, `${book}:${chapter}`, gramBase, p => ctx.loadJsonShard(ctx.env, p));
+    const liteVerse = liteChapter?.[String(verse)];
     if (liteVerse && Array.isArray(liteVerse.t)) {
       const tup = liteVerse.t.find(row => Number(row[0]) === position);
       if (tup) {
@@ -1076,7 +1081,11 @@ async function resolveLemmaV2(params, resolver, loadUncovered, ctx = null, gramB
   if (Number.isInteger(wordIdParam) && wordIdParam > 0) {
     if (resolver.loadWordId) await resolver.loadWordId(wordIdParam);
     const byWid = resolver.by_word_id?.[String(wordIdParam)] || [];
-    for (const lk of byWid) await getProfile(lk);
+    // Canonicalize secondary morphemes from the sharded resolver only. Their
+    // absence from the syntax graph must not load the full uncovered lexicon.
+    for (const lk of byWid) {
+      if (resolver.loadProfile) await resolver.loadProfile(lk);
+    }
     wordIdLemmaIds = canonicalizeCandidateIds(byWid);
   }
 
@@ -2459,7 +2468,11 @@ export async function handleQueryRelationshipsV2(ctx, params = {}) {
             .toString(16)
             .padStart(2, '0');
       const lemmaShard = await ctx.loadJsonShard(ctx.env, `${gramBaseDir}/by-lemma/shard-${gramBucket}.json.gz`);
-      lemmaEntry = lemmaShard?.entries?.[res.lemma_id];
+      lemmaEntry = lemmaShardEntry(lemmaShard, res.lemma_id);
+      if (lemmaShard?.schema_version === 'packed-1' && lemmaEntry) {
+        const [file, start, length] = lemmaEntry;
+        lemmaEntry = await ctx.loadJsonShard(ctx.env, `${gramBaseDir}/${file}#bytes=${start}-${start + length - 1}`);
+      }
     } else {
       const [bShard, eShard] = await Promise.all([
         ctx.loadJsonShard(ctx.env, `${gramBaseDir}/by-lemma.json.gz`),
