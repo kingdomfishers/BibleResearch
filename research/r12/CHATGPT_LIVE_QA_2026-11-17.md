@@ -184,3 +184,64 @@ Multiple calls to \`discover_biblical_connections_v1\` failed in sequence with \
 **P2:** optimize giant unified payload without dropping provenance (one small limit request was ~64KB JSON); support lazy hydration, and keep LXX candidate vs actual attested alignment labels clear.
 
 **Scope:** This report is **read-only QA** of deployed existing R9B/R11 MCP, not confirmation of unpublished R12-01 UI preview, staging or GitHub feature branch. Keep actual pass/fail/provenance labels; no speculative server modifications here.
+
+
+## Third-pass edge-case suite — additional read-only ChatGPT MCP QA (2026-11-17)
+
+Scope: bounded read-only calls to the existing R9B/R11 MCP; **not** a staging/preview UI test, local source-code inspection or deployed R12 fix. All results below are reproduced against connected BibleResearch tools, and no production state was changed.
+
+### QA-10 CONFIRMED: R8 grammatical source frames contain mismatched canonical STEP word IDs and source positions
+
+This localizes QA-01 / QA-04 to the source-frame data, rather than merely the unified RPC formatter.
+
+- get_passage_grammatical_frames_v2(book=1,chapter=1,verse=2) reports **3 frames, 7 relations**. Its grammatical_subject_of relation at GEN 1:2 clause 2 uses source token "o010010020092" for H7307, with word_id **130527**, word_position **200**, lemma:H7307, and surface "רוּחַ".
+- The independent prompt_verse_words(1,1,2) has H7307 position **9**, STEP word_id **130555**, actual surface "וְר֣וּחַ". get_word_details(130527) returns a different inflected form "בְר֙וּחַ֙".
+- Same source frame gives H6440 word_id **118259** for the two distinct GEN 1:2 positions (7,13), although the actual STEP IDs are **118734** and **118736**; get_word_details(118259) is "בְּפָנֶ֔יךָ" (different original form).
+- Same source frame gives H1961 word_id **55544** for GEN 1:2 position 2, whose actual STEP ID is **55675**. get_word_details(55544) is "אֶֽהְיֶ֑ה" rather than "הָיְתָ֥ה".
+- The field word_position in R8 relation records holds **100** for GEN 1:1, **200/201** for GEN 1:2 and **100** for Psalm 3:0, instead of 1-based verse token ordinals. This may be a source-internal coordinate but must not be presented as an exact STEP position.
+
+Affected evidence is not necessarily invalid grammatical syntax, but exact STEP form identity and position are unsupported. Inspect R8 extractor mapping between MACULA terminal source IDs and STEP canonical verse word forms; represent distinct namespaces explicitly, or mark unresolved, rather than returning a valid *other* STEP word ID as the clicked occurrence ID. No hardcoded H7307 or H6440 fixes.
+
+Required regression: GEN 1:2 positions 2/7/9/13; GEN 1:1, PS 3:0, and Greek occurrence. Verify original surface, edition, source terminal ID, STEP word ID, verse position, and absence of silent source aliasing.
+
+### QA-11 CONFIRMED: same_clause filtered contextual neighbors can lack any matching sample witness
+
+The aggregated counts may be valid, but the returned examples often cannot substantiate the requested evidence scope.
+
+- page_contextual_neighbors_v2(query="H7307",contextual_scope="same_clause",limit=100,offset=0): 441 filtered neighbors. **30 of the first 100** returned targets have positive same-clause counts but none of their five sample_passages have in_same_clause=true. Examples: lemma:H0853 (36 same-clause counts), lemma:H3605 (26), lemma:H0559 (1).
+- Same query for G3056: 424 filtered neighbors. **19 of the first 100** returned targets have positive same-clause counts but none of their five sample_passages have in_same_clause=true. Examples: lemma:G2532 (61), lemma:G0846 (48), lemma:G3756 (24).
+- H7307 to lemma:H0853 samples are GEN 3:8, GEN 6:17, GEN 8:1, GEN 41:8 and GEN 45:27, all with in_same_clause=false, despite positive same-clause aggregate.
+
+Requirement: Under same_clause filter supply at least one source-supported same-clause witness, or an explicit "matching witness not returned" notice and a way to expand evidence. Under collocation filter likewise supply actual is_collocation witness when possible. Do NOT turn aggregate counts into imaginary witness flags. This is an inspectability/provenance problem, NOT proof that the underlying counts are wrong.
+
+### QA-12 CONFIRMED: Swete LXX Greek token contaminated with chapter-heading Roman numerals
+
+Two independent tools returned the same source-token issue:
+- get_septuagint_passage(p_book_no=1,p_chapter=32,p_verse_nr=1)
+- compare_hebrew_septuagint_passage(p_hebrew_book=1,p_hebrew_chapter=32,p_hebrew_verse=1)
+
+First token source_record_id="SWETE:1.32.1#1", word_text="XXXIIεἰς", normalized_word="xxxiiεις". The Latin XXXII chapter numeral is attached directly to Greek εἰς. Controls (first tokens of Genesis 30:1, 31:1, 33:1, Exodus 32:1) are clean.
+
+Fix only after inspecting pinned Swete release "lxx-swete-26bad3e" and verifying source/transcription. Parse headings separately where appropriate; retain raw source witness, license and provenance; do not apply a broad regex that alters valid Greek data. Regression: original Greek lexical normalization for this token should not retain Latin Roman numerals.
+
+### New PASS and coverage controls
+
+- Contextual H7307 counts: all=1097, same_clause=441, collocation=394; same_verse with min_same_verse=10 returns 80. First 100 H7307/G3056 neighbors had no duplicate target keys, negative counts, same_clause>same_verse, or collocation>same_verse counterexamples.
+- Contextual pagination: limit=5,offset=5 returns 5, next_offset=10. offset=50000 returns 0, has_more=false. min_same_clause=100000 correctly returns no_evidence_in_covered_scope. Unknown release returns release_not_found.
+- Hebrew Psalm 3:0 -> LXX Psalmi 3:1 title; Hebrew Psalm 3:1 -> LXX Psalmi 3:2. The documented "mizmor le-David" ↔ "Psalmos tō Dauid" record is explicitly many-to-many (2 Hebrew / 3 Greek words), not fabricated token-by-token alignment.
+- Canonical Genesis 31:55 and 32:1 return plausible LXX passages, but this does **not** prove MT alternative chapter numbering is correctly crosswalked. Do not claim independent MT shift validation.
+- Missing Hebrew passages GEN 1:0 and GEN 150:1 return zero STEP words rather than neighboring verse content.
+- Greek John 1:1 in both Nestle1904 and SBLGNT: 3 R8 grammatical frames, zero relevant R3 relations, status no_evidence_in_covered_scope. This differs from inability to resolve an explicitly clicked STEP token ID.
+- Contradictory selectors *without* query still switch silently: get_unified_word_relationships_v2(word_id=130555,book=1,chapter=1,verse=2,position=2,layers=["lexical"]) changes focus to lemma:H1961 with word_id 55544. Same request at position 9 focuses H7307 but returns incorrect word_id 130527.
+- Hebrew with explicitly Greek-only edition, or Greek with Hebrew-only edition, correctly returns no scoped grammatical evidence, not a fabricated cross-language occurrence.
+
+### Actionable next priorities
+
+P0: correct source-accurate occurrence IDs and selector conflict handling (QA-01,04,05,06,10).
+P0: correct same-token self-pair "spirit+wind" co-occurrence and Hagar/person H1904 vs sojourner H1481 mislabeling (QA-02,03,08,09).
+P1: scoped sample evidence from same-clause and collocation filters (QA-11).
+P1: Swete source/normalizer contamination (QA-12).
+P1: investigate intermittent gateway HTTP 503 with request logs before asserting CPU exhaustion.
+P2: keep full-vs-lemma-only scope labels, LXX candidate-vs-alignment guardrails and source provenance available in UI and MCP.
+
+**No worker or database write was made.** Retest against a version-qualified staging endpoint and record commit/release before marking these as fixed.
