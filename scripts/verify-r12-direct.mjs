@@ -94,7 +94,16 @@ async function main() {
       const d = hooks.delay?.(name, null); if (d) await new Promise(r => setTimeout(r, d));
       await route.continue();
     });
-    if (!live) {
+    if (live) {
+      page.on('response', async res => {
+        const req = res.request();
+        const u = new URL(req.url());
+        if (!u.hostname.includes('bibleresearch-corpus') || req.method() !== 'POST') return;
+        let body = null;
+        try { body = JSON.parse(req.postData() || '{}'); } catch { body = {}; }
+        calls.push({ rpc: rpcName(u), op: body?.op, body, t: Date.now(), src: 'corpus', status: res.status() });
+      });
+    } else {
       await page.route(`${CORPUS}/**`, async route => {
         const req = route.request();
         const u = new URL(req.url());
@@ -230,8 +239,12 @@ async function main() {
     const peer = page.locator(`${LEX} .rel-card__target-btn`).first();
     const peerLabel = (await peer.innerText()).trim();
     await peer.click();
-    await page.waitForFunction(() => /Inspecting endpoint|SELECTED WORD|SUGGESTED WORD/.test(document.querySelector('.word-inspector')?.innerText || ''), null, { timeout: 15000 });
-    await page.waitForTimeout(2500);
+    await page.waitForFunction(
+      () => !/Opening word…/.test(document.querySelector('.word-inspector')?.innerText || '')
+        && /Inspecting endpoint|H7308|רוּחַ/.test(document.querySelector('.word-inspector')?.innerText || ''),
+      null,
+      { timeout: 15000 }
+    );
     const txt = await page.locator('.word-inspector').innerText();
     assert.ok(/Inspecting endpoint|H7308|root:H7307|H73\d\d/.test(txt), `peer follow did not change the inspected word: ${txt.slice(0, 200)}`);
     return { evidence_ref: refLabel, navigated_to: hash, followed_peer: peerLabel };
