@@ -430,3 +430,30 @@ Prevent generic bridge flooding: highly frequent classes (THING, OBJECT, PHYSICA
 Only the **newer local worktree** can establish D1.1–D1.3 completion, actual R12 type definitions, current reader and MCP interfaces, current shard headroom, source crosswalk accuracy and Worker CPU budgets. Astra must perform those local tasks, wire helpers into existing R12 passes and prepare real-source validation. No production deployment or database mutation was performed here.
 
 **What is now done without Astra credits:** reusable candidate algorithms and tests; eleven-source machine-readable rights triage; additional free science ontologies research; concrete integration priorities and falsifiable acceptance checkpoints. Do not repeat that broad research unless a specific source/version/license conflict appears.
+
+
+## 13. Live Supabase/Cloudflare-grounded design and executable prototypes (2026-11-17)
+
+The source and DB design has now been refined using **read-only access to the user's existing Supabase project and Cloudflare account**. This does **not** mean production changes have been made.
+
+**Verified database finding:** BibleResearch already has 82,485 canonical entities, 26,179 lexical senses, 2,637 roots, 744 lexical formations, 15,642 entity relationships, 8,864 concept-property records, and 2,119 external-concept links. However, the concept properties are overwhelmingly geographic metadata (place type, coordinates, OpenBible/Pleiades/Wikidata IDs, confidence), **not scientific properties of lamps, water, metals or other physical concepts**. All existing external mappings are to geographical places. The proposed world-knowledge enrichment should add a **new offline physical/semantic assertion layer** rather than reimport these rows or fill an expensive new Supabase graph database.
+
+Read-only Cloudflare metadata confirmed scripts named bibleresearch and bibleresearch-corpus. No live R12 code or active version was deployed or changed.
+
+**New handoff files, source code and tests:**
+
+- [Live-schema-grounded database plan](research/r12/R12_DB_DESIGN.md): one graph, canonical identities, logical offline JSONL tables, provenance and source rights, review-state boundaries, small immutable Cloudflare shards, lazy MCP/UI hydration.
+- [Source-aware property bridge algorithm](research/r12/property-bridges.mjs) and [its tests](research/r12/property-bridges.test.mjs): shared external claims, property-specific rarity, ambiguous mapping downweight, exclusion of geographic metadata fields, rights/claim provenance, external-only epistemic status.
+- [Source-aware proof ranker](research/r12/proof-ranker.mjs) and [its tests](research/r12/proof-ranker.test.mjs): independent witness grouping, quality/rarity/diversity factors, epistemic weakest-link labeling, Maximal Marginal Relevance across candidate destinations, alternative paths preserved.
+- [Machine-readable record JSON Schema](research/r12/evidence-contract.schema.json): external crosswalk, external assertions, typed evidence edges, stored proof paths; **proposed contract** rather than a forced rewrite of actual local R12 types.
+- [Supabase SELECT-only audit queries](research/r12/r12_schema_readonly_audit.sql): accurate existing table/column names, no data mutation.
+- [Optional private review schema proposal](research/r12/r12_review_schema_PROPOSAL.sql): **not executed**, defer unless existing notes/review functionality cannot support human validation of lexical-to-external mappings.
+- [Research source catalog](research/r12/data-sources.json), [older orthographic and structural candidate modules](research/r12/README.md) and their tests.
+
+**Verification scope:** The two new JavaScript modules and their corresponding test files were fetched back from GitHub and executed in an isolated JavaScript smoke harness; **26 assertions passed**. The test input is small and synthetic. This is not a full Node.js CI run, a MACULA corpus evaluation, or a Cloudflare acceptance test. The current latest local checkout still needs to adapt and execute them. No additional external data set has been downloaded/imported.
+
+**Astra: do not redesign these pieces.** Inspect local R12 code and adopt/adapt source logic within the existing R9C ranker and R12 offline compiler; do not create a parallel graph traversal or database. Integrate in this order: direct existing graph neighbors -> real UI/MCP paths -> offline existing-graph multihop -> candidate form/scene/property edges -> broader WordNet/Wikidata pilot -> performance/holdout. Reuse source IDs and field-license gates already present; do not duplicate geographical metadata. If the helper interfaces conflict with real local types, adapt their boundaries and keep their negative tests, rather than rewriting the algorithms.
+
+**One important data insight:** because lexical and biblical evidence already exists at substantial scale, the highest-value next work is a **crosswalk from source-attested biblical senses to external semantic/physical classes** with explicit ambiguity, not another generic lexical word list. A fact about an external concept is not a fact asserted by the biblical text. A high-interest path may remain a research lead rather than an interpretation.
+
+All files are on GitHub main under research/r12; the authoritative C:\Projects\BibleResearch-r10 branch and TASKS.md remain unchanged.
