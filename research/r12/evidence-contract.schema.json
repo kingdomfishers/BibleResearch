@@ -1,0 +1,383 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/kingdomfishers/BibleResearch/blob/main/research/r12/evidence-contract.schema.json",
+  "title": "BibleResearch R12 offline research records v0.1",
+  "description": "Illustrative offline record validation contract. Adapt to the authoritative R12 local graph types; not a production DB migration.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/externalMapping"
+    },
+    {
+      "$ref": "#/$defs/externalAssertion"
+    },
+    {
+      "$ref": "#/$defs/evidenceEdge"
+    },
+    {
+      "$ref": "#/$defs/proofPath"
+    }
+  ],
+  "$defs": {
+    "sourceLocator": {
+      "type": "object",
+      "required": [
+        "provider",
+        "release",
+        "source_record_id",
+        "license",
+        "source_ref",
+        "source_sha256"
+      ],
+      "properties": {
+        "provider": {
+          "type": "string",
+          "minLength": 1
+        },
+        "release": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_record_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "license": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "additionalProperties": true
+    },
+    "externalMapping": {
+      "type": "object",
+      "required": [
+        "record_type",
+        "biblical_entity_key",
+        "external_id",
+        "mapping_status",
+        "mapping_method",
+        "provenance",
+        "limitations"
+      ],
+      "properties": {
+        "record_type": {
+          "const": "external_mapping"
+        },
+        "biblical_entity_key": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sense_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "external_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "mapping_status": {
+          "enum": [
+            "verified",
+            "candidate",
+            "rejected",
+            "unresolved"
+          ]
+        },
+        "mapping_method": {
+          "enum": [
+            "source_attested",
+            "reviewed",
+            "lemma_gloss_candidate",
+            "contextual_candidate",
+            "unresolved"
+          ]
+        },
+        "competing_external_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "source_evidence_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "provenance": {
+          "$ref": "#/$defs/sourceLocator"
+        },
+        "limitations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "externalAssertion": {
+      "type": "object",
+      "required": [
+        "record_type",
+        "assertion_id",
+        "subject_external_id",
+        "relation_type",
+        "object",
+        "epistemic_layer",
+        "provenance",
+        "rights_status"
+      ],
+      "properties": {
+        "record_type": {
+          "const": "external_assertion"
+        },
+        "assertion_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "subject_external_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "relation_type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "object": {
+          "type": "object",
+          "required": [
+            "type",
+            "value"
+          ],
+          "properties": {
+            "type": {
+              "enum": [
+                "external_concept",
+                "quantity",
+                "text",
+                "boolean",
+                "coordinate"
+              ]
+            },
+            "value": {}
+          },
+          "additionalProperties": true
+        },
+        "epistemic_layer": {
+          "const": "EXTERNAL_WORLD"
+        },
+        "rights_status": {
+          "enum": [
+            "approved",
+            "rejected",
+            "needs_review"
+          ]
+        },
+        "qualifiers": {
+          "type": "object"
+        },
+        "provenance": {
+          "$ref": "#/$defs/sourceLocator"
+        }
+      },
+      "additionalProperties": true
+    },
+    "evidenceEdge": {
+      "type": "object",
+      "required": [
+        "record_type",
+        "edge_id",
+        "source_id",
+        "target_id",
+        "relation_type",
+        "direction",
+        "epistemic_layer",
+        "evidence_status",
+        "source_attestation_ids",
+        "passage_ids",
+        "token_ids",
+        "provenance",
+        "limitations"
+      ],
+      "properties": {
+        "record_type": {
+          "const": "evidence_edge"
+        },
+        "edge_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "target_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "relation_type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "direction": {
+          "enum": [
+            "source_to_target"
+          ]
+        },
+        "epistemic_layer": {
+          "enum": [
+            "TEXTUAL",
+            "LINGUISTIC",
+            "EXTERNAL_WORLD",
+            "HYPOTHESIS",
+            "RECEPTION"
+          ]
+        },
+        "evidence_status": {
+          "enum": [
+            "explicit_textual",
+            "source_attested",
+            "external_sourced",
+            "candidate",
+            "unsupported"
+          ]
+        },
+        "mapping_status": {
+          "enum": [
+            "verified",
+            "candidate",
+            "unresolved",
+            "not_applicable"
+          ]
+        },
+        "source_attestation_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "passage_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "token_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "provenance": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/sourceLocator"
+          }
+        },
+        "limitations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "scope": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": true
+    },
+    "proofPath": {
+      "type": "object",
+      "required": [
+        "record_type",
+        "path_id",
+        "anchor_id",
+        "target_id",
+        "ordered_edge_ids",
+        "evidence_quality",
+        "discovery_interest",
+        "epistemic_status",
+        "score_version",
+        "limitations"
+      ],
+      "properties": {
+        "record_type": {
+          "const": "proof_path"
+        },
+        "path_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "anchor_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "target_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ordered_edge_ids": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        },
+        "evidence_quality": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "discovery_interest": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "epistemic_status": {
+          "enum": [
+            "EXPLORATORY",
+            "SUPPORTED_STEPS_NOT_ENDPOINT_INTERPRETATION"
+          ]
+        },
+        "independent_evidence_groups": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "score_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "limitations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "coverage": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}
