@@ -58,7 +58,7 @@ ORDER BY dataset_key, field_group, status
 LIMIT 100;
 
 -- 7. Source metadata; avoid returning any private user content.
-SELECT id, dataset_key, version, license
+SELECT id, release_key, dataset, version_label, license
 FROM public.source_releases
 ORDER BY id
 LIMIT 50;
