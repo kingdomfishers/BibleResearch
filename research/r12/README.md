@@ -59,7 +59,7 @@ See the overarching [R12_Plan.md](../../R12_Plan.md), especially the source mapp
 - [property-bridges.mjs](property-bridges.mjs), [tests](property-bridges.test.mjs) — a bounded inverted-index candidate generator for shared external/scientific properties, with license/source/rights/mapping-status checks, geographic metadata exclusion, and strict non-biblical-claim labeling.
 - [proof-ranker.mjs](proof-ranker.mjs), [tests](proof-ranker.test.mjs) — independent evidence-group convergence, heuristic quality/interest factors, original typed steps and MMR diverse-destination selection. Accepts paths from **existing R9C**; it intentionally contains no second graph traversal.
 
-All four algorithms are **standalone offline prototypes**, not deployed code. The new modules and tests were fetched back through GitHub and passed an in-session JavaScript smoke harness (24 assertions across their two tests). Re-run with Node in the authoritative local worktree before integration:
+All four algorithms are **standalone offline prototypes**, not deployed code. The new modules and tests were fetched back through GitHub and passed an in-session JavaScript smoke harness (26 assertions across their two tests). Re-run with Node in the authoritative local worktree before integration:
 
 ~~~sh
 node --test research/r12/orthographic-candidates.test.mjs research/r12/structural-candidates.test.mjs research/r12/property-bridges.test.mjs research/r12/proof-ranker.test.mjs
