@@ -1,3 +1,52 @@
+# R12 published increment — 2026-11-17
+
+## FOR CHATGPT — INDEPENDENT TESTING
+
+This partial preview supersedes the historical deployment tables below. Production is unchanged. Full runtime/discovery acceptance remains open.
+
+### Published release
+
+- Branch `feat/r12-qa-fixes`; source commit `d5bc1a10fda801f6dbb80064693e56e64468a861`.
+- Corpus: https://bibleresearch-corpus-staging.kingdomfishers-custom.workers.dev — Worker `4f42ad58-7bdf-499e-b6c1-7128acd30e8e`, release `r12-witnesses-1`.
+- Application: https://bibleresearch-staging.kingdomfishers-custom.workers.dev — retained version `dedf634a-ce72-4a71-9442-79b647b18dc3`; not redeployed.
+- MCP: https://ejoperxiwxlcbsqrkrvb.supabase.co/functions/v1/bible-mcp-staging/mcp — function version **2**, ACTIVE; deployment artifact SHA-256 `62fe10759482d4f20aa3ea471511d9697f81e7b51dcf8062252bef4d02ca7268`.
+- Asset revision `5d26a11510359b5200a7169c77b73578a7be57fcc95f15764142cc46a5f42eb9`: manifest fingerprint combining base bundle hash and chapter-index hashes, not a direct digest of the final tree. Inventory **19,999 assets**, 20 packed blobs, each asset within 25 MiB. Generated corpus assets are not committed.
+
+### Implemented and narrowly verified
+
+R8/R11 packed indexes load individual compressed records through validated byte ranges. Redundant summary relations were removed while original evidence, counts and pagination remain available. Secondary resolution avoids unnecessary uncovered-lemma loading. Atomic replacement prevents writes through source hardlinks; affected local derived copies were restored against pinned hashes.
+
+Grammatical discovery now validates both original-language token identities/coordinates against exact source witnesses and counts independent clauses across mirrored edges/editions. Chapter context prioritizes attested lexical candidates, deduplicates base Strong’s candidates, and retains alternatives without example-specific person mappings.
+
+The separate staging MCP exposes **14 read-only corpus tools**, no notes/writes, and no production fallback. Additive `verification_release` identifies `mcp_release`, `corpus_target`, `corpus_url`, `corpus_release`, `worker_version`, `source_commit`, and `asset_sha256`. Discovery provenance uses exact `rel:...` IDs; alternatives remain in `sense_candidates`.
+
+Type-check, focused Deno boundary test/check, representative packed-record/discovery checks and diff checks passed. Deployment smoke: application HTTP 200; MCP health/backend HTTP 200; 14 read-only tools; actual stone/precious evidence returned the expected three passages and release tuple above. Earlier local grammatical comparison improved matching displayed witnesses from **39/220 to 193/193** over 16 queries; this preceded final packaging/context ordering and is preliminary. No full postdeployment regression, browser acceptance or load/CPU testing was run.
+
+### Independent cases (use published tool schemas for argument names)
+
+1. `tools/list`: exactly 14 read-only tools, no notes/writes. `/health`: writes disabled, staging backend. Every research response must identify the release tuple above.
+2. `get_unified_word_relationships_v2`: Genesis 1:2 H7307 position 9 → 130555; H6440 positions 7/13 → 118734/118736. John 1:1 G3056 positions 5/8/17 → 15230/15229/15231. Contradictory H7307 / word 130555 / Genesis 1:2 position 2 → `selector_mismatch`.
+3. `discover_biblical_connections_v2`, `{"query":"scarlet Tamar Rahab Matthew 1"}`: Matthew-attested G2283/G4477 should be preferred while alternatives remain. Compare unseen `Lot Genesis 19` and `Mary John 20`; chapter attestation must not assert individual identity by itself.
+4. `get_connection_evidence_v1`, `{"evidence_id":"r11:gram:G3037:modifies:G5093"}`: λίθος / τίμιος witnesses are 1 Corinthians 3:12, Revelation 17:4 and 18:16. Exact source: `rel:macula-greek-nestle1904:1CO 3:12#cl1:modifies:n46003012011:n46003012010`.
+5. Same tool, `{"evidence_id":"r11:gram:H5397:possessive_construction_with:H7307"}`: נְשָׁמָה / רוּחַ witnesses include 2 Samuel 22:16, Genesis 7:22 and Psalm 18:15. Source: `rel:macula-hebrew-wlc:GEN 7:22#cl1:possessive_construction_with:o010070220041:o010070220031`. Genesis 2:7 must not be a both-term witness.
+6. Same tool, `{"evidence_id":"r11:gram:H0231:grammatical_object_of:H3947"}`: אֵזוֹב / לָקַח witnesses include Leviticus 14:4, 14:49 and 14:51. Source: `rel:macula-hebrew-wlc:LEV 14:4#cl1:grammatical_object_of:o030140040132:o030140040032`. These three recurrences do not establish theological or authorial equivalence.
+7. Negative controls: `r11:gram:G3037:modifies:H7307` → not_found; discovery `zzr12noattestation` → no connections. `spirit wind` must not emit false same-token evidence `r11:intersect:verse:H7307:H7307:2`. Hagar → H1904, not H1481.
+8. `get_septuagint_passage`, book 1/chapter 32/verse 1: Swete returns `εἰς` preserving raw `XXXIIεἰς`. Same-clause/contextual results must provide witnesses supporting the exact pair and clause.
+9. Compare top ten results for scarlet, well, seed, breath, lamp, Hagar seeing eyes spring and unseen Hebrew/Greek queries: identity, witness precision, false positives, dependent evidence and diversity. Local baseline artifacts remain in `.artifacts-r12/continuation/`. Cord/hope wordplay remains a hypothesis, without asserted etymology or intention.
+10. Independently exercise reader/lexical/grammar/contextual/discovery operations with bounded cold/warm concurrency. Record Error 1102/503 and release IDs. CPU acceptance is **pending**; response bytes/wall time do not establish CPU compliance.
+
+### Separate ChatGPT connection
+
+Codex verified HTTP MCP transport; connection inside the user's ChatGPT account is **not confirmed**. Existing production connector is unchanged.
+
+Follow [OpenAI connection instructions](https://developers.openai.com/apps-sdk/deploy/connect-chatgpt): https://chatgpt.com/plugins → plus → **Add custom MCP server** → name **BibleResearch R12 staging** → exact staging `/mcp` URL above → authentication **None** → review/continue → **Create as a plugin** → review 14 tools → install. Start a new conversation and select staging using @. Account/workspace policy may restrict custom servers. Refresh metadata for an existing staging connection, then use a new conversation. Run case 4 and independently verify the full release tuple.
+
+Known limits: cold/concurrent Error 1102 elimination remains unproven. Chapter attestation uses sampled passages; not every homograph, shared name or eye/spring sense is resolved. No new literary/theological derivation is established. Independent holdout acceptance remains open.
+
+---
+
+# Historical checkpoint (deployment details superseded above)
+
 # R12 QA Fixes, Staging Release & Continuation Checkpoint
 
 Written: 2026-11-17  

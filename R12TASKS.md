@@ -519,6 +519,8 @@ Tests prototype + node scripts/verify-r12-world.mjs: geography excluded, ambigui
 
 ## [ ] R12-12 — Incremental breadth and packed assets (D3)
 
+Published partial increment (2026-11-17): source `d5bc1a10fda801f6dbb80064693e56e64468a861`; per-record packed staging assets (19,999 files), exact grammatical witnesses/independent clause counts, chapter-context candidate ordering, and separate 14-tool read-only staging MCP. Corpus Worker `4f42ad58-7bdf-499e-b6c1-7128acd30e8e`; MCP version 2. Minimal deployment smoke passed; independent runtime/discovery acceptance remains open. See [ChatGPT handoff](research/r12/CHATGPT_CHECKPOINT.md).
+
 Terra High, alternative Sol Medium. Depends06–11 accepted or explicitly excluded with measured reason. Exclusive build-r10-discovery-index.mjs guarded orchestrator; prepare-r10-asset-deploy.mjs staging; r12-evidence.mjs checkpoint helpers; new scripts/verify-r12-incremental.mjs.
 Partition input digest=source hashes+compiler/version/settings; manifest completion/checksum/dependencies. Recompute changed partitions and dependent anchors only; resume verifies each output. Stream JSONL, populated FNV prefixes/overflow, recommendation64KiB/proof128KiB,2GiB peak. Every eligible anchor computed or explicit not_precomputed. No pair matrix. Combined<=20000files/25MiB each, no old release deletion. Begin one partition, then breadth.
 Tests node scripts/verify-r12-incremental.mjs crash/resume, invalidation, two clean byte-equal builds, old release hashes unchanged, oversized record continuation, inventory counts. Publish manifest hash/coverage; preview/MCP explicit missing coverage. Escalate packing impossibility before new infrastructure; rollback pointer; shared completion.
