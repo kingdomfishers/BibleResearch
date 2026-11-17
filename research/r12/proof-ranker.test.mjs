@@ -40,4 +40,4 @@ assert.equal(scorePath(path('x',[
  edge('technical','OCCURRENCE_OF',1,'LINGUISTIC',{administrative:true}),
  edge('actual','PREDICATES',.9,'TEXTUAL')
 ])).score_parts.Q,.9);
-console.log('proof-ranker: 13 assertions passed');
+console.log('proof-ranker: 14 assertions passed');
