@@ -6327,6 +6327,1487 @@
       },
       "review_status": "proposed_not_individually_verified",
       "polarity": "positive"
+    },
+    {
+      "id": "W001",
+      "category": "real_world_material",
+      "difficulty": 3,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "G3088",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "bridge"
+        }
+      },
+      "expected": {
+        "relationship": "Ancient lamp may use olive oil as fuel",
+        "basis": "Lamps require illumination source; Hebrew sanctuary lamps explicitly use oil but Greek lamp identity alone does not prove a specific fuel",
+        "acceptable_target_terms": [
+          "H8081",
+          "olive oil",
+          "fuel"
+        ],
+        "biblical_witnesses": [
+          "Exodus 27:20",
+          "Matthew 5:15"
+        ],
+        "evidence_status": "external_world",
+        "top_k": 20,
+        "external_provenance_requirement": "Any modern-world assertion must cite a verifiable original statement or openly label its derivation; no synthetic Wikidata GUID or unsupported physical inference."
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "W002",
+      "category": "real_world_part_whole",
+      "difficulty": 2,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H4501",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "bridge"
+        }
+      },
+      "expected": {
+        "relationship": "Lampstand holds multiple lamps",
+        "basis": "Lampstand and individual lamps have distinct part and support roles",
+        "acceptable_target_terms": [
+          "H5216",
+          "lamps",
+          "light holder"
+        ],
+        "biblical_witnesses": [
+          "Exodus 25:31",
+          "Exodus 25:37"
+        ],
+        "evidence_status": "explicit_text",
+        "top_k": 12,
+        "external_provenance_requirement": null
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "W003",
+      "category": "real_world_process",
+      "difficulty": 4,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H4501",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "bridge"
+        }
+      },
+      "expected": {
+        "relationship": "Lampstand connects to light and combustion",
+        "basis": "Oil-fueled lamps produce light through combustion but text does not assert theological identity with all fires",
+        "acceptable_target_terms": [
+          "fire",
+          "combustion",
+          "light"
+        ],
+        "biblical_witnesses": [
+          "Exodus 25:37",
+          "Exodus 27:20"
+        ],
+        "evidence_status": "external_world",
+        "top_k": 25,
+        "external_provenance_requirement": "Any modern-world assertion must cite a verifiable original statement or openly label its derivation; no synthetic Wikidata GUID or unsupported physical inference."
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "W004",
+      "category": "real_world_process",
+      "difficulty": 4,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H0784",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "bridge"
+        }
+      },
+      "expected": {
+        "relationship": "Fire produces smoke in Sinai scene",
+        "basis": "Fire and smoke explicitly occur together in theophany and arise through physical processes",
+        "acceptable_target_terms": [
+          "H6227",
+          "smoke",
+          "ashan"
+        ],
+        "biblical_witnesses": [
+          "Exodus 19:18",
+          "Genesis 15:17"
+        ],
+        "evidence_status": "explicit_text",
+        "top_k": 12,
+        "external_provenance_requirement": null
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "W005",
+      "category": "real_world_process",
+      "difficulty": 3,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H0784",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "bridge"
+        }
+      },
+      "expected": {
+        "relationship": "Fire provides illumination at night",
+        "basis": "Pillar of fire functions as light in wilderness travel",
+        "acceptable_target_terms": [
+          "light",
+          "illuminate",
+          "night"
+        ],
+        "biblical_witnesses": [
+          "Exodus 13:21",
+          "Psalm 78:14"
+        ],
+        "evidence_status": "explicit_text",
+        "top_k": 15,
+        "external_provenance_requirement": null
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "W006",
+      "category": "real_world_material",
+      "difficulty": 3,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H8081",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "bridge"
+        }
+      },
+      "expected": {
+        "relationship": "Oil sustains sanctuary lamps",
+        "basis": "Pure beaten olive oil powers continued lamp burning in sanctuary",
+        "acceptable_target_terms": [
+          "H5216",
+          "lamp",
+          "olive oil"
+        ],
+        "biblical_witnesses": [
+          "Exodus 27:20",
+          "Leviticus 24:2"
+        ],
+        "evidence_status": "explicit_text",
+        "top_k": 12,
+        "external_provenance_requirement": null
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "W007",
+      "category": "real_world_part_whole",
+      "difficulty": 4,
+      "query_type": "concept_or_passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Zechariah 4:12",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "bridge"
+        }
+      },
+      "expected": {
+        "relationship": "Olive branches feed lampstand vision",
+        "basis": "Vision depicts olive branches and golden oil channels associated with lamps",
+        "acceptable_target_terms": [
+          "H4501",
+          "olive",
+          "oil"
+        ],
+        "biblical_witnesses": [
+          "Zechariah 4:2",
+          "Zechariah 4:12"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 20,
+        "external_provenance_requirement": null
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "W008",
+      "category": "real_world_property",
+      "difficulty": 2,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H4325",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "bridge"
+        }
+      },
+      "expected": {
+        "relationship": "Water found in wells",
+        "basis": "Well is a source/storage/access location for physical water; settings differ",
+        "acceptable_target_terms": [
+          "well",
+          "H0875",
+          "water source"
+        ],
+        "biblical_witnesses": [
+          "Genesis 21:19",
+          "John 4:6"
+        ],
+        "evidence_status": "external_world",
+        "top_k": 20,
+        "external_provenance_requirement": "Any modern-world assertion must cite a verifiable original statement or openly label its derivation; no synthetic Wikidata GUID or unsupported physical inference."
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "W009",
+      "category": "real_world_property",
+      "difficulty": 3,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H0875",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "bridge"
+        }
+      },
+      "expected": {
+        "relationship": "Well and spring as water sources",
+        "basis": "Natural spring and constructed well may be related as water-source categories but cannot automatically be equated",
+        "acceptable_target_terms": [
+          "spring",
+          "water source",
+          "H5869"
+        ],
+        "biblical_witnesses": [
+          "Genesis 16:7",
+          "Genesis 24:13"
+        ],
+        "evidence_status": "external_world",
+        "top_k": 25,
+        "external_provenance_requirement": "Any modern-world assertion must cite a verifiable original statement or openly label its derivation; no synthetic Wikidata GUID or unsupported physical inference."
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "W010",
+      "category": "real_world_property",
+      "difficulty": 4,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H5869",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "bridge"
+        }
+      },
+      "expected": {
+        "relationship": "Ayin spring sense connects to water sources",
+        "basis": "Ayin water-source sense must be selected before physical hydrology properties apply",
+        "acceptable_target_terms": [
+          "spring",
+          "water source",
+          "hydrology"
+        ],
+        "biblical_witnesses": [
+          "Genesis 16:7",
+          "Exodus 15:27"
+        ],
+        "evidence_status": "external_world",
+        "top_k": 20,
+        "external_provenance_requirement": "Any modern-world assertion must cite a verifiable original statement or openly label its derivation; no synthetic Wikidata GUID or unsupported physical inference."
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "W011",
+      "category": "real_world_property",
+      "difficulty": 4,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H5869",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "bridge"
+        }
+      },
+      "expected": {
+        "relationship": "Eye as visual organ is not water spring",
+        "basis": "Eye and spring share lexical form but have different physical referents",
+        "acceptable_target_terms": [
+          "visual organ",
+          "vision",
+          "eye"
+        ],
+        "biblical_witnesses": [
+          "Zechariah 4:10",
+          "Genesis 16:7"
+        ],
+        "evidence_status": "external_world",
+        "top_k": 20,
+        "external_provenance_requirement": "Any modern-world assertion must cite a verifiable original statement or openly label its derivation; no synthetic Wikidata GUID or unsupported physical inference."
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "W012",
+      "category": "real_world_material",
+      "difficulty": 3,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H2091",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "bridge"
+        }
+      },
+      "expected": {
+        "relationship": "Gold and bronze are metallic materials",
+        "basis": "Gold and bronze are separately listed metals used for materials in biblical craft",
+        "acceptable_target_terms": [
+          "H5178",
+          "bronze",
+          "metal"
+        ],
+        "biblical_witnesses": [
+          "Exodus 25:3",
+          "Numbers 31:22"
+        ],
+        "evidence_status": "external_world",
+        "top_k": 25,
+        "external_provenance_requirement": "Any modern-world assertion must cite a verifiable original statement or openly label its derivation; no synthetic Wikidata GUID or unsupported physical inference."
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "W013",
+      "category": "real_world_material",
+      "difficulty": 2,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H2091",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "bridge"
+        }
+      },
+      "expected": {
+        "relationship": "Gold as material of lampstand",
+        "basis": "Gold describes actual material of lampstands in different contexts",
+        "acceptable_target_terms": [
+          "H4501",
+          "golden lampstand",
+          "material"
+        ],
+        "biblical_witnesses": [
+          "Exodus 25:31",
+          "Zechariah 4:2"
+        ],
+        "evidence_status": "explicit_text",
+        "top_k": 12,
+        "external_provenance_requirement": null
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "W014",
+      "category": "real_world_material",
+      "difficulty": 2,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H5178",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "bridge"
+        }
+      },
+      "expected": {
+        "relationship": "Bronze as altar material",
+        "basis": "Bronze explicitly coats or constructs altar features",
+        "acceptable_target_terms": [
+          "altar",
+          "bronze",
+          "brass"
+        ],
+        "biblical_witnesses": [
+          "Exodus 27:2",
+          "Exodus 38:2"
+        ],
+        "evidence_status": "explicit_text",
+        "top_k": 12,
+        "external_provenance_requirement": null
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "W015",
+      "category": "real_world_material",
+      "difficulty": 3,
+      "query_type": "concept_or_passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "silver",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "bridge"
+        }
+      },
+      "expected": {
+        "relationship": "Silver used for sanctuary fittings",
+        "basis": "Silver bases and sockets are physical building components in tabernacle",
+        "acceptable_target_terms": [
+          "tabernacle",
+          "base",
+          "socket"
+        ],
+        "biblical_witnesses": [
+          "Exodus 26:19",
+          "Exodus 38:27"
+        ],
+        "evidence_status": "explicit_text",
+        "top_k": 20,
+        "external_provenance_requirement": null
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "W016",
+      "category": "real_world_material",
+      "difficulty": 4,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H0068",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "bridge"
+        }
+      },
+      "expected": {
+        "relationship": "Stone foundation and cornerstone imagery",
+        "basis": "Structural stone as a physical building foundation underlies theological cornerstone imagery",
+        "acceptable_target_terms": [
+          "foundation",
+          "cornerstone",
+          "stone"
+        ],
+        "biblical_witnesses": [
+          "Isaiah 28:16",
+          "1 Peter 2:6"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 25,
+        "external_provenance_requirement": null
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "W017",
+      "category": "real_world_material",
+      "difficulty": 4,
+      "query_type": "concept_or_passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Genesis 6:14",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "bridge"
+        }
+      },
+      "expected": {
+        "relationship": "Wood as construction material of distinct biblical arks",
+        "basis": "Noah's ark uses wood and the ark of the covenant uses acacia wood; same material class but different objects",
+        "acceptable_target_terms": [
+          "Exodus 25:10",
+          "wood",
+          "ark"
+        ],
+        "biblical_witnesses": [
+          "Genesis 6:14",
+          "Exodus 25:10"
+        ],
+        "evidence_status": "external_world",
+        "top_k": 25,
+        "external_provenance_requirement": "Any modern-world assertion must cite a verifiable original statement or openly label its derivation; no synthetic Wikidata GUID or unsupported physical inference."
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "W018",
+      "category": "real_world_material",
+      "difficulty": 3,
+      "query_type": "concept_or_passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "cedar",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "bridge"
+        }
+      },
+      "expected": {
+        "relationship": "Cedar as construction material for Temple",
+        "basis": "Cedar timbers and boards are used in temple structure",
+        "acceptable_target_terms": [
+          "temple",
+          "wood",
+          "cedar"
+        ],
+        "biblical_witnesses": [
+          "1 Kings 6:9",
+          "1 Kings 6:15"
+        ],
+        "evidence_status": "explicit_text",
+        "top_k": 20,
+        "external_provenance_requirement": null
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "W019",
+      "category": "real_world_part_whole",
+      "difficulty": 3,
+      "query_type": "concept_or_passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "pomegranate",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "bridge"
+        }
+      },
+      "expected": {
+        "relationship": "Pomegranate motifs on priest garments and columns",
+        "basis": "Pomegranate shapes adorn priest garment hem and temple capitals; ornamental object classes differ",
+        "acceptable_target_terms": [
+          "temple",
+          "garment",
+          "bells"
+        ],
+        "biblical_witnesses": [
+          "Exodus 28:33",
+          "1 Kings 7:18"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 25,
+        "external_provenance_requirement": null
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "W020",
+      "category": "real_world_process",
+      "difficulty": 4,
+      "query_type": "concept_or_passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "wheat",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "bridge"
+        }
+      },
+      "expected": {
+        "relationship": "Wheat grain planted and dying seed imagery",
+        "basis": "Seed must germinate/grow for harvest; John uses grain death as metaphor",
+        "acceptable_target_terms": [
+          "seed",
+          "grain",
+          "germination"
+        ],
+        "biblical_witnesses": [
+          "John 12:24",
+          "Mark 4:26"
+        ],
+        "evidence_status": "external_world",
+        "top_k": 25,
+        "external_provenance_requirement": "Any modern-world assertion must cite a verifiable original statement or openly label its derivation; no synthetic Wikidata GUID or unsupported physical inference."
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "W021",
+      "category": "real_world_material",
+      "difficulty": 3,
+      "query_type": "concept_or_passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "barley",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "bridge"
+        }
+      },
+      "expected": {
+        "relationship": "Barley used to make loaves",
+        "basis": "Barley loaves are concrete bread produced from grain",
+        "acceptable_target_terms": [
+          "bread",
+          "loaves",
+          "grain"
+        ],
+        "biblical_witnesses": [
+          "John 6:9",
+          "2 Kings 4:42"
+        ],
+        "evidence_status": "explicit_text",
+        "top_k": 20,
+        "external_provenance_requirement": null
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "W022",
+      "category": "real_world_process",
+      "difficulty": 3,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H2233",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "bridge"
+        }
+      },
+      "expected": {
+        "relationship": "Seed is sown and grows as plant",
+        "basis": "Seed reproduction and growth are explicit agricultural processes",
+        "acceptable_target_terms": [
+          "plant",
+          "germination",
+          "sow"
+        ],
+        "biblical_witnesses": [
+          "Genesis 1:11",
+          "Mark 4:26"
+        ],
+        "evidence_status": "external_world",
+        "top_k": 20,
+        "external_provenance_requirement": "Any modern-world assertion must cite a verifiable original statement or openly label its derivation; no synthetic Wikidata GUID or unsupported physical inference."
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "W023",
+      "category": "real_world_process",
+      "difficulty": 3,
+      "query_type": "concept_or_passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "fig tree",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "bridge"
+        }
+      },
+      "expected": {
+        "relationship": "Fig tree produces fruit and can be fruitless",
+        "basis": "Fig tree's fruit bearing functions in two teaching narratives",
+        "acceptable_target_terms": [
+          "fruit",
+          "bearing",
+          "tree"
+        ],
+        "biblical_witnesses": [
+          "Luke 13:6",
+          "Matthew 21:19"
+        ],
+        "evidence_status": "explicit_text",
+        "top_k": 20,
+        "external_provenance_requirement": null
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "W024",
+      "category": "real_world_part_whole",
+      "difficulty": 4,
+      "query_type": "concept_or_passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "vine",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "bridge"
+        }
+      },
+      "expected": {
+        "relationship": "Vine bears grapes and metaphor of branches",
+        "basis": "Grapes grow on vines; vine and branches image is used by Jesus metaphorically",
+        "acceptable_target_terms": [
+          "grapes",
+          "branches",
+          "fruit"
+        ],
+        "biblical_witnesses": [
+          "Numbers 13:23",
+          "John 15:5"
+        ],
+        "evidence_status": "external_world",
+        "top_k": 25,
+        "external_provenance_requirement": "Any modern-world assertion must cite a verifiable original statement or openly label its derivation; no synthetic Wikidata GUID or unsupported physical inference."
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "W025",
+      "category": "real_world_process",
+      "difficulty": 4,
+      "query_type": "concept_or_passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "yeast",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "bridge"
+        }
+      },
+      "expected": {
+        "relationship": "Leaven changes dough",
+        "basis": "Leaven transforms dough and can function as symbol; do not assume all leaven imagery is negative",
+        "acceptable_target_terms": [
+          "flour",
+          "dough",
+          "leaven"
+        ],
+        "biblical_witnesses": [
+          "Matthew 13:33",
+          "Exodus 12:15"
+        ],
+        "evidence_status": "external_world",
+        "top_k": 20,
+        "external_provenance_requirement": "Any modern-world assertion must cite a verifiable original statement or openly label its derivation; no synthetic Wikidata GUID or unsupported physical inference."
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "W026",
+      "category": "real_world_process",
+      "difficulty": 3,
+      "query_type": "concept_or_passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Jeremiah 18:6",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "bridge"
+        }
+      },
+      "expected": {
+        "relationship": "Potter shapes clay as vessel",
+        "basis": "Clay worked by a potter supplies a source-backed physical metaphor",
+        "acceptable_target_terms": [
+          "potter",
+          "clay",
+          "vessel"
+        ],
+        "biblical_witnesses": [
+          "Jeremiah 18:6",
+          "Romans 9:21"
+        ],
+        "evidence_status": "explicit_intertext",
+        "top_k": 15,
+        "external_provenance_requirement": null
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "W027",
+      "category": "real_world_material",
+      "difficulty": 3,
+      "query_type": "concept_or_passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "wool",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "bridge"
+        }
+      },
+      "expected": {
+        "relationship": "Scarlet-colored wool as ritual material",
+        "basis": "Wool is dyed or colored scarlet in ritual context; do not assert exact chemical dye method",
+        "acceptable_target_terms": [
+          "scarlet",
+          "G2847",
+          "red"
+        ],
+        "biblical_witnesses": [
+          "Hebrews 9:19",
+          "Leviticus 14:4"
+        ],
+        "evidence_status": "external_world",
+        "top_k": 20,
+        "external_provenance_requirement": "Any modern-world assertion must cite a verifiable original statement or openly label its derivation; no synthetic Wikidata GUID or unsupported physical inference."
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "W028",
+      "category": "real_world_property",
+      "difficulty": 4,
+      "query_type": "concept_or_passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "salt",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "bridge"
+        }
+      },
+      "expected": {
+        "relationship": "Salt and preservation in covenant and teaching images",
+        "basis": "Salt appears in offerings and metaphor of salt of earth; physical preservative property needs distinct source",
+        "acceptable_target_terms": [
+          "covenant of salt",
+          "preservation",
+          "salt of earth"
+        ],
+        "biblical_witnesses": [
+          "Leviticus 2:13",
+          "Matthew 5:13"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 25,
+        "external_provenance_requirement": null
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "W029",
+      "category": "real_world_material",
+      "difficulty": 3,
+      "query_type": "concept_or_passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "iron",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "bridge"
+        }
+      },
+      "expected": {
+        "relationship": "Iron used in cutting tools and craftsmanship",
+        "basis": "Iron axe head and metalworking appear in texts",
+        "acceptable_target_terms": [
+          "axe",
+          "smith",
+          "iron"
+        ],
+        "biblical_witnesses": [
+          "2 Kings 6:5",
+          "Isaiah 44:12"
+        ],
+        "evidence_status": "explicit_text",
+        "top_k": 20,
+        "external_provenance_requirement": null
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "W030",
+      "category": "real_world_material",
+      "difficulty": 3,
+      "query_type": "concept_or_passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Daniel 2:32",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "bridge"
+        }
+      },
+      "expected": {
+        "relationship": "Gold silver bronze iron statue materials",
+        "basis": "Multiple metals comprise distinct body sections of vision statue",
+        "acceptable_target_terms": [
+          "bronze",
+          "iron",
+          "gold"
+        ],
+        "biblical_witnesses": [
+          "Daniel 2:32",
+          "Daniel 2:33"
+        ],
+        "evidence_status": "explicit_text",
+        "top_k": 15,
+        "external_provenance_requirement": null
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "W031",
+      "category": "real_world_property",
+      "difficulty": 3,
+      "query_type": "concept_or_passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "sun",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "bridge"
+        }
+      },
+      "expected": {
+        "relationship": "Sun provides day light",
+        "basis": "Greater light rules the day; physical sun function not automatically a spiritual identification",
+        "acceptable_target_terms": [
+          "light",
+          "day",
+          "luminary"
+        ],
+        "biblical_witnesses": [
+          "Genesis 1:16",
+          "Psalm 136:8"
+        ],
+        "evidence_status": "explicit_text",
+        "top_k": 15,
+        "external_provenance_requirement": null
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "W032",
+      "category": "real_world_process",
+      "difficulty": 5,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H4501",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "bridge"
+        }
+      },
+      "expected": {
+        "relationship": "Menorah to oil to flame to smoke as physical process",
+        "basis": "Lamp is fuelled by oil; combustion can produce flame or smoke; crossing passages is external mechanism not direct biblical claim of a smoking menorah",
+        "acceptable_target_terms": [
+          "oil",
+          "flame",
+          "smoke"
+        ],
+        "biblical_witnesses": [
+          "Exodus 25:37",
+          "Exodus 27:20",
+          "Exodus 19:18"
+        ],
+        "evidence_status": "external_world",
+        "top_k": 25,
+        "external_provenance_requirement": "Any modern-world assertion must cite a verifiable original statement or openly label its derivation; no synthetic Wikidata GUID or unsupported physical inference."
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "W033",
+      "category": "real_world_process",
+      "difficulty": 4,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H3220",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "bridge"
+        }
+      },
+      "expected": {
+        "relationship": "Water divided exposes dry ground",
+        "basis": "Water-land boundaries provide physical scene analogy across creation and Exodus",
+        "acceptable_target_terms": [
+          "dry ground",
+          "water",
+          "land"
+        ],
+        "biblical_witnesses": [
+          "Exodus 14:21",
+          "Genesis 1:9"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 25,
+        "external_provenance_requirement": null
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "W034",
+      "category": "real_world_property",
+      "difficulty": 4,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H7307",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "bridge"
+        }
+      },
+      "expected": {
+        "relationship": "Wind moves water without proving Spirit equals air",
+        "basis": "Wind over waters is a physical effect for wind-sense occurrences, not for all ruach uses",
+        "acceptable_target_terms": [
+          "wind",
+          "water",
+          "breath"
+        ],
+        "biblical_witnesses": [
+          "Genesis 8:1",
+          "Exodus 14:21"
+        ],
+        "evidence_status": "external_world",
+        "top_k": 25,
+        "external_provenance_requirement": "Any modern-world assertion must cite a verifiable original statement or openly label its derivation; no synthetic Wikidata GUID or unsupported physical inference."
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "W035",
+      "category": "real_world_property",
+      "difficulty": 3,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "G3788",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "bridge"
+        }
+      },
+      "expected": {
+        "relationship": "Eye as organ for sight and light",
+        "basis": "Eye is organ of vision and appears in sight and lamp imagery",
+        "acceptable_target_terms": [
+          "sight",
+          "vision",
+          "light"
+        ],
+        "biblical_witnesses": [
+          "Matthew 6:22",
+          "Mark 8:23"
+        ],
+        "evidence_status": "external_world",
+        "top_k": 20,
+        "external_provenance_requirement": "Any modern-world assertion must cite a verifiable original statement or openly label its derivation; no synthetic Wikidata GUID or unsupported physical inference."
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "W036",
+      "category": "real_world_property",
+      "difficulty": 4,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H2233",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "bridge"
+        }
+      },
+      "expected": {
+        "relationship": "Seed as plant reproduction and genealogical offspring",
+        "basis": "Botanical and offspring senses must be separated before external plant properties attach",
+        "acceptable_target_terms": [
+          "offspring",
+          "botanical seed",
+          "plant"
+        ],
+        "biblical_witnesses": [
+          "Genesis 1:11",
+          "Genesis 22:17"
+        ],
+        "evidence_status": "external_world",
+        "top_k": 25,
+        "external_provenance_requirement": "Any modern-world assertion must cite a verifiable original statement or openly label its derivation; no synthetic Wikidata GUID or unsupported physical inference."
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "W037",
+      "category": "real_world_process",
+      "difficulty": 3,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H0231",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "bridge"
+        }
+      },
+      "expected": {
+        "relationship": "Hyssop used as tool for sprinkling",
+        "basis": "Hyssop bunch can carry liquid in ritual application; not claim species identification is certain",
+        "acceptable_target_terms": [
+          "sprinkling",
+          "blood",
+          "water"
+        ],
+        "biblical_witnesses": [
+          "Exodus 12:22",
+          "Numbers 19:18"
+        ],
+        "evidence_status": "explicit_text",
+        "top_k": 15,
+        "external_provenance_requirement": null
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "W038",
+      "category": "real_world_property",
+      "difficulty": 4,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "G2053",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "bridge"
+        }
+      },
+      "expected": {
+        "relationship": "Wool as animal-derived fiber",
+        "basis": "Text names wool textiles; zoological fiber material is external property not biblical symbolism",
+        "acceptable_target_terms": [
+          "wool",
+          "fiber",
+          "textile"
+        ],
+        "biblical_witnesses": [
+          "Hebrews 9:19",
+          "Leviticus 13:47"
+        ],
+        "evidence_status": "external_world",
+        "top_k": 25,
+        "external_provenance_requirement": "Any modern-world assertion must cite a verifiable original statement or openly label its derivation; no synthetic Wikidata GUID or unsupported physical inference."
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "W039",
+      "category": "real_world_process",
+      "difficulty": 4,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H8081",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "bridge"
+        }
+      },
+      "expected": {
+        "relationship": "Oil as substance used for anointing and lamps",
+        "basis": "One substance is used in two distinct functions; compare without collapsing anointing into illumination",
+        "acceptable_target_terms": [
+          "anoint",
+          "lamp",
+          "oil"
+        ],
+        "biblical_witnesses": [
+          "1 Samuel 16:13",
+          "Exodus 27:20"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 25,
+        "external_provenance_requirement": null
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "W040",
+      "category": "real_world_material",
+      "difficulty": 4,
+      "query_type": "concept_or_passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Numbers 19:9",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "bridge"
+        }
+      },
+      "expected": {
+        "relationship": "Ashes of red heifer used for purification",
+        "basis": "Ashes of heifer and ritual sprinkling explicitly referenced in Hebrews",
+        "acceptable_target_terms": [
+          "heifer",
+          "ashes",
+          "purification"
+        ],
+        "biblical_witnesses": [
+          "Numbers 19:9",
+          "Hebrews 9:13"
+        ],
+        "evidence_status": "explicit_intertext",
+        "top_k": 15,
+        "external_provenance_requirement": null
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
     }
   ]
 }
