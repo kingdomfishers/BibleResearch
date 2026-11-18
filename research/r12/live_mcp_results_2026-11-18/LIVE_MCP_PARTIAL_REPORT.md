@@ -1,5 +1,14 @@
 # R12 Live MCP Benchmark — Partial Production Snapshot and Evaluation Handoff
 
+## STATUS UPDATE — 2026-11-19: HTTP 503 / exceededCpu FIXED
+
+**Current incident status: RESOLVED in the complete post-recovery serial benchmark.** On the new Cloudflare Worker `cf2182ed-b3fc-4ab6-99ab-5590e7e8a075` / main MCP v43, **all 239/239 cases returned valid MCP responses** (238 `ok`, one legitimate `no_match` for the unresolved word “yeast”). Across 222 actual live MCP requests, there were **zero observed HTTP 503, other transport errors, or timeouts**. The 164/168 sampled 503 events and 44/60 partial benchmark observations below remain valid **historical findings on the previous deployment**, not the present gateway status. New discovery-quality failures (e.g. disconnected Hagar→ostrich paths) are algorithmic, not infrastructure-related.
+
+**New complete retest:** [Readable report](https://github.com/kingdomfishers/BibleResearch/blob/feat/r12-qa-fixes/research/r12/live_mcp_retest_2026-11-19/R12_MCP_RETEST_REPORT.md) · [All 239 case results, ranked output and source links](https://github.com/kingdomfishers/BibleResearch/blob/feat/r12-qa-fixes/research/r12/live_mcp_retest_2026-11-19/R12_MCP_RETEST_ALL_239.json).
+
+---
+
+
 **Run:** 2026-11-18, GitHub Actions [44382847987](https://github.com/kingdomfishers/BibleResearch/actions/runs/44382847987), source `research/r12/R12_EXPECTED_CONNECTIONS_180_PLUS.json`.  
 **Actual transport:** BibleResearch Supabase MCP Streamable HTTP, JSON-RPC `tools/call` for `discover_biblical_connections_v2`, with each test's original arguments.  
 **Status:** **PARTIAL; stopped on a proven production runtime/CPU blocker.** This is not a completed 239-query accuracy evaluation.
