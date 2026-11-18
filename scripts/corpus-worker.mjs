@@ -18,6 +18,7 @@
 
 import { withCorpusSecurity } from './corpus-security.mjs';
 import { packedShardEntry } from './relationship-shard-codec.mjs';
+import { gunzipSync } from 'node:zlib';
 import {
   fnv1a64Hex,
   handleDiscoverBiblicalConnectionsV1,
@@ -78,29 +79,57 @@ async function readAssetBytes(env, assetPath) {
     if (trace) trace.missing_shards.push({ path: assetPath, status: res.status });
     return null;
   }
-  let buf = await res.arrayBuffer();
+  let buf;
   if (range) {
     const start = Number(range[1]), end = Number(range[2]);
     if (res.status === 206) {
+      buf = await res.arrayBuffer();
       const returned = /^bytes (\d+)-(\d+)\/(\d+)$/.exec(res.headers.get('Content-Range') || '');
       if (!returned || Number(returned[1]) !== start || Number(returned[2]) !== end || Number(returned[3]) <= end || buf.byteLength !== end - start + 1) throw new Error('Invalid packed asset range');
-    } else if (res.status === 200 && buf.byteLength > end) {
-      // Read-only filesystem fixtures may not implement HTTP Range.
-      buf = buf.slice(start, end + 1);
+    } else if (res.status === 200) {
+      // ASSETS can ignore Range in staging too. Never buffer a whole packed
+      // blob per record: discard the prefix, retain only the requested bytes,
+      // and cancel the unread suffix. Native BYOB reads reuse a bounded buffer.
+      if (trace) trace.packed_full_responses = (trace.packed_full_responses || 0) + 1;
+      buf = await readPackedRange(res.body, start, end, trace);
     } else throw new Error('Packed asset range unavailable');
-  }
+  } else buf = await res.arrayBuffer();
   if (trace) trace.encoded_bytes += buf.byteLength;
   return new Uint8Array(buf);
+}
+
+async function readPackedRange(body, start, end, trace) {
+  if (!body || !Number.isSafeInteger(start) || !Number.isSafeInteger(end) || end < start) throw new Error('Invalid packed asset range');
+  let reader, byob = true;
+  try { reader = body.getReader({ mode: 'byob' }); }
+  catch { byob = false; reader = body.getReader(); }
+  const result = new Uint8Array(end - start + 1);
+  let offset = 0, scratch = new ArrayBuffer(1024 * 1024);
+  try {
+    while (offset <= end) {
+      const view = byob ? new Uint8Array(scratch, 0, Math.min(scratch.byteLength, end + 1 - offset)) : null;
+      const { value, done } = byob
+        ? await (reader.readAtLeast ? reader.readAtLeast(view.length, view) : reader.read(view))
+        : await reader.read();
+      if (!value?.byteLength) throw new Error('Packed asset range unavailable');
+      if (trace) trace.packed_stream_bytes = (trace.packed_stream_bytes || 0) + value.byteLength;
+      const from = Math.max(0, start - offset), to = Math.min(value.byteLength, end + 1 - offset);
+      if (to > from) result.set(value.subarray(from, to), offset + from - start);
+      offset += value.byteLength;
+      if (byob) scratch = value.buffer;
+      if (done && offset <= end) throw new Error('Packed asset range unavailable');
+    }
+    return result.buffer;
+  } finally { await reader.cancel(); }
 }
 
 async function decompressGzipIfNeeded(bytes, trace) {
   if (!bytes || bytes.length < 2) return bytes;
   if (bytes[0] === 0x1f && bytes[1] === 0x8b) {
     if (trace) trace.phases.gzip_decode++;
-    const ds = new DecompressionStream('gzip');
-    const stream = new Response(bytes).body.pipeThrough(ds);
-    const outBuf = await new Response(stream).arrayBuffer();
-    return new Uint8Array(outBuf);
+    // Records are already bounded by the packed index. Avoid constructing a
+    // stream pipeline and Response wrappers for every small gzip member.
+    return gunzipSync(bytes);
   }
   return bytes;
 }
