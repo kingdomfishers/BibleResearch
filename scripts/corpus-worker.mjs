@@ -16,7 +16,8 @@
  * - `/v1/rpc/<operation>` deterministic query & compatibility gateway for static evidence RPCs
  */
 
-import { withCorpusSecurity } from './corpus-security.mjs';
+import { registerFastJsonText, withCorpusSecurity } from './corpus-security.mjs';
+import { Buffer } from 'node:buffer';
 import { packedShardEntry } from './relationship-shard-codec.mjs';
 import { gunzipSync } from 'node:zlib';
 import {
@@ -43,9 +44,16 @@ let cachedVerseById = null;
 let cachedVerseByCoord = null;
 let cachedBooksById = null;
 let cachedLxxBooksByNo = null;
+const PINNED_BASE_PATHS = new Set([
+  '/v2/relationships/r11-v1.0/r10/concept-index.json.gz',
+  '/v2/relationships/r11-v1.0/r10/explicit-and-typology.json.gz',
+  '/v2/relationships/r11-v1.0/r10/motifs-and-patterns.json.gz',
+  '/v2/relationships/r11-v1.0/r10/fast-manifest.json.gz',
+]);
+const pinnedBaseCache = new Map();
 const shardLru = new Map();
 let shardInflightCount = 0;
-const MAX_LRU_SHARDS = 64;
+const MAX_LRU_SHARDS = 256;
 const MAX_LRU_BYTES = 16 * 1024 * 1024;
 let shardLruBytes = 0;
 let r12TraceIsolateId;
@@ -134,12 +142,42 @@ async function decompressGzipIfNeeded(bytes, trace) {
   return bytes;
 }
 
+const utf8Decoder = new TextDecoder('utf-8');
+
 function decodeJsonShard(bytes) {
-  return new TextDecoder('utf-8').decode(bytes);
+  return utf8Decoder.decode(bytes);
 }
 
 function parseJsonShard(text) {
   return JSON.parse(text);
+}
+
+export function decodeB64GzJson(env, b64, cacheKey) {
+  const trace = env?.__r12Trace;
+  if (cacheKey && shardLru.has(cacheKey)) {
+    const val = shardLru.get(cacheKey);
+    shardLru.delete(cacheKey);
+    shardLru.set(cacheKey, val);
+    if (trace) trace.cache_hits++;
+    return val.data;
+  }
+  const gzBytes = typeof Buffer !== 'undefined'
+    ? Buffer.from(b64, 'base64')
+    : Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+  const isGz = gzBytes.length >= 2 && gzBytes[0] === 0x1f && gzBytes[1] === 0x8b;
+  let decodedBytes = gzBytes;
+  if (isGz) {
+    if (trace) trace.phases.gzip_decode++;
+    decodedBytes = gunzipSync(gzBytes);
+  }
+  const parsed = parseJsonShard(decodeJsonShard(decodedBytes));
+  if (trace) {
+    trace.decoded_bytes += decodedBytes.length;
+    trace.phases.text_decode++;
+    trace.phases.json_parse++;
+  }
+  if (cacheKey) setLru(cacheKey, parsed, decodedBytes.length, trace);
+  return parsed;
 }
 
 export async function loadJsonShardWithBytes(env, assetPath) {
@@ -147,6 +185,13 @@ export async function loadJsonShardWithBytes(env, assetPath) {
   // I/O promises stay request-local; only completed JSON is shared across requests.
   const inflight = env.__assetInflight ||= new Map();
   const gzPath = assetPath.endsWith('.gz') || assetPath.includes('#bytes=') ? assetPath : `${assetPath}.gz`;
+  if (pinnedBaseCache.has(gzPath)) {
+    if (trace) {
+      trace.cache_hits++;
+      trace.assets.push({ path: gzPath, cache_hit: true, decoded_bytes: 0 });
+    }
+    return { data: pinnedBaseCache.get(gzPath), bytes: 0 };
+  }
   if (shardLru.has(gzPath)) {
     const val = shardLru.get(gzPath);
     shardLru.delete(gzPath);
@@ -172,7 +217,12 @@ export async function loadJsonShardWithBytes(env, assetPath) {
       trace.phases.text_decode++; trace.phases.json_parse++;
       trace.assets.push({ path: gzPath, cache_hit: false, encoded_bytes: rawBytes.length, decoded_bytes: decodedBytes.length });
     }
-    setLru(gzPath, parsed, decodedBytes.length, trace);
+    if (PINNED_BASE_PATHS.has(gzPath)) {
+      pinnedBaseCache.set(gzPath, parsed);
+      if (trace) trace.cache_stores++;
+    } else {
+      setLru(gzPath, parsed, decodedBytes.length, trace);
+    }
     return { data: parsed, bytes: decodedBytes.length };
   })();
   inflight.set(gzPath, pending); shardInflightCount++;
@@ -208,14 +258,18 @@ async function ensureCatalog(env) {
 }
 
 function jsonResponse(data, status = 200, cacheControl = 'public, max-age=3600') {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: {
-      ...CORS_HEADERS,
-      'Content-Type': 'application/json; charset=utf-8',
-      'Cache-Control': cacheControl,
-    },
-  });
+  const text = JSON.stringify(data);
+  return registerFastJsonText(
+    new Response(text, {
+      status,
+      headers: {
+        ...CORS_HEADERS,
+        'Content-Type': 'application/json; charset=utf-8',
+        'Cache-Control': cacheControl,
+      },
+    }),
+    text,
+  );
 }
 
 // ============================================================================
@@ -2583,13 +2637,13 @@ const corpusWorker = {
           return jsonResponse(await handleDiscoverRelationshipPathsV1({ env, loadJsonShard, loadJsonShardWithBytes }, params), 200, 'public, max-age=300');
         }
         if (op === 'discover_biblical_connections_v1' || op === 'discover_biblical_connections_v2') {
-          return jsonResponse(await handleDiscoverBiblicalConnectionsV1({ env, loadJsonShard, loadJsonShardWithBytes }, params), 200, 'public, max-age=300');
+          return jsonResponse(await handleDiscoverBiblicalConnectionsV1({ env, loadJsonShard, loadJsonShardWithBytes, decodeB64GzJson: (b64, cacheKey) => decodeB64GzJson(env, b64, cacheKey) }, params), 200, 'public, max-age=300');
         }
         if (op === 'get_connection_evidence_v1') {
-          return jsonResponse(await handleGetConnectionEvidenceV1({ env, loadJsonShard, loadJsonShardWithBytes }, params), 200, 'public, max-age=300');
+          return jsonResponse(await handleGetConnectionEvidenceV1({ env, loadJsonShard, loadJsonShardWithBytes, decodeB64GzJson: (b64, cacheKey) => decodeB64GzJson(env, b64, cacheKey) }, params), 200, 'public, max-age=300');
         }
         if (op === 'expand_biblical_connection_v1') {
-          return jsonResponse(await handleExpandBiblicalConnectionV1({ env, loadJsonShard, loadJsonShardWithBytes }, params), 200, 'public, max-age=300');
+          return jsonResponse(await handleExpandBiblicalConnectionV1({ env, loadJsonShard, loadJsonShardWithBytes, decodeB64GzJson: (b64, cacheKey) => decodeB64GzJson(env, b64, cacheKey) }, params), 200, 'public, max-age=300');
         }
 
         return jsonResponse({ error: 'unknown_rpc_operation', operation: op }, 404, 'no-store');

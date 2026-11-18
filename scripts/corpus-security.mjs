@@ -1,6 +1,12 @@
 // Reconciled from deployed Worker dc01ca7e-34ee-424f-aff9-c453352a3d97.
 // Keeps production raw-asset denials, redaction, CORS and B7 behavior intact.
+const fastJsonTexts = new WeakMap();
+export function registerFastJsonText(response, text) {
+  if (response && typeof text === 'string') fastJsonTexts.set(response, text);
+  return response;
+}
 export function withCorpusSecurity(worker) {
+const __restrictedKeyPattern = /"(?:semantic_frame|frame|greekstrong|sdbh|lexdomain|coredomain|contextualdomain|domain|ln|field_name)"\s*:/;
 const __restrictedKeys = new Set(['semantic_frame','frame','greekstrong','sdbh','lexdomain','coredomain','contextualdomain','domain','ln']);
 const __b7Expected = [
  {label:'psalm3_heading',sourceId:'19AxB',book:19,chapter:3,verse:0,expectedVerseId:13959,expectedWordId:88044},
@@ -59,7 +65,9 @@ return {
    const ct=res.headers.get('Content-Type')||'';
    if(!ct.includes('application/json'))return new Response(JSON.stringify({error:'unexpected_api_content_type'}),{status:502,headers:{'Content-Type':'application/json','Cache-Control':'no-store'}});
    try{
-     const data=await res.json();
+     const registeredText = fastJsonTexts.get(res);
+     if (registeredText !== undefined) fastJsonTexts.delete(res);
+     const rawText = registeredText !== undefined ? registeredText : await res.text();
      const headers=new Headers(res.headers);
      headers.delete('Content-Length');
      headers.set('Cache-Control','no-store');
@@ -67,6 +75,10 @@ return {
      headers.set('Access-Control-Allow-Methods','GET,POST,OPTIONS');
      headers.set('Access-Control-Allow-Headers','content-type,authorization,apikey');
      headers.set('X-BibleResearch-Corpus-Security','semantic-frame-redaction-v2');
+     if (!__restrictedKeyPattern.test(rawText) && (registeredText !== undefined || !rawText.includes('\\u00'))) {
+       return new Response(rawText, { status: res.status, statusText: res.statusText, headers });
+     }
+     const data = JSON.parse(rawText);
      return new Response(JSON.stringify(__stripRestrictedFields(data)),{status:res.status,statusText:res.statusText,headers});
    }catch(e){
      return new Response(JSON.stringify({error:'corpus_response_redaction_failed'}),{status:502,headers:{'Content-Type':'application/json','Cache-Control':'no-store'}});

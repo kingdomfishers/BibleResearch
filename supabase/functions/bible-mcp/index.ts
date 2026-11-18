@@ -148,7 +148,11 @@ export function createDatabaseReader(
         };
         const corpUrl = `${corpusBase}/v1/rpc/${name}`;
         let corpRes = await fetcher(corpUrl, corpReq);
-        for (let attempt = 0; attempt < 2 && [500, 502, 503, 504].includes(corpRes.status); attempt++) {
+        const retryableCorpusStatuses =
+          name === 'discover_biblical_connections_v1' || name === 'discover_biblical_connections_v2'
+            ? [502, 504]
+            : [500, 502, 503, 504];
+        for (let attempt = 0; attempt < 2 && retryableCorpusStatuses.includes(corpRes.status); attempt++) {
           await corpRes.body?.cancel();
           const backoffMs = 60 * (attempt + 1) + Math.floor(Math.random() * 80);
           await new Promise(resolve => setTimeout(resolve, backoffMs));

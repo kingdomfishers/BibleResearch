@@ -2941,6 +2941,7 @@ function createWorkerR10Reader(ctx) {
       const data = await ctx.loadJsonShard(ctx.env, assetPath);
       return data ? { data, bytes: 0 } : null;
     },
+    ...(typeof ctx.decodeB64GzJson === 'function' ? { decodeB64GzJson: ctx.decodeB64GzJson } : {}),
     async readBytes() {
       return null;
     },

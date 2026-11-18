@@ -14,7 +14,7 @@
   },
   "vars": {
     "R12_RELEASE_ID": "r12-discovery-1",
-    "R12_ASSET_SHA256": "c23272125b34f179237e1c61381ec0b3b92e282f6ae496194bf994",
+    "R12_ASSET_SHA256": "a0715c17a2641b6acf0053695dd9aeb2c153400c71d730ee00201e4a06ccd17b",
     "R12_SOURCE_COMMIT": "712d3627b881b137fe11da6fc97d0871600c568c"
   },
   "observability": {

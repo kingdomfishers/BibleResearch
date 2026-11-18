@@ -94,9 +94,14 @@ const SMALL_NUMBERS: Record<string, number> = {
   forty: 40, fifty: 50, sixty: 60, seventy: 70, eighty: 80, ninety: 90,
 };
 
+const NUMBER_PHRASE_RE = new RegExp(
+  `\\b(?:${Object.keys(SMALL_NUMBERS).join('|')}|hundred|thousand)(?:(?:[ -]+)(?:${Object.keys(SMALL_NUMBERS).join('|')}|hundred|thousand))*\\b`,
+  'gi'
+);
+
 function normalizeNumberPhrases(text: string): string {
-  const words = Object.keys(SMALL_NUMBERS).join('|');
-  return text.replace(new RegExp(`\\b(?:${words}|hundred|thousand)(?:(?:[ -]+)(?:${words}|hundred|thousand))*\\b`, 'gi'), phrase => {
+  if (!text || !/[a-z]/i.test(text) || /^[HG]\d+[A-Z]?$/i.test(text.trim())) return text;
+  return text.replace(NUMBER_PHRASE_RE, phrase => {
     if (!/[ -]/.test(phrase) && phrase.toLowerCase() in SMALL_NUMBERS) return phrase;
     let total = 0, group = 0;
     for (const token of phrase.toLowerCase().split(/[ -]+/)) {
@@ -167,6 +172,34 @@ function defaultUncertainty(r: R10EvidenceRecord): string {
   return 'Shared biblical motif across passages; contextual differences preserved.';
 }
 
+export async function decodeB64Gz<T = any>(
+  reader: AssetReader,
+  b64: string,
+  cacheKey?: string,
+  localCache?: Map<string, any>,
+): Promise<T> {
+  const memoKey = cacheKey || b64;
+  if (localCache?.has(memoKey)) return localCache.get(memoKey) as T;
+  let val: T;
+  if (typeof reader.decodeB64GzJson === 'function') {
+    val = await reader.decodeB64GzJson<T>(b64, cacheKey);
+  } else {
+    const bin = atob(b64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    const isGz = bytes.length >= 2 && bytes[0] === 0x1f && bytes[1] === 0x8b;
+    if (isGz) {
+      val = await new Response(
+        new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip')),
+      ).json() as T;
+    } else {
+      val = JSON.parse(new TextDecoder('utf-8').decode(bytes)) as T;
+    }
+  }
+  localCache?.set(memoKey, val);
+  return val;
+}
+
 async function readR10Json<T = any>(
   reader: AssetReader,
   releaseId: string,
@@ -189,7 +222,10 @@ async function readR10Json<T = any>(
     // Quarantine unverified legacy window-based copula records on every access.
     if (relPath === 'explicit-and-typology.json.gz') {
       const data = res.data as { records?: Array<{ evidence_id?: string }> };
-      return { ...data, records: (data.records || []).filter(r => !r.evidence_id?.startsWith('r10:ident:auto:')) };
+      if ((data.records || []).some(r => r.evidence_id?.startsWith('r10:ident:auto:'))) {
+        return { ...data, records: (data.records || []).filter(r => !r.evidence_id?.startsWith('r10:ident:auto:')) };
+      }
+      return res.data;
     }
     return res.data;
   });
@@ -200,13 +236,33 @@ async function readR10Json<T = any>(
 interface FastManifest {
   profile_buckets: number;
   verse_chunk_size: number;
+  lookup_buckets?: number;
+  lookup_sub_buckets?: number;
   selective?: boolean;
   packed?: boolean;
+  direct_b64gz?: boolean;
   r12_pilot?: string;
   r12_version?: string;
   r12_pilot_anchors?: number;
+  r12_pilot_embedded?: boolean;
+  r12_score_version?: string;
+  r12_pilot_anchors_list?: string[];
+  r12_external_sources?: Array<{ id: string; provider: string; release: string; license: string; archive_sha256?: string; extract_sha256?: string }>;
+  r12_external_mappings?: Array<Record<string, any>>;
+  strongs_lookup_upper_bucket?: boolean;
+  motifs_event_keywords?: string[];
 }
-type ReadBudget = { used: number; max: number; missing?: string[]; pages?: Map<string, Promise<any>> };
+type ReadBudget = { used: number; max: number; missing?: string[]; pages?: Map<string, Promise<any>>; b64Cache?: Map<string, any> };
+
+interface MotifsData {
+  schema_version?: string | number;
+  motifs: Record<string, any>;
+  motif_pairs?: Record<string, any>;
+  motif_pairs_b64gz?: string;
+  events?: any[];
+  events_b64gz?: string;
+  event_keywords?: string[];
+}
 
 interface R12PilotBundle {
   schema_version: number;
@@ -634,6 +690,13 @@ export async function readSelectiveKey(reader: AssetReader, release: string, nam
 }
 
 async function readProfile(reader: AssetReader, release: string, manifest: FastManifest | null, bs: string, budget: ReadBudget): Promise<LemmaProfile | null> {
+  if (manifest?.direct_b64gz) {
+    const bucket = computeBucketHex('fnv1a64_mod1024', 1024, bs);
+    const shard = await readR10Json<{ profiles?: Record<string, string> }>(reader, release, `fast-profiles/shard-${bucket}.json.gz`, budget);
+    const b64 = shard?.profiles?.[bs];
+    if (!b64) return null;
+    return decodeB64Gz<LemmaProfile>(reader, b64, `/r10/p:${release}:${bs}`, (budget.b64Cache ||= new Map()));
+  }
   if (manifest?.selective) return readSelectiveKey(reader, release, 'profiles', bs, budget);
   const bucket = computeBucketHex(manifest ? 'fnv1a64_mod1024' : 'fnv1a64_mod64', manifest?.profile_buckets || 64, bs);
   if (manifest?.packed) return readR10Key(reader, release, `fast-profiles/shard-${bucket}.json.gz`, bs, 'entries', budget);
@@ -702,6 +765,9 @@ export interface LemmaProfile {
   lexical_relations: any[];
   lxx_relations: any[];
   homograph_siblings: Array<{ bs: string; lk?: string; sc: string; tr: string; gl: string }>;
+  first_occ_passages?: R10PassageRef[];
+  orth_entry?: any;
+  r12_pilot_anchor?: any;
 }
 
 function parsePassageReferences(rawQuery: string, bookNames: ConceptIndexData['book_names']): Array<{ refText: string; book: number; chapter: number; verse: number | null; endVerse?: number }> {
@@ -770,56 +836,13 @@ function tokenizeTerms(query: DiscoverConnectionsQuery): string[] {
   return terms.slice(0, 16);
 }
 
-export async function discoverBiblicalConnections(
+function createPassageHydrator(
   reader: AssetReader,
-  query: DiscoverConnectionsQuery,
-  releaseId: string = query.release_id || DEFAULT_R10_RELEASE
-): Promise<DiscoverConnectionsResult> {
-  const tStart = Date.now();
-  const budget = { used: 0, max: MAX_SUBREQUEST_BUDGET, missing: [] as string[] };
-  const limit = Math.max(1, Math.min(MAX_LIMIT, Number(query.limit ?? DEFAULT_LIMIT)));
-  const offset = Math.max(0, Number.parseInt(String(query.cursor || '0'), 10) || 0);
-
-  const [conceptIdx, explicitData, motifsData, numbersData, fastManifest] = await Promise.all([
-    readR10Json(reader, releaseId, 'concept-index.json.gz', budget) as Promise<ConceptIndexData | null>,
-    readR10Json(reader, releaseId, 'explicit-and-typology.json.gz', budget) as Promise<{ records: any[] } | null>,
-    readR10Json(reader, releaseId, 'motifs-and-patterns.json.gz', budget) as Promise<{ motifs: Record<string, any>; motif_pairs: Record<string, any>; events: any[] } | null>,
-    readR10Json(reader, releaseId, 'numbers-index.json.gz', budget) as Promise<{ by_value: Record<string, any> } | null>,
-    readR10Json<FastManifest>(reader, releaseId, 'fast-manifest.json.gz', budget),
-  ]);
-
-  if (!conceptIdx || !explicitData || !motifsData) {
-    throw new Error(`R10 release indexes missing for release_id=${releaseId}`);
-  }
-
-  const parsedRefs = parsePassageReferences(query.query || '', conceptIdx.book_names || []);
-  let lexicalQuery = query.query || '';
-  for (const ref of parsedRefs) lexicalQuery = lexicalQuery.replace(ref.refText, ' ');
-  const extractedTerms = tokenizeTerms({ ...query, query: lexicalQuery });
-  const explicitPassages: R10PassageRef[] = parsedRefs.map(pr => {
-    const bk = conceptIdx.book_names.find(b => b.id === pr.book);
-    return {
-      verse_id: 0,
-      ref: `${bk?.name || `Book ${pr.book}`} ${pr.chapter}${pr.verse !== null ? `:${pr.verse}` : ''}`,
-      book: pr.book,
-      chapter: pr.chapter,
-      verse: pr.verse !== null ? pr.verse : 1,
-      end_verse: pr.endVerse,
-      testament: pr.book <= 39 ? 'OT' : 'NT',
-      is_psalm_heading: pr.book === 19 && pr.verse === 0,
-    };
-  });
-
-  const resolvedConcepts: R10ResolvedConcept[] = [];
-  const missingConcepts: string[] = [];
-  const matchedStrongs = new Set<string>();
-  const matchedMotifs = new Set<string>();
-  const matchedNumbers = new Set<number>();
-  const matchedEvents: any[] = [];
-  const lemmaCache = new Map<string, any>();
-  const controls: R10ControlOrWarning[] = [];
-
-  // Passage hydration helper
+  releaseId: string,
+  fastManifest: FastManifest | null | undefined,
+  budget: ReadBudget,
+  defaultNeedToks = false,
+) {
   const fastVerseCache = new Map<number, any>();
   const bookCache = new Map<number, any>();
   async function loadBookData(bookId: number): Promise<any> {
@@ -833,10 +856,41 @@ export async function discoverBiblicalConnections(
     return verses;
   }
 
-  async function hydratePassageByVid(vid: number): Promise<R10PassageRef | null> {
+  async function hydratePassageByVid(vid: number, needToks = defaultNeedToks): Promise<R10PassageRef | null> {
     const book = bookForVid(vid);
     let v;
-    if (fastManifest?.packed) {
+    if (fastManifest?.direct_b64gz) {
+      const cachedV = bookCache.get(book)?.[String(vid)];
+      if (cachedV && (!needToks || cachedV.toks)) {
+        v = cachedV;
+      } else {
+        const chunkNum = Math.floor((vid - 1) / (fastManifest.verse_chunk_size || 64));
+        const chunkHex = chunkNum.toString(16).padStart(3, '0');
+        const chunk = await readR10Json<{
+          summaries?: Record<string, [number, number, number, string, string, string | null | undefined]>;
+          verses?: Record<string, string>;
+        }>(reader, releaseId, `fast-verses/chunk-${chunkHex}.json.gz`, budget);
+        if (!needToks && chunk?.summaries?.[String(vid)]) {
+          const [sBook, sChapter, sVerse, sRef, sEn, sMtRef] = chunk.summaries[String(vid)];
+          return {
+            verse_id: vid,
+            ref: sRef,
+            ...(sMtRef !== null && sMtRef !== undefined ? { mt_ref: sMtRef } : {}),
+            book: sBook,
+            chapter: sChapter,
+            verse: sVerse,
+            testament: sBook <= 39 ? 'OT' : 'NT',
+            snippet: sEn,
+            is_psalm_heading: sBook === 19 && sVerse === 0,
+          };
+        }
+        const b64 = chunk?.verses?.[String(vid)];
+        if (b64) {
+          v = await decodeB64Gz<any>(reader, b64, `/r10/v:${releaseId}:${vid}`, budget.b64Cache);
+          if (v) bookCache.set(book, { ...(bookCache.get(book) || {}), [String(vid)]: v });
+        }
+      }
+    } else if (fastManifest?.packed) {
       const chunk = Math.floor((vid - 1) / fastManifest.verse_chunk_size);
       v = await readR10Key(reader, releaseId, `fast-verses/chunk-${chunk.toString(16).padStart(3, '0')}.json.gz`, String(vid), 'verses', budget);
       if (v) bookCache.set(book, { ...(bookCache.get(book) || {}), [String(vid)]: v });
@@ -869,6 +923,74 @@ export async function discoverBiblicalConnections(
     };
   }
 
+  return { bookCache, loadBookData, hydratePassageByVid };
+}
+
+export async function discoverBiblicalConnections(
+  reader: AssetReader,
+  query: DiscoverConnectionsQuery,
+  releaseId: string = query.release_id || DEFAULT_R10_RELEASE
+): Promise<DiscoverConnectionsResult> {
+  const tStart = Date.now();
+  const budget = { used: 0, max: MAX_SUBREQUEST_BUDGET, missing: [] as string[], b64Cache: new Map<string, any>() };
+  const limit = Math.max(1, Math.min(MAX_LIMIT, Number(query.limit ?? DEFAULT_LIMIT)));
+  const offset = Math.max(0, Number.parseInt(String(query.cursor || '0'), 10) || 0);
+
+  const [conceptIdx, explicitData, fastManifest] = await Promise.all([
+    readR10Json(reader, releaseId, 'concept-index.json.gz', budget) as Promise<ConceptIndexData | null>,
+    readR10Json(reader, releaseId, 'explicit-and-typology.json.gz', budget) as Promise<{ records: any[] } | null>,
+    readR10Json<FastManifest>(reader, releaseId, 'fast-manifest.json.gz', budget),
+  ]);
+
+  let motifsData: MotifsData | null = null;
+  if (!fastManifest?.motifs_event_keywords) {
+    motifsData = await readR10Json<MotifsData>(reader, releaseId, 'motifs-and-patterns.json.gz', budget);
+  }
+
+  if (!conceptIdx || !explicitData || (!fastManifest?.motifs_event_keywords && !motifsData)) {
+    throw new Error(`R10 release indexes missing for release_id=${releaseId}`);
+  }
+
+  async function ensureMotifsData(): Promise<MotifsData | null> {
+    if (!motifsData) {
+      motifsData = await readR10Json<MotifsData>(reader, releaseId, 'motifs-and-patterns.json.gz', budget);
+    }
+    return motifsData;
+  }
+
+  const bookById = new Map((conceptIdx.book_names || []).map(b => [b.id, b]));
+  const parsedRefs = parsePassageReferences(query.query || '', conceptIdx.book_names || []);
+  let lexicalQuery = query.query || '';
+  for (const ref of parsedRefs) lexicalQuery = lexicalQuery.replace(ref.refText, ' ');
+  const extractedTerms = tokenizeTerms({ ...query, query: lexicalQuery });
+  const explicitPassages: R10PassageRef[] = parsedRefs.map(pr => {
+    const bk = bookById.get(pr.book);
+    return {
+      verse_id: 0,
+      ref: `${bk?.name || `Book ${pr.book}`} ${pr.chapter}${pr.verse !== null ? `:${pr.verse}` : ''}`,
+      book: pr.book,
+      chapter: pr.chapter,
+      verse: pr.verse !== null ? pr.verse : 1,
+      end_verse: pr.endVerse,
+      testament: pr.book <= 39 ? 'OT' : 'NT',
+      is_psalm_heading: pr.book === 19 && pr.verse === 0,
+    };
+  });
+
+  const resolvedConcepts: R10ResolvedConcept[] = [];
+  const missingConcepts: string[] = [];
+  const matchedStrongs = new Set<string>();
+  const matchedMotifs = new Set<string>();
+  const matchedNumbers = new Set<number>();
+  const matchedEvents: any[] = [];
+  const lemmaCache = new Map<string, any>();
+  const controls: R10ControlOrWarning[] = [];
+
+  // Passage hydration helper
+  const { bookCache, loadBookData, hydratePassageByVid } = createPassageHydrator(
+    reader, releaseId, fastManifest, budget, false,
+  );
+
 
 
   const refTokensToIgnore = new Set<string>();
@@ -877,7 +999,7 @@ export async function discoverBiblicalConnections(
     refTokensToIgnore.add(String(pr.chapter));
     if (pr.verse !== null && pr.verse !== undefined) refTokensToIgnore.add(String(pr.verse));
     if (pr.endVerse) refTokensToIgnore.add(String(pr.endVerse));
-    const bk = conceptIdx.book_names.find(b => b.id === pr.book);
+    const bk = bookById.get(pr.book);
     if (bk) {
       refTokensToIgnore.add(bk.name.toLowerCase());
       refTokensToIgnore.add(bk.usfm.toLowerCase());
@@ -888,16 +1010,28 @@ export async function discoverBiblicalConnections(
   // Hydrate explicit passage references
   for (const ep of explicitPassages) {
     let verses;
-    if (fastManifest?.selective) {
+    if (fastManifest?.direct_b64gz) {
+      const pad = String(ep.book).padStart(2, '0');
+      const index = await readR10Json<any>(reader, releaseId, `evidence-passages/book-${pad}.json.gz`, budget);
+      if (index?.coord_to_vid) {
+        for (const vid of index.chapter_vids?.[String(ep.chapter)] || []) contextVerseIds.add(Number(vid));
+        const vid = index.coord_to_vid[`${ep.chapter}:${ep.verse}`];
+        if (vid) await hydratePassageByVid(Number(vid), true);
+        verses = bookCache.get(ep.book);
+      } else if (index?.verses) {
+        verses = index.verses;
+        bookCache.set(ep.book, verses);
+      }
+    } else if (fastManifest?.selective) {
       const vid = await readSelectiveKey(reader, releaseId, 'refs', `${ep.book}:${ep.chapter}:${ep.verse}`, budget);
-      if (vid) await hydratePassageByVid(Number(vid));
+      if (vid) await hydratePassageByVid(Number(vid), true);
       verses = bookCache.get(ep.book);
     } else if (fastManifest?.packed) {
       const bookFile = `evidence-passages/book-${String(ep.book).padStart(2, '0')}.json.gz`;
       const index = await readR10Json<any>(reader, releaseId, bookFile, budget);
       for (const vid of index?.chapter_vids?.[String(ep.chapter)] || []) contextVerseIds.add(Number(vid));
       const v = await readR10Key(reader, releaseId, bookFile, `${ep.chapter}:${ep.verse}`, 'verses', budget);
-      if (v) { await hydratePassageByVid(Number(v.verse_id)); verses = bookCache.get(ep.book); }
+      if (v) { await hydratePassageByVid(Number(v.verse_id), true); verses = bookCache.get(ep.book); }
     } else verses = await loadBookData(ep.book);
     if (verses) {
       for (const [vKey, vVal] of Object.entries(verses) as [string, any][]) {
@@ -920,6 +1054,22 @@ export async function discoverBiblicalConnections(
   const shardMemo = new Map<string, Map<string, any[]>>();
   async function fetchShard(key: string): Promise<any[]> {
     const normKey = key.toLowerCase();
+    if (fastManifest?.direct_b64gz && fastManifest.lookup_buckets === 1024) {
+      const bucketKey = (fastManifest.strongs_lookup_upper_bucket && /^[hg]\d{4}$/.test(normKey))
+        ? normKey.toUpperCase()
+        : normKey;
+      const bucket = computeBucketHex('fnv1a64_mod1024', 1024, bucketKey);
+      const subIdx = Number((BigInt('0x' + fnv1a64Hex(normKey)) >> 10n) & 15n).toString(16);
+      const shard = await readR10Json<{ lookup?: Record<string, string> }>(
+        reader, releaseId, `fast-profiles/shard-${bucket}.json.gz`, budget
+      );
+      const b64 = shard?.lookup?.[subIdx];
+      if (!b64) return [];
+      const subMap = await decodeB64Gz<Record<string, any[]>>(
+        reader, b64, `/r10/l:${releaseId}:${bucket}:${subIdx}`, budget.b64Cache
+      );
+      return subMap?.[normKey] || [];
+    }
     if (fastManifest?.packed) {
       const bucket = computeBucketHex('fnv1a64_mod64', 64, normKey);
       return (await readR10Key(reader, releaseId, `lemma-lookup/shard-${bucket}.json.gz`, normKey, 'entries', budget)) || [];
@@ -952,6 +1102,11 @@ export async function discoverBiblicalConnections(
   }
 
   const isExplicitProperQuery = /\b(susa|shushan|persia|palace|citadel|city|capital|person|place)\b/i.test(query.query || '');
+  let cachedEvents: any[] | null = Array.isArray(motifsData?.events) ? motifsData.events : null;
+  const eventKeywordList = fastManifest?.motifs_event_keywords ?? motifsData?.event_keywords;
+  const eventKeywordSet = !cachedEvents && Array.isArray(eventKeywordList)
+    ? new Set(eventKeywordList)
+    : null;
 
   // Stage 1: Resolve concepts via aliases + sharded lemma-lookup
   for (const term of extractedTerms) {
@@ -959,9 +1114,20 @@ export async function discoverBiblicalConnections(
     const lower = term.toLowerCase();
     const alias = conceptIdx.aliases[lower];
     const numVal = /^\d+$/.test(lower) ? Number(lower) : (NUMBER_WORDS[lower] ?? SMALL_NUMBERS[lower]);
-    const evHits = (motifsData.events || []).filter(e =>
-      e.keywords?.includes(lower) && (lower.length >= 4 || ['red', 'sea'].includes(lower))
-    ).slice(0, 4);
+    let evHits: any[] = [];
+    if (lower.length >= 4 || ['red', 'sea'].includes(lower)) {
+      if (!cachedEvents && eventKeywordSet?.has(lower)) {
+        const md = await ensureMotifsData();
+        cachedEvents = Array.isArray(md?.events)
+          ? md.events
+          : (md?.events_b64gz
+              ? await decodeB64Gz<any[]>(reader, md.events_b64gz, `/r10/events:${releaseId}`, budget.b64Cache)
+              : null);
+      }
+      if (cachedEvents) {
+        evHits = cachedEvents.filter(e => e.keywords?.includes(lower)).slice(0, 4);
+      }
+    }
 
     const hasContextWitness = (hit: any) => (hit.vs || []).some((vid: number) => contextVerseIds.has(Number(vid)));
     const shardHits = (await lookupShardToken(term)).sort((a, b) =>
@@ -1041,18 +1207,21 @@ export async function discoverBiblicalConnections(
         });
       }
 
-      for (const m of alias?.motifs || []) {
-        matchedMotifs.add(m);
-        const mInfo = motifsData.motifs[m];
-        if (mInfo) {
-          nodes.push({
-            id: `motif:${m}`,
-            kind: 'motif',
-            label: mInfo.label,
-            motif_id: m,
-            epistemic_class: 'shared_motif_evidence',
-            grounding_source: 'MACULA + STEPBible',
-          });
+      if ((alias?.motifs?.length ?? 0) > 0) {
+        const md = await ensureMotifsData();
+        for (const m of alias!.motifs!) {
+          matchedMotifs.add(m);
+          const mInfo = md?.motifs?.[m];
+          if (mInfo) {
+            nodes.push({
+              id: `motif:${m}`,
+              kind: 'motif',
+              label: mInfo.label,
+              motif_id: m,
+              epistemic_class: 'shared_motif_evidence',
+              grounding_source: 'MACULA + STEPBible',
+            });
+          }
         }
       }
       if (numVal !== undefined) {
@@ -1565,7 +1734,7 @@ export async function discoverBiblicalConnections(
         // 1. Same-verse intersections
         if (sharedVids.length > 0) {
           for (const vid of sharedVids.slice(0, 6)) {
-            const p = await hydratePassageByVid(vid);
+            const p = await hydratePassageByVid(vid, true);
             if (!p) continue;
             const pA = gA.profiles.find(pr => pr.all_vids.includes(vid))!;
             const pB = gB.profiles.find(pr => pr.all_vids.includes(vid))!;
@@ -1844,102 +2013,113 @@ export async function discoverBiblicalConnections(
 
   // Synthesize dynamic motif pair evidence
   const motifArray = [...matchedMotifs];
-  for (let i = 0; i < motifArray.length; i++) {
-    for (let j = i + 1; j < motifArray.length; j++) {
-      const [a, b] = [motifArray[i], motifArray[j]].sort();
-      const pair = motifsData.motif_pairs?.[`${a}|${b}`];
-      if (!pair || !pair.passages?.length) continue;
-      const mA = motifsData.motifs[a];
-      const mB = motifsData.motifs[b];
-      const evId = `r10:synth:motifpair:${a}:${b}`;
-      const words = [...(mA?.original_words || []).slice(0, 3), ...(mB?.original_words || []).slice(0, 3)];
-      allCandidates.push({
-        evidence_id: evId,
-        predicate: 'shared_motif',
-        evidence_tier: 5,
-        epistemic_class: 'shared_motif_evidence',
-        title: `Co-occurring biblical motifs: ${mA?.label || a} + ${mB?.label || b} (${pair.count} shared verses)`,
-        summary: `Deterministic corpus scan found ${pair.count} verses containing both motifs (${pair.passages.slice(0, 4).map((p: any) => p.ref).join(', ')}). Co-occurrence indicates shared imagery within those verses; context decides whether a theological or typological link exists.`,
-        source_node_id: `motif:${a}`,
-        target_node_id: `motif:${b}`,
-        passages: pair.passages.slice(0, 6),
-        original_words: words,
-        matched_terms: [a, b],
-        limitations: ['Motif co-occurrence does not automatically prove deliberate literary allusion across separate books.'],
-        provenance: {
-          source_dataset: 'MACULA Hebrew & Greek (31,146 verses scanned)',
-          source_record_ids: pair.passages.slice(0, 4).map((p: any) => p.ref),
-          license: 'CC BY 4.0',
-          derivation_method: 'deterministic_verse_motif_intersection',
-        },
-        score_components: {
-          base_tier_score: TIER_BASE_SCORE[5],
-          specificity_bonus: Math.min(80, pair.count * 2),
-          witness_bonus: Math.min(50, pair.passages.length * 8),
-          common_word_penalty: pair.count > 40 ? 90 : 0,
-          number_coincidence_penalty: 0,
-          orthographic_penalty: 0,
-          final_score: TIER_BASE_SCORE[5] + Math.min(80, pair.count * 2) - (pair.count > 40 ? 90 : 0),
-        },
-      });
+  if (motifArray.length >= 2) {
+    const md = await ensureMotifsData();
+    const motifPairs = md?.motif_pairs ?? (
+      md?.motif_pairs_b64gz
+        ? await decodeB64Gz<Record<string, any>>(reader, md.motif_pairs_b64gz, `/r10/motif_pairs:${releaseId}`, budget.b64Cache)
+        : undefined
+    );
+    for (let i = 0; i < motifArray.length; i++) {
+      for (let j = i + 1; j < motifArray.length; j++) {
+        const [a, b] = [motifArray[i], motifArray[j]].sort();
+        const pair = motifPairs?.[`${a}|${b}`];
+        if (!pair || !pair.passages?.length) continue;
+        const mA = md?.motifs?.[a];
+        const mB = md?.motifs?.[b];
+        const evId = `r10:synth:motifpair:${a}:${b}`;
+        const words = [...(mA?.original_words || []).slice(0, 3), ...(mB?.original_words || []).slice(0, 3)];
+        allCandidates.push({
+          evidence_id: evId,
+          predicate: 'shared_motif',
+          evidence_tier: 5,
+          epistemic_class: 'shared_motif_evidence',
+          title: `Co-occurring biblical motifs: ${mA?.label || a} + ${mB?.label || b} (${pair.count} shared verses)`,
+          summary: `Deterministic corpus scan found ${pair.count} verses containing both motifs (${pair.passages.slice(0, 4).map((p: any) => p.ref).join(', ')}). Co-occurrence indicates shared imagery within those verses; context decides whether a theological or typological link exists.`,
+          source_node_id: `motif:${a}`,
+          target_node_id: `motif:${b}`,
+          passages: pair.passages.slice(0, 6),
+          original_words: words,
+          matched_terms: [a, b],
+          limitations: ['Motif co-occurrence does not automatically prove deliberate literary allusion across separate books.'],
+          provenance: {
+            source_dataset: 'MACULA Hebrew & Greek (31,146 verses scanned)',
+            source_record_ids: pair.passages.slice(0, 4).map((p: any) => p.ref),
+            license: 'CC BY 4.0',
+            derivation_method: 'deterministic_verse_motif_intersection',
+          },
+          score_components: {
+            base_tier_score: TIER_BASE_SCORE[5],
+            specificity_bonus: Math.min(80, pair.count * 2),
+            witness_bonus: Math.min(50, pair.passages.length * 8),
+            common_word_penalty: pair.count > 40 ? 90 : 0,
+            number_coincidence_penalty: 0,
+            orthographic_penalty: 0,
+            final_score: TIER_BASE_SCORE[5] + Math.min(80, pair.count * 2) - (pair.count > 40 ? 90 : 0),
+          },
+        });
+      }
     }
   }
 
   // Dynamic Number Entity checks
-  if (matchedNumbers.size > 0 && numbersData?.by_value) {
-    for (const nVal of matchedNumbers) {
-      const bucket = numbersData.by_value[String(nVal)];
-      if (!bucket) continue;
-      const relevantGroups = (bucket.groups || []).filter((g: any) =>
-        resolvedConcepts.every(c => c.resolution_kind === 'number') ||
-        matchedStrongs.has(g.noun_s) ||
-        queryTermSet.has(normalizeToken(g.noun_g).split(/\s+/)[0] || '') ||
-        g.kind === 'symbolic_vision_count'
-      ).slice(0, 4);
+  if (matchedNumbers.size > 0) {
+    const numbersData = await readR10Json<{ by_value?: Record<string, any> }>(reader, releaseId, 'numbers-index.json.gz', budget);
+    if (numbersData?.by_value) {
+      for (const nVal of matchedNumbers) {
+        const bucket = numbersData.by_value[String(nVal)];
+        if (!bucket) continue;
+        const relevantGroups = (bucket.groups || []).filter((g: any) =>
+          resolvedConcepts.every(c => c.resolution_kind === 'number') ||
+          matchedStrongs.has(g.noun_s) ||
+          queryTermSet.has(normalizeToken(g.noun_g).split(/\s+/)[0] || '') ||
+          g.kind === 'symbolic_vision_count'
+        ).slice(0, 4);
 
-      for (const grp of relevantGroups) {
-        const isHighCoinc = grp.kind === 'temporal_duration' || grp.count > 25;
-        const tier: R10EvidenceTier = grp.kind === 'symbolic_vision_count' ? 4 : 6;
-        const pen = isHighCoinc ? 220 : 0;
-        const passages: R10PassageRef[] = (grp.samples || []).slice(0, 5).map((s: any) => ({
-          verse_id: s.vid,
-          ref: s.ref,
-          book: s.book,
-          chapter: s.ch,
-          verse: s.vs,
-          testament: s.book <= 39 ? 'OT' : 'NT',
-        }));
-        allCandidates.push({
-          evidence_id: `r10:synth:num:${nVal}:${grp.noun_s}:${grp.kind}`,
-          predicate: 'numbered_entity',
-          evidence_tier: tier,
-          epistemic_class: 'direct_textual_evidence',
-          title: `Counted entity (${grp.kind.replace(/_/g, ' ')}): ${nVal} × ${grp.noun_lm} ("${grp.noun_g}", ${grp.count}× in Scripture)`,
-          summary: `Syntactic numeral-noun extraction shows ${nVal} modifying ${grp.noun_lm} (${grp.noun_s}, "${grp.noun_g}") across ${grp.count} occurrences (e.g., ${passages.slice(0, 3).map(p => p.ref).join(', ')}).`,
-          source_node_id: `number:${nVal}`,
-          target_node_id: `lemma:${grp.noun_s}`,
-          passages,
-          original_words: lemmaCache.has(grp.noun_s) ? [lemmaCache.get(grp.noun_s)!] : [],
-          matched_terms: [String(nVal), normalizeToken(grp.noun_g)],
-          number_classification: {
-            number_value: nVal,
-            counted_entity: `${grp.noun_lm} (${grp.noun_g})`,
-            kind: grp.kind as R10NumberKind,
-            coincidence_risk: isHighCoinc ? 'high' : 'low',
-            note: isHighCoinc ? 'High-frequency temporal or ordinary count; shared number alone does NOT establish symbolic equivalence.' : 'Specific counted object / vision entity.',
-          },
-          limitations: ['Counted-entity matches prove the syntactic numeral+noun phrase appears; theological typology requires contextual or authorial links.'],
-          provenance: { source_dataset: 'MACULA Hebrew & Greek syntactic numerals', source_record_ids: passages.slice(0, 3).map(p => p.ref), license: 'CC BY 4.0', derivation_method: 'syntactic_numeral_noun_extraction' },
-          score_components: {
-            base_tier_score: TIER_BASE_SCORE[tier],
-            specificity_bonus: matchedStrongs.has(grp.noun_s) ? 90 : 20,
-            witness_bonus: Math.min(40, grp.count * 4),
-            common_word_penalty: 0,
-            number_coincidence_penalty: pen,
-            orthographic_penalty: 0,
-            final_score: TIER_BASE_SCORE[tier] + (matchedStrongs.has(grp.noun_s) ? 90 : 20) - pen,
-          },
-        });
+        for (const grp of relevantGroups) {
+          const isHighCoinc = grp.kind === 'temporal_duration' || grp.count > 25;
+          const tier: R10EvidenceTier = grp.kind === 'symbolic_vision_count' ? 4 : 6;
+          const pen = isHighCoinc ? 220 : 0;
+          const passages: R10PassageRef[] = (grp.samples || []).slice(0, 5).map((s: any) => ({
+            verse_id: s.vid,
+            ref: s.ref,
+            book: s.book,
+            chapter: s.ch,
+            verse: s.vs,
+            testament: s.book <= 39 ? 'OT' : 'NT',
+          }));
+          allCandidates.push({
+            evidence_id: `r10:synth:num:${nVal}:${grp.noun_s}:${grp.kind}`,
+            predicate: 'numbered_entity',
+            evidence_tier: tier,
+            epistemic_class: 'direct_textual_evidence',
+            title: `Counted entity (${grp.kind.replace(/_/g, ' ')}): ${nVal} × ${grp.noun_lm} ("${grp.noun_g}", ${grp.count}× in Scripture)`,
+            summary: `Syntactic numeral-noun extraction shows ${nVal} modifying ${grp.noun_lm} (${grp.noun_s}, "${grp.noun_g}") across ${grp.count} occurrences (e.g., ${passages.slice(0, 3).map(p => p.ref).join(', ')}).`,
+            source_node_id: `number:${nVal}`,
+            target_node_id: `lemma:${grp.noun_s}`,
+            passages,
+            original_words: lemmaCache.has(grp.noun_s) ? [lemmaCache.get(grp.noun_s)!] : [],
+            matched_terms: [String(nVal), normalizeToken(grp.noun_g)],
+            number_classification: {
+              number_value: nVal,
+              counted_entity: `${grp.noun_lm} (${grp.noun_g})`,
+              kind: grp.kind as R10NumberKind,
+              coincidence_risk: isHighCoinc ? 'high' : 'low',
+              note: isHighCoinc ? 'High-frequency temporal or ordinary count; shared number alone does NOT establish symbolic equivalence.' : 'Specific counted object / vision entity.',
+            },
+            limitations: ['Counted-entity matches prove the syntactic numeral+noun phrase appears; theological typology requires contextual or authorial links.'],
+            provenance: { source_dataset: 'MACULA Hebrew & Greek syntactic numerals', source_record_ids: passages.slice(0, 3).map(p => p.ref), license: 'CC BY 4.0', derivation_method: 'syntactic_numeral_noun_extraction' },
+            score_components: {
+              base_tier_score: TIER_BASE_SCORE[tier],
+              specificity_bonus: matchedStrongs.has(grp.noun_s) ? 90 : 20,
+              witness_bonus: Math.min(40, grp.count * 4),
+              common_word_penalty: 0,
+              number_coincidence_penalty: pen,
+              orthographic_penalty: 0,
+              final_score: TIER_BASE_SCORE[tier] + (matchedStrongs.has(grp.noun_s) ? 90 : 20) - pen,
+            },
+          });
+        }
       }
     }
   }
@@ -1948,10 +2128,15 @@ export async function discoverBiblicalConnections(
   const hebStrongs = [...matchedStrongs].filter(s => s.startsWith('H')).slice(0, 3);
   const orthDetails: any[] = [];
   for (const hs of hebStrongs) {
-    const bHex = computeBucketHex('fnv1a64_mod64', 64, hs);
-    const orthShard = await readR10Json<{ entries?: Record<string, any> }>(reader, releaseId, `orthographic/shard-${bHex}.json.gz`, budget);
-    const entry = orthShard?.entries?.[hs];
-    if (entry) orthDetails.push(entry);
+    if (fastManifest?.direct_b64gz && profileByStrongs.has(hs)) {
+      const entry = profileByStrongs.get(hs)!.orth_entry;
+      if (entry) orthDetails.push(entry);
+    } else {
+      const bHex = computeBucketHex('fnv1a64_mod64', 64, hs);
+      const orthShard = await readR10Json<{ entries?: Record<string, any> }>(reader, releaseId, `orthographic/shard-${bHex}.json.gz`, budget);
+      const entry = orthShard?.entries?.[hs];
+      if (entry) orthDetails.push(entry);
+    }
   }
 
   // R12 Pilot Integration: merge offline 2-5 hop beam recommendations, external property bridges,
@@ -1968,48 +2153,69 @@ export async function discoverBiblicalConnections(
   const pilotCandidateKeys = new Set<string>(matchedStrongs);
   if (query.focus_lemma) pilotCandidateKeys.add(query.focus_lemma);
   if (query.anchor?.extended_strongs) pilotCandidateKeys.add(query.anchor.extended_strongs.replace(/([HG])0*(\d+)[A-Z]?/i, (_, p, n) => p + n.padStart(4, '0')));
-  if (fastManifest?.r12_pilot && pilotCandidateKeys.size > 0) {
-    const r12Pilot = await readR12Pilot(reader, releaseId, fastManifest, budget);
-    if (r12Pilot?.anchors) {
-      r12ScoreVersion = r12Pilot.score_version || 'r12-ranker-v1';
-      r12ExternalSources = (r12Pilot.external_sources || []).map(s => ({
+  if (pilotCandidateKeys.size > 0 && (fastManifest?.r12_pilot_embedded || fastManifest?.r12_pilot)) {
+    const resolvedPilotAnchors: Array<[string, any]> = [];
+    if (fastManifest.r12_pilot_embedded) {
+      r12ScoreVersion = fastManifest.r12_score_version || 'r12-ranker-v1';
+      r12ExternalSources = (fastManifest.r12_external_sources || []).map(s => ({
         id: s.id,
         provider: s.provider,
         release: s.release,
         license: s.license,
       }));
+      const pilotSet = new Set(fastManifest.r12_pilot_anchors_list || []);
       for (const bs of pilotCandidateKeys) {
-        const anchorData = r12Pilot.anchors[bs];
-        if (!anchorData) continue;
-        r12AnchorsMatched.push(bs);
+        if (!pilotSet.has(bs)) continue;
+        const anchorData =
+          profileByStrongs.get(bs)?.r12_pilot_anchor ??
+          (await readProfile(reader, releaseId, fastManifest, bs, budget))?.r12_pilot_anchor;
+        if (anchorData) resolvedPilotAnchors.push([bs, anchorData]);
+      }
+    } else if (fastManifest.r12_pilot) {
+      const r12Pilot = await readR12Pilot(reader, releaseId, fastManifest, budget);
+      if (r12Pilot?.anchors) {
+        r12ScoreVersion = r12Pilot.score_version || 'r12-ranker-v1';
+        r12ExternalSources = (r12Pilot.external_sources || []).map(s => ({
+          id: s.id,
+          provider: s.provider,
+          release: s.release,
+          license: s.license,
+        }));
+        for (const bs of pilotCandidateKeys) {
+          const anchorData = r12Pilot.anchors[bs];
+          if (anchorData) resolvedPilotAnchors.push([bs, anchorData]);
+        }
+      }
+    }
+    for (const [bs, anchorData] of resolvedPilotAnchors) {
+      r12AnchorsMatched.push(bs);
 
-        const recs: any[] = anchorData.multihop?.recommendations || [];
-        const takeRecs = (query.mode === 'expand' || query.focus_lemma === bs) ? recs.slice(0, 12) : recs.slice(0, 6);
-        for (const rec of takeRecs) {
-          allCandidates.push(r12MultihopRecToRecord(anchorData, rec));
-          r12MultihopCount++;
-        }
-        if ((anchorData.multihop?.unreturned_destinations || 0) > 0 && !r12TailCursor) {
-          r12TailCursor = String(offset + limit);
-        }
+      const recs: any[] = anchorData.multihop?.recommendations || [];
+      const takeRecs = (query.mode === 'expand' || query.focus_lemma === bs) ? recs.slice(0, 12) : recs.slice(0, 6);
+      for (const rec of takeRecs) {
+        allCandidates.push(r12MultihopRecToRecord(anchorData, rec));
+        r12MultihopCount++;
+      }
+      if ((anchorData.multihop?.unreturned_destinations || 0) > 0 && !r12TailCursor) {
+        r12TailCursor = String(offset + limit);
+      }
 
-        const props: any[] = anchorData.property_bridges || [];
-        for (const b of props.slice(0, 6)) {
-          allCandidates.push(r12PropertyBridgeToRecord(anchorData, b));
-          r12PropertyCount++;
-        }
+      const props: any[] = anchorData.property_bridges || [];
+      for (const b of props.slice(0, 6)) {
+        allCandidates.push(r12PropertyBridgeToRecord(anchorData, b));
+        r12PropertyCount++;
+      }
 
-        const structs: any[] = anchorData.structural_candidates || [];
-        for (const s of structs.slice(0, 3)) {
-          allCandidates.push(r12StructuralToRecord(anchorData, s));
-          r12StructuralCount++;
-        }
+      const structs: any[] = anchorData.structural_candidates || [];
+      for (const s of structs.slice(0, 3)) {
+        allCandidates.push(r12StructuralToRecord(anchorData, s));
+        r12StructuralCount++;
+      }
 
-        const orths: any[] = anchorData.orthographic_candidates || [];
-        for (const o of orths.slice(0, 2)) {
-          allCandidates.push(r12OrthographicToRecord(anchorData, o));
-          r12OrthographicCount++;
-        }
+      const orths: any[] = anchorData.orthographic_candidates || [];
+      for (const o of orths.slice(0, 2)) {
+        allCandidates.push(r12OrthographicToRecord(anchorData, o));
+        r12OrthographicCount++;
       }
     }
   }
@@ -2066,11 +2272,21 @@ export async function discoverBiblicalConnections(
   const pagedOccVids = targetVids.slice(occOffset, occOffset + occLimit);
   let hasMoreOcc = occOffset + occLimit < targetVids.length;
 
-  const hydratedOccPassages: R10PassageRef[] = [];
-  for (const vid of pagedOccVids) {
-    const p = await hydratePassageByVid(vid);
-    if (!p) break;
-    hydratedOccPassages.push(p);
+  let hydratedOccPassages: R10PassageRef[] = [];
+  if (
+    !query.cluster_id &&
+    occOffset === 0 &&
+    focusProf?.first_occ_passages?.length &&
+    pagedOccVids.length > 0 &&
+    (occLimit <= focusProf.first_occ_passages.length || pagedOccVids.length <= focusProf.first_occ_passages.length)
+  ) {
+    hydratedOccPassages = focusProf.first_occ_passages.slice(0, pagedOccVids.length);
+  } else {
+    for (const vid of pagedOccVids) {
+      const p = await hydratePassageByVid(vid);
+      if (!p) break;
+      hydratedOccPassages.push(p);
+    }
   }
   hasMoreOcc = occOffset + hydratedOccPassages.length < targetVids.length;
 
@@ -2376,9 +2592,9 @@ export async function discoverBiblicalConnections(
     related_discoveries: {
       additional_motifs: [...matchedMotifs].map(mId => ({
         motif_id: mId,
-        label: motifsData.motifs[mId]?.label || mId,
-        summary: `Verified original-language motif occurrences across ${motifsData.motifs[mId]?.total_verses || 0} verses.`,
-        passage_count: motifsData.motifs[mId]?.total_verses || 0,
+        label: motifsData?.motifs?.[mId]?.label || mId,
+        summary: `Verified original-language motif occurrences across ${motifsData?.motifs?.[mId]?.total_verses || 0} verses.`,
+        passage_count: motifsData?.motifs?.[mId]?.total_verses || 0,
       })),
       roots_and_wordplay: summaries.filter(s => s.predicate === 'orthographic_wordplay' || s.predicate === 'orthographic_overlap' || s.predicate === 'cross_language_bridge'),
       cross_references: crossReferencesOut,
@@ -2453,59 +2669,14 @@ export async function getConnectionEvidence(
   evidenceId: string,
   releaseId: string = DEFAULT_R10_RELEASE
 ): Promise<ConnectionEvidenceResult> {
-  const budget = { used: 0, max: MAX_SUBREQUEST_BUDGET, missing: [] as string[] };
+  const budget = { used: 0, max: MAX_SUBREQUEST_BUDGET, missing: [] as string[], b64Cache: new Map<string, any>() };
   const fastManifest = await readR10Json<FastManifest>(reader, releaseId, 'fast-manifest.json.gz', budget);
   let record: R10EvidenceRecord | null = null;
   const targetStrongs = new Set<string>();
 
-  const fastVerseCache = new Map<number, any>();
-  const bookCache = new Map<number, any>();
-  async function loadBookData(bookId: number): Promise<any> {
-    if (bookCache.has(bookId)) return bookCache.get(bookId);
-    const pad = String(bookId).padStart(2, '0');
-    const data = await readR10Json<{ verses?: Record<string, any> }>(
-      reader, releaseId, `evidence-passages/book-${pad}.json.gz`, budget
-    );
-    const verses = data?.verses || null;
-    bookCache.set(bookId, verses);
-    return verses;
-  }
-
-  async function hydratePassageByVid(vid: number): Promise<R10PassageRef | null> {
-    const book = bookForVid(vid);
-    let v;
-    if (fastManifest?.packed) {
-      const chunk = Math.floor((vid - 1) / fastManifest.verse_chunk_size);
-      v = await readR10Key(reader, releaseId, `fast-verses/chunk-${chunk.toString(16).padStart(3, '0')}.json.gz`, String(vid), 'verses', budget);
-      if (v) bookCache.set(book, { ...(bookCache.get(book) || {}), [String(vid)]: v });
-    } else if (fastManifest?.selective) {
-      v = await readSelectiveKey(reader, releaseId, 'verses', String(vid), budget);
-      if (v) bookCache.set(book, { ...(bookCache.get(book) || {}), [String(vid)]: v });
-    } else if (fastManifest) {
-      const chunk = Math.floor((vid - 1) / fastManifest.verse_chunk_size);
-      if (!fastVerseCache.has(chunk)) {
-        const data = await readR10Json<{ verses: Record<string, any> }>(reader, releaseId, `fast-verses/chunk-${chunk.toString(16).padStart(3, '0')}.json.gz`, budget);
-        fastVerseCache.set(chunk, data?.verses || {});
-      }
-      v = fastVerseCache.get(chunk)?.[String(vid)];
-      if (v) bookCache.set(book, { ...(bookCache.get(book) || {}), [String(vid)]: v });
-    } else {
-      const verses = await loadBookData(book);
-      v = verses?.[String(vid)];
-    }
-    if (!v) return null;
-    return {
-      verse_id: vid,
-      ref: v.ref,
-      mt_ref: v.mt_ref,
-      book: v.book,
-      chapter: v.chapter,
-      verse: v.verse,
-      testament: v.book <= 39 ? 'OT' : 'NT',
-      snippet: v.en,
-      is_psalm_heading: v.book === 19 && v.verse === 0,
-    };
-  }
+  const { bookCache, loadBookData, hydratePassageByVid } = createPassageHydrator(
+    reader, releaseId, fastManifest, budget, true,
+  );
 
   // Handle R11 synthesized dynamic evidence IDs
   if (evidenceId.startsWith('r11:cluster:')) {
@@ -3000,9 +3171,16 @@ export async function getConnectionEvidence(
     evidenceId.startsWith('r12:struct:') ||
     evidenceId.startsWith('r12:orth:')
   ) {
-    const r12Pilot = await readR12Pilot(reader, releaseId, fastManifest, budget);
     const anchorKey = evidenceId.split(':')[2] || '';
-    const anchorData = r12Pilot?.anchors?.[anchorKey];
+    let anchorData: any = null;
+    if (fastManifest?.r12_pilot_embedded) {
+      if (anchorKey && (fastManifest.r12_pilot_anchors_list || []).includes(anchorKey)) {
+        anchorData = (await readProfile(reader, releaseId, fastManifest, anchorKey, budget))?.r12_pilot_anchor ?? null;
+      }
+    } else {
+      const r12Pilot = await readR12Pilot(reader, releaseId, fastManifest, budget);
+      anchorData = r12Pilot?.anchors?.[anchorKey];
+    }
     if (anchorData) {
       if (evidenceId.startsWith('r12:path:')) {
         const rec = (anchorData.multihop?.recommendations || []).find((r: any) => r.evidence_id === evidenceId);
@@ -3030,12 +3208,17 @@ export async function getConnectionEvidence(
   if (!record && evidenceId.startsWith('r10:synth:motifpair:')) {
     const parts = evidenceId.split(':');
     const a = parts[3], b = parts[4];
-    const motifsData = await readR10Json<{ motif_pairs?: Record<string, any>; motifs?: Record<string, any> }>(
+    const motifsData = await readR10Json<MotifsData>(
       reader, releaseId, 'motifs-and-patterns.json.gz', budget
     );
-    const pair = motifsData?.motif_pairs?.[`${a}|${b}`];
+    const motifPairs = motifsData?.motif_pairs ?? (
+      motifsData?.motif_pairs_b64gz
+        ? await decodeB64Gz<Record<string, any>>(reader, motifsData.motif_pairs_b64gz, `/r10/motif_pairs:${releaseId}`, budget.b64Cache)
+        : undefined
+    );
+    const pair = motifPairs?.[`${a}|${b}`];
     if (pair) {
-      const mA = motifsData.motifs?.[a], mB = motifsData.motifs?.[b];
+      const mA = motifsData!.motifs?.[a], mB = motifsData!.motifs?.[b];
       record = {
         evidence_id: evidenceId,
         predicate: 'shared_motif',
@@ -3091,8 +3274,15 @@ export async function getConnectionEvidence(
   const booksNeeded = [...new Set((record.passages || []).map(p => p.book).filter(b => b > 0))].slice(0, MAX_EVIDENCE_BOOKS);
   if (fastManifest) {
     for (const p of record.passages.slice(0, 6)) {
-      const vid = p.verse_id || (fastManifest.selective ? Number(await readSelectiveKey(reader, releaseId, 'refs', `${p.book}:${p.chapter}:${p.verse}`, budget)) : 0);
-      if (vid) await hydratePassageByVid(vid);
+      let vid = p.verse_id || 0;
+      if (!vid && fastManifest.selective && p.book > 0) {
+        vid = Number(await readSelectiveKey(reader, releaseId, 'refs', `${p.book}:${p.chapter}:${p.verse}`, budget));
+      } else if (!vid && fastManifest.direct_b64gz && p.book > 0) {
+        const pad = String(p.book).padStart(2, '0');
+        const idx = await readR10Json<any>(reader, releaseId, `evidence-passages/book-${pad}.json.gz`, budget);
+        vid = Number(idx?.coord_to_vid?.[`${p.chapter}:${p.verse}`] || 0);
+      }
+      if (vid) await hydratePassageByVid(vid, true);
     }
   } else {
     await Promise.all(booksNeeded.map(async b => { await loadBookData(b); }));
@@ -3173,9 +3363,10 @@ export async function expandBiblicalConnection(
     const extTarget = nodeId.replace(/^ext:/, '');
     const r12Budget: ReadBudget = { used: 0, max: 10, missing: [] };
     const manifest = await readR10Json<FastManifest>(reader, releaseId, 'fast-manifest.json.gz', r12Budget);
-    const pilot = await readR12Pilot(reader, releaseId, manifest, r12Budget);
-    if (pilot?.external_mappings) {
-      const mappedAnchors = pilot.external_mappings
+    const externalMappings = manifest?.r12_external_mappings
+      ?? (await readR12Pilot(reader, releaseId, manifest, r12Budget))?.external_mappings;
+    if (externalMappings) {
+      const mappedAnchors = externalMappings
         .filter((m: any) => m.wikidata_id === extTarget || m.oewn_id === extTarget)
         .map((m: any) => String(m.anchor_id || '').replace(/^lemma:/, ''))
         .filter(Boolean);

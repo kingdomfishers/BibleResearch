@@ -74,6 +74,7 @@ export interface AssetReadResult {
 
 export interface AssetReader {
   readJson(assetPath: string): Promise<AssetReadResult | null>;
+  decodeB64GzJson?<T = any>(b64: string, cacheKey?: string): Promise<T> | T;
 }
 
 async function importNodeBuiltin<T>(specifier: string): Promise<T> {
