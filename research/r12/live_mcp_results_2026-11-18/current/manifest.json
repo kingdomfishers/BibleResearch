@@ -1,0 +1,22 @@
+{
+  "schema": "r12-real-mcp-snapshot-v1",
+  "created_at": "2026-11-18T19:41:28.342Z",
+  "source": "LIVE BibleResearch MCP tools/call, NOT a corpus Worker shortcut",
+  "endpoint": "https://ejoperxiwxlcbsqrkrvb.supabase.co/functions/v1/bible-mcp/mcp",
+  "benchmark": "research/r12/R12_EXPECTED_CONNECTIONS_180_PLUS.json",
+  "benchmark_sha256": "c7e16899c4cd1a93e888e5ecb77734246a2af1a8c71b8d49c423e35bf2feb232",
+  "expected": 239,
+  "concurrency": 1,
+  "batch_size": 20,
+  "attempts": 3,
+  "evidence_probe_enabled": false,
+  "status": "RUNNING",
+  "completed": 20,
+  "success": 20,
+  "errors": 0,
+  "possible_matches": 16,
+  "batches": [
+    "batch_001_020.json"
+  ],
+  "notice": "Every result is an observed top-K retrieval, not an independently verified PASS. Missing data after TOOL_ERROR is transport failure, not a negative discovery result."
+}
