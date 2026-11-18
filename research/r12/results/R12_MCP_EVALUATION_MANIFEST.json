@@ -1,0 +1,4081 @@
+{
+  "schema_version": "r12-live-evaluation-manifest-v1",
+  "date": "2026-11-18",
+  "source": "Actual connected @BibleResearch MCP, not mock",
+  "status": "BLOCKED_GATEWAY_HTTP_503",
+  "total_cases": 239,
+  "executed_cases": 12,
+  "distinct_executed_queries": 6,
+  "successful_distinct_queries": 0,
+  "remaining_cases": 227,
+  "diagnostics": {
+    "original_parameters": "6 unique lexical queries all failed: five Signal timed out, one Cloudflare relationship graph gateway HTTP 503",
+    "reduced_parameter_probes": "H0120 limit 5 hops 2 returned 503; Genesis 1:1 limit 5 hops 2 returned 503; Exodus 12:15 limit 5 hops 2 returned 503",
+    "recommendation": "Stop load-generating discovery calls until gateway healthy. Preserve failures as transport, not algorithm FAIL. Resume from NOT_EXECUTED entries and capture original result ranking/evidence."
+  },
+  "case_statuses": [
+    {
+      "id": "L001",
+      "index": 1,
+      "category": "linguistic_form",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "H0120",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": "R12_MCP_RESULTS_001_012.json",
+      "execution_status": "MCP_TRANSPORT_FAILURE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 15
+    },
+    {
+      "id": "L002",
+      "index": 2,
+      "category": "linguistic_form",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "H0120",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": "R12_MCP_RESULTS_001_012.json",
+      "execution_status": "MCP_TRANSPORT_FAILURE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 25
+    },
+    {
+      "id": "L003",
+      "index": 3,
+      "category": "linguistic_lexical",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "H1818",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": "R12_MCP_RESULTS_001_012.json",
+      "execution_status": "MCP_TRANSPORT_FAILURE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "L004",
+      "index": 4,
+      "category": "linguistic_form",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "H2233",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": "R12_MCP_RESULTS_001_012.json",
+      "execution_status": "MCP_TRANSPORT_FAILURE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 15
+    },
+    {
+      "id": "L005",
+      "index": 5,
+      "category": "linguistic_lexical",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "H2233",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": "R12_MCP_RESULTS_001_012.json",
+      "execution_status": "MCP_TRANSPORT_FAILURE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 12
+    },
+    {
+      "id": "L006",
+      "index": 6,
+      "category": "linguistic_lexical",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "H1285",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": "R12_MCP_RESULTS_001_012.json",
+      "execution_status": "MCP_TRANSPORT_FAILURE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "L007",
+      "index": 7,
+      "category": "linguistic_lexical",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "H1285",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": "R12_MCP_RESULTS_001_012.json",
+      "execution_status": "MCP_TRANSPORT_FAILURE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 12
+    },
+    {
+      "id": "L008",
+      "index": 8,
+      "category": "linguistic_lexical",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "H1285",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": "R12_MCP_RESULTS_001_012.json",
+      "execution_status": "MCP_TRANSPORT_FAILURE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 15
+    },
+    {
+      "id": "L009",
+      "index": 9,
+      "category": "linguistic_polysemy",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "H7307",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": "R12_MCP_RESULTS_001_012.json",
+      "execution_status": "MCP_TRANSPORT_FAILURE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 20
+    },
+    {
+      "id": "L010",
+      "index": 10,
+      "category": "linguistic_polysemy",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "H7307",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": "R12_MCP_RESULTS_001_012.json",
+      "execution_status": "MCP_TRANSPORT_FAILURE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 15
+    },
+    {
+      "id": "L011",
+      "index": 11,
+      "category": "linguistic_polysemy",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "H5869",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": "R12_MCP_RESULTS_001_012.json",
+      "execution_status": "MCP_TRANSPORT_FAILURE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 20
+    },
+    {
+      "id": "L012",
+      "index": 12,
+      "category": "linguistic_translation",
+      "difficulty": 4,
+      "polarity": "positive",
+      "query": {
+        "query": "H5869",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": "R12_MCP_RESULTS_001_012.json",
+      "execution_status": "MCP_TRANSPORT_FAILURE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 20
+    },
+    {
+      "id": "L013",
+      "index": 13,
+      "category": "linguistic_lexical",
+      "difficulty": 1,
+      "polarity": "positive",
+      "query": {
+        "query": "H4501",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "L014",
+      "index": 14,
+      "category": "linguistic_translation",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "H4501",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 15
+    },
+    {
+      "id": "L015",
+      "index": 15,
+      "category": "linguistic_translation",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "H5216",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 15
+    },
+    {
+      "id": "L016",
+      "index": 16,
+      "category": "linguistic_lexical",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "H5216",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 15
+    },
+    {
+      "id": "L017",
+      "index": 17,
+      "category": "linguistic_translation",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "H8438",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 15
+    },
+    {
+      "id": "L018",
+      "index": 18,
+      "category": "linguistic_translation",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "H0231",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "L019",
+      "index": 19,
+      "category": "linguistic_lexical",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "H0231",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 12
+    },
+    {
+      "id": "L020",
+      "index": 20,
+      "category": "linguistic_translation",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "H4682",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 15
+    },
+    {
+      "id": "L021",
+      "index": 21,
+      "category": "linguistic_lexical",
+      "difficulty": 1,
+      "polarity": "positive",
+      "query": {
+        "query": "H0784",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "L022",
+      "index": 22,
+      "category": "linguistic_translation",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "H3899",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 12
+    },
+    {
+      "id": "L023",
+      "index": 23,
+      "category": "linguistic_translation",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "H0216",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 15
+    },
+    {
+      "id": "L024",
+      "index": 24,
+      "category": "linguistic_lexical",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "H3722",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 20
+    },
+    {
+      "id": "L025",
+      "index": 25,
+      "category": "linguistic_translation",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "H4325",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 20
+    },
+    {
+      "id": "L026",
+      "index": 26,
+      "category": "linguistic_lexical",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "G3056",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 20
+    },
+    {
+      "id": "L027",
+      "index": 27,
+      "category": "linguistic_lexical",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "G3088",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "L028",
+      "index": 28,
+      "category": "linguistic_translation",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "G3087",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 15
+    },
+    {
+      "id": "L029",
+      "index": 29,
+      "category": "linguistic_lexical",
+      "difficulty": 1,
+      "polarity": "positive",
+      "query": {
+        "query": "G2847",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "L030",
+      "index": 30,
+      "category": "linguistic_translation",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "G1953",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 20
+    },
+    {
+      "id": "L031",
+      "index": 31,
+      "category": "linguistic_lexical",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "G5140",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 12
+    },
+    {
+      "id": "L032",
+      "index": 32,
+      "category": "linguistic_lexical",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "G1453",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 12
+    },
+    {
+      "id": "L033",
+      "index": 33,
+      "category": "linguistic_lexical",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "G3957",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 12
+    },
+    {
+      "id": "L034",
+      "index": 34,
+      "category": "linguistic_lexical",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "H4682",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 15
+    },
+    {
+      "id": "L035",
+      "index": 35,
+      "category": "linguistic_lexical",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "H5216",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 15
+    },
+    {
+      "id": "L036",
+      "index": 36,
+      "category": "linguistic_translation",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "H2091",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 20
+    },
+    {
+      "id": "L037",
+      "index": 37,
+      "category": "linguistic_lexical",
+      "difficulty": 1,
+      "polarity": "positive",
+      "query": {
+        "query": "H3220",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "L038",
+      "index": 38,
+      "category": "linguistic_translation",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "H2416",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 20
+    },
+    {
+      "id": "L039",
+      "index": 39,
+      "category": "linguistic_translation",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "H4194",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 15
+    },
+    {
+      "id": "L040",
+      "index": 40,
+      "category": "linguistic_translation",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "H1285",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "L041",
+      "index": 41,
+      "category": "linguistic_translation",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "H3068",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "L042",
+      "index": 42,
+      "category": "linguistic_translation",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "H0157",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "L043",
+      "index": 43,
+      "category": "linguistic_translation",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "H0539",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 12
+    },
+    {
+      "id": "L044",
+      "index": 44,
+      "category": "linguistic_translation",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "H7225",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "L045",
+      "index": 45,
+      "category": "linguistic_translation",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "H0430",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 15
+    },
+    {
+      "id": "L046",
+      "index": 46,
+      "category": "linguistic_translation",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "H7676",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 15
+    },
+    {
+      "id": "L047",
+      "index": 47,
+      "category": "linguistic_translation",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "H8064",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 15
+    },
+    {
+      "id": "L048",
+      "index": 48,
+      "category": "linguistic_polysemy",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "H2233",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 20
+    },
+    {
+      "id": "L049",
+      "index": 49,
+      "category": "linguistic_polysemy",
+      "difficulty": 4,
+      "polarity": "positive",
+      "query": {
+        "query": "H7307",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 20
+    },
+    {
+      "id": "L050",
+      "index": 50,
+      "category": "linguistic_form",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "H0127",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 15
+    },
+    {
+      "id": "L051",
+      "index": 51,
+      "category": "linguistic_form",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "H1818",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 20
+    },
+    {
+      "id": "L052",
+      "index": 52,
+      "category": "linguistic_lexical",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "H0231",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 15
+    },
+    {
+      "id": "L053",
+      "index": 53,
+      "category": "linguistic_lexical",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "H1285",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 25
+    },
+    {
+      "id": "L054",
+      "index": 54,
+      "category": "linguistic_lexical",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "H5237",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 20
+    },
+    {
+      "id": "L055",
+      "index": 55,
+      "category": "linguistic_lexical",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "G3088",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 12
+    },
+    {
+      "id": "D001",
+      "index": 56,
+      "category": "direct_intertext",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "Genesis 1:1",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "D002",
+      "index": 57,
+      "category": "direct_intertext",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "Genesis 1:3",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 15
+    },
+    {
+      "id": "D003",
+      "index": 58,
+      "category": "direct_intertext",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "Genesis 1:26",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "D004",
+      "index": 59,
+      "category": "direct_intertext",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "Genesis 2:7",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "D005",
+      "index": 60,
+      "category": "direct_intertext",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "Genesis 3:15",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 20
+    },
+    {
+      "id": "D006",
+      "index": 61,
+      "category": "direct_intertext",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "Genesis 6:18",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "D007",
+      "index": 62,
+      "category": "direct_intertext",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "Genesis 8:1",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 15
+    },
+    {
+      "id": "D008",
+      "index": 63,
+      "category": "direct_intertext",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "Genesis 9:13",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 20
+    },
+    {
+      "id": "D009",
+      "index": 64,
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "polarity": "positive",
+      "query": {
+        "query": "Genesis 12:3",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "D010",
+      "index": 65,
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "polarity": "positive",
+      "query": {
+        "query": "Genesis 15:6",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "D011",
+      "index": 66,
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "polarity": "positive",
+      "query": {
+        "query": "Genesis 22:2",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "D012",
+      "index": 67,
+      "category": "direct_intertext",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "Genesis 22:8",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 20
+    },
+    {
+      "id": "D013",
+      "index": 68,
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "polarity": "positive",
+      "query": {
+        "query": "Genesis 28:12",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "D014",
+      "index": 69,
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "polarity": "positive",
+      "query": {
+        "query": "Exodus 3:6",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "D015",
+      "index": 70,
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "polarity": "positive",
+      "query": {
+        "query": "Exodus 12:5",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "D016",
+      "index": 71,
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "polarity": "positive",
+      "query": {
+        "query": "Exodus 12:13",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "D017",
+      "index": 72,
+      "category": "direct_intertext",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "Exodus 12:22",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 15
+    },
+    {
+      "id": "D018",
+      "index": 73,
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "polarity": "positive",
+      "query": {
+        "query": "Exodus 14:21",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "D019",
+      "index": 74,
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "polarity": "positive",
+      "query": {
+        "query": "Exodus 16:4",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "D020",
+      "index": 75,
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "polarity": "positive",
+      "query": {
+        "query": "Exodus 17:6",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "D021",
+      "index": 76,
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "polarity": "positive",
+      "query": {
+        "query": "Exodus 20:12",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "D022",
+      "index": 77,
+      "category": "direct_intertext",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "Exodus 25:31",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 12
+    },
+    {
+      "id": "D023",
+      "index": 78,
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "polarity": "positive",
+      "query": {
+        "query": "Leviticus 16:15",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "D024",
+      "index": 79,
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "polarity": "positive",
+      "query": {
+        "query": "Leviticus 17:11",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 12
+    },
+    {
+      "id": "D025",
+      "index": 80,
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "polarity": "positive",
+      "query": {
+        "query": "Numbers 21:9",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "D026",
+      "index": 81,
+      "category": "direct_intertext",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "Numbers 24:17",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 20
+    },
+    {
+      "id": "D027",
+      "index": 82,
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "polarity": "positive",
+      "query": {
+        "query": "Deuteronomy 6:4",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "D028",
+      "index": 83,
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "polarity": "positive",
+      "query": {
+        "query": "Deuteronomy 6:5",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "D029",
+      "index": 84,
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "polarity": "positive",
+      "query": {
+        "query": "Deuteronomy 8:3",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "D030",
+      "index": 85,
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "polarity": "positive",
+      "query": {
+        "query": "Deuteronomy 21:23",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "D031",
+      "index": 86,
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "polarity": "positive",
+      "query": {
+        "query": "Deuteronomy 25:4",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "D032",
+      "index": 87,
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "polarity": "positive",
+      "query": {
+        "query": "Psalm 22:1",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "D033",
+      "index": 88,
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "polarity": "positive",
+      "query": {
+        "query": "Psalm 22:18",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "D034",
+      "index": 89,
+      "category": "direct_intertext",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "Psalm 69:21",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 12
+    },
+    {
+      "id": "D035",
+      "index": 90,
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "polarity": "positive",
+      "query": {
+        "query": "Psalm 110:1",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "D036",
+      "index": 91,
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "polarity": "positive",
+      "query": {
+        "query": "Psalm 118:22",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "D037",
+      "index": 92,
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "polarity": "positive",
+      "query": {
+        "query": "Isaiah 7:14",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "D038",
+      "index": 93,
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "polarity": "positive",
+      "query": {
+        "query": "Isaiah 9:2",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "D039",
+      "index": 94,
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "polarity": "positive",
+      "query": {
+        "query": "Isaiah 40:3",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "D040",
+      "index": 95,
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "polarity": "positive",
+      "query": {
+        "query": "Isaiah 53:4",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "D041",
+      "index": 96,
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "polarity": "positive",
+      "query": {
+        "query": "Isaiah 53:7",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "D042",
+      "index": 97,
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "polarity": "positive",
+      "query": {
+        "query": "Isaiah 61:1",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "D043",
+      "index": 98,
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "polarity": "positive",
+      "query": {
+        "query": "Jeremiah 31:31",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "D044",
+      "index": 99,
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "polarity": "positive",
+      "query": {
+        "query": "Hosea 11:1",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "D045",
+      "index": 100,
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "polarity": "positive",
+      "query": {
+        "query": "Joel 2:28",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "D046",
+      "index": 101,
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "polarity": "positive",
+      "query": {
+        "query": "Amos 9:11",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "D047",
+      "index": 102,
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "polarity": "positive",
+      "query": {
+        "query": "Micah 5:2",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "D048",
+      "index": 103,
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "polarity": "positive",
+      "query": {
+        "query": "Habakkuk 2:4",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "D049",
+      "index": 104,
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "polarity": "positive",
+      "query": {
+        "query": "Zechariah 9:9",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "D050",
+      "index": 105,
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "polarity": "positive",
+      "query": {
+        "query": "Zechariah 12:10",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "D051",
+      "index": 106,
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "polarity": "positive",
+      "query": {
+        "query": "Malachi 3:1",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "D052",
+      "index": 107,
+      "category": "direct_intertext",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "Psalm 16:10",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "D053",
+      "index": 108,
+      "category": "direct_intertext",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "Zechariah 13:7",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "D054",
+      "index": 109,
+      "category": "direct_intertext",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "Isaiah 6:9",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 12
+    },
+    {
+      "id": "D055",
+      "index": 110,
+      "category": "direct_intertext",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "Malachi 4:5",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 15
+    },
+    {
+      "id": "S001",
+      "index": 111,
+      "category": "narrative_chronology",
+      "difficulty": 5,
+      "polarity": "positive",
+      "query": {
+        "query": "Exodus 12:15",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 25
+    },
+    {
+      "id": "S002",
+      "index": 112,
+      "category": "narrative_chronology",
+      "difficulty": 5,
+      "polarity": "positive",
+      "query": {
+        "query": "Exodus 12:39",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 25
+    },
+    {
+      "id": "S003",
+      "index": 113,
+      "category": "narrative_chronology",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "Exodus 13:3",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 20
+    },
+    {
+      "id": "S004",
+      "index": 114,
+      "category": "narrative_pattern",
+      "difficulty": 5,
+      "polarity": "positive",
+      "query": {
+        "query": "Exodus 14:21",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 25
+    },
+    {
+      "id": "S005",
+      "index": 115,
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "Exodus 14:21",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 25
+    },
+    {
+      "id": "S006",
+      "index": 116,
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "Exodus 14:30",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 15
+    },
+    {
+      "id": "S007",
+      "index": 117,
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "Joshua 3:16",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 15
+    },
+    {
+      "id": "S008",
+      "index": 118,
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "2 Kings 2:8",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 15
+    },
+    {
+      "id": "S009",
+      "index": 119,
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "2 Kings 2:14",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 12
+    },
+    {
+      "id": "S010",
+      "index": 120,
+      "category": "narrative_pattern",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "Numbers 20:11",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 15
+    },
+    {
+      "id": "S011",
+      "index": 121,
+      "category": "narrative_pattern",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "Numbers 11:7",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 15
+    },
+    {
+      "id": "S012",
+      "index": 122,
+      "category": "narrative_chronology",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "Leviticus 23:5",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 15
+    },
+    {
+      "id": "S013",
+      "index": 123,
+      "category": "narrative_chronology",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "Leviticus 23:6",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 12
+    },
+    {
+      "id": "S014",
+      "index": 124,
+      "category": "narrative_chronology",
+      "difficulty": 4,
+      "polarity": "positive",
+      "query": {
+        "query": "Numbers 33:3",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 20
+    },
+    {
+      "id": "S015",
+      "index": 125,
+      "category": "narrative_chronology",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "Joshua 5:10",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 15
+    },
+    {
+      "id": "S016",
+      "index": 126,
+      "category": "narrative_pattern",
+      "difficulty": 5,
+      "polarity": "positive",
+      "query": {
+        "query": "1 Kings 19:8",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 25
+    },
+    {
+      "id": "S017",
+      "index": 127,
+      "category": "narrative_pattern",
+      "difficulty": 5,
+      "polarity": "positive",
+      "query": {
+        "query": "Genesis 40:13",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 25
+    },
+    {
+      "id": "S018",
+      "index": 128,
+      "category": "narrative_pattern",
+      "difficulty": 5,
+      "polarity": "positive",
+      "query": {
+        "query": "Hosea 6:2",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 25
+    },
+    {
+      "id": "S019",
+      "index": 129,
+      "category": "narrative_pattern",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "Jonah 1:17",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "S020",
+      "index": 130,
+      "category": "narrative_pattern",
+      "difficulty": 4,
+      "polarity": "positive",
+      "query": {
+        "query": "2 Kings 20:5",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 25
+    },
+    {
+      "id": "S021",
+      "index": 131,
+      "category": "narrative_pattern",
+      "difficulty": 4,
+      "polarity": "positive",
+      "query": {
+        "query": "Hosea 6:2",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 25
+    },
+    {
+      "id": "S022",
+      "index": 132,
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "1 Kings 17:22",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 20
+    },
+    {
+      "id": "S023",
+      "index": 133,
+      "category": "narrative_pattern",
+      "difficulty": 5,
+      "polarity": "positive",
+      "query": {
+        "query": "2 Kings 4:34",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 25
+    },
+    {
+      "id": "S024",
+      "index": 134,
+      "category": "narrative_pattern",
+      "difficulty": 4,
+      "polarity": "positive",
+      "query": {
+        "query": "Ezekiel 37:7",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 25
+    },
+    {
+      "id": "S025",
+      "index": 135,
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "Ezekiel 37:12",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 25
+    },
+    {
+      "id": "S026",
+      "index": 136,
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "Isaiah 26:19",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 20
+    },
+    {
+      "id": "S027",
+      "index": 137,
+      "category": "narrative_pattern",
+      "difficulty": 5,
+      "polarity": "positive",
+      "query": {
+        "query": "Exodus 12:13",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 25
+    },
+    {
+      "id": "S028",
+      "index": 138,
+      "category": "narrative_genealogy",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "Joshua 2:18",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 20
+    },
+    {
+      "id": "S029",
+      "index": 139,
+      "category": "narrative_genealogy",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "Genesis 38:29",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 15
+    },
+    {
+      "id": "S030",
+      "index": 140,
+      "category": "narrative_pattern",
+      "difficulty": 5,
+      "polarity": "positive",
+      "query": {
+        "query": "Genesis 38:28",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 25
+    },
+    {
+      "id": "S031",
+      "index": 141,
+      "category": "narrative_genealogy",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "Genesis 38:30",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 15
+    },
+    {
+      "id": "S032",
+      "index": 142,
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "Exodus 25:31",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 15
+    },
+    {
+      "id": "S033",
+      "index": 143,
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "Zechariah 4:2",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 15
+    },
+    {
+      "id": "S034",
+      "index": 144,
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "Zechariah 4:10",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 15
+    },
+    {
+      "id": "S035",
+      "index": 145,
+      "category": "narrative_pattern",
+      "difficulty": 4,
+      "polarity": "positive",
+      "query": {
+        "query": "Zechariah 4:6",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 25
+    },
+    {
+      "id": "S036",
+      "index": 146,
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "Exodus 27:20",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 15
+    },
+    {
+      "id": "S037",
+      "index": 147,
+      "category": "narrative_pattern",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "Matthew 5:15",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 12
+    },
+    {
+      "id": "S038",
+      "index": 148,
+      "category": "narrative_pattern",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "Luke 11:34",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 12
+    },
+    {
+      "id": "S039",
+      "index": 149,
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "2 Peter 1:19",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 20
+    },
+    {
+      "id": "S040",
+      "index": 150,
+      "category": "narrative_pattern",
+      "difficulty": 1,
+      "polarity": "positive",
+      "query": {
+        "query": "Revelation 1:20",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "S041",
+      "index": 151,
+      "category": "narrative_pattern",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "Revelation 4:5",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 12
+    },
+    {
+      "id": "S042",
+      "index": 152,
+      "category": "narrative_pattern",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "Isaiah 6:3",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 12
+    },
+    {
+      "id": "S043",
+      "index": 153,
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "Ezekiel 1:26",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 20
+    },
+    {
+      "id": "S044",
+      "index": 154,
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "Ezekiel 1:28",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 15
+    },
+    {
+      "id": "S045",
+      "index": 155,
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "Exodus 19:18",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 20
+    },
+    {
+      "id": "S046",
+      "index": 156,
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "Genesis 15:17",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 20
+    },
+    {
+      "id": "S047",
+      "index": 157,
+      "category": "narrative_pattern",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "Leviticus 16:12",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 15
+    },
+    {
+      "id": "S048",
+      "index": 158,
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "Psalm 141:2",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 12
+    },
+    {
+      "id": "S049",
+      "index": 159,
+      "category": "narrative_pattern",
+      "difficulty": 5,
+      "polarity": "positive",
+      "query": {
+        "query": "Isaiah 11:2",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 25
+    },
+    {
+      "id": "S050",
+      "index": 160,
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "Ezekiel 47:1",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 15
+    },
+    {
+      "id": "S051",
+      "index": 161,
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "Genesis 2:10",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 20
+    },
+    {
+      "id": "S052",
+      "index": 162,
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "Genesis 3:24",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 20
+    },
+    {
+      "id": "S053",
+      "index": 163,
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "Genesis 2:9",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 15
+    },
+    {
+      "id": "S054",
+      "index": 164,
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "Genesis 3:17",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 15
+    },
+    {
+      "id": "S055",
+      "index": 165,
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "Genesis 1:3",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 20
+    },
+    {
+      "id": "S056",
+      "index": 166,
+      "category": "narrative_pattern",
+      "difficulty": 5,
+      "polarity": "positive",
+      "query": {
+        "query": "Genesis 11:9",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 25
+    },
+    {
+      "id": "S057",
+      "index": 167,
+      "category": "narrative_pattern",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "Genesis 4:10",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "S058",
+      "index": 168,
+      "category": "narrative_chronology",
+      "difficulty": 5,
+      "polarity": "positive",
+      "query": {
+        "query": "Leviticus 23:15",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 25
+    },
+    {
+      "id": "S059",
+      "index": 169,
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "Numbers 6:25",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 25
+    },
+    {
+      "id": "S060",
+      "index": 170,
+      "category": "narrative_pattern",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "Exodus 34:29",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 12
+    },
+    {
+      "id": "S061",
+      "index": 171,
+      "category": "narrative_pattern",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "Jeremiah 31:33",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "S062",
+      "index": 172,
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "Deuteronomy 30:6",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 20
+    },
+    {
+      "id": "S063",
+      "index": 173,
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "Genesis 17:11",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 20
+    },
+    {
+      "id": "S064",
+      "index": 174,
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "Psalm 51:7",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 15
+    },
+    {
+      "id": "S065",
+      "index": 175,
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "John 19:29",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 20
+    },
+    {
+      "id": "W001",
+      "index": 176,
+      "category": "real_world_material",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "G3088",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "bridge"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 20
+    },
+    {
+      "id": "W002",
+      "index": 177,
+      "category": "real_world_part_whole",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "H4501",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "bridge"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 12
+    },
+    {
+      "id": "W003",
+      "index": 178,
+      "category": "real_world_process",
+      "difficulty": 5,
+      "polarity": "positive",
+      "query": {
+        "query": "H4501",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "bridge"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 25
+    },
+    {
+      "id": "W004",
+      "index": 179,
+      "category": "real_world_process",
+      "difficulty": 4,
+      "polarity": "positive",
+      "query": {
+        "query": "H0784",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "bridge"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 12
+    },
+    {
+      "id": "W005",
+      "index": 180,
+      "category": "real_world_process",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "H0784",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "bridge"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 15
+    },
+    {
+      "id": "W006",
+      "index": 181,
+      "category": "real_world_material",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "H8081",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "bridge"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 12
+    },
+    {
+      "id": "W007",
+      "index": 182,
+      "category": "real_world_part_whole",
+      "difficulty": 5,
+      "polarity": "positive",
+      "query": {
+        "query": "Zechariah 4:12",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "bridge"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 20
+    },
+    {
+      "id": "W008",
+      "index": 183,
+      "category": "real_world_property",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "H4325",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "bridge"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 20
+    },
+    {
+      "id": "W009",
+      "index": 184,
+      "category": "real_world_property",
+      "difficulty": 5,
+      "polarity": "positive",
+      "query": {
+        "query": "H0875",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "bridge"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 25
+    },
+    {
+      "id": "W010",
+      "index": 185,
+      "category": "real_world_property",
+      "difficulty": 5,
+      "polarity": "positive",
+      "query": {
+        "query": "H5869",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "bridge"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 20
+    },
+    {
+      "id": "W011",
+      "index": 186,
+      "category": "real_world_property",
+      "difficulty": 4,
+      "polarity": "positive",
+      "query": {
+        "query": "H5869",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "bridge"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 20
+    },
+    {
+      "id": "W012",
+      "index": 187,
+      "category": "real_world_material",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "H2091",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "bridge"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 25
+    },
+    {
+      "id": "W013",
+      "index": 188,
+      "category": "real_world_material",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "H2091",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "bridge"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 12
+    },
+    {
+      "id": "W014",
+      "index": 189,
+      "category": "real_world_material",
+      "difficulty": 2,
+      "polarity": "positive",
+      "query": {
+        "query": "H5178",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "bridge"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 12
+    },
+    {
+      "id": "W015",
+      "index": 190,
+      "category": "real_world_material",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "silver",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "bridge"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 20
+    },
+    {
+      "id": "W016",
+      "index": 191,
+      "category": "real_world_material",
+      "difficulty": 4,
+      "polarity": "positive",
+      "query": {
+        "query": "H0068",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "bridge"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 25
+    },
+    {
+      "id": "W017",
+      "index": 192,
+      "category": "real_world_material",
+      "difficulty": 4,
+      "polarity": "positive",
+      "query": {
+        "query": "Genesis 6:14",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "bridge"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 25
+    },
+    {
+      "id": "W018",
+      "index": 193,
+      "category": "real_world_material",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "cedar",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "bridge"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 20
+    },
+    {
+      "id": "W019",
+      "index": 194,
+      "category": "real_world_part_whole",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "pomegranate",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "bridge"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 25
+    },
+    {
+      "id": "W020",
+      "index": 195,
+      "category": "real_world_process",
+      "difficulty": 4,
+      "polarity": "positive",
+      "query": {
+        "query": "wheat",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "bridge"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 25
+    },
+    {
+      "id": "W021",
+      "index": 196,
+      "category": "real_world_material",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "barley",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "bridge"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 20
+    },
+    {
+      "id": "W022",
+      "index": 197,
+      "category": "real_world_process",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "H2233",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "bridge"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 20
+    },
+    {
+      "id": "W023",
+      "index": 198,
+      "category": "real_world_process",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "fig tree",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "bridge"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 20
+    },
+    {
+      "id": "W024",
+      "index": 199,
+      "category": "real_world_part_whole",
+      "difficulty": 4,
+      "polarity": "positive",
+      "query": {
+        "query": "vine",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "bridge"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 25
+    },
+    {
+      "id": "W025",
+      "index": 200,
+      "category": "real_world_process",
+      "difficulty": 5,
+      "polarity": "positive",
+      "query": {
+        "query": "yeast",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "bridge"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 20
+    },
+    {
+      "id": "W026",
+      "index": 201,
+      "category": "real_world_process",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "Jeremiah 18:6",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "bridge"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 15
+    },
+    {
+      "id": "W027",
+      "index": 202,
+      "category": "real_world_material",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "wool",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "bridge"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 20
+    },
+    {
+      "id": "W028",
+      "index": 203,
+      "category": "real_world_property",
+      "difficulty": 4,
+      "polarity": "positive",
+      "query": {
+        "query": "salt",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "bridge"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 25
+    },
+    {
+      "id": "W029",
+      "index": 204,
+      "category": "real_world_material",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "iron",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "bridge"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 20
+    },
+    {
+      "id": "W030",
+      "index": 205,
+      "category": "real_world_material",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "Daniel 2:32",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "bridge"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 15
+    },
+    {
+      "id": "W031",
+      "index": 206,
+      "category": "real_world_property",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "sun",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "bridge"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 15
+    },
+    {
+      "id": "W032",
+      "index": 207,
+      "category": "real_world_process",
+      "difficulty": 5,
+      "polarity": "positive",
+      "query": {
+        "query": "H4501",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "bridge"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 25
+    },
+    {
+      "id": "W033",
+      "index": 208,
+      "category": "real_world_process",
+      "difficulty": 4,
+      "polarity": "positive",
+      "query": {
+        "query": "H3220",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "bridge"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 25
+    },
+    {
+      "id": "W034",
+      "index": 209,
+      "category": "real_world_property",
+      "difficulty": 4,
+      "polarity": "positive",
+      "query": {
+        "query": "H7307",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "bridge"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 25
+    },
+    {
+      "id": "W035",
+      "index": 210,
+      "category": "real_world_property",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "G3788",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "bridge"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 20
+    },
+    {
+      "id": "W036",
+      "index": 211,
+      "category": "real_world_property",
+      "difficulty": 5,
+      "polarity": "positive",
+      "query": {
+        "query": "H2233",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "bridge"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 25
+    },
+    {
+      "id": "W037",
+      "index": 212,
+      "category": "real_world_process",
+      "difficulty": 3,
+      "polarity": "positive",
+      "query": {
+        "query": "H0231",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "bridge"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 15
+    },
+    {
+      "id": "W038",
+      "index": 213,
+      "category": "real_world_property",
+      "difficulty": 4,
+      "polarity": "positive",
+      "query": {
+        "query": "G2053",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "bridge"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 25
+    },
+    {
+      "id": "W039",
+      "index": 214,
+      "category": "real_world_process",
+      "difficulty": 4,
+      "polarity": "positive",
+      "query": {
+        "query": "H8081",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "bridge"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 25
+    },
+    {
+      "id": "W040",
+      "index": 215,
+      "category": "real_world_material",
+      "difficulty": 4,
+      "polarity": "positive",
+      "query": {
+        "query": "Numbers 19:9",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "bridge"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 15
+    },
+    {
+      "id": "N001",
+      "index": 216,
+      "category": "false_path_composition",
+      "difficulty": 4,
+      "polarity": "negative",
+      "query": {
+        "query": "H1904",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "N002",
+      "index": 217,
+      "category": "false_path_composition",
+      "difficulty": 4,
+      "polarity": "negative",
+      "query": {
+        "query": "H5869",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "N003",
+      "index": 218,
+      "category": "false_path_composition",
+      "difficulty": 4,
+      "polarity": "negative",
+      "query": {
+        "query": "G3056",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "N004",
+      "index": 219,
+      "category": "false_path_composition",
+      "difficulty": 4,
+      "polarity": "negative",
+      "query": {
+        "query": "H1285",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "N005",
+      "index": 220,
+      "category": "sense_contamination",
+      "difficulty": 4,
+      "polarity": "negative",
+      "query": {
+        "query": "H7307",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 25
+    },
+    {
+      "id": "N006",
+      "index": 221,
+      "category": "sense_contamination",
+      "difficulty": 4,
+      "polarity": "negative",
+      "query": {
+        "query": "H5869",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 25
+    },
+    {
+      "id": "N007",
+      "index": 222,
+      "category": "sense_contamination",
+      "difficulty": 4,
+      "polarity": "negative",
+      "query": {
+        "query": "H2233",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 25
+    },
+    {
+      "id": "N008",
+      "index": 223,
+      "category": "false_self_intersection",
+      "difficulty": 4,
+      "polarity": "negative",
+      "query": {
+        "query": "spirit wind",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 25
+    },
+    {
+      "id": "N009",
+      "index": 224,
+      "category": "numerical_false_positive",
+      "difficulty": 4,
+      "polarity": "negative",
+      "query": {
+        "query": "three days resurrection",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "N010",
+      "index": 225,
+      "category": "interpretive_overclaim",
+      "difficulty": 4,
+      "polarity": "negative",
+      "query": {
+        "query": "Hosea 6:2",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 25
+    },
+    {
+      "id": "N011",
+      "index": 226,
+      "category": "chronology_overclaim",
+      "difficulty": 4,
+      "polarity": "negative",
+      "query": {
+        "query": "Exodus 12:15",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 25
+    },
+    {
+      "id": "N012",
+      "index": 227,
+      "category": "physical_overclaim",
+      "difficulty": 4,
+      "polarity": "negative",
+      "query": {
+        "query": "H4501",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 25
+    },
+    {
+      "id": "N013",
+      "index": 228,
+      "category": "etymology_overclaim",
+      "difficulty": 4,
+      "polarity": "negative",
+      "query": {
+        "query": "Adam dam",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 25
+    },
+    {
+      "id": "N014",
+      "index": 229,
+      "category": "authorial_intent_overclaim",
+      "difficulty": 4,
+      "polarity": "negative",
+      "query": {
+        "query": "scarlet Tamar Rahab",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 25
+    },
+    {
+      "id": "N015",
+      "index": 230,
+      "category": "entity_conflation",
+      "difficulty": 4,
+      "polarity": "negative",
+      "query": {
+        "query": "G3088",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 25
+    },
+    {
+      "id": "N016",
+      "index": 231,
+      "category": "false_symbolism",
+      "difficulty": 4,
+      "polarity": "negative",
+      "query": {
+        "query": "H8081",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 25
+    },
+    {
+      "id": "N017",
+      "index": 232,
+      "category": "source_provenance",
+      "difficulty": 4,
+      "polarity": "negative",
+      "query": {
+        "query": "G3088",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 25
+    },
+    {
+      "id": "N018",
+      "index": 233,
+      "category": "quantity_overclaim",
+      "difficulty": 4,
+      "polarity": "negative",
+      "query": {
+        "query": "Jonah 1:17",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 25
+    },
+    {
+      "id": "N019",
+      "index": 234,
+      "category": "theology_overclaim",
+      "difficulty": 4,
+      "polarity": "negative",
+      "query": {
+        "query": "Revelation 4:5",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 25
+    },
+    {
+      "id": "N020",
+      "index": 235,
+      "category": "typology_overclaim",
+      "difficulty": 4,
+      "polarity": "negative",
+      "query": {
+        "query": "Exodus 14:21",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 25
+    },
+    {
+      "id": "N021",
+      "index": 236,
+      "category": "generic_hub",
+      "difficulty": 4,
+      "polarity": "negative",
+      "query": {
+        "query": "H1285",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 10
+    },
+    {
+      "id": "N022",
+      "index": 237,
+      "category": "source_scope",
+      "difficulty": 4,
+      "polarity": "negative",
+      "query": {
+        "query": "H1904",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 25
+    },
+    {
+      "id": "N023",
+      "index": 238,
+      "category": "source_provenance",
+      "difficulty": 4,
+      "polarity": "negative",
+      "query": {
+        "query": "H2091",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 25
+    },
+    {
+      "id": "N024",
+      "index": 239,
+      "category": "structural_feature_inflation",
+      "difficulty": 4,
+      "polarity": "negative",
+      "query": {
+        "query": "H5869",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observation_file": null,
+      "execution_status": "NOT_EXECUTED_GATEWAY_UNAVAILABLE",
+      "evaluation_status": "NOT_SCORED",
+      "expected_top_k": 25
+    }
+  ]
+}
