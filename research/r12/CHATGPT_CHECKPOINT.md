@@ -1,8 +1,135 @@
 # R12 Live Production Deployment & Verification — 2026-11-18
 
-## Production Status (Main Website & Main MCP)
+## FOR CHATGPT — INDEPENDENT ALGORITHM TESTING
 
-Current production services run R12 functionality directly under the new **Direct Live Development Policy** (`AGENTS.md`, `ARCHITECTURE.md`, `TASKS.md` / `R12TASKS.md` SHA-256 `26E9FCF45095D31460B6586DFDABFE7A145CB741A32AF514A3881A4E5DE4F570`):
+### 1–5. Live Deployment Identifiers & Provenance
+
+Current production services are deployed directly under the **Direct Live Development Policy** (`AGENTS.md`, `ARCHITECTURE.md`, `TASKS.md` / `R12TASKS.md` SHA-256 `0DE08D4ED5FDC54983B58F0D5EC89395E2B270074543539FBE0418C2A41FFB12`):
+
+1. **Deployed Corpus Worker (`bibleresearch-corpus`) Version ID:** `7f51d378-ecef-4022-bcbc-94123397c6ec` (`https://bibleresearch-corpus.kingdomfishers-custom.workers.dev`; supersedes `574aa5a1-b50f-471e-a1e3-3d319bddee67`).
+2. **Deployed Main MCP (`bible-mcp`) Version:** **42** (`ACTIVE`, `verify_jwt: false`, server `1.7.0`, `ezbr_sha256: ea4402c37a32def3db2728972dbb5b7232d78b7915ce032667e30dbf3d4d331b`, rollback `v41`, `writes: "enabled"`, **46 tools** & **22 prompts** preserved at `https://ejoperxiwxlcbsqrkrvb.supabase.co/functions/v1/bible-mcp/mcp`).
+3. **Deployed Main Website (`bibleresearch`) Version ID:** `d147114c-6a5c-4927-80ed-2a48877c2af4` (`https://bibleresearch.kingdomfishers-custom.workers.dev`, bundle `assets/index-oRYXrj0W.js`; supersedes `f68e7b8d-9a78-45be-9025-765ff2ad85a5`).
+4. **Active R12 Release / Asset Revision:** `r12-discovery-1`, full static bundle SHA-256 `c23272125b34f179237e1c61381ec0b3b9b7329ef8b92e282f6ae496194bf994`, `20,000` files total (all R3–R11 releases intact), serving compiled offline pilot `/v2/relationships/r11-v1.0/r10/r12-pilot.json.gz` (`1,113,145` bytes) referenced by `fast-manifest.json.gz` (`r12_pilot_anchors: 48`).
+5. **Git Branch & Code Commit SHA:** Branch `feat/r12-qa-fixes`, commit `6ea3b6802d73724ffad6a54c3185a4076f7be90f` (base packed corpus source commit `712d3627b881b137fe11da6fc97d0871600c568c`).
+
+### 6. Summary of R12 Algorithm Changes Integrated Live
+
+- **Offline 2–5 Meaningful-Hop Beam Discovery (`src/relationships/multihop-search.ts` — `runR12BeamSearch`, `offline_mode: 'r12'`):** Beam width `64`, up to `16` diversified outgoing edges per expansion (`layerBalancedSlice`), max `10` physical graph transitions, cycle and redundant-identity suppression, administrative identity joins consuming physical steps (`0` meaningful semantic hops, never establishing token-specific interpretation on their own), hub and function-word penalties, alternative proof preservation. Legacy 1–3 hop online traversal remains unchanged when `offline_mode` is omitted.
+- **Unified Authoritative Proof Ranker (`src/relationships/path-ranker.ts`, `R12_SCORE_VERSION = 'r12-ranker-v1'`):** Ported `research/r12/proof-ranker.mjs` into the single authoritative TypeScript ranker (`scoreR12Path`, `rankR12DiscoveryDestinations`). Computes step quality, path quality $Q = \text{geometric\_mean}(\text{step\_quality}) \times 0.95^{\max(0, \text{meaningful\_hops} - 2)}$, independent biblical convergence $C = \min(1, \log_2(\max(1, \text{independent\_biblical\_source\_groups})) / 3)$ (collapsing mirrored edges and parallel editions; `EXTERNAL_WORLD` statements contribute `0` to `C`), IDF distinctiveness $D$, relationship diversity $T$, `interest_score`, and MMR reranking. Weakest-step epistemic status cannot improve via convergence.
+- **Offline Pilot Compiler & Lazy Runtime Loader (`scripts/build-r12-pilot.mjs`, `src/relationships/r10-discovery.ts`):** Compiled `48` pilot anchors (`24` Hebrew, `24` Greek) into `r12-pilot.json.gz`: `48/48` with multihop paths (`1,152` recommendations), `32/48` with external property bridges, `40/48` with R8 structural clause scene parallels across `906` eligible R8 scenes, and `48/48` with orthographic form candidates. `discoverBiblicalConnections`, `getConnectionEvidence`, and `expandBiblicalConnection` hydrate `r12:path:`, `r12:prop:`, `r12:struct:`, and `r12:orth:` IDs and support `sense:`, `ext:wd:` / `wd:`, and `ext:oewn:` / `oewn:` node expansion.
+- **Discovery UI & MCP Schema Updates:** `src/ui/components/DiscoverConnections.ts` renders R12 badges (`R12 TEXTUAL` / `R12 EXTERNAL BRIDGE` / `R12 PATTERN`), `Q/C/D/T/MMR` metrics, `independent biblical support=0` warnings, alternative routes, and clickable step-by-step intermediate node expansion. `supabase/functions/bible-mcp/relationships-v2.ts` enables `max_hops` 1–5 on `discover_biblical_connections_v2` and documents `sense:`, `wd:`, and `oewn:` expansion on `expand_biblical_connection_v1`.
+
+### 7. External Datasets Integrated (Licensed & Pinned)
+
+Extracted by `scripts/acquire-r12-external-pilot.mjs` into `scripts/fixtures/r12-external-pilot.json` with zero ontology-closure or geographic-coordinate imports:
+
+- **Open English WordNet (OEWN) 2025:** Downloaded local release `english-wordnet-2025-json.zip` (`9,986,555` bytes, SHA-256 prefix `7d749f6e2c39e697`), **CC BY 4.0** (with Princeton WordNet attribution). Used in pilot: **30 synsets**.
+- **Wikidata Structured Claims (`wbgetentities` pinned extract):** Extract SHA-256 prefix `a4ad6620dc0fd15a`, **CC0 1.0**. Filtered to exclude Wikidata ontology meta-classes (such as `Q112826905`, `Q103812529`, `Q103907369`). Used in pilot: **37 QIDs** ($\le 50$ non-geographic concept cap), **37 biblical lemma/sense mappings**, and **291 sourced property assertions**.
+- **Polysemy Separation Examples:** `H5869_eye` (`verified`) kept separate from `H5869_spring` (`candidate`); `H7307_wind` / `H7307_breath` (`candidate`, weaker weight) kept separate while `H7307` as `spirit` stays unmapped to physical air.
+
+### 8. Verified Textual vs. Candidate / Exploratory Classification
+
+| Mechanism / ID Prefix | Epistemic Class | Biblical Convergence (`C`) | Exploratory? |
+|---|---|---|---|
+| Direct grammatical, lexical, LXX, same-verse/clause (`r11:*`, `r10:ident:*`) | `TEXT_DIRECT` / `LEXICAL_BRIDGE` | Contributes when backed by independent biblical clause/statement groups | No (verified textual/lexical scope noted) |
+| R12 2–5 hop proof paths (`r12:path:...`) | `weakest_layer` propagated across step layers (weakest-step ceiling; path synthesis does not establish endpoint equivalence) | `independent_biblical_groups` grouped by source clause/statement lineage | Path synthesis is candidate; individual steps carry witness citations |
+| Physical-property bridges (`r12:prop:...`) | `EXTERNAL_WORLD` (`external_world_bridge`) | **Always `0`** (`independent_biblical_support: 0`) | **Yes** — modern/external semantic bridge, never biblical proof |
+| Structural clause scene parallels (`r12:struct:...`) | `STRUCTURAL_PATTERN` | Pattern score via IDF-weighted feature Jaccard ($\ge 2$ features) | **Yes** — candidate structural parallel |
+| Orthographic consonantal form overlaps (`r12:orth:...`) | `HYPOTHESIS` | N/A | **Yes** — non-etymological superficial form similarity |
+
+### 9. Ten Concrete MCP Calls for Independent Testing
+
+Endpoint: `https://ejoperxiwxlcbsqrkrvb.supabase.co/functions/v1/bible-mcp/mcp` (remember to refresh the ChatGPT connector schema if testing new `max_hops=5` or updated tool descriptions).
+
+1. **Verify live release, worker, and corpus provenance:**
+   - Tool: `get_relationship_coverage_v2`
+   - Arguments: `{}`
+   - Expect: `verification_release.worker_version === "7f51d378-ecef-4022-bcbc-94123397c6ec"`, `verification_release.corpus_release === "r12-discovery-1"`.
+2. **Hebrew polysemous anchor discovery (`H5869` `עַיִן` eye / spring):**
+   - Tool: `discover_biblical_connections_v2`
+   - Arguments: `{"query": "H5869", "limit": 10}`
+   - Inspect `r12_discovery`, `r12:path:H5869:...`, `r12:prop:H5869:...`, and separation of `eye` vs `spring`.
+3. **Greek oil-lamp anchor discovery (`G3088` `λύχνος`):**
+   - Tool: `discover_biblical_connections_v2`
+   - Arguments: `{"query": "G3088", "limit": 10}`
+   - Inspect 2-hop paths (`r12:path:G3088:G5459`) and cross-testament property bridges (`r12:prop:G3088:H5216`, `r12:prop:G3088:H4501`, `r12:prop:G3088:H8081`).
+4. **Occurrence-anchored Hebrew discovery (`Gen 1:2` `H7307` pos `9`):**
+   - Tool: `discover_biblical_connections_v2`
+   - Arguments: `{"query": "H7307", "word_id": 130555, "book": 1, "chapter": 1, "verse": 2, "position": 9, "max_hops": 5, "limit": 10}`
+   - Verify `selected_occurrence.word_id === 130555`, `discovery_scope.occurrence_anchored === true`, and `H7307` candidate `wind`/`breath` bridges (`r12:prop:H7307:G4151`, `r12:prop:H7307:H5397`) without mapping `spirit` to physical air.
+5. **Inspect a 3-hop R12 proof path:**
+   - Tool: `get_connection_evidence_v1`
+   - Arguments: `{"evidence_id": "r12:path:H5869:G0457"}`
+   - Inspect `evidence.r12_metadata` (`score_version: "r12-ranker-v1"`, `meaningful_hops: 3`, `Q/C/D/T/MMR`, `steps`, `alternative_paths`) and `passage_details`.
+6. **Inspect a live OEWN + Wikidata external physical-property bridge:**
+   - Tool: `get_connection_evidence_v1`
+   - Arguments: `{"evidence_id": "r12:prop:G3088:H5216"}`
+   - Confirm `evidence.epistemic_class === "external_world_bridge"`, `evidence.r12_metadata.external_bridge.independent_biblical_support === 0`, OEWN `03641539-n` (CC BY 4.0), Wikidata `Q821952$93d8b419-49e4-a052-6120-aa9f432d1517` (CC0 1.0), and distinct sense glosses (`G3088_lamp`, `H5216_lamp`).
+7. **Inspect an R8 structural clause scene parallel:**
+   - Tool: `get_connection_evidence_v1`
+   - Arguments: `{"evidence_id": "r12:struct:G3088:LUK_11:33:LUK_15:8"}`
+   - Evaluate whether the shared R8 grammatical/clause features support a meaningful structural comparison or over-match syntactic frames.
+8. **Inspect an orthographic form candidate:**
+   - Tool: `get_connection_evidence_v1`
+   - Arguments: `{"evidence_id": "r12:orth:H5869:H5770"}`
+   - Verify explicit non-etymology exploratory warning and consonantal offset details.
+9. **Expand an external Wikidata / sense node:**
+   - Tool: `expand_biblical_connection_v1`
+   - Arguments: `{"node_id": "wd:Q821952"}`
+   - Follow up with `{"node_id": "sense:H5869_spring"}` and check cross-lemma expansion fidelity.
+10. **Regression + write/notes compatibility + negative control check:**
+    - Discovery negative control: `discover_biblical_connections_v2({"query": "spirit wind"})` (verify NO `r11:intersect:verse:H7307:H7307:2`).
+    - Contradictory selector control: `discover_biblical_connections_v2({"word_id": 999999999, "book": 1, "chapter": 1, "verse": 2, "position": 9})` (verify `status: "selector_mismatch"`).
+    - Legacy/notes regression: `get_verse_research` on `Gen 1:2` (`notes` present with `epistemic_layer: "user_note"`) and `tools/list` (`46` tools including note write tools).
+
+### 10. Five Concrete Website User Flows to Test
+
+Target URL: `https://bibleresearch.kingdomfishers-custom.workers.dev` (HTML loads `assets/index-oRYXrj0W.js`).
+
+1. **Gen 1:2 -> `H7307` -> Discover -> Origin Banner & Multi-Hop Exploration:** Open `#1-1-2`, click `וְרוּחַ` (`H7307`, pos 9, STEP `130555`), click `Discover Biblical Connections →`, inspect R12 proof badges and `r12:path:H7307:*` cards, and open an evidence drawer.
+2. **Search `G3088` (`lamp`) -> Filter & Inspect Cross-Testament Property Bridge:** Search `G3088` in Discover, verify R12 multihop (`r12:path:G3088:G5459`) and external bridge (`r12:prop:G3088:H5216`), check `independent biblical support=0` warning inside the card and drawer, and verify OEWN/Wikidata attribution renders cleanly.
+3. **Click Intermediate Step Expansion inside Evidence Drawer:** Expand any R12 multi-hop card (`r12:path:H5869:G0457` or `r12:path:G3088:G5459`), click an intermediate node button inside the step chain (`connection_paths` or drawer), verify re-anchored discovery loads without stale overwrite, then click `← Previous discovery`.
+4. **Follow Biblical Passage & Return to Initial Word (Desktop 1280px & Mobile 390px):** From any opened R12 evidence drawer, click a passage button to jump to the reader verse, verify `↩ Return to initial word` restores the original verse/word selection with `0px` horizontal overflow and zero console/page errors.
+5. **Non-Pilot Anchor Fallback Query:** Search an un-compiled concept or lemma (e.g., `"scarlet Tamar Rahab Matthew 1"` or `"hyssop"`) and confirm full R11/R10 corpus discovery, evidence drawers, and filters continue working cleanly even when `r12-pilot.json.gz` does not precompute that anchor.
+
+### 11. Expected Evidence Fields & Epistemic Labels
+
+- On `discover_biblical_connections_v2` responses matching a pilot anchor:
+  - `r12_discovery`: `{ schema_version: 1, release_id: "r12-discovery-1", score_version: "r12-ranker-v1", pilot_anchors_matched: string[], multihop_recommendations_count, property_bridges_count, structural_candidates_count, orthographic_candidates_count, exploratory_tail_cursor, external_sources: [{ id, provider, release, license }] }`.
+  - Per connection item in `strongest_connections`: `evidence_id` (`r12:path:*`, `r12:prop:*`, `r12:struct:*`, `r12:orth:*`), `epistemic_class` (incl. `external_world_bridge`), `r12_metadata`.
+- Inside `get_connection_evidence_v1` response:
+  - `evidence.r12_metadata`: `score_version`, `meaningful_hops`, `physical_steps`, `path_quality_q`, `convergence_c`, `distinctiveness_d`, `diversity_t`, `interest_score`, `mmr_score`, `independent_biblical_groups`, `weakest_layer`, `steps` (with per-step `layer`, `predicate`, `source_ref` / provenance, `meaningful_hop`), `alternative_paths`.
+  - On `r12:prop:*` bridges: `evidence.r12_metadata.external_bridge` (`property_key`, `value_id`, `value_label`, `mapping_status`, `claim_status`, `independent_biblical_support: 0`, `left_mapping`, `right_mapping`, `shared_features` with OEWN/Wikidata `source_id`, `source_ref`, `license`, `release`).
+
+### 12. Negative Controls (Must NOT Produce False Claims)
+
+1. `discover_biblical_connections_v2({ query: "spirit wind" })` must **NOT** emit false self-intersection `r11:intersect:verse:H7307:H7307:2`.
+2. `H5869` senses (`H5869_eye` vs `H5869_spring`) must stay separated; neither sense may silently transfer external anatomy/spring properties onto the other.
+3. `H7307` (`ruach`) `wind`/`breath` candidate bridges remain `candidate` (`independent_biblical_support: 0`) and must **NOT** claim `spirit` has physical air/wind properties or divine-wind theological identity.
+4. `Hagar seeing eyes spring` must resolve Hagar to `H1904` (never `H1481` "to sojourn").
+5. Contradictory occurrence selector (`word_id: 999999999, book: 1, chapter: 1, verse: 2, position: 9`) must return `status: "selector_mismatch"` rather than silently substituting a lemma.
+6. External property bridges (`r12:prop:*`) must always preserve `independent_biblical_support === 0` (`weakest_layer: "EXTERNAL_WORLD"`).
+
+### 13. Known Coverage Limits
+
+- `r12-pilot.json.gz` currently precomputes offline R12 discovery (`r12:path:*`, `r12:prop:*`, `r12:struct:*`, `r12:orth:*`) for **48 pilot anchors** (`24` Hebrew, `24` Greek); whole-corpus incremental precomputation (`R12-12`) is not yet built.
+- External mappings in `r12-external-pilot.json` are a bounded pilot (`30` OEWN synsets, `37` non-geographic Wikidata QIDs, `37` mappings, `291` assertions); unmapped biblical lemmas/senses will not produce `r12:prop:*` bridges yet.
+- Cloudflare Workers Free Tier (`10 ms` CPU limit per request) can still produce rare cold-isolate HTTP 503 (`Error 1102`) bursts when first fetching/gunzipping the `1.11 MiB` pilot asset alongside shard indices, though warmed isolates succeed cleanly (live `discover_biblical_connections_v2("H5869")` measured `3845 ms`, subsequent `get_connection_evidence_v1` `1405 ms` via MCP).
+
+### 14. Top Diagnostic Questions for ChatGPT to Evaluate
+
+1. **2–5 Hop Signal vs. Noise:** For Hebrew/Greek pilot anchors (`H5869`, `G3088`, `H7307`, `H2091`, `H4501`, `G5457`), do top-ranked `r12:path:*` results surface genuinely illuminating intermediate biblical connections, or do high-frequency co-occurrence / generic LXX bridges still crowd out sharper 2–4 hop routes?
+2. **Convergence & MMR Calibration:** Check whether `C` (independent source grouping) successfully avoids double-counting mirrored edges or parallel editions, and whether the MMR redundancy penalty (`0.35`) gives useful variety across top 10–24 results without pushing the strongest direct path too low.
+3. **Polysemy & Sense Guarding:** On `H5869` (eye/spring), `H7307` (wind/breath/spirit), and `H5178` (bronze/serpent/fetters), does sense separation cleanly prevent cross-sense contamination in both `r12:prop:*` bridges and downstream `expand_biblical_connection_v1` hops?
+4. **Property Bridge Realism (`OEWN` + `Wikidata`):** Are the surfaced shared physical features (e.g., `G3088`/`H5216` oil lamp -> `wd:combustion_fuel_agent` olive oil, `H2091`/`H5178` gold/bronze) concrete and helpful as clearly labeled `EXTERNAL_WORLD` exploratory hypotheses, and are any Wikidata ontology meta-classes leaking into bridges?
+5. **Structural Scene & Orthographic Utility:** Do `r12:struct:*` R8 clause parallels capture recognizable parallel narrative/discourse scenes without trivial grammatical over-matching, and are `r12:orth:*` consonantal form candidates helpful while staying strictly quarantined from etymology claims?
+6. **Live Latency & Missing-Coverage Honesty:** Across diverse unseen and pilot queries, report exact response latencies, any cold `503`/`Signal timed out.` occurrences, and whether UI + MCP honestly disclose `pilot` boundaries vs full-corpus R11/R10 fallback.
+
+---
+
+## Prior R12-Witnesses Baseline — 2026-11-18 (superseded above)
+
+Historical baseline prior to `r12-discovery-1` cutover (`TASKS.md` / `R12TASKS.md` SHA-256 `26E9FCF45095D31460B6586DFDABFE7A145CB741A32AF514A3881A4E5DE4F570`, `bible-mcp` v41, `bibleresearch-corpus` `574aa5a1`, `bibleresearch` `f68e7b8d`):
 
 - **Branch / Implementation Commit:** `feat/r12-qa-fixes` · commit `249de9f7801bba7eecc056c2b7d44d1435427b78` (packed corpus source commit `712d3627b881b137fe11da6fc97d0871600c568c`)
 - **Production Corpus Worker (`bibleresearch-corpus`):** `https://bibleresearch-corpus.kingdomfishers-custom.workers.dev`
