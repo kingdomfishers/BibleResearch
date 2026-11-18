@@ -1,0 +1,2975 @@
+{
+  "schema": "r12-live-observation-v1",
+  "source": "connected_BibleResearch_MCP",
+  "benchmark": "research/r12/R12_EXPECTED_CONNECTIONS_180_PLUS.json",
+  "benchmark_sha": "74b931683984fce5104714c3196b890760c10b6c",
+  "window": [
+    1,
+    10
+  ],
+  "note": "Responses are actual connected MCP discovery results; alias candidate flags are triage, not validated passes.",
+  "results": [
+    {
+      "id": "L001",
+      "arguments": {
+        "query": "H0120",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observed_at": "2026-11-18T19:28:11.567Z",
+      "elapsed_ms": 21298,
+      "status": "TOOL_ERROR",
+      "error": "INVALID_ARGUMENT: Error code: INVALID_ARGUMENT; Error: RuntimeException: Error calling MCP tool: [TextContent(type='text', text='Signal timed out.', annotations=None, meta=None)]",
+      "ranked_results": [],
+      "adjudication": "NOT_REVIEWED"
+    },
+    {
+      "id": "L002",
+      "arguments": {
+        "query": "H0120",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observed_at": "2026-11-18T19:28:11.567Z",
+      "elapsed_ms": 21298,
+      "status": "TOOL_ERROR",
+      "error": "INVALID_ARGUMENT: Error code: INVALID_ARGUMENT; Error: RuntimeException: Error calling MCP tool: [TextContent(type='text', text='Signal timed out.', annotations=None, meta=None)]",
+      "ranked_results": [],
+      "adjudication": "NOT_REVIEWED"
+    },
+    {
+      "id": "L003",
+      "arguments": {
+        "query": "H1818",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observed_at": "2026-11-18T19:28:11.567Z",
+      "elapsed_ms": 21298,
+      "status": "TOOL_ERROR",
+      "error": "INVALID_ARGUMENT: Error code: INVALID_ARGUMENT; Error: RuntimeException: Error calling MCP tool: [TextContent(type='text', text='Signal timed out.', annotations=None, meta=None)]",
+      "ranked_results": [],
+      "adjudication": "NOT_REVIEWED"
+    },
+    {
+      "id": "L004",
+      "arguments": {
+        "query": "H2233",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observed_at": "2026-11-18T19:28:11.567Z",
+      "elapsed_ms": 21298,
+      "status": "TOOL_ERROR",
+      "error": "INVALID_ARGUMENT: Error code: INVALID_ARGUMENT; Error: RuntimeException: Error calling MCP tool: [TextContent(type='text', text='Signal timed out.', annotations=None, meta=None)]",
+      "ranked_results": [],
+      "adjudication": "NOT_REVIEWED"
+    },
+    {
+      "id": "L005",
+      "arguments": {
+        "query": "H2233",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observed_at": "2026-11-18T19:28:11.567Z",
+      "elapsed_ms": 21298,
+      "status": "TOOL_ERROR",
+      "error": "INVALID_ARGUMENT: Error code: INVALID_ARGUMENT; Error: RuntimeException: Error calling MCP tool: [TextContent(type='text', text='Signal timed out.', annotations=None, meta=None)]",
+      "ranked_results": [],
+      "adjudication": "NOT_REVIEWED"
+    },
+    {
+      "id": "L006",
+      "arguments": {
+        "query": "H1285",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observed_at": "2026-11-18T19:28:11.570Z",
+      "elapsed_ms": 21301,
+      "status": "TOOL_ERROR",
+      "error": "INVALID_ARGUMENT: Error code: INVALID_ARGUMENT; Error: RuntimeException: Error calling MCP tool: [TextContent(type='text', text='Cloudflare relationship graph gateway HTTP 503', annotations=None, meta=None)]",
+      "ranked_results": [],
+      "adjudication": "NOT_REVIEWED"
+    },
+    {
+      "id": "L007",
+      "polarity": "positive",
+      "category": "linguistic_lexical",
+      "difficulty": 2,
+      "arguments": {
+        "query": "H1285",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observed_at": "2026-11-18T19:28:11.569Z",
+      "elapsed_ms": 21300,
+      "status": "ok",
+      "release": "r11-v1.0",
+      "verification_release": {
+        "mcp_release": "1.7.0",
+        "corpus_target": "production",
+        "corpus_url": "https://bibleresearch-corpus.kingdomfishers-custom.workers.dev",
+        "corpus_release": "r12-discovery-1",
+        "worker_version": "7f51d378-ecef-4022-bcbc-94123397c6ec",
+        "source_commit": "712d3627b881b137fe11da6fc97d0871600c568c",
+        "asset_sha256": "c23272125b34f179237e1c61381ec0b3b92e282f6ae496194bf994"
+      },
+      "r12_discovery": {
+        "schema_version": 1,
+        "release_id": "r12-discovery-1",
+        "score_version": "r12-ranker-v1",
+        "pilot_anchors_matched": [
+          "H1285"
+        ],
+        "multihop_recommendations_count": 6,
+        "property_bridges_count": 0,
+        "structural_candidates_count": 3,
+        "orthographic_candidates_count": 2,
+        "exploratory_tail_cursor": "25",
+        "external_sources": [
+          {
+            "id": "oewn-2025",
+            "provider": "OpenEnglishWordNet",
+            "release": "2025",
+            "license": "CC BY 4.0 (incorporating Princeton WordNet attribution)"
+          },
+          {
+            "id": "wikidata-wbgetentities",
+            "provider": "Wikidata",
+            "release": "2026-11-18-wbgetentities-pinned",
+            "license": "CC0 1.0 (structured namespace data)"
+          }
+        ]
+      },
+      "returned": 25,
+      "ranked_results": [
+        {
+          "rank": 1,
+          "id": "r12:path:H1285:G1842",
+          "title": "R12 2-hop discovery: בְּרִית (H1285) → ἐξολοθρεύω (\"to root out\", G1842)",
+          "predicate": "multihop_proof_path",
+          "epistemic_class": "documented_lexical_relationship",
+          "evidence_tier": 3,
+          "passages": [
+            {
+              "ref": "1 Chronicles 11:3",
+              "verse_id": 10677,
+              "snippet": "So all the elders of Israel came to the king to Hebron; and David made a covenant with them in Hebron before the LORD. They anointed David king over Israel, according to the LORD’s word by Samuel."
+            },
+            {
+              "ref": "1 Kings 20:34",
+              "verse_id": 9443,
+              "snippet": "Ben Hadad said to him, “The cities which my father took from your father I will restore. You shall make streets for yourself in Damascus, as my father made in Samaria.” “I”, said Ahab, “will let you go with this covenant"
+            }
+          ],
+          "original_words": [
+            {
+              "strongs": "H1285",
+              "gloss": "covenant"
+            },
+            {
+              "strongs": "G1842",
+              "gloss": "to root out"
+            }
+          ],
+          "matched_terms": [],
+          "r12": {
+            "score_version": "r12-ranker-v1",
+            "epistemic_layer": "TEXTUAL",
+            "epistemic_status": "SUPPORTED_STEPS_NOT_ENDPOINT_INTERPRETATION",
+            "Q": 0.944877,
+            "C": 1,
+            "D": 0.970995,
+            "T": 0.5,
+            "interest": 0.886473,
+            "mmr_score": 0.886473,
+            "meaningful_hops": 2,
+            "independent_group_count": 10,
+            "steps": [
+              {
+                "from": "lemma:H1285",
+                "to": "lemma:H3772",
+                "relation": "gram_grammatical_object_of",
+                "witness_refs": [
+                  "1CH 11:3",
+                  "1KI 20:34",
+                  "1KI 5:12"
+                ]
+              },
+              {
+                "from": "lemma:H3772",
+                "to": "lemma:G1842",
+                "relation": "lxx_translation_bridge",
+                "witness_refs": []
+              }
+            ]
+          }
+        },
+        {
+          "rank": 2,
+          "id": "r12:path:H1285:H0212",
+          "title": "R12 3-hop discovery: בְּרִית (H1285) → אוֹפָן (\"wheel\", H0212)",
+          "predicate": "multihop_proof_path",
+          "epistemic_class": "documented_lexical_relationship",
+          "evidence_tier": 3,
+          "passages": [
+            {
+              "ref": "1 Chronicles 15:25",
+              "verse_id": 10817,
+              "snippet": "So David, the elders of Israel, and the captains over thousands went to bring the ark of the LORD’s covenant up out of the house of Obed-Edom with joy."
+            },
+            {
+              "ref": "1 Chronicles 15:26",
+              "verse_id": 10818,
+              "snippet": "When God helped the Levites who bore the ark of the LORD’s covenant, they sacrificed seven bulls and seven rams."
+            },
+            {
+              "ref": "1 Chronicles 13:3",
+              "verse_id": 10764,
+              "snippet": "Also, let’s bring the ark of our God back to us again, for we didn’t seek it in the days of Saul.”"
+            },
+            {
+              "ref": "1 Samuel 5:10",
+              "verse_id": 7330,
+              "snippet": "So they sent God’s ark to Ekron. As God’s ark came to Ekron, the Ekronites cried out, saying, “They have brought the ark of the God of Israel here to us, to kill us and our people.”"
+            },
+            {
+              "ref": "Ezekiel 10:16",
+              "verse_id": 20766,
+              "snippet": "When the cherubim went, the wheels went beside them; and when the cherubim lifted up their wings to mount up from the earth, the wheels also didn’t turn from beside them."
+            },
+            {
+              "ref": "Isaiah 28:27",
+              "verse_id": 18308,
+              "snippet": "For the dill isn’t threshed with a sharp instrument, neither is a cart wheel turned over the cumin; but the dill is beaten out with a stick, and the cumin with a rod."
+            }
+          ],
+          "original_words": [
+            {
+              "strongs": "H1285",
+              "gloss": "covenant"
+            },
+            {
+              "strongs": "H0212",
+              "gloss": "wheel"
+            }
+          ],
+          "matched_terms": [],
+          "r12": {
+            "score_version": "r12-ranker-v1",
+            "epistemic_layer": "TEXTUAL",
+            "epistemic_status": "SUPPORTED_STEPS_NOT_ENDPOINT_INTERPRETATION",
+            "Q": 0.878663,
+            "C": 1,
+            "D": 0.984571,
+            "T": 0.75,
+            "interest": 0.87,
+            "mmr_score": 0.840833,
+            "meaningful_hops": 3,
+            "independent_group_count": 8,
+            "steps": [
+              {
+                "from": "lemma:H1285",
+                "to": "lemma:H0727",
+                "relation": "gram_possessive_construction_with",
+                "witness_refs": [
+                  "1CH 15:25",
+                  "1CH 15:26",
+                  "1CH 15:28"
+                ]
+              },
+              {
+                "from": "lemma:H0727",
+                "to": "lemma:H5437",
+                "relation": "gram_grammatical_object_of",
+                "witness_refs": [
+                  "1CH 13:3",
+                  "1SA 5:10",
+                  "1SA 5:8"
+                ]
+              },
+              {
+                "from": "lemma:H5437",
+                "to": "lemma:H0212",
+                "relation": "gram_grammatical_subject_of",
+                "witness_refs": [
+                  "EZK 10:16",
+                  "ISA 28:27"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "rank": 3,
+          "id": "r12:path:H1285:G1953",
+          "title": "R12 3-hop discovery: בְּרִית (H1285) → ἐπιλησμονή (\"forgetfulness\", G1953)",
+          "predicate": "multihop_proof_path",
+          "epistemic_class": "documented_lexical_relationship",
+          "evidence_tier": 3,
+          "passages": [
+            {
+              "ref": "2 Kings 17:38",
+              "verse_id": 10022,
+              "snippet": "You shall not forget the covenant that I have made with you. You shall not fear other gods."
+            },
+            {
+              "ref": "Deuteronomy 4:23",
+              "verse_id": 5028,
+              "snippet": "Be careful, lest you forget the covenant of the LORD your God, which he made with you, and make yourselves a carved image in the form of anything which the LORD your God has forbidden you."
+            },
+            {
+              "ref": "Genesis 41:30",
+              "verse_id": 1226,
+              "snippet": "Seven years of famine will arise after them, and all the plenty will be forgotten in the land of Egypt. The famine will consume the land,"
+            },
+            {
+              "ref": "Deuteronomy 4:9",
+              "verse_id": 5014,
+              "snippet": "Only be careful, and keep your soul diligently, lest you forget the things which your eyes saw, and lest they depart from your heart all the days of your life; but make them known "
+            }
+          ],
+          "original_words": [
+            {
+              "strongs": "H1285",
+              "gloss": "covenant"
+            },
+            {
+              "strongs": "G1953",
+              "gloss": "forgetfulness"
+            }
+          ],
+          "matched_terms": [],
+          "r12": {
+            "score_version": "r12-ranker-v1",
+            "epistemic_layer": "TEXTUAL",
+            "epistemic_status": "SUPPORTED_STEPS_NOT_ENDPOINT_INTERPRETATION",
+            "Q": 0.85119,
+            "C": 0.935785,
+            "D": 0.984571,
+            "T": 0.75,
+            "interest": 0.867429,
+            "mmr_score": 0.789651,
+            "meaningful_hops": 3,
+            "independent_group_count": 7,
+            "steps": [
+              {
+                "from": "lemma:H1285",
+                "to": "lemma:H7911",
+                "relation": "gram_grammatical_object_of",
+                "witness_refs": [
+                  "2KI 17:38",
+                  "DEU 4:23",
+                  "DEU 4:31"
+                ]
+              },
+              {
+                "from": "lemma:H7911",
+                "to": "lemma:G20433",
+                "relation": "lxx_translation_bridge",
+                "witness_refs": [
+                  "Genesis 41:30",
+                  "Deuteronomy 4:9",
+                  "Deuteronomy 4:23"
+                ]
+              },
+              {
+                "from": "lemma:G20433",
+                "to": "lemma:G1953",
+                "relation": "lex_shares_root",
+                "witness_refs": []
+              }
+            ]
+          }
+        },
+        {
+          "rank": 4,
+          "id": "r12:path:H1285:G0455",
+          "title": "R12 3-hop discovery: בְּרִית (H1285) → ἀνοίγω (\"to open\", G0455)",
+          "predicate": "multihop_proof_path",
+          "epistemic_class": "documented_lexical_relationship",
+          "evidence_tier": 3,
+          "passages": [
+            {
+              "ref": "2 Chronicles 34:30",
+              "verse_id": 11964,
+              "snippet": "The king went up to the LORD’s house with all the men of Judah and the inhabitants of Jerusalem—the priests, the Levites, and all the people, both great and small—and he read in their hearing all the words of the book of"
+            },
+            {
+              "ref": "2 Kings 23:2",
+              "verse_id": 10168,
+              "snippet": "The king went up to the LORD’s house, and all the men of Judah and all the inhabitants of Jerusalem with him—with the priests, the prophets, and all the people, both small and great; and he read in their hearing all the "
+            },
+            {
+              "ref": "Revelation 5:2",
+              "verse_id": 30882,
+              "snippet": "I saw a mighty angel proclaiming with a loud voice, “Who is worthy to open the book, and to break its seals?”"
+            },
+            {
+              "ref": "Revelation 5:3",
+              "verse_id": 30883,
+              "snippet": "No one in heaven above, or on the earth, or under the earth, was able to open the book or to look in it."
+            }
+          ],
+          "original_words": [
+            {
+              "strongs": "H1285",
+              "gloss": "covenant"
+            },
+            {
+              "strongs": "G0455",
+              "gloss": "to open"
+            }
+          ],
+          "matched_terms": [],
+          "r12": {
+            "score_version": "r12-ranker-v1",
+            "epistemic_layer": "TEXTUAL",
+            "epistemic_status": "SUPPORTED_STEPS_NOT_ENDPOINT_INTERPRETATION",
+            "Q": 0.864357,
+            "C": 1,
+            "D": 0.984571,
+            "T": 0.75,
+            "interest": 0.864925,
+            "mmr_score": 0.787147,
+            "meaningful_hops": 3,
+            "independent_group_count": 12,
+            "steps": [
+              {
+                "from": "lemma:H1285",
+                "to": "lemma:H5612",
+                "relation": "gram_possessive_construction_with",
+                "witness_refs": [
+                  "2CH 34:30",
+                  "2KI 23:2",
+                  "EXO 24:7"
+                ]
+              },
+              {
+                "from": "lemma:H5612",
+                "to": "lemma:G0975",
+                "relation": "lxx_translation_bridge",
+                "witness_refs": []
+              },
+              {
+                "from": "lemma:G0975",
+                "to": "lemma:G0455",
+                "relation": "gram_grammatical_object_of",
+                "witness_refs": [
+                  "REV 5:2",
+                  "REV 5:3",
+                  "REV 5:4"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "rank": 5,
+          "id": "r12:path:H1285:H6331",
+          "title": "R12 2-hop discovery: בְּרִית (H1285) → פּוּר (\"to break\", H6331)",
+          "predicate": "multihop_proof_path",
+          "epistemic_class": "documented_lexical_relationship",
+          "evidence_tier": 3,
+          "passages": [
+            {
+              "ref": "Genesis 17:14",
+              "verse_id": 412,
+              "snippet": "The uncircumcised male who is not circumcised in the flesh of his foreskin, that soul shall be cut off from his people. He has broken my covenant.”"
+            },
+            {
+              "ref": "Leviticus 26:15",
+              "verse_id": 3540,
+              "snippet": "and if you shall reject my statutes, and if your soul abhors my ordinances, so that you will not do all my commandments, but break my covenant,"
+            }
+          ],
+          "original_words": [
+            {
+              "strongs": "H1285",
+              "gloss": "covenant"
+            },
+            {
+              "strongs": "H6331",
+              "gloss": "to break"
+            }
+          ],
+          "matched_terms": [],
+          "r12": {
+            "score_version": "r12-ranker-v1",
+            "epistemic_layer": "TEXTUAL",
+            "epistemic_status": "SUPPORTED_STEPS_NOT_ENDPOINT_INTERPRETATION",
+            "Q": 0.889944,
+            "C": 0.935785,
+            "D": 0.976857,
+            "T": 0.5,
+            "interest": 0.849197,
+            "mmr_score": 0.810308,
+            "meaningful_hops": 2,
+            "independent_group_count": 7,
+            "steps": [
+              {
+                "from": "lemma:H1285",
+                "to": "lemma:H6565",
+                "relation": "gram_grammatical_object_of",
+                "witness_refs": [
+                  "GEN 17:14",
+                  "LEV 26:15",
+                  "LEV 26:44"
+                ]
+              },
+              {
+                "from": "lemma:H6565",
+                "to": "lemma:H6331",
+                "relation": "lex_shares_root",
+                "witness_refs": [
+                  "Genesis 17:14",
+                  "Leviticus 26:15"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "rank": 6,
+          "id": "r12:path:H1285:G4511",
+          "title": "R12 3-hop discovery: בְּרִית (H1285) → ῥύσις (\"discharge\", G4511)",
+          "predicate": "multihop_proof_path",
+          "epistemic_class": "documented_lexical_relationship",
+          "evidence_tier": 3,
+          "passages": [
+            {
+              "ref": "Hebrews 10:29",
+              "verse_id": 30262,
+              "snippet": "How much worse punishment do you think he will be judged worthy of who has trodden under foot the Son of God, and has counted the blood of the covenant with which he was sanctified an unholy thing, and has insulted the S"
+            },
+            {
+              "ref": "Hebrews 13:20",
+              "verse_id": 30361,
+              "snippet": "Now may the God of peace, who brought again from the dead the great shepherd of the sheep with the blood of an eternal covenant, our Lord Jesus,"
+            },
+            {
+              "ref": "Luke 8:43",
+              "verse_id": 25397,
+              "snippet": "A woman who had a flow of blood for twelve years, who had spent all her living on physicians and could not be healed by any,"
+            },
+            {
+              "ref": "Luke 8:44",
+              "verse_id": 25398,
+              "snippet": "came behind him and touched the fringe of his cloak. Immediately the flow of her blood stopped."
+            }
+          ],
+          "original_words": [
+            {
+              "strongs": "H1285",
+              "gloss": "covenant"
+            },
+            {
+              "strongs": "G4511",
+              "gloss": "discharge"
+            }
+          ],
+          "matched_terms": [],
+          "r12": {
+            "score_version": "r12-ranker-v1",
+            "epistemic_layer": "LINGUISTIC",
+            "epistemic_status": "SUPPORTED_STEPS_NOT_ENDPOINT_INTERPRETATION",
+            "Q": 0.866849,
+            "C": 0.935785,
+            "D": 1,
+            "T": 0.5,
+            "interest": 0.837047,
+            "mmr_score": 0.798158,
+            "meaningful_hops": 3,
+            "independent_group_count": 7,
+            "steps": [
+              {
+                "from": "lemma:H1285",
+                "to": "lemma:G1242",
+                "relation": "lxx_translation_bridge",
+                "witness_refs": []
+              },
+              {
+                "from": "lemma:G1242",
+                "to": "lemma:G0129",
+                "relation": "gram_possessive_construction_with",
+                "witness_refs": [
+                  "HEB 10:29",
+                  "HEB 13:20",
+                  "HEB 9:20"
+                ]
+              },
+              {
+                "from": "lemma:G0129",
+                "to": "lemma:G4511",
+                "relation": "gram_possessive_construction_with",
+                "witness_refs": [
+                  "LUK 8:43",
+                  "LUK 8:44",
+                  "MRK 5:25"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "rank": 7,
+          "id": "r11:cluster:H1285:temple_and_sanctuary_architecture",
+          "title": "Temple & Sanctuary Architecture (Genesis 17 · Exodus 31, 34 · Numbers 10, 14)",
+          "predicate": "verified_lexical_grammatical",
+          "epistemic_class": "direct_textual_evidence",
+          "evidence_tier": 2,
+          "passages": [
+            {
+              "ref": "Genesis 17:13",
+              "verse_id": 411,
+              "snippet": "He who is born in your house, and he who is bought with your money, must be circumcised. My covenant shall be in your flesh for an everlasting covenant."
+            },
+            {
+              "ref": "Exodus 31:16",
+              "verse_id": 2437,
+              "snippet": "Therefore the children of Israel shall keep the Sabbath, to observe the Sabbath throughout their generations, for a perpetual covenant."
+            },
+            {
+              "ref": "Exodus 34:10",
+              "verse_id": 2507,
+              "snippet": "He said, “Behold, I make a covenant: before all your people I will do marvels, such as have not been worked in all the earth, nor in any nation; and all the people among whom you are shall see the work of the LORD; for i"
+            },
+            {
+              "ref": "Exodus 34:12",
+              "verse_id": 2509,
+              "snippet": "Be careful, lest you make a covenant with the inhabitants of the land where you are going, lest it be for a snare among you;"
+            },
+            {
+              "ref": "Exodus 34:15",
+              "verse_id": 2512,
+              "snippet": "“Don’t make a covenant with the inhabitants of the land, lest they play the prostitute after their gods, and sacrifice to their gods, and one call you and you eat of his sacrifice;"
+            },
+            {
+              "ref": "Exodus 34:27",
+              "verse_id": 2524,
+              "snippet": "The LORD said to Moses, “Write these words; for in accordance with these words I have made a covenant with you and with Israel.”"
+            },
+            {
+              "ref": "Exodus 34:28",
+              "verse_id": 2525,
+              "snippet": "He was there with the LORD forty days and forty nights; he neither ate bread, nor drank water. He wrote on the tablets the words of the covenant, the ten commandments."
+            },
+            {
+              "ref": "Numbers 10:33",
+              "verse_id": 4022,
+              "snippet": "They set forward from the Mount of the LORD three days’ journey. The ark of the LORD’s covenant went before them three days’ journey, to seek out a resting place for them."
+            }
+          ],
+          "original_words": [
+            {
+              "strongs": "H1285",
+              "gloss": "covenant"
+            },
+            {
+              "strongs": "H1285",
+              "gloss": "of.the.covenant"
+            },
+            {
+              "strongs": "H1285",
+              "gloss": "a.covenant"
+            },
+            {
+              "strongs": "H1285",
+              "gloss": "a.covenant"
+            }
+          ],
+          "matched_terms": []
+        },
+        {
+          "rank": 8,
+          "id": "r11:gram:H1285:grammatical_object_of:H3772",
+          "title": "Direct object of: בְּרִית (be.rit) ↔ כָּרַת (\"to cut: cut\", 60×)",
+          "predicate": "verified_lexical_grammatical",
+          "epistemic_class": "direct_textual_evidence",
+          "evidence_tier": 2,
+          "passages": [
+            {
+              "ref": "1 Chronicles 11:3",
+              "verse_id": 10677,
+              "snippet": "So all the elders of Israel came to the king to Hebron; and David made a covenant with them in Hebron before the LORD. They anointed David king over Israel, according to the LORD’s word by Samuel."
+            },
+            {
+              "ref": "1 Kings 20:34",
+              "verse_id": 9443,
+              "snippet": "Ben Hadad said to him, “The cities which my father took from your father I will restore. You shall make streets for yourself in Damascus, as my father made in Samaria.” “I”, said Ahab, “will let you go with this covenant"
+            },
+            {
+              "ref": "1 Kings 5:12",
+              "verse_id": 8891,
+              "snippet": "The LORD gave Solomon wisdom, as he promised him. There was peace between Hiram and Solomon, and the two of them made a treaty together."
+            }
+          ],
+          "original_words": [
+            {
+              "strongs": "H1285",
+              "gloss": "covenant"
+            },
+            {
+              "strongs": "H3772",
+              "gloss": "to cut: cut"
+            }
+          ],
+          "matched_terms": []
+        },
+        {
+          "rank": 9,
+          "id": "r11:gram:H1285:possessive_construction_with:H0727",
+          "title": "Genitive / construct connection: בְּרִית (be.rit) ↔ אֲרוֹן (\"ark\", 41×)",
+          "predicate": "verified_lexical_grammatical",
+          "epistemic_class": "direct_textual_evidence",
+          "evidence_tier": 2,
+          "passages": [
+            {
+              "ref": "1 Chronicles 15:25",
+              "verse_id": 10817,
+              "snippet": "So David, the elders of Israel, and the captains over thousands went to bring the ark of the LORD’s covenant up out of the house of Obed-Edom with joy."
+            },
+            {
+              "ref": "1 Chronicles 15:26",
+              "verse_id": 10818,
+              "snippet": "When God helped the Levites who bore the ark of the LORD’s covenant, they sacrificed seven bulls and seven rams."
+            },
+            {
+              "ref": "1 Chronicles 15:28",
+              "verse_id": 10820,
+              "snippet": "Thus all Israel brought the ark of the LORD’s covenant up with shouting, with sound of the cornet, with trumpets, and with cymbals, sounding aloud with stringed instruments and harps."
+            }
+          ],
+          "original_words": [
+            {
+              "strongs": "H1285",
+              "gloss": "covenant"
+            },
+            {
+              "strongs": "H0727",
+              "gloss": "ark"
+            }
+          ],
+          "matched_terms": []
+        },
+        {
+          "rank": 10,
+          "id": "r11:gram:H1285:possessive_construction_with:H3068",
+          "title": "Head of genitive / construct: בְּרִית (be.rit) ↔ יְהֹוָה (\"LORD\", 39×)",
+          "predicate": "verified_lexical_grammatical",
+          "epistemic_class": "direct_textual_evidence",
+          "evidence_tier": 2,
+          "passages": [
+            {
+              "ref": "1 Chronicles 15:25",
+              "verse_id": 10817,
+              "snippet": "So David, the elders of Israel, and the captains over thousands went to bring the ark of the LORD’s covenant up out of the house of Obed-Edom with joy."
+            },
+            {
+              "ref": "1 Chronicles 15:26",
+              "verse_id": 10818,
+              "snippet": "When God helped the Levites who bore the ark of the LORD’s covenant, they sacrificed seven bulls and seven rams."
+            },
+            {
+              "ref": "1 Chronicles 15:28",
+              "verse_id": 10820,
+              "snippet": "Thus all Israel brought the ark of the LORD’s covenant up with shouting, with sound of the cornet, with trumpets, and with cymbals, sounding aloud with stringed instruments and harps."
+            }
+          ],
+          "original_words": [
+            {
+              "strongs": "H1285",
+              "gloss": "covenant"
+            },
+            {
+              "strongs": "H3068",
+              "gloss": "LORD"
+            }
+          ],
+          "matched_terms": []
+        },
+        {
+          "rank": 11,
+          "id": "r11:gram:H1285:possessive_construction_with:H5769",
+          "title": "Head of genitive / construct: בְּרִית (be.rit) ↔ עוֹלָם (\"forever: enduring\", 16×)",
+          "predicate": "verified_lexical_grammatical",
+          "epistemic_class": "direct_textual_evidence",
+          "evidence_tier": 2,
+          "passages": [
+            {
+              "ref": "1 Chronicles 16:17",
+              "verse_id": 10838,
+              "snippet": "He confirmed it to Jacob for a statute, and to Israel for an everlasting covenant,"
+            },
+            {
+              "ref": "2 Samuel 23:5",
+              "verse_id": 8659,
+              "snippet": "Isn’t my house so with God? Yet he has made with me an everlasting covenant, ordered in all things, and sure, for it is all my salvation and all my desire. Won’t he make it grow?"
+            },
+            {
+              "ref": "Exodus 31:16",
+              "verse_id": 2437,
+              "snippet": "Therefore the children of Israel shall keep the Sabbath, to observe the Sabbath throughout their generations, for a perpetual covenant."
+            }
+          ],
+          "original_words": [
+            {
+              "strongs": "H1285",
+              "gloss": "covenant"
+            },
+            {
+              "strongs": "H5769",
+              "gloss": "forever: enduring"
+            }
+          ],
+          "matched_terms": []
+        },
+        {
+          "rank": 12,
+          "id": "r11:gram:H1285:grammatical_object_of:H2142",
+          "title": "Direct object of: בְּרִית (be.rit) ↔ זָכַר (\"to remember\", 14×)",
+          "predicate": "verified_lexical_grammatical",
+          "epistemic_class": "direct_textual_evidence",
+          "evidence_tier": 2,
+          "passages": [
+            {
+              "ref": "1 Chronicles 16:15",
+              "verse_id": 10836,
+              "snippet": "Remember his covenant forever, the word which he commanded to a thousand generations,"
+            },
+            {
+              "ref": "Amos 1:9",
+              "verse_id": 22490,
+              "snippet": "The LORD says: “For three transgressions of Tyre, yes, for four, I will not turn away its punishment; because they delivered up the whole community to Edom, and didn’t remember the brotherly covenant;"
+            },
+            {
+              "ref": "Exodus 2:24",
+              "verse_id": 1579,
+              "snippet": "God heard their groaning, and God remembered his covenant with Abraham, with Isaac, and with Jacob."
+            }
+          ],
+          "original_words": [
+            {
+              "strongs": "H1285",
+              "gloss": "covenant"
+            },
+            {
+              "strongs": "H2142",
+              "gloss": "to remember"
+            }
+          ],
+          "matched_terms": []
+        },
+        {
+          "rank": 13,
+          "id": "r12:struct:H1285:1CH_11:3:1KI_20:34",
+          "title": "Structural clause parallel: 1CH 11:3 ↔ 1KI 20:34 (3 shared roles, J=1)",
+          "predicate": "structural_scene_parallel",
+          "epistemic_class": "candidate_literary_pattern",
+          "evidence_tier": 6,
+          "passages": [
+            {
+              "ref": "1 Chronicles 11:3",
+              "verse_id": 10677,
+              "snippet": "So all the elders of Israel came to the king to Hebron; and David made a covenant with them in Hebron before the LORD. They anointed David king over Israel, according to the LORD’s"
+            },
+            {
+              "ref": "1 Kings 20:34",
+              "verse_id": 9443,
+              "snippet": "Ben Hadad said to him, “The cities which my father took from your father I will restore. You shall make streets for yourself in Damascus, as my father made in Samaria.” “I”, said A"
+            }
+          ],
+          "original_words": [
+            {
+              "strongs": "H1285",
+              "gloss": "covenant"
+            }
+          ],
+          "matched_terms": [],
+          "r12": {
+            "score_version": "r12-ranker-v1",
+            "epistemic_layer": "HYPOTHESIS",
+            "epistemic_status": "EXPLORATORY",
+            "Q": 1,
+            "C": 0.25,
+            "D": 1,
+            "T": 0.25,
+            "interest": 1,
+            "meaningful_hops": 2,
+            "independent_group_count": 2
+          }
+        },
+        {
+          "rank": 14,
+          "id": "r12:struct:H1285:1CH_11:3:1KI_5:12",
+          "title": "Structural clause parallel: 1CH 11:3 ↔ 1KI 5:12 (3 shared roles, J=1)",
+          "predicate": "structural_scene_parallel",
+          "epistemic_class": "candidate_literary_pattern",
+          "evidence_tier": 6,
+          "passages": [
+            {
+              "ref": "1 Chronicles 11:3",
+              "verse_id": 10677,
+              "snippet": "So all the elders of Israel came to the king to Hebron; and David made a covenant with them in Hebron before the LORD. They anointed David king over Israel, according to the LORD’s"
+            },
+            {
+              "ref": "1 Kings 5:12",
+              "verse_id": 8891,
+              "snippet": "The LORD gave Solomon wisdom, as he promised him. There was peace between Hiram and Solomon, and the two of them made a treaty together."
+            }
+          ],
+          "original_words": [
+            {
+              "strongs": "H1285",
+              "gloss": "covenant"
+            }
+          ],
+          "matched_terms": [],
+          "r12": {
+            "score_version": "r12-ranker-v1",
+            "epistemic_layer": "HYPOTHESIS",
+            "epistemic_status": "EXPLORATORY",
+            "Q": 1,
+            "C": 0.25,
+            "D": 1,
+            "T": 0.25,
+            "interest": 1,
+            "meaningful_hops": 2,
+            "independent_group_count": 2
+          }
+        },
+        {
+          "rank": 15,
+          "id": "r12:struct:H1285:1KI_20:34:1CH_11:3",
+          "title": "Structural clause parallel: 1KI 20:34 ↔ 1CH 11:3 (3 shared roles, J=1)",
+          "predicate": "structural_scene_parallel",
+          "epistemic_class": "candidate_literary_pattern",
+          "evidence_tier": 6,
+          "passages": [
+            {
+              "ref": "1 Kings 20:34",
+              "verse_id": 9443,
+              "snippet": "Ben Hadad said to him, “The cities which my father took from your father I will restore. You shall make streets for yourself in Damascus, as my father made in Samaria.” “I”, said A"
+            },
+            {
+              "ref": "1 Chronicles 11:3",
+              "verse_id": 10677,
+              "snippet": "So all the elders of Israel came to the king to Hebron; and David made a covenant with them in Hebron before the LORD. They anointed David king over Israel, according to the LORD’s"
+            }
+          ],
+          "original_words": [
+            {
+              "strongs": "H1285",
+              "gloss": "covenant"
+            }
+          ],
+          "matched_terms": [],
+          "r12": {
+            "score_version": "r12-ranker-v1",
+            "epistemic_layer": "HYPOTHESIS",
+            "epistemic_status": "EXPLORATORY",
+            "Q": 1,
+            "C": 0.25,
+            "D": 1,
+            "T": 0.25,
+            "interest": 1,
+            "meaningful_hops": 2,
+            "independent_group_count": 2
+          }
+        },
+        {
+          "rank": 16,
+          "id": "r11:cluster:H1285:historical_narrative",
+          "title": "Historical Narrative (Genesis 6, 9, 14, 15 · Joshua 7, 9, 23, 24 · Judges 2)",
+          "predicate": "verified_lexical_grammatical",
+          "epistemic_class": "direct_textual_evidence",
+          "evidence_tier": 3,
+          "passages": [
+            {
+              "ref": "Genesis 6:18",
+              "verse_id": 156,
+              "snippet": "But I will establish my covenant with you. You shall come into the ship, you, your sons, your wife, and your sons’ wives with you."
+            },
+            {
+              "ref": "Genesis 9:9",
+              "verse_id": 215,
+              "snippet": "“As for me, behold, I establish my covenant with you, and with your offspring after you,"
+            },
+            {
+              "ref": "Genesis 9:11",
+              "verse_id": 217,
+              "snippet": "I will establish my covenant with you: All flesh will not be cut off any more by the waters of the flood. There will never again be a flood to destroy the earth.”"
+            },
+            {
+              "ref": "Genesis 9:12",
+              "verse_id": 218,
+              "snippet": "God said, “This is the token of the covenant which I make between me and you and every living creature that is with you, for perpetual generations:"
+            },
+            {
+              "ref": "Genesis 9:13",
+              "verse_id": 219,
+              "snippet": "I set my rainbow in the cloud, and it will be a sign of a covenant between me and the earth."
+            },
+            {
+              "ref": "Genesis 9:15",
+              "verse_id": 221,
+              "snippet": "I will remember my covenant, which is between me and you and every living creature of all flesh, and the waters will no more become a flood to destroy all flesh."
+            },
+            {
+              "ref": "Genesis 9:16",
+              "verse_id": 222,
+              "snippet": "The rainbow will be in the cloud. I will look at it, that I may remember the everlasting covenant between God and every living creature of all flesh that is on the earth.”"
+            },
+            {
+              "ref": "Genesis 9:17",
+              "verse_id": 223,
+              "snippet": "God said to Noah, “This is the token of the covenant which I have established between me and all flesh that is on the earth.”"
+            }
+          ],
+          "original_words": [
+            {
+              "strongs": "H1285",
+              "gloss": "covenant"
+            },
+            {
+              "strongs": "H1285",
+              "gloss": "[the].covenant"
+            },
+            {
+              "strongs": "H1285",
+              "gloss": "covenant my"
+            },
+            {
+              "strongs": "H1285",
+              "gloss": "of the.covenant"
+            }
+          ],
+          "matched_terms": []
+        },
+        {
+          "rank": 17,
+          "id": "r11:cluster:H1285:torah_ritual_and_covenant_law",
+          "title": "Torah Ritual & Covenant Law (Exodus 2, 6, 19, 23 · Leviticus 2, 24, 26 · Numbers 18, 25)",
+          "predicate": "verified_lexical_grammatical",
+          "epistemic_class": "direct_textual_evidence",
+          "evidence_tier": 3,
+          "passages": [
+            {
+              "ref": "Exodus 2:24",
+              "verse_id": 1579,
+              "snippet": "God heard their groaning, and God remembered his covenant with Abraham, with Isaac, and with Jacob."
+            },
+            {
+              "ref": "Exodus 6:4",
+              "verse_id": 1660,
+              "snippet": "I have also established my covenant with them, to give them the land of Canaan, the land of their travels, in which they lived as aliens."
+            },
+            {
+              "ref": "Exodus 6:5",
+              "verse_id": 1661,
+              "snippet": "Moreover I have heard the groaning of the children of Israel, whom the Egyptians keep in bondage, and I have remembered my covenant."
+            },
+            {
+              "ref": "Exodus 19:5",
+              "verse_id": 2032,
+              "snippet": "Now therefore, if you will indeed obey my voice and keep my covenant, then you shall be my own possession from among all peoples; for all the earth is mine;"
+            },
+            {
+              "ref": "Exodus 23:32",
+              "verse_id": 2177,
+              "snippet": "You shall make no covenant with them, nor with their gods."
+            },
+            {
+              "ref": "Exodus 24:7",
+              "verse_id": 2185,
+              "snippet": "He took the book of the covenant and read it in the hearing of the people, and they said, “We will do all that the LORD has said, and be obedient.”"
+            },
+            {
+              "ref": "Exodus 24:8",
+              "verse_id": 2186,
+              "snippet": "Moses took the blood, and sprinkled it on the people, and said, “Look, this is the blood of the covenant, which the LORD has made with you concerning all these words.”"
+            },
+            {
+              "ref": "Leviticus 2:13",
+              "verse_id": 2776,
+              "snippet": "Every offering of your meal offering you shall season with salt. You shall not allow the salt of the covenant of your God to be lacking from your meal offering. With all your offerings you shall offer salt."
+            }
+          ],
+          "original_words": [
+            {
+              "strongs": "H1285",
+              "gloss": "covenant"
+            },
+            {
+              "strongs": "H1285",
+              "gloss": "of the.covenant"
+            },
+            {
+              "strongs": "H1285",
+              "gloss": "the covenant"
+            },
+            {
+              "strongs": "H1285",
+              "gloss": "covenant his"
+            }
+          ],
+          "matched_terms": []
+        },
+        {
+          "rank": 18,
+          "id": "r11:cluster:H1285:poetic_imagery_and_similes",
+          "title": "Poetic Imagery & Similes (Job 5, 31, 41 · Psalms 25, 44, 50, 55 · Proverbs 2)",
+          "predicate": "verified_lexical_grammatical",
+          "epistemic_class": "direct_textual_evidence",
+          "evidence_tier": 3,
+          "passages": [
+            {
+              "ref": "Job 5:23",
+              "verse_id": 12975,
+              "snippet": "For you will be allied with the stones of the field. The animals of the field will be at peace with you."
+            },
+            {
+              "ref": "Job 31:1",
+              "verse_id": 13590,
+              "snippet": "“I made a covenant with my eyes; how then should I look lustfully at a young woman?"
+            },
+            {
+              "ref": "Job 41:4",
+              "verse_id": 13893,
+              "snippet": "Will he make a covenant with you, that you should take him for a servant forever?"
+            },
+            {
+              "ref": "Psalms 25:10",
+              "verse_id": 14284,
+              "snippet": "All the paths of the LORD are loving kindness and truth to such as keep his covenant and his testimonies."
+            },
+            {
+              "ref": "Psalms 25:14",
+              "verse_id": 14288,
+              "snippet": "The friendship of the LORD is with those who fear him. He will show them his covenant."
+            },
+            {
+              "ref": "Psalms 44:17",
+              "verse_id": 14628,
+              "snippet": "All this has come on us, yet we haven’t forgotten you. We haven’t been false to your covenant."
+            },
+            {
+              "ref": "Psalms 50:5",
+              "verse_id": 14719,
+              "snippet": "“Gather my saints together to me, those who have made a covenant with me by sacrifice.”"
+            },
+            {
+              "ref": "Psalms 50:16",
+              "verse_id": 14730,
+              "snippet": "But to the wicked God says, “What right do you have to declare my statutes, that you have taken my covenant on your lips,"
+            }
+          ],
+          "original_words": [
+            {
+              "strongs": "H1285",
+              "gloss": "covenant"
+            },
+            {
+              "strongs": "H1285",
+              "gloss": "covenant his"
+            }
+          ],
+          "matched_terms": []
+        },
+        {
+          "rank": 19,
+          "id": "r11:cluster:H1285:prophetic_imagery_and_oracles",
+          "title": "Prophetic Imagery & Oracles (Isaiah 24, 28, 33, 42 · Jeremiah 3, 11, 14, 22 · Ezekiel 16, 17, 20, 30)",
+          "predicate": "verified_lexical_grammatical",
+          "epistemic_class": "direct_textual_evidence",
+          "evidence_tier": 3,
+          "passages": [
+            {
+              "ref": "Isaiah 24:5",
+              "verse_id": 18217,
+              "snippet": "The earth also is polluted under its inhabitants, because they have transgressed the laws, violated the statutes, and broken the everlasting covenant."
+            },
+            {
+              "ref": "Isaiah 28:15",
+              "verse_id": 18296,
+              "snippet": "“Because you have said, ‘We have made a covenant with death, and we are in agreement with Sheol. When the overflowing scourge passes through, it won’t come to us; for we have made lies our refuge, and we have hidden ours"
+            },
+            {
+              "ref": "Isaiah 28:18",
+              "verse_id": 18299,
+              "snippet": "Your covenant with death shall be annulled, and your agreement with Sheol shall not stand. When the overflowing scourge passes through, then you will be trampled down by it."
+            },
+            {
+              "ref": "Isaiah 33:8",
+              "verse_id": 18404,
+              "snippet": "The highways are desolate. The traveling man ceases. The covenant is broken. He has despised the cities. He doesn’t respect man."
+            },
+            {
+              "ref": "Isaiah 42:6",
+              "verse_id": 18603,
+              "snippet": "“I, the LORD, have called you in righteousness. I will hold your hand. I will keep you, and make you a covenant for the people, as a light for the nations,"
+            },
+            {
+              "ref": "Isaiah 49:8",
+              "verse_id": 18761,
+              "snippet": "The LORD says, “I have answered you in an acceptable time. I have helped you in a day of salvation. I will preserve you and give you for a covenant of the people, to raise up the land, to make them inherit the desolate h"
+            },
+            {
+              "ref": "Isaiah 54:10",
+              "verse_id": 18850,
+              "snippet": "For the mountains may depart, and the hills be removed, but my loving kindness will not depart from you, and my covenant of peace will not be removed,” says the LORD who has mercy on you."
+            },
+            {
+              "ref": "Isaiah 55:3",
+              "verse_id": 18860,
+              "snippet": "Turn your ear, and come to me. Hear, and your soul will live. I will make an everlasting covenant with you, even the sure mercies of David."
+            }
+          ],
+          "original_words": [
+            {
+              "strongs": "H1285",
+              "gloss": "covenant"
+            }
+          ],
+          "matched_terms": []
+        },
+        {
+          "rank": 20,
+          "id": "r11:lxx:H1285:0",
+          "title": "Septuagint alignment witness: בְּרִית (H1285) → διαθήκη",
+          "predicate": "cross_language_bridge",
+          "epistemic_class": "documented_lexical_relationship",
+          "evidence_tier": 3,
+          "passages": [],
+          "original_words": [
+            {
+              "strongs": "H1285",
+              "gloss": "covenant"
+            },
+            {
+              "strongs": "G1242",
+              "gloss": "covenant"
+            }
+          ],
+          "matched_terms": []
+        },
+        {
+          "rank": 21,
+          "id": "r11:lxx:H1285:1",
+          "title": "Septuagint alignment witness: בְּרִית (H1285) → ὁ",
+          "predicate": "cross_language_bridge",
+          "epistemic_class": "documented_lexical_relationship",
+          "evidence_tier": 3,
+          "passages": [],
+          "original_words": [
+            {
+              "strongs": "H1285",
+              "gloss": "covenant"
+            },
+            {
+              "strongs": "G3588",
+              "gloss": "the/this/who"
+            }
+          ],
+          "matched_terms": []
+        },
+        {
+          "rank": 22,
+          "id": "r12:orth:H1285:H1286",
+          "title": "Orthographic similarity: בְּרִית (H1285) ↔ בְּרִית (H1286, matched \"ברית\")",
+          "predicate": "orthographic_overlap",
+          "epistemic_class": "orthographic_similarity_only",
+          "evidence_tier": 7,
+          "passages": [
+            {
+              "ref": "Genesis 6:18",
+              "verse_id": 156,
+              "snippet": "But I will establish my covenant with you. You shall come into the ship, you, your sons, your wife, and your sons’ wives with you."
+            },
+            {
+              "ref": "Judges 9:46",
+              "verse_id": 6801,
+              "snippet": "When all the men of the tower of Shechem heard of it, they entered into the stronghold of the house of Elberith."
+            }
+          ],
+          "original_words": [
+            {
+              "strongs": "H1285",
+              "gloss": "covenant"
+            },
+            {
+              "strongs": "H1286",
+              "gloss": "(Baal)-berith"
+            }
+          ],
+          "matched_terms": [],
+          "r12": {
+            "score_version": "r12-ranker-v1",
+            "epistemic_layer": "HYPOTHESIS",
+            "epistemic_status": "EXPLORATORY",
+            "Q": 1,
+            "C": 0,
+            "D": 1,
+            "T": 0.25,
+            "interest": 0.5,
+            "meaningful_hops": 1,
+            "independent_group_count": 0
+          }
+        },
+        {
+          "rank": 23,
+          "id": "r12:orth:H1285:H1287",
+          "title": "Orthographic similarity: בְּרִית (H1285) ↔ בֹּרִית (H1287, matched \"ברית\")",
+          "predicate": "orthographic_overlap",
+          "epistemic_class": "orthographic_similarity_only",
+          "evidence_tier": 7,
+          "passages": [
+            {
+              "ref": "Genesis 6:18",
+              "verse_id": 156,
+              "snippet": "But I will establish my covenant with you. You shall come into the ship, you, your sons, your wife, and your sons’ wives with you."
+            },
+            {
+              "ref": "Jeremiah 2:22",
+              "verse_id": 19104,
+              "snippet": "For though you wash yourself with lye, and use much soap, yet your iniquity is marked before me,” says the Lord GOD."
+            }
+          ],
+          "original_words": [
+            {
+              "strongs": "H1285",
+              "gloss": "covenant"
+            },
+            {
+              "strongs": "H1287",
+              "gloss": "lye"
+            }
+          ],
+          "matched_terms": [],
+          "r12": {
+            "score_version": "r12-ranker-v1",
+            "epistemic_layer": "HYPOTHESIS",
+            "epistemic_status": "EXPLORATORY",
+            "Q": 1,
+            "C": 0,
+            "D": 1,
+            "T": 0.25,
+            "interest": 0.5,
+            "meaningful_hops": 1,
+            "independent_group_count": 0
+          }
+        },
+        {
+          "rank": 24,
+          "id": "r11:xref:156:215",
+          "title": "Cross-reference witness: Genesis 6:18 → Genesis 9:9-11 (\"establish My covenant\")",
+          "predicate": "cross_reference_witness",
+          "epistemic_class": "verified_cross_reference",
+          "evidence_tier": 4,
+          "passages": [
+            {
+              "ref": "Genesis 6:18",
+              "verse_id": 156
+            },
+            {
+              "ref": "Genesis 9:9-11",
+              "verse_id": 215
+            }
+          ],
+          "original_words": [
+            {
+              "strongs": "H1285",
+              "gloss": "covenant"
+            }
+          ],
+          "matched_terms": []
+        },
+        {
+          "rank": 25,
+          "id": "r11:xref:156:402",
+          "title": "Cross-reference witness: Genesis 6:18 → Genesis 17:4-21 (\"establish My covenant\")",
+          "predicate": "cross_reference_witness",
+          "epistemic_class": "verified_cross_reference",
+          "evidence_tier": 4,
+          "passages": [
+            {
+              "ref": "Genesis 6:18",
+              "verse_id": 156
+            },
+            {
+              "ref": "Genesis 17:4-21",
+              "verse_id": 402
+            }
+          ],
+          "original_words": [
+            {
+              "strongs": "H1285",
+              "gloss": "covenant"
+            }
+          ],
+          "matched_terms": []
+        }
+      ],
+      "alias_candidates": [
+        {
+          "rank": 12,
+          "id": "r11:gram:H1285:grammatical_object_of:H2142"
+        }
+      ],
+      "triage": "CANDIDATE_NOT_VERIFIED",
+      "adjudication": "NOT_REVIEWED"
+    },
+    {
+      "id": "L008",
+      "arguments": {
+        "query": "H1285",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observed_at": "2026-11-18T19:28:11.570Z",
+      "elapsed_ms": 21301,
+      "status": "TOOL_ERROR",
+      "error": "INVALID_ARGUMENT: Error code: INVALID_ARGUMENT; Error: RuntimeException: Error calling MCP tool: [TextContent(type='text', text='Cloudflare relationship graph gateway HTTP 503', annotations=None, meta=None)]",
+      "ranked_results": [],
+      "adjudication": "NOT_REVIEWED"
+    },
+    {
+      "id": "L009",
+      "polarity": "positive",
+      "category": "linguistic_polysemy",
+      "difficulty": 3,
+      "arguments": {
+        "query": "H7307",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observed_at": "2026-11-18T19:28:11.572Z",
+      "elapsed_ms": 21303,
+      "status": "ok",
+      "release": "r11-v1.0",
+      "verification_release": {
+        "mcp_release": "1.7.0",
+        "corpus_target": "production",
+        "corpus_url": "https://bibleresearch-corpus.kingdomfishers-custom.workers.dev",
+        "corpus_release": "r12-discovery-1",
+        "worker_version": "7f51d378-ecef-4022-bcbc-94123397c6ec",
+        "source_commit": "712d3627b881b137fe11da6fc97d0871600c568c",
+        "asset_sha256": "c23272125b34f179237e1c61381ec0b3b92e282f6ae496194bf994"
+      },
+      "r12_discovery": {
+        "schema_version": 1,
+        "release_id": "r12-discovery-1",
+        "score_version": "r12-ranker-v1",
+        "pilot_anchors_matched": [
+          "H7307"
+        ],
+        "multihop_recommendations_count": 6,
+        "property_bridges_count": 2,
+        "structural_candidates_count": 3,
+        "orthographic_candidates_count": 2,
+        "exploratory_tail_cursor": "25",
+        "external_sources": [
+          {
+            "id": "oewn-2025",
+            "provider": "OpenEnglishWordNet",
+            "release": "2025",
+            "license": "CC BY 4.0 (incorporating Princeton WordNet attribution)"
+          },
+          {
+            "id": "wikidata-wbgetentities",
+            "provider": "Wikidata",
+            "release": "2026-11-18-wbgetentities-pinned",
+            "license": "CC0 1.0 (structured namespace data)"
+          }
+        ]
+      },
+      "returned": 25,
+      "ranked_results": [
+        {
+          "rank": 1,
+          "id": "r10:xlang:ruach_pneuma_anemos",
+          "title": "Cross-language bridge: Hebrew רוּחַ (ruach H7307) ↔ Greek πνεῦμα (pneuma G4151) & ἄνεμος (anemos G0417)",
+          "predicate": "cross_language_bridge",
+          "epistemic_class": "documented_lexical_relationship",
+          "evidence_tier": 3,
+          "passages": [
+            {
+              "ref": "Genesis 1:2",
+              "verse_id": 2,
+              "snippet": "The earth was formless and empty. Darkness was on the surface of the deep and God’s Spirit was hovering over the surface of the waters."
+            },
+            {
+              "ref": "Ezekiel 37:9",
+              "verse_id": 21523,
+              "snippet": "Then he said to me, “Prophesy to the wind, prophesy, son of man, and tell the wind, ‘The Lord GOD says: “Come from the four winds, breath, and breathe on these slain, that they may live.”’”"
+            },
+            {
+              "ref": "John 3:8",
+              "verse_id": 26235,
+              "snippet": "The windblows where it wants to, and you hear its sound, but don’t know where it comes from and where it is going. So is everyone who is born of the Spirit.”"
+            },
+            {
+              "ref": "Revelation 7:1",
+              "verse_id": 30912,
+              "snippet": "After this, I saw four angels standing at the four corners of the earth, holding the four winds of the earth, so that no wind would blow on the earth, or on the sea, or on any tree."
+            }
+          ],
+          "original_words": [
+            {
+              "strongs": "H7307",
+              "gloss": "spirit / wind / breath"
+            },
+            {
+              "strongs": "G4151",
+              "gloss": "spirit / Spirit"
+            },
+            {
+              "strongs": "G0417",
+              "gloss": "wind"
+            }
+          ],
+          "matched_terms": []
+        },
+        {
+          "rank": 2,
+          "id": "r10:lex:ezek37_ruach_winds_directions_breath_spirit",
+          "title": "Ezekiel 37:9,14 demonstrates רוּחַ (ruach H7307) across four directions/winds, breath, and God’s Spirit",
+          "predicate": "verified_lexical_grammatical",
+          "epistemic_class": "documented_lexical_relationship",
+          "evidence_tier": 3,
+          "passages": [
+            {
+              "ref": "Ezekiel 37:9",
+              "verse_id": 21523,
+              "snippet": "Then he said to me, “Prophesy to the wind, prophesy, son of man, and tell the wind, ‘The Lord GOD says: “Come from the four winds, breath, and breathe on these slain, that they may live.”’”"
+            },
+            {
+              "ref": "Ezekiel 37:14",
+              "verse_id": 21528,
+              "snippet": "I will put my Spirit in you, and you will live. Then I will place you in your own land; and you will know that I, the LORD, have spoken it and performed it,” says the LORD.’”"
+            },
+            {
+              "ref": "Zechariah 2:6",
+              "verse_id": 23022,
+              "snippet": "Come! Come! Flee from the land of the north,’ says the LORD; ‘for I have spread you abroad as the four winds of the sky,’ says the LORD."
+            }
+          ],
+          "original_words": [
+            {
+              "strongs": "H7307",
+              "gloss": "spirit / wind / breath"
+            },
+            {
+              "strongs": "H0702",
+              "gloss": "four"
+            },
+            {
+              "strongs": "H5301",
+              "gloss": "to breathe"
+            },
+            {
+              "strongs": "G0417",
+              "gloss": "wind"
+            }
+          ],
+          "matched_terms": []
+        },
+        {
+          "rank": 3,
+          "id": "r12:path:H7307:G4154",
+          "title": "R12 2-hop discovery: רוּחַ (H7307) → πνέω (\"to blow\", G4154)",
+          "predicate": "multihop_proof_path",
+          "epistemic_class": "documented_lexical_relationship",
+          "evidence_tier": 3,
+          "passages": [
+            {
+              "ref": "John 6:18",
+              "verse_id": 26381,
+              "snippet": "The sea was tossed by a great wind blowing."
+            },
+            {
+              "ref": "Matthew 7:25",
+              "verse_id": 23458,
+              "snippet": "The rain came down, the floods came, and the winds blew and beat on that house; and it didn’t fall, for it was founded on the rock."
+            }
+          ],
+          "original_words": [
+            {
+              "strongs": "H7307",
+              "gloss": "spirit / wind / breath"
+            },
+            {
+              "strongs": "G4154",
+              "gloss": "to blow"
+            }
+          ],
+          "matched_terms": [],
+          "r12": {
+            "score_version": "r12-ranker-v1",
+            "epistemic_layer": "LINGUISTIC",
+            "epistemic_status": "SUPPORTED_STEPS_NOT_ENDPOINT_INTERPRETATION",
+            "Q": 0.907204,
+            "C": 1,
+            "D": 1,
+            "T": 0.5,
+            "interest": 0.878489,
+            "mmr_score": 0.878489,
+            "meaningful_hops": 2,
+            "independent_group_count": 15,
+            "steps": [
+              {
+                "from": "lemma:H7307",
+                "to": "lemma:G0417",
+                "relation": "lxx_translation_bridge",
+                "witness_refs": []
+              },
+              {
+                "from": "lemma:G0417",
+                "to": "lemma:G4154",
+                "relation": "gram_grammatical_subject_of",
+                "witness_refs": [
+                  "JHN 6:18",
+                  "MAT 7:25",
+                  "MAT 7:27"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "rank": 4,
+          "id": "r10:lex:john3_8_wind_spirit_pneuma",
+          "title": "John 3:5–8 uses πνεῦμα (G4151) for both \"wind\" and \"Spirit\" alongside \"water\" (ὕδωρ G5204)",
+          "predicate": "verified_lexical_grammatical",
+          "epistemic_class": "documented_lexical_relationship",
+          "evidence_tier": 3,
+          "passages": [
+            {
+              "ref": "John 3:5",
+              "verse_id": 26232,
+              "snippet": "Jesus answered, “Most certainly I tell you, unless one is born of water and Spirit, he can’t enter into God’s Kingdom."
+            },
+            {
+              "ref": "John 3:8",
+              "verse_id": 26235,
+              "snippet": "The windblows where it wants to, and you hear its sound, but don’t know where it comes from and where it is going. So is everyone who is born of the Spirit.”"
+            }
+          ],
+          "original_words": [
+            {
+              "strongs": "G4151",
+              "gloss": "spirit / Spirit"
+            },
+            {
+              "strongs": "G4154",
+              "gloss": "to blow"
+            },
+            {
+              "strongs": "G5204",
+              "gloss": "water"
+            },
+            {
+              "strongs": "H7307",
+              "gloss": "spirit / wind / breath"
+            }
+          ],
+          "matched_terms": []
+        },
+        {
+          "rank": 5,
+          "id": "r12:path:H7307:G2590",
+          "title": "R12 3-hop discovery: רוּחַ (H7307) → καρπός (\"fruit\", G2590)",
+          "predicate": "multihop_proof_path",
+          "epistemic_class": "documented_lexical_relationship",
+          "evidence_tier": 3,
+          "passages": [
+            {
+              "ref": "Acts 2:2",
+              "verse_id": 27057,
+              "snippet": "Suddenly there came from the sky a sound like the rushing of a mighty wind, and it filled all the house where they were sitting."
+            },
+            {
+              "ref": "John 12:24",
+              "verse_id": 26710,
+              "snippet": "Most certainly I tell you, unless a grain of wheat falls into the earth and dies, it remains by itself alone. But if it dies, it bears much fruit."
+            },
+            {
+              "ref": "John 15:16",
+              "verse_id": 26821,
+              "snippet": "You didn’t choose me, but I chose you and appointed you, that you should go and bear fruit, and that your fruit should remain; that whatever you will ask of the Father in my name, he may give it to you."
+            }
+          ],
+          "original_words": [
+            {
+              "strongs": "H7307",
+              "gloss": "spirit / wind / breath"
+            },
+            {
+              "strongs": "G2590",
+              "gloss": "fruit"
+            }
+          ],
+          "matched_terms": [],
+          "r12": {
+            "score_version": "r12-ranker-v1",
+            "epistemic_layer": "LINGUISTIC",
+            "epistemic_status": "SUPPORTED_STEPS_NOT_ENDPOINT_INTERPRETATION",
+            "Q": 0.823277,
+            "C": 1,
+            "D": 1,
+            "T": 0.75,
+            "interest": 0.86193,
+            "mmr_score": 0.784152,
+            "meaningful_hops": 3,
+            "independent_group_count": 8,
+            "steps": [
+              {
+                "from": "lemma:H7307",
+                "to": "lemma:G4157",
+                "relation": "lxx_translation_bridge",
+                "witness_refs": []
+              },
+              {
+                "from": "lemma:G4157",
+                "to": "lemma:G5342",
+                "relation": "gram_grammatical_subject_of",
+                "witness_refs": [
+                  "ACT 2:2"
+                ]
+              },
+              {
+                "from": "lemma:G5342",
+                "to": "lemma:G2590",
+                "relation": "gram_grammatical_object_of",
+                "witness_refs": [
+                  "JHN 12:24",
+                  "JHN 15:16",
+                  "JHN 15:2"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "rank": 6,
+          "id": "r12:path:H7307:H2734",
+          "title": "R12 2-hop discovery: רוּחַ (H7307) → חָרָה (\"to be incensed\", H2734)",
+          "predicate": "multihop_proof_path",
+          "epistemic_class": "documented_lexical_relationship",
+          "evidence_tier": 3,
+          "passages": [
+            {
+              "ref": "2 Samuel 22:16",
+              "verse_id": 8619,
+              "snippet": "Then the channels of the sea appeared. The foundations of the world were laid bare by the LORD’s rebuke, at the blast of the breath of his nostrils."
+            },
+            {
+              "ref": "Exodus 15:8",
+              "verse_id": 1929,
+              "snippet": "With the blast of your nostrils, the waters were piled up. The floods stood upright as a heap. The deeps were congealed in the heart of the sea."
+            },
+            {
+              "ref": "1 Chronicles 13:10",
+              "verse_id": 10771,
+              "snippet": "The LORD’s anger burned against Uzza, and he struck him because he put his hand on the ark; and he died there before God."
+            },
+            {
+              "ref": "1 Samuel 17:28",
+              "verse_id": 7647,
+              "snippet": "Eliab his oldest brother heard when he spoke to the men; and Eliab’s anger burned against David, and he said, “Why have you come down? With whom have you left those few sheep in the wilderness? I know your pride and the "
+            }
+          ],
+          "original_words": [
+            {
+              "strongs": "H7307",
+              "gloss": "spirit / wind / breath"
+            },
+            {
+              "strongs": "H2734",
+              "gloss": "to be incensed"
+            }
+          ],
+          "matched_terms": [],
+          "r12": {
+            "score_version": "r12-ranker-v1",
+            "epistemic_layer": "TEXTUAL",
+            "epistemic_status": "SUPPORTED_STEPS_NOT_ENDPOINT_INTERPRETATION",
+            "Q": 0.948261,
+            "C": 1,
+            "D": 0.923573,
+            "T": 0.5,
+            "interest": 0.860216,
+            "mmr_score": 0.782438,
+            "meaningful_hops": 2,
+            "independent_group_count": 15,
+            "steps": [
+              {
+                "from": "lemma:H7307",
+                "to": "lemma:H0639",
+                "relation": "gram_possessive_construction_with",
+                "witness_refs": [
+                  "2SA 22:16",
+                  "EXO 15:8",
+                  "JOB 4:9"
+                ]
+              },
+              {
+                "from": "lemma:H0639",
+                "to": "lemma:H2734",
+                "relation": "gram_grammatical_subject_of",
+                "witness_refs": [
+                  "1CH 13:10",
+                  "1SA 17:28",
+                  "1SA 20:30"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "rank": 7,
+          "id": "r12:path:H7307:H0426",
+          "title": "R12 2-hop discovery: רוּחַ (H7307) → אֱלָהּ (\"god\", H0426)",
+          "predicate": "multihop_proof_path",
+          "epistemic_class": "documented_lexical_relationship",
+          "evidence_tier": 3,
+          "passages": [
+            {
+              "ref": "Genesis 1:2",
+              "verse_id": 2,
+              "snippet": "The earth was formless and empty. Darkness was on the surface of the deep and God’s Spirit was hovering over the surface of the waters."
+            },
+            {
+              "ref": "Genesis 3:8",
+              "verse_id": 64,
+              "snippet": "They heard the LORD God’s voice walking in the garden in the cool of the day, and the man and his wife hid themselves from the presence of the LORD God among the trees of the garde"
+            },
+            {
+              "ref": "Daniel 4:8",
+              "verse_id": 21962,
+              "snippet": "But at last, Daniel came in before me, whose name was Belteshazzar according to the name of my god, and in whom is the spirit of the holy gods. I told the dream before him, saying,"
+            },
+            {
+              "ref": "Daniel 4:9",
+              "verse_id": 21963,
+              "snippet": "“Belteshazzar, master of the magicians, because I know that the spirit of the holy gods is in you and no secret troubles you, tell me the visions of my dream that I have seen, and its interpretation."
+            }
+          ],
+          "original_words": [
+            {
+              "strongs": "H7307",
+              "gloss": "spirit / wind / breath"
+            },
+            {
+              "strongs": "H0426",
+              "gloss": "god"
+            }
+          ],
+          "matched_terms": [],
+          "r12": {
+            "score_version": "r12-ranker-v1",
+            "epistemic_layer": "LINGUISTIC",
+            "epistemic_status": "SUPPORTED_STEPS_NOT_ENDPOINT_INTERPRETATION",
+            "Q": 0.889944,
+            "C": 1,
+            "D": 0.949323,
+            "T": 0.5,
+            "interest": 0.855663,
+            "mmr_score": 0.79733,
+            "meaningful_hops": 2,
+            "independent_group_count": 14,
+            "steps": [
+              {
+                "from": "lemma:H7307",
+                "to": "lemma:H7308",
+                "relation": "lex_shares_root",
+                "witness_refs": [
+                  "Genesis 1:2",
+                  "Genesis 3:8"
+                ]
+              },
+              {
+                "from": "lemma:H7308",
+                "to": "lemma:H0426",
+                "relation": "gram_possessive_construction_with",
+                "witness_refs": [
+                  "DAN 4:8",
+                  "DAN 4:9",
+                  "DAN 5:11"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "rank": 8,
+          "id": "r12:path:H7307:G2226",
+          "title": "R12 3-hop discovery: רוּחַ (H7307) → ζῷον (\"living thing\", G2226)",
+          "predicate": "multihop_proof_path",
+          "epistemic_class": "documented_lexical_relationship",
+          "evidence_tier": 3,
+          "passages": [
+            {
+              "ref": "Matthew 24:31",
+              "verse_id": 24102,
+              "snippet": "He will send out his angels with a great sound of a trumpet, and they will gather together his chosen ones from the four winds, from one end of the sky to the other."
+            },
+            {
+              "ref": "Mark 13:27",
+              "verse_id": 24854,
+              "snippet": "Then he will send out his angels, and will gather together his chosen ones from the four winds, from the ends of the earth to the ends of the sky."
+            },
+            {
+              "ref": "Revelation 15:7",
+              "verse_id": 31055,
+              "snippet": "One of the four living creatures gave to the seven angels seven golden bowls full of the wrath of God, who lives forever and ever."
+            },
+            {
+              "ref": "Revelation 19:4",
+              "verse_id": 31123,
+              "snippet": "The twenty-four elders and the four living creatures fell down and worshiped God who sits on the throne, saying, “Amen! Hallelujah!”"
+            }
+          ],
+          "original_words": [
+            {
+              "strongs": "H7307",
+              "gloss": "spirit / wind / breath"
+            },
+            {
+              "strongs": "G2226",
+              "gloss": "living thing"
+            }
+          ],
+          "matched_terms": [],
+          "r12": {
+            "score_version": "r12-ranker-v1",
+            "epistemic_layer": "LINGUISTIC",
+            "epistemic_status": "SUPPORTED_STEPS_NOT_ENDPOINT_INTERPRETATION",
+            "Q": 0.870173,
+            "C": 1,
+            "D": 1,
+            "T": 0.5,
+            "interest": 0.855281,
+            "mmr_score": 0.787225,
+            "meaningful_hops": 3,
+            "independent_group_count": 10,
+            "steps": [
+              {
+                "from": "lemma:H7307",
+                "to": "lemma:G0417",
+                "relation": "lxx_translation_bridge",
+                "witness_refs": []
+              },
+              {
+                "from": "lemma:G0417",
+                "to": "lemma:G5064",
+                "relation": "gram_modifies",
+                "witness_refs": [
+                  "MAT 24:31",
+                  "MRK 13:27",
+                  "REV 7:1"
+                ]
+              },
+              {
+                "from": "lemma:G5064",
+                "to": "lemma:G2226",
+                "relation": "gram_modifies",
+                "witness_refs": [
+                  "REV 15:7",
+                  "REV 19:4",
+                  "REV 4:6"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "rank": 9,
+          "id": "r12:path:H7307:H5641",
+          "title": "R12 3-hop discovery: רוּחַ (H7307) → סָתַר (\"to hide\", H5641)",
+          "predicate": "multihop_proof_path",
+          "epistemic_class": "documented_lexical_relationship",
+          "evidence_tier": 3,
+          "passages": [
+            {
+              "ref": "1 Chronicles 5:26",
+              "verse_id": 10455,
+              "snippet": "So the God of Israel stirred up the spirit of Pul king of Assyria, and the spirit of Tilgath Pilneser king of Assyria, and he carried away the Reubenites, the Gadites, and the half-tribe of Manasseh, and brought them to "
+            },
+            {
+              "ref": "2 Chronicles 21:16",
+              "verse_id": 11641,
+              "snippet": "The LORD stirred up against Jehoram the spirit of the Philistines and of the Arabians who are beside the Ethiopians;"
+            },
+            {
+              "ref": "Song of Solomon 2:7",
+              "verse_id": 17678,
+              "snippet": "I adjure you, daughters of Jerusalem, by the roes, or by the hinds of the field, that you not stir up, nor awaken love, until it so desires."
+            },
+            {
+              "ref": "Song of Solomon 3:5",
+              "verse_id": 17693,
+              "snippet": "I adjure you, daughters of Jerusalem, by the roes, or by the hinds of the field, that you not stir up nor awaken love, until it so desires."
+            },
+            {
+              "ref": "Proverbs 27:5",
+              "verse_id": 17291,
+              "snippet": "Better is open rebuke than hidden love."
+            }
+          ],
+          "original_words": [
+            {
+              "strongs": "H7307",
+              "gloss": "spirit / wind / breath"
+            },
+            {
+              "strongs": "H5641",
+              "gloss": "to hide"
+            }
+          ],
+          "matched_terms": [],
+          "r12": {
+            "score_version": "r12-ranker-v1",
+            "epistemic_layer": "TEXTUAL",
+            "epistemic_status": "SUPPORTED_STEPS_NOT_ENDPOINT_INTERPRETATION",
+            "Q": 0.856242,
+            "C": 0.935785,
+            "D": 0.966215,
+            "T": 0.5,
+            "interest": 0.816896,
+            "mmr_score": 0.816896,
+            "meaningful_hops": 3,
+            "independent_group_count": 7,
+            "steps": [
+              {
+                "from": "lemma:H7307",
+                "to": "lemma:H5782",
+                "relation": "gram_grammatical_object_of",
+                "witness_refs": [
+                  "1CH 5:26",
+                  "2CH 21:16",
+                  "2CH 36:22"
+                ]
+              },
+              {
+                "from": "lemma:H5782",
+                "to": "lemma:H0160",
+                "relation": "gram_grammatical_object_of",
+                "witness_refs": [
+                  "SNG 2:7",
+                  "SNG 3:5",
+                  "SNG 8:4"
+                ]
+              },
+              {
+                "from": "lemma:H0160",
+                "to": "lemma:H5641",
+                "relation": "gram_modifies",
+                "witness_refs": [
+                  "PRO 27:5"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "rank": 10,
+          "id": "r10:corresp:gen1_to_rev4_rev21_creation_spirits",
+          "title": "Genesis 1 creation (Spirit over waters, light, sevenfold completion) and Revelation 4–5 & 21–22 (throne of Creator, seven Spirits, new creation)",
+          "predicate": "literary_correspondence",
+          "epistemic_class": "verified_cross_reference",
+          "evidence_tier": 4,
+          "passages": [
+            {
+              "ref": "Genesis 1:1",
+              "verse_id": 1,
+              "snippet": "In the beginning, God created the heavens and the earth."
+            },
+            {
+              "ref": "Genesis 1:2",
+              "verse_id": 2,
+              "snippet": "The earth was formless and empty. Darkness was on the surface of the deep and God’s Spirit was hovering over the surface of the waters."
+            },
+            {
+              "ref": "Genesis 2:2",
+              "verse_id": 33,
+              "snippet": "On the seventh day God finished his work which he had done; and he rested on the seventh day from all his work which he had done."
+            },
+            {
+              "ref": "Revelation 4:5",
+              "verse_id": 30874,
+              "snippet": "Out of the throne proceed lightnings, sounds, and thunders. There were seven lamps of fire burning before his throne, which are the seven Spirits of God."
+            },
+            {
+              "ref": "Revelation 4:11",
+              "verse_id": 30880,
+              "snippet": "“Worthy are you, our Lord and God, the Holy One, to receive the glory, the honor, and the power, for you created all things, and because of your desire they existed and were created!”"
+            },
+            {
+              "ref": "Revelation 21:1",
+              "verse_id": 31156,
+              "snippet": "I saw a new heaven and a new earth, for the first heaven and the first earth have passed away, and the sea is no more."
+            },
+            {
+              "ref": "Revelation 22:1",
+              "verse_id": 31183,
+              "snippet": "He showed me a river of water of life, clear as crystal, proceeding out of the throne of God and of the Lamb,"
+            }
+          ],
+          "original_words": [
+            {
+              "strongs": "H1254",
+              "gloss": "to be fat / fatten (Hiphil)"
+            },
+            {
+              "strongs": "H7307",
+              "gloss": "spirit / wind / breath"
+            },
+            {
+              "strongs": "H4325",
+              "gloss": "water"
+            },
+            {
+              "strongs": "G2936",
+              "gloss": "to create"
+            },
+            {
+              "strongs": "G4151",
+              "gloss": "spirit / Spirit"
+            },
+            {
+              "strongs": "G2033",
+              "gloss": "seven"
+            }
+          ],
+          "matched_terms": []
+        },
+        {
+          "rank": 11,
+          "id": "r10:corresp:zech4_menorah_oil_spirit_eyes",
+          "title": "Zechariah 4:2–14 unites golden lampstand (menorah), seven lamps, olive oil, the LORD’s Spirit (ruach), and seven eyes",
+          "predicate": "literary_correspondence",
+          "epistemic_class": "verified_cross_reference",
+          "evidence_tier": 4,
+          "passages": [
+            {
+              "ref": "Zechariah 4:2",
+              "verse_id": 23041,
+              "snippet": "He said to me, “What do you see?” I said, “I have seen, and behold, a lamp stand all of gold, with its bowl on the top of it, and its seven lamps on it; there are seven pipes to each of the lamps which are on the top of "
+            },
+            {
+              "ref": "Zechariah 4:6",
+              "verse_id": 23045,
+              "snippet": "Then he answered and spoke to me, saying, “This is the LORD’s word to Zerubbabel, saying, ‘Not by might, nor by power, but by my Spirit,’ says the LORD of Armies."
+            },
+            {
+              "ref": "Zechariah 4:10",
+              "verse_id": 23049,
+              "snippet": "Indeed, who despises the day of small things? For these seven shall rejoice, and shall see the plumb line in the hand of Zerubbabel. These are the LORD’s eyes, which run back and forth through the whole earth.”"
+            },
+            {
+              "ref": "Zechariah 4:12",
+              "verse_id": 23051,
+              "snippet": "I asked him the second time, “What are these two olive branches, which are beside the two golden spouts that pour the golden oil out of themselves?”"
+            }
+          ],
+          "original_words": [
+            {
+              "strongs": "H4501",
+              "gloss": "lampstand (menorah)"
+            },
+            {
+              "strongs": "H7651",
+              "gloss": "seven"
+            },
+            {
+              "strongs": "H5216",
+              "gloss": "lamp"
+            },
+            {
+              "strongs": "H8081",
+              "gloss": "oil"
+            },
+            {
+              "strongs": "H7307",
+              "gloss": "spirit / wind / breath"
+            },
+            {
+              "strongs": "H5869",
+              "gloss": "eye / sight / appearance"
+            }
+          ],
+          "matched_terms": []
+        },
+        {
+          "rank": 12,
+          "id": "r11:cluster:H7307:temple_and_sanctuary_architecture",
+          "title": "Temple & Sanctuary Architecture (Genesis 3 · Exodus 10, 14, 15, 28 · Numbers 11)",
+          "predicate": "verified_lexical_grammatical",
+          "epistemic_class": "direct_textual_evidence",
+          "evidence_tier": 2,
+          "passages": [
+            {
+              "ref": "Genesis 3:8",
+              "verse_id": 64,
+              "snippet": "They heard the LORD God’s voice walking in the garden in the cool of the day, and the man and his wife hid themselves from the presence of the LORD God among the trees of the garden."
+            },
+            {
+              "ref": "Exodus 10:19",
+              "verse_id": 1797,
+              "snippet": "The LORD sent an exceedingly strong west wind, which took up the locusts, and drove them into the Red Sea. There remained not one locust in all the borders of Egypt."
+            },
+            {
+              "ref": "Exodus 14:21",
+              "verse_id": 1911,
+              "snippet": "Moses stretched out his hand over the sea, and the LORD caused the sea to go back by a strong east wind all night, and made the sea dry land, and the waters were divided."
+            },
+            {
+              "ref": "Exodus 15:8",
+              "verse_id": 1929,
+              "snippet": "With the blast of your nostrils, the waters were piled up. The floods stood upright as a heap. The deeps were congealed in the heart of the sea."
+            },
+            {
+              "ref": "Exodus 15:10",
+              "verse_id": 1931,
+              "snippet": "You blew with your wind. The sea covered them. They sank like lead in the mighty waters."
+            },
+            {
+              "ref": "Exodus 28:3",
+              "verse_id": 2297,
+              "snippet": "You shall speak to all who are wise-hearted, whom I have filled with the spirit of wisdom, that they make Aaron’s garments to sanctify him, that he may minister to me in the priest’s office."
+            },
+            {
+              "ref": "Exodus 31:3",
+              "verse_id": 2424,
+              "snippet": "I have filled him with the Spirit of God, in wisdom, and in understanding, and in knowledge, and in all kinds of workmanship,"
+            },
+            {
+              "ref": "Exodus 35:21",
+              "verse_id": 2553,
+              "snippet": "They came, everyone whose heart stirred him up, and everyone whom his spirit made willing, and brought the LORD’s offering for the work of the Tent of Meeting, and for all of its service, and for the holy garments."
+            }
+          ],
+          "original_words": [
+            {
+              "strongs": "H7307",
+              "gloss": "spirit / wind / breath"
+            },
+            {
+              "strongs": "H7307",
+              "gloss": "to the.wind"
+            }
+          ],
+          "matched_terms": []
+        },
+        {
+          "rank": 13,
+          "id": "r10:corresp:gen1_2_gen8_1_ruach_water_wind",
+          "title": "Genesis 1:2 and Genesis 8:1 co-locate רוּחַ (Spirit / wind) over הַמָּיִם (waters) in creation and post-flood renewal",
+          "predicate": "literary_correspondence",
+          "epistemic_class": "verified_cross_reference",
+          "evidence_tier": 4,
+          "passages": [
+            {
+              "ref": "Genesis 1:2",
+              "verse_id": 2,
+              "snippet": "The earth was formless and empty. Darkness was on the surface of the deep and God’s Spirit was hovering over the surface of the waters."
+            },
+            {
+              "ref": "Genesis 8:1",
+              "verse_id": 185,
+              "snippet": "God remembered Noah, all the animals, and all the livestock that were with him in the ship; and God made a wind to pass over the earth. The waters subsided."
+            },
+            {
+              "ref": "Psalms 104:30",
+              "verse_id": 15692,
+              "snippet": "You send out your Spirit and they are created. You renew the face of the ground."
+            }
+          ],
+          "original_words": [
+            {
+              "strongs": "H7307",
+              "gloss": "spirit / wind / breath"
+            },
+            {
+              "strongs": "H4325",
+              "gloss": "water"
+            },
+            {
+              "strongs": "H0430",
+              "gloss": "God"
+            },
+            {
+              "strongs": "H7363",
+              "gloss": "be weak"
+            }
+          ],
+          "matched_terms": []
+        },
+        {
+          "rank": 14,
+          "id": "r11:gram:H7307:possessive_construction_with:H3068",
+          "title": "Head of genitive / construct: רוּחַ (ru.ach) ↔ יְהֹוָה (\"LORD\", 26×)",
+          "predicate": "verified_lexical_grammatical",
+          "epistemic_class": "direct_textual_evidence",
+          "evidence_tier": 2,
+          "passages": [
+            {
+              "ref": "1 Kings 18:12",
+              "verse_id": 9354,
+              "snippet": "It will happen, as soon as I leave you, that the LORD’s Spirit will carry you I don’t know where; and so when I come and tell Ahab, and he can’t find you, he will kill me. But I, your servant, have feared the LORD from m"
+            },
+            {
+              "ref": "1 Kings 22:24",
+              "verse_id": 9505,
+              "snippet": "Then Zedekiah the son of Chenaanah came near and struck Micaiah on the cheek, and said, “Which way did the LORD’s Spirit go from me to speak to you?”"
+            },
+            {
+              "ref": "1 Samuel 10:6",
+              "verse_id": 7425,
+              "snippet": "Then the LORD’s Spirit will come mightily on you, then you will prophesy with them and will be turned into another man."
+            }
+          ],
+          "original_words": [
+            {
+              "strongs": "H7307",
+              "gloss": "spirit / wind / breath"
+            },
+            {
+              "strongs": "H3068",
+              "gloss": "LORD"
+            }
+          ],
+          "matched_terms": []
+        },
+        {
+          "rank": 15,
+          "id": "r11:gram:H7307:grammatical_subject_of:H1961",
+          "title": "Subject of: רוּחַ (ru.ach) ↔ הָיָה (\"to be\", 16×)",
+          "predicate": "verified_lexical_grammatical",
+          "epistemic_class": "direct_textual_evidence",
+          "evidence_tier": 2,
+          "passages": [
+            {
+              "ref": "1 Samuel 16:16",
+              "verse_id": 7612,
+              "snippet": "Let our lord now command your servants who are in front of you to seek out a man who is a skillful player on the harp. Then when the evil spirit from God is on you, he will play with his hand, and you will be well.”"
+            },
+            {
+              "ref": "1 Samuel 16:23",
+              "verse_id": 7619,
+              "snippet": "When the spirit from God was on Saul, David took the harp and played with his hand; so Saul was refreshed and was well, and the evil spirit departed from him."
+            },
+            {
+              "ref": "1 Samuel 19:20",
+              "verse_id": 7727,
+              "snippet": "Saul sent messengers to seize David; and when they saw the company of the prophets prophesying, and Samuel standing as head over them, God’s Spirit came on Saul’s messengers, and they also prophesied."
+            }
+          ],
+          "original_words": [
+            {
+              "strongs": "H7307",
+              "gloss": "spirit / wind / breath"
+            },
+            {
+              "strongs": "H1961",
+              "gloss": "to be"
+            }
+          ],
+          "matched_terms": []
+        },
+        {
+          "rank": 16,
+          "id": "r11:gram:H7307:grammatical_object_of:H5414",
+          "title": "Direct object of: רוּחַ (ru.ach) ↔ נָתַן (\"to give: give\", 12×)",
+          "predicate": "verified_lexical_grammatical",
+          "epistemic_class": "direct_textual_evidence",
+          "evidence_tier": 2,
+          "passages": [
+            {
+              "ref": "1 Kings 22:23",
+              "verse_id": 9504,
+              "snippet": "Now therefore, behold, the LORD has put a lying spirit in the mouth of all these your prophets; and the LORD has spoken evil concerning you.”"
+            },
+            {
+              "ref": "2 Chronicles 18:22",
+              "verse_id": 11565,
+              "snippet": "“Now therefore, behold, the LORD has put a lying spirit in the mouth of these your prophets; and the LORD has spoken evil concerning you.”"
+            },
+            {
+              "ref": "2 Kings 19:7",
+              "verse_id": 10069,
+              "snippet": "Behold, I will put a spirit in him, and he will hear news, and will return to his own land. I will cause him to fall by the sword in his own land.”’”"
+            }
+          ],
+          "original_words": [
+            {
+              "strongs": "H7307",
+              "gloss": "spirit / wind / breath"
+            },
+            {
+              "strongs": "H5414",
+              "gloss": "to give: give"
+            }
+          ],
+          "matched_terms": []
+        },
+        {
+          "rank": 17,
+          "id": "r11:gram:H7307:grammatical_object_of:H5782",
+          "title": "Direct object of: רוּחַ (ru.ach) ↔ עוּר (\"to rouse\", 11×)",
+          "predicate": "verified_lexical_grammatical",
+          "epistemic_class": "direct_textual_evidence",
+          "evidence_tier": 2,
+          "passages": [
+            {
+              "ref": "1 Chronicles 5:26",
+              "verse_id": 10455,
+              "snippet": "So the God of Israel stirred up the spirit of Pul king of Assyria, and the spirit of Tilgath Pilneser king of Assyria, and he carried away the Reubenites, the Gadites, and the half-tribe of Manasseh, and brought them to "
+            },
+            {
+              "ref": "2 Chronicles 21:16",
+              "verse_id": 11641,
+              "snippet": "The LORD stirred up against Jehoram the spirit of the Philistines and of the Arabians who are beside the Ethiopians;"
+            },
+            {
+              "ref": "2 Chronicles 36:22",
+              "verse_id": 12016,
+              "snippet": "Now in the first year of Cyrus king of Persia, that the LORD’s word by the mouth of Jeremiah might be accomplished, the LORD stirred up the spirit of Cyrus king of Persia, so that he made a proclamation throughout all hi"
+            }
+          ],
+          "original_words": [
+            {
+              "strongs": "H7307",
+              "gloss": "spirit / wind / breath"
+            },
+            {
+              "strongs": "H5782",
+              "gloss": "to rouse"
+            }
+          ],
+          "matched_terms": []
+        },
+        {
+          "rank": 18,
+          "id": "r11:gram:H7307:grammatical_subject_of:H5375",
+          "title": "Subject of: רוּחַ (ru.ach) ↔ נָשָׂא (\"to lift: raise\", 11×)",
+          "predicate": "verified_lexical_grammatical",
+          "epistemic_class": "direct_textual_evidence",
+          "evidence_tier": 2,
+          "passages": [
+            {
+              "ref": "1 Kings 18:12",
+              "verse_id": 9354,
+              "snippet": "It will happen, as soon as I leave you, that the LORD’s Spirit will carry you I don’t know where; and so when I come and tell Ahab, and he can’t find you, he will kill me. But I, your servant, have feared the LORD from m"
+            },
+            {
+              "ref": "2 Kings 2:16",
+              "verse_id": 9568,
+              "snippet": "They said to him, “See now, there are with your servants fifty strong men. Please let them go and seek your master. Perhaps the LORD’s Spirit has taken him up, and put him on some mountain or into some valley.” He said, "
+            },
+            {
+              "ref": "Exodus 10:13",
+              "verse_id": 1791,
+              "snippet": "Moses stretched out his rod over the land of Egypt, and the LORD brought an east wind on the land all that day, and all night; and when it was morning, the east wind brought the locusts."
+            }
+          ],
+          "original_words": [
+            {
+              "strongs": "H7307",
+              "gloss": "spirit / wind / breath"
+            },
+            {
+              "strongs": "H5375",
+              "gloss": "to lift: raise"
+            }
+          ],
+          "matched_terms": []
+        },
+        {
+          "rank": 19,
+          "id": "r12:prop:H7307:G4151",
+          "title": "Physical/semantic bridge: רוּחַ (spirit / wind / breath) ↔ πνεῦμα (\"spirit / Spirit\") via \"oewn:11545095-n\"",
+          "predicate": "shared_external_property",
+          "epistemic_class": "external_world_bridge",
+          "evidence_tier": 5,
+          "passages": [
+            {
+              "ref": "Genesis 1:2",
+              "verse_id": 2,
+              "snippet": "The earth was formless and empty. Darkness was on the surface of the deep and God’s Spirit was hovering over the surface of the waters."
+            },
+            {
+              "ref": "Genesis 3:8",
+              "verse_id": 64,
+              "snippet": "They heard the LORD God’s voice walking in the garden in the cool of the day, and the man and his wife hid themselves from the presence of the LORD God among the trees of the garde"
+            },
+            {
+              "ref": "Matthew 1:18",
+              "verse_id": 23279,
+              "snippet": "Now the birth of Jesus Christ was like this: After his mother, Mary, was engaged to Joseph, before they came together, she was found pregnant by the Holy Spirit."
+            },
+            {
+              "ref": "Matthew 1:20",
+              "verse_id": 23281,
+              "snippet": "But when he thought about these things, behold, an angel of the Lord appeared to him in a dream, saying, “Joseph, son of David, don’t be afraid to take to yourself Mary as your wif"
+            }
+          ],
+          "original_words": [
+            {
+              "strongs": "H7307",
+              "gloss": "spirit / wind / breath"
+            },
+            {
+              "strongs": "G4151",
+              "gloss": "spirit / Spirit"
+            }
+          ],
+          "matched_terms": [],
+          "r12": {
+            "score_version": "r12-ranker-v1",
+            "epistemic_layer": "EXTERNAL_WORLD",
+            "epistemic_status": "EXPLORATORY",
+            "Q": 0.55,
+            "C": 0,
+            "D": 0.5808,
+            "T": 0.25,
+            "interest": 0.55,
+            "meaningful_hops": 2,
+            "independent_group_count": 0,
+            "external_bridge": {
+              "property_key": "oewn:hypernym",
+              "value_id": "oewn:11545095-n",
+              "mapping_status": "candidate",
+              "claim_status": "sourced"
+            }
+          }
+        },
+        {
+          "rank": 20,
+          "id": "r12:prop:H7307:H5397",
+          "title": "Physical/semantic bridge: רוּחַ (spirit / wind / breath) ↔ נְשָׁמָה (\"breath\") via \"wd:Q1146120\"",
+          "predicate": "shared_external_property",
+          "epistemic_class": "external_world_bridge",
+          "evidence_tier": 5,
+          "passages": [
+            {
+              "ref": "Genesis 1:2",
+              "verse_id": 2,
+              "snippet": "The earth was formless and empty. Darkness was on the surface of the deep and God’s Spirit was hovering over the surface of the waters."
+            },
+            {
+              "ref": "Genesis 3:8",
+              "verse_id": 64,
+              "snippet": "They heard the LORD God’s voice walking in the garden in the cool of the day, and the man and his wife hid themselves from the presence of the LORD God among the trees of the garde"
+            },
+            {
+              "ref": "Genesis 2:7",
+              "verse_id": 38,
+              "snippet": "The LORD God formed man from the dust of the ground, and breathed into his nostrils the breath of life; and man became a living soul."
+            },
+            {
+              "ref": "Genesis 7:22",
+              "verse_id": 182,
+              "snippet": "All on the dry land, in whose nostrils was the breath of the spirit of life, died."
+            }
+          ],
+          "original_words": [
+            {
+              "strongs": "H7307",
+              "gloss": "spirit / wind / breath"
+            },
+            {
+              "strongs": "H5397",
+              "gloss": "breath"
+            }
+          ],
+          "matched_terms": [],
+          "r12": {
+            "score_version": "r12-ranker-v1",
+            "epistemic_layer": "EXTERNAL_WORLD",
+            "epistemic_status": "EXPLORATORY",
+            "Q": 0.55,
+            "C": 0,
+            "D": 0.5808,
+            "T": 0.25,
+            "interest": 0.55,
+            "meaningful_hops": 2,
+            "independent_group_count": 0,
+            "external_bridge": {
+              "property_key": "wd:P279",
+              "value_id": "wd:Q1146120",
+              "mapping_status": "candidate",
+              "claim_status": "sourced"
+            }
+          }
+        },
+        {
+          "rank": 21,
+          "id": "r11:cluster:H7307:historical_narrative",
+          "title": "Historical Narrative (Genesis 1, 6, 7, 8 · Joshua 2 · Judges 3, 6, 8, 9)",
+          "predicate": "verified_lexical_grammatical",
+          "epistemic_class": "direct_textual_evidence",
+          "evidence_tier": 3,
+          "passages": [
+            {
+              "ref": "Genesis 1:2",
+              "verse_id": 2,
+              "snippet": "The earth was formless and empty. Darkness was on the surface of the deep and God’s Spirit was hovering over the surface of the waters."
+            },
+            {
+              "ref": "Genesis 6:3",
+              "verse_id": 141,
+              "snippet": "The LORD said, “My Spirit will not strive with man forever, because he also is flesh; so his days will be one hundred twenty years.”"
+            },
+            {
+              "ref": "Genesis 6:17",
+              "verse_id": 155,
+              "snippet": "I, even I, will bring the flood of waters on this earth, to destroy all flesh having the breath of life from under the sky. Everything that is on the earth will die."
+            },
+            {
+              "ref": "Genesis 7:15",
+              "verse_id": 175,
+              "snippet": "Pairs from all flesh with the breath of life in them went into the ship to Noah."
+            },
+            {
+              "ref": "Genesis 7:22",
+              "verse_id": 182,
+              "snippet": "All on the dry land, in whose nostrils was the breath of the spirit of life, died."
+            },
+            {
+              "ref": "Genesis 8:1",
+              "verse_id": 185,
+              "snippet": "God remembered Noah, all the animals, and all the livestock that were with him in the ship; and God made a wind to pass over the earth. The waters subsided."
+            },
+            {
+              "ref": "Genesis 26:35",
+              "verse_id": 728,
+              "snippet": "They grieved Isaac’s and Rebekah’s spirits."
+            },
+            {
+              "ref": "Genesis 41:8",
+              "verse_id": 1204,
+              "snippet": "In the morning, his spirit was troubled, and he sent and called for all of Egypt’s magicians and wise men. Pharaoh told them his dreams, but there was no one who could interpret them to Pharaoh."
+            }
+          ],
+          "original_words": [
+            {
+              "strongs": "H7307",
+              "gloss": "spirit / wind / breath"
+            },
+            {
+              "strongs": "H7307",
+              "gloss": "[the].breath"
+            },
+            {
+              "strongs": "H7307",
+              "gloss": "[the].breath"
+            },
+            {
+              "strongs": "H7307",
+              "gloss": "the.spirit"
+            }
+          ],
+          "matched_terms": []
+        },
+        {
+          "rank": 22,
+          "id": "r11:cluster:H7307:torah_ritual_and_covenant_law",
+          "title": "Torah Ritual & Covenant Law (Exodus 6, 10 · Numbers 5, 11, 14, 16 · Deuteronomy 2, 34)",
+          "predicate": "verified_lexical_grammatical",
+          "epistemic_class": "direct_textual_evidence",
+          "evidence_tier": 3,
+          "passages": [
+            {
+              "ref": "Exodus 6:9",
+              "verse_id": 1665,
+              "snippet": "Moses spoke so to the children of Israel, but they didn’t listen to Moses for anguish of spirit, and for cruel bondage."
+            },
+            {
+              "ref": "Exodus 10:13",
+              "verse_id": 1791,
+              "snippet": "Moses stretched out his rod over the land of Egypt, and the LORD brought an east wind on the land all that day, and all night; and when it was morning, the east wind brought the locusts."
+            },
+            {
+              "ref": "Numbers 5:14",
+              "verse_id": 3807,
+              "snippet": "and the spirit of jealousy comes on him, and he is jealous of his wife and she is defiled; or if the spirit of jealousy comes on him, and he is jealous of his wife and she isn’t defiled;"
+            },
+            {
+              "ref": "Numbers 5:30",
+              "verse_id": 3823,
+              "snippet": "or when the spirit of jealousy comes on a man, and he is jealous of his wife; then he shall set the woman before the LORD, and the priest shall execute on her all this law."
+            },
+            {
+              "ref": "Numbers 11:17",
+              "verse_id": 4042,
+              "snippet": "I will come down and talk with you there. I will take of the Spirit which is on you, and will put it on them; and they shall bear the burden of the people with you, that you don’t bear it yourself alone."
+            },
+            {
+              "ref": "Numbers 11:25",
+              "verse_id": 4050,
+              "snippet": "The LORD came down in the cloud, and spoke to him, and took of the Spirit that was on him, and put it on the seventy elders. When the Spirit rested on them, they prophesied, but they did so no more."
+            },
+            {
+              "ref": "Numbers 11:26",
+              "verse_id": 4051,
+              "snippet": "But two men remained in the camp. The name of one was Eldad, and the name of the other Medad; and the Spirit rested on them. They were of those who were written, but had not gone out to the Tent; and they prophesied in t"
+            },
+            {
+              "ref": "Numbers 11:29",
+              "verse_id": 4054,
+              "snippet": "Moses said to him, “Are you jealous for my sake? I wish that all the LORD’s people were prophets, that the LORD would put his Spirit on them!”"
+            }
+          ],
+          "original_words": [
+            {
+              "strongs": "H7307",
+              "gloss": "spirit / wind / breath"
+            },
+            {
+              "strongs": "H7307",
+              "gloss": "of.spirit"
+            },
+            {
+              "strongs": "H7307",
+              "gloss": "a.spirit"
+            },
+            {
+              "strongs": "H7307",
+              "gloss": "the spirit"
+            }
+          ],
+          "matched_terms": []
+        },
+        {
+          "rank": 23,
+          "id": "r11:cluster:H7307:poetic_imagery_and_similes",
+          "title": "Poetic Imagery & Similes (Job 1, 4, 6, 7 · Psalms 1, 11, 18, 31 · Proverbs 1, 11, 14, 15)",
+          "predicate": "verified_lexical_grammatical",
+          "epistemic_class": "direct_textual_evidence",
+          "evidence_tier": 3,
+          "passages": [
+            {
+              "ref": "Job 1:19",
+              "verse_id": 12889,
+              "snippet": "and behold, there came a great wind from the wilderness, and struck the four corners of the house, and it fell on the young men, and they are dead. I alone have escaped to tell you.”"
+            },
+            {
+              "ref": "Job 4:9",
+              "verse_id": 12940,
+              "snippet": "By the breath of God they perish. By the blast of his anger are they consumed."
+            },
+            {
+              "ref": "Job 4:15",
+              "verse_id": 12946,
+              "snippet": "Then a spirit passed before my face. The hair of my flesh stood up."
+            },
+            {
+              "ref": "Job 6:4",
+              "verse_id": 12983,
+              "snippet": "For the arrows of the Almighty are within me. My spirit drinks up their poison. The terrors of God set themselves in array against me."
+            },
+            {
+              "ref": "Job 6:26",
+              "verse_id": 13005,
+              "snippet": "Do you intend to reprove words, since the speeches of one who is desperate are as wind?"
+            },
+            {
+              "ref": "Job 7:7",
+              "verse_id": 13016,
+              "snippet": "Oh remember that my life is a breath. My eye will no more see good."
+            },
+            {
+              "ref": "Job 7:11",
+              "verse_id": 13020,
+              "snippet": "“Therefore I will not keep silent. I will speak in the anguish of my spirit. I will complain in the bitterness of my soul."
+            },
+            {
+              "ref": "Job 8:2",
+              "verse_id": 13032,
+              "snippet": "“How long will you speak these things? Shall the words of your mouth be a mighty wind?"
+            }
+          ],
+          "original_words": [
+            {
+              "strongs": "H7307",
+              "gloss": "spirit / wind / breath"
+            },
+            {
+              "strongs": "H7307",
+              "gloss": "wind"
+            },
+            {
+              "strongs": "H7307",
+              "gloss": "and.[be] a.wind"
+            },
+            {
+              "strongs": "H7307",
+              "gloss": "spirit my"
+            }
+          ],
+          "matched_terms": []
+        },
+        {
+          "rank": 24,
+          "id": "r11:cluster:H7307:prophetic_imagery_and_oracles",
+          "title": "Prophetic Imagery & Oracles (Isaiah 4, 7, 11, 17 · Jeremiah 2, 4, 5, 10 · Lamentations 4)",
+          "predicate": "verified_lexical_grammatical",
+          "epistemic_class": "direct_textual_evidence",
+          "evidence_tier": 3,
+          "passages": [
+            {
+              "ref": "Isaiah 4:4",
+              "verse_id": 17854,
+              "snippet": "when the Lord shall have washed away the filth of the daughters of Zion, and shall have purged the blood of Jerusalem from within it, by the spirit of justice and by the spirit of burning."
+            },
+            {
+              "ref": "Isaiah 7:2",
+              "verse_id": 17901,
+              "snippet": "David’s house was told, “Syria is allied with Ephraim.” His heart trembled, and the heart of his people, as the trees of the forest tremble with the wind."
+            },
+            {
+              "ref": "Isaiah 11:2",
+              "verse_id": 18003,
+              "snippet": "The LORD’s Spirit will rest on him: the spirit of wisdom and understanding, the spirit of counsel and might, the spirit of knowledge and of the fear of the LORD."
+            },
+            {
+              "ref": "Isaiah 11:4",
+              "verse_id": 18005,
+              "snippet": "but he will judge the poor with righteousness, and decide with equity for the humble of the earth. He will strike the earth with the rod of his mouth; and with the breath of his lips he will kill the wicked."
+            },
+            {
+              "ref": "Isaiah 11:15",
+              "verse_id": 18016,
+              "snippet": "The LORD will utterly destroy the tongue of the Egyptian sea; and with his scorching wind he will wave his hand over the River, and will split it into seven streams, and cause men to march over in sandals."
+            },
+            {
+              "ref": "Isaiah 17:13",
+              "verse_id": 18113,
+              "snippet": "The nations will rush like the rushing of many waters, but he will rebuke them, and they will flee far off, and will be chased like the chaff of the mountains before the wind, and like the whirling dust before the storm."
+            },
+            {
+              "ref": "Isaiah 19:3",
+              "verse_id": 18124,
+              "snippet": "The spirit of the Egyptians will fail within them. I will destroy their counsel. They will seek the idols, the charmers, those who have familiar spirits, and the wizards."
+            },
+            {
+              "ref": "Isaiah 19:14",
+              "verse_id": 18135,
+              "snippet": "The LORD has mixed a spirit of perverseness in the middle of her; and they have caused Egypt to go astray in all of its works, like a drunken man staggers in his vomit."
+            }
+          ],
+          "original_words": [
+            {
+              "strongs": "H7307",
+              "gloss": "spirit / wind / breath"
+            },
+            {
+              "strongs": "H7307",
+              "gloss": "a.spirit"
+            },
+            {
+              "strongs": "H7307",
+              "gloss": "spirit my"
+            }
+          ],
+          "matched_terms": []
+        },
+        {
+          "rank": 25,
+          "id": "r12:struct:H7307:1KI_18:12:2KI_2:16",
+          "title": "Structural clause parallel: 1KI 18:12 ↔ 2KI 2:16 (3 shared roles, J=0.587494)",
+          "predicate": "structural_scene_parallel",
+          "epistemic_class": "candidate_literary_pattern",
+          "evidence_tier": 6,
+          "passages": [
+            {
+              "ref": "1 Kings 18:12",
+              "verse_id": 9354,
+              "snippet": "It will happen, as soon as I leave you, that the LORD’s Spirit will carry you I don’t know where; and so when I come and tell Ahab, and he can’t find you, he will kill me. But I, y"
+            },
+            {
+              "ref": "2 Kings 2:16",
+              "verse_id": 9568,
+              "snippet": "They said to him, “See now, there are with your servants fifty strong men. Please let them go and seek your master. Perhaps the LORD’s Spirit has taken him up, and put him on some "
+            }
+          ],
+          "original_words": [
+            {
+              "strongs": "H7307",
+              "gloss": "spirit / wind / breath"
+            }
+          ],
+          "matched_terms": [],
+          "r12": {
+            "score_version": "r12-ranker-v1",
+            "epistemic_layer": "HYPOTHESIS",
+            "epistemic_status": "EXPLORATORY",
+            "Q": 0.587494,
+            "C": 0.25,
+            "D": 0.587494,
+            "T": 0.25,
+            "interest": 0.587494,
+            "meaningful_hops": 2,
+            "independent_group_count": 2
+          }
+        }
+      ],
+      "alias_candidates": [
+        {
+          "rank": 2,
+          "id": "r10:lex:ezek37_ruach_winds_directions_breath_spirit"
+        },
+        {
+          "rank": 4,
+          "id": "r10:lex:john3_8_wind_spirit_pneuma"
+        },
+        {
+          "rank": 10,
+          "id": "r10:corresp:gen1_to_rev4_rev21_creation_spirits"
+        },
+        {
+          "rank": 13,
+          "id": "r10:corresp:gen1_2_gen8_1_ruach_water_wind"
+        },
+        {
+          "rank": 19,
+          "id": "r12:prop:H7307:G4151"
+        },
+        {
+          "rank": 20,
+          "id": "r12:prop:H7307:H5397"
+        }
+      ],
+      "triage": "CANDIDATE_NOT_VERIFIED",
+      "adjudication": "NOT_REVIEWED"
+    },
+    {
+      "id": "L010",
+      "arguments": {
+        "query": "H7307",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "observed_at": "2026-11-18T19:28:11.570Z",
+      "elapsed_ms": 21301,
+      "status": "TOOL_ERROR",
+      "error": "INVALID_ARGUMENT: Error code: INVALID_ARGUMENT; Error: RuntimeException: Error calling MCP tool: [TextContent(type='text', text='Cloudflare relationship graph gateway HTTP 503', annotations=None, meta=None)]",
+      "ranked_results": [],
+      "adjudication": "NOT_REVIEWED"
+    }
+  ]
+}
