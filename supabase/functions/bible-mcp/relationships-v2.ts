@@ -58,8 +58,8 @@ export const UPSTREAM_PIN = {
   macula_greek_commit: '8423afe47b9e8f24b7772e808af45c7159a6fe7e',
   stepbible_commit: 'be4191f0082aeedddb0eff0c02c966292b2bd641',
   rule_version: '1.2',
-  release_version: 'r9b-v1.0',
-  grammatical_release_version: 'r8-v1.1',
+  release_version: 'r9b-v1.1',
+  grammatical_release_version: 'r8-v1.2',
   license: 'CC BY 4.0 / Apache-2.0',
 };
 
@@ -149,6 +149,8 @@ export function registerRelationshipV2Tools(server: McpServer, read: DatabaseRea
     inputSchema: z.strictObject({
       query: z.string().trim().min(1).max(128).optional().describe('Disambiguated lemma ID (lemma:H1254a, lemma:H0430G), Strongs ID, token ID, or surface form.'),
       lemma_id: z.string().trim().min(1).max(64).optional().describe('Explicit canonical lemma_id (e.g. lemma:H0776G).'),
+      extended_strongs: lemmaLookupShape.extended_strongs,
+      word_id: lemmaLookupShape.word_id,
       summary_id: z.string().trim().min(1).max(256).optional().describe('If set, returns bounded exact occurrence evidence for that summary ID.'),
       relation_types: z.array(z.enum(R3_PREDICATES)).optional(),
       direction: z.enum(['both', 'outgoing', 'incoming']).default('both'),
@@ -158,6 +160,7 @@ export function registerRelationshipV2Tools(server: McpServer, read: DatabaseRea
       chapter: z.number().int().min(1).max(150).optional(),
       verse: z.number().int().min(0).max(176).optional(),
       position: z.number().int().min(1).max(200).optional().describe('1-based word position in the passage to disambiguate clicked homographs.'),
+      release: lemmaLookupShape.release,
       limit: z.number().int().min(1).max(100).default(25),
       offset: z.number().int().min(0).max(5000).default(0),
     }),
@@ -166,6 +169,8 @@ export function registerRelationshipV2Tools(server: McpServer, read: DatabaseRea
   }, async ({
     query,
     lemma_id,
+    extended_strongs,
+    word_id,
     summary_id,
     relation_types,
     direction = 'both',
@@ -175,14 +180,15 @@ export function registerRelationshipV2Tools(server: McpServer, read: DatabaseRea
     chapter,
     verse,
     position,
+    release,
     limit = 25,
     offset = 0,
   }) => {
-    if (!query && !lemma_id && !summary_id && position === undefined) {
+    if (!query && !lemma_id && !extended_strongs && word_id === undefined && !summary_id && position === undefined) {
       const payload = {
         schema_version: '2.0',
         status: 'invalid_request',
-        error_message: 'Provide query, lemma_id, summary_id, or passage position.',
+        error_message: 'Provide query, lemma_id, extended_strongs, word_id, summary_id, or passage position.',
       };
       return { content: jsonContent(payload), structuredContent: payload, isError: true };
     }
@@ -192,6 +198,7 @@ export function registerRelationshipV2Tools(server: McpServer, read: DatabaseRea
           op: 'evidence',
           summary_id,
           include_uncertain,
+          ...(release ? { release } : {}),
           limit,
           offset,
         }
@@ -199,6 +206,8 @@ export function registerRelationshipV2Tools(server: McpServer, read: DatabaseRea
           op: 'lemma_relationships',
           ...(query ? { query } : {}),
           ...(lemma_id ? { lemma_id } : {}),
+          ...(extended_strongs ? { extended_strongs } : {}),
+          ...(word_id !== undefined ? { word_id } : {}),
           ...(relation_types ? { predicates: relation_types } : {}),
           direction,
           ...(edition_key ? { edition_key } : {}),
@@ -207,6 +216,7 @@ export function registerRelationshipV2Tools(server: McpServer, read: DatabaseRea
           ...(chapter !== undefined ? { chapter } : {}),
           ...(verse !== undefined ? { verse } : {}),
           ...(position !== undefined ? { position } : {}),
+          ...(release ? { release } : {}),
           limit,
           offset,
         };
@@ -218,7 +228,7 @@ export function registerRelationshipV2Tools(server: McpServer, read: DatabaseRea
   server.registerTool('get_relationship_coverage_v2', {
     title: 'Inspect relationship graph release & coverage',
     description:
-      'Return the active v2 relationship graph release manifest (r9b-v1.0 default: grammatical, lexical, contextual, and LXX layers), pinned upstream commits, supported R3 predicates, quality/coverage statistics, and optional passage coverage status.',
+      'Return the active v2 relationship graph release manifest (r9b-v1.1 default: r8-v1.2 grammatical, lexical, contextual with matching-witness samples, and LXX layers), pinned upstream commits, supported R3 predicates, quality/coverage statistics, and optional passage coverage status.',
     inputSchema: z.strictObject({
       edition_key: z.enum(EDITIONS_V2).optional(),
       predicate: z.enum(R3_PREDICATES).optional(),
@@ -238,9 +248,14 @@ export function registerRelationshipV2Tools(server: McpServer, read: DatabaseRea
       verse,
       release,
     }));
+    const gramLayer = asObj(asObj(gateway.layers).grammatical);
     const payload = {
       ...gateway,
-      provenance: UPSTREAM_PIN,
+      provenance: {
+        ...UPSTREAM_PIN,
+        ...(typeof gateway.release_version === 'string' ? { release_version: gateway.release_version } : {}),
+        ...(typeof gramLayer.release_version === 'string' ? { grammatical_release_version: gramLayer.release_version } : {}),
+      },
       ...(predicate ? { requested_predicate: predicate } : {}),
     };
     return { content: jsonContent(payload), structuredContent: payload };
@@ -533,13 +548,25 @@ export function registerRelationshipV2Tools(server: McpServer, read: DatabaseRea
     return { content: jsonContent(payload), structuredContent: payload, ...(isErr ? { isError: false } : {}) };
   });
 
+  const discoveryAnchorShape = {
+    word_id: lemmaLookupShape.word_id,
+    book: lemmaLookupShape.book,
+    chapter: lemmaLookupShape.chapter,
+    verse: lemmaLookupShape.verse,
+    position: lemmaLookupShape.position,
+    edition_key: lemmaLookupShape.edition_key,
+    lemma_id: lemmaLookupShape.lemma_id,
+    extended_strongs: lemmaLookupShape.extended_strongs,
+  };
+
   server.registerTool('discover_biblical_connections_v1', {
     title: 'Discover Biblical Connections (R10)',
     description:
-      'Discover deep biblical connections across books, Hebrew/Aramaic/Greek original languages, motifs, numbers, events, typology, and orthographic wordplay from natural language or concept lists. Separates explicit biblical identifications (Tier 1) and NT authorial comparisons (Tier 1-2) from lexical/LXX facts (Tier 3), CrossReferences.org links (Tier 4), shared imagery (Tier 5), candidate literary patterns, and non-etymological consonantal overlaps (Tier 7), with explicit subclusters, bridges, and negative controls.',
+      'Discover deep biblical connections across books, Hebrew/Aramaic/Greek original languages, motifs, numbers, events, typology, and orthographic wordplay from natural language, concept lists, or an exact occurrence anchor {word_id, book, chapter, verse, position, edition_key?}. Separates explicit biblical identifications (Tier 1) and NT authorial comparisons (Tier 1-2) from lexical/LXX facts (Tier 3), CrossReferences.org links (Tier 4), shared imagery (Tier 5), candidate literary patterns, and non-etymological consonantal overlaps (Tier 7), with explicit subclusters, bridges, and negative controls.',
     inputSchema: z.strictObject({
-      query: z.string().trim().min(1).max(400).describe('Natural language question, passage references, transliterations (e.g. ruach, adam, dam), or comma-separated concept list.'),
+      query: z.string().trim().min(1).max(400).optional().describe('Natural language question, passage references, transliterations (e.g. ruach, adam, dam), or comma-separated concept list.'),
       concepts: z.array(z.string().trim().min(1).max(64)).max(16).optional().describe('Optional explicit list of concepts to analyze alongside query.'),
+      ...discoveryAnchorShape,
       mode: z.enum(['discover', 'expand', 'bridge', 'compare', 'explain', 'challenge']).optional().describe('Optional R11 exploration mode.'),
       cluster_id: z.string().trim().max(160).optional().describe('Target cluster identifier for expand/drill-down exploration.'),
       focus_lemma: z.string().trim().max(64).optional().describe('Specific Hebrew or Greek lemma / Strong\'s ID to anchor or disambiguate.'),
@@ -560,11 +587,30 @@ export function registerRelationshipV2Tools(server: McpServer, read: DatabaseRea
     outputSchema: z.record(z.string(), z.unknown()),
     ...readOnlyMeta,
   }, async (input) => {
+    const hasAnchor = Boolean(
+      input.query ||
+      input.concepts?.length ||
+      input.lemma_id ||
+      input.extended_strongs ||
+      input.word_id !== undefined ||
+      input.position !== undefined
+    );
+    if (!hasAnchor) {
+      return invalidTargetReply('Provide query, concepts, or occurrence anchor ({word_id, book, chapter, verse, position}).');
+    }
     const reply = await read({
       name: 'discover_biblical_connections_v1',
       args: compactDefined({
         query: input.query,
         concepts: input.concepts,
+        word_id: input.word_id,
+        book: input.book,
+        chapter: input.chapter,
+        verse: input.verse,
+        position: input.position,
+        edition_key: input.edition_key,
+        lemma_id: input.lemma_id,
+        extended_strongs: input.extended_strongs,
         mode: input.mode,
         cluster_id: input.cluster_id,
         focus_lemma: input.focus_lemma,
@@ -579,17 +625,18 @@ export function registerRelationshipV2Tools(server: McpServer, read: DatabaseRea
       offset: 0,
     });
     const payload = asObj(reply.rows[0]);
-    const isErr = payload.status === 'invalid_request';
+    const isErr = payload.status === 'invalid_request' || payload.status === 'selector_mismatch';
     return { content: jsonContent(payload), structuredContent: payload, ...(isErr ? { isError: false } : {}) };
   });
 
   server.registerTool('discover_biblical_connections_v2', {
     title: 'Discover & Explore Universal Biblical Connections (R11)',
     description:
-      'Universal corpus-wide biblical discovery and multi-mode exploration. Handles ANY biblical concept, English word (e.g. lily, hyssop, pomegranate, cedar, door, oil, stone, water + spirit), Hebrew/Greek lemma or surface form, Strong\'s ID, number, passage (including Psalm verse 0 headings), or multi-concept question across all 31,203 verses. Returns evidence-ranked thematic and lemma clusters, homograph disambiguation, cross-references, LXX bridges, ranking rationale, and iterative discover, expand, bridge, compare, explain, and challenge modes with full pagination.',
+      'Universal corpus-wide biblical discovery and multi-mode exploration. Handles ANY biblical concept, English word (e.g. lily, hyssop, pomegranate, cedar, door, oil, stone, water + spirit), Hebrew/Greek lemma or surface form, Strong\'s ID, exact occurrence anchor {word_id, book, chapter, verse, position, edition_key?}, number, passage (including Psalm verse 0 headings), or multi-concept question across all 31,203 verses. Returns evidence-ranked thematic and lemma clusters, homograph disambiguation, cross-references, LXX bridges, ranking rationale, and iterative discover, expand, bridge, compare, explain, and challenge modes with full pagination.',
     inputSchema: z.strictObject({
-      query: z.string().trim().min(1).max(400).describe('Natural language question, English concept/word (e.g. lily, hyssop, pomegranate), passage reference (including Psalm headings verse 0), transliteration, Strong\'s ID, or comma-separated concepts.'),
+      query: z.string().trim().min(1).max(400).optional().describe('Natural language question, English concept/word (e.g. lily, hyssop, pomegranate), passage reference (including Psalm headings verse 0), transliteration, Strong\'s ID, or comma-separated concepts.'),
       concepts: z.array(z.string().trim().min(1).max(64)).max(16).optional().describe('Optional explicit list of concepts to analyze alongside query.'),
+      ...discoveryAnchorShape,
       mode: z.enum(['discover', 'expand', 'bridge', 'compare', 'explain', 'challenge']).optional().describe('Exploration mode: discover (default overview), expand (drill into cluster/concept), bridge (trace cross-testament/LXX links), compare (contrast multiple targets), explain (evidence rationale), or challenge (test counter-evidence).'),
       cluster_id: z.string().trim().max(160).optional().describe('Target cluster identifier for expand/drill-down exploration.'),
       focus_lemma: z.string().trim().max(64).optional().describe('Specific Hebrew or Greek lemma / Strong\'s ID to anchor or disambiguate.'),
@@ -610,11 +657,30 @@ export function registerRelationshipV2Tools(server: McpServer, read: DatabaseRea
     outputSchema: z.record(z.string(), z.unknown()),
     ...readOnlyMeta,
   }, async (input) => {
+    const hasAnchor = Boolean(
+      input.query ||
+      input.concepts?.length ||
+      input.lemma_id ||
+      input.extended_strongs ||
+      input.word_id !== undefined ||
+      input.position !== undefined
+    );
+    if (!hasAnchor) {
+      return invalidTargetReply('Provide query, concepts, or occurrence anchor ({word_id, book, chapter, verse, position}).');
+    }
     const reply = await read({
-      name: 'discover_biblical_connections_v1',
+      name: 'discover_biblical_connections_v2',
       args: compactDefined({
         query: input.query,
         concepts: input.concepts,
+        word_id: input.word_id,
+        book: input.book,
+        chapter: input.chapter,
+        verse: input.verse,
+        position: input.position,
+        edition_key: input.edition_key,
+        lemma_id: input.lemma_id,
+        extended_strongs: input.extended_strongs,
         mode: input.mode,
         cluster_id: input.cluster_id,
         focus_lemma: input.focus_lemma,
@@ -629,7 +695,7 @@ export function registerRelationshipV2Tools(server: McpServer, read: DatabaseRea
       offset: 0,
     });
     const payload = asObj(reply.rows[0]);
-    const isErr = payload.status === 'invalid_request';
+    const isErr = payload.status === 'invalid_request' || payload.status === 'selector_mismatch';
     return { content: jsonContent(payload), structuredContent: payload, ...(isErr ? { isError: false } : {}) };
   });
 

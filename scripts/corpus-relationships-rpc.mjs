@@ -2948,24 +2948,167 @@ function createWorkerR10Reader(ctx) {
 }
 
 export async function handleDiscoverBiblicalConnectionsV1(ctx, params = {}) {
-  const queryText = String(params.query || params.q || params.topic || '').trim();
+  const anchorObj = params.anchor && typeof params.anchor === 'object' ? params.anchor : {};
+  const occWordId = params.word_id ?? anchorObj.word_id;
+  const occBook = params.book ?? anchorObj.book;
+  const occChapter = params.chapter ?? anchorObj.chapter;
+  const occVerse = params.verse ?? anchorObj.verse;
+  const occPosition = params.position ?? params.word_position ?? anchorObj.position;
+  const occEdition = params.edition_key ?? params.edition ?? anchorObj.edition_key;
+  const occLemmaId = params.lemma_id ?? anchorObj.lemma_id;
+  const occExtendedStrongs = params.extended_strongs ?? anchorObj.extended_strongs;
+  const hasOccSelector =
+    occWordId != null ||
+    occPosition != null ||
+    Boolean(occLemmaId) ||
+    Boolean(occExtendedStrongs) ||
+    Boolean(occEdition);
+
+  let queryText = String(params.query || params.q || params.topic || '').trim();
   const concepts = parseOptionalListParam(params.concepts);
+  if (!queryText && (!concepts || concepts.length === 0) && !hasOccSelector) {
+    return {
+      schema_version: 1,
+      status: 'invalid_request',
+      error: 'Provide non-empty query, concepts, or occurrence anchor for biblical connection discovery.',
+    };
+  }
+
+  let selectedOccurrence = null;
+  let discoveryScope = null;
+  let effectiveFocusLemma = params.focus_lemma ? String(params.focus_lemma).trim() : undefined;
+
+  if (hasOccSelector) {
+    const selected = await resolveR9cReleaseVersion(ctx, params);
+    if (selected.error) {
+      return { schema_version: 1, status: 'invalid_request', error: selected.error };
+    }
+    const baseDir = `/v2/relationships/${selected.releaseVersion}`;
+    const manifest =
+      (await ctx.loadJsonShard(ctx.env, `${baseDir}/runtime-manifest.json.gz`)) ||
+      (await ctx.loadJsonShard(ctx.env, `${baseDir}/manifest.json.gz`));
+    if (manifest) {
+      const gramBaseDir = manifest.layers?.grammatical?.base_dir || baseDir;
+      const isLexicalSelectorToken =
+        /^(?:lemma:)?[HG]0*\d+[A-Za-z]?$/i.test(queryText) ||
+        /^[on]\d{8,14}$/.test(queryText) ||
+        /[\u0590-\u05ff\u0370-\u03ff]/.test(queryText);
+      const resolverParams = {
+        word_id: occWordId,
+        book: occBook,
+        chapter: occChapter,
+        verse: occVerse,
+        position: occPosition,
+        edition_key: occEdition,
+        lemma_id: occLemmaId,
+        extended_strongs: occExtendedStrongs,
+        ...(isLexicalSelectorToken ? { query: queryText } : {}),
+      };
+      const resolver = await loadCompatibleResolver(ctx, baseDir, gramBaseDir, manifest, resolverParams);
+      if (resolver) {
+        const res = await resolveLemmaV2(
+          resolverParams,
+          resolver,
+          () => ctx.loadJsonShard(ctx.env, `${gramBaseDir}/uncovered-lemmas.json.gz`),
+          ctx,
+          gramBaseDir
+        );
+        if (res.status === 'selector_mismatch') {
+          return {
+            schema_version: 1,
+            status: 'selector_mismatch',
+            release_id: params.release_id ? String(params.release_id).trim() : DEFAULT_R10_RELEASE,
+            error: res.coverage_notice || 'Supplied occurrence selectors contradict one another.',
+            mismatch: res.mismatch,
+            selected_occurrence: null,
+          };
+        }
+        const candList = Array.isArray(res.homograph_candidates) ? res.homograph_candidates : [];
+        const contentCands = candList.filter(c => !/^lemma:H90\d\d$/i.test(String(c.lemma_id || '')));
+        const fallbackCand = contentCands.length === 1 ? contentCands[0] : (contentCands.length > 1 ? contentCands[0] : candList[0]);
+        const resolvedLemmaId =
+          res.resolved_occurrence?.lemma_id ||
+          res.lemma_id ||
+          (occLemmaId ? String(occLemmaId) : null) ||
+          (contentCands.length === 1 ? contentCands[0].lemma_id : null);
+        const occAnchored = Boolean(
+          res.resolved_occurrence && res.resolved_occurrence.occurrence_resolution_status === 'verified_occurrence'
+        );
+        selectedOccurrence = res.resolved_occurrence
+          ? {
+              word_id: res.resolved_occurrence.word_id ?? (occWordId != null ? Number(occWordId) : null),
+              book: occBook != null ? Number(occBook) : null,
+              chapter: occChapter != null ? Number(occChapter) : null,
+              verse: occVerse != null ? Number(occVerse) : null,
+              position: res.resolved_occurrence.position ?? null,
+              edition_key: res.resolved_occurrence.edition ?? null,
+              reference: res.resolved_occurrence.reference ?? null,
+              surface_form: res.resolved_occurrence.surface_form ?? null,
+              source_token_id: res.resolved_occurrence.source_token_id ?? null,
+              lemma_id: resolvedLemmaId,
+              occurrence_resolution_status: res.resolved_occurrence.occurrence_resolution_status,
+            }
+          : {
+              word_id: occWordId != null ? Number(occWordId) : null,
+              book: occBook != null ? Number(occBook) : null,
+              chapter: occChapter != null ? Number(occChapter) : null,
+              verse: occVerse != null ? Number(occVerse) : null,
+              position: occPosition != null ? Number(occPosition) : null,
+              edition_key: occEdition ? String(occEdition) : null,
+              reference: null,
+              lemma_id: resolvedLemmaId,
+              ...(candList.length > 1 ? { candidate_lemma_ids: candList.map(c => c.lemma_id).filter(Boolean) } : {}),
+              occurrence_resolution_status:
+                occWordId != null && occPosition == null
+                  ? 'word_form_only_not_unique_occurrence'
+                  : res.status === 'ok'
+                    ? 'lemma_scoped_no_occurrence_position'
+                    : res.status,
+            };
+
+        const rawBase =
+          res.profile?.strongs_base ||
+          res.profile?.extended_strongs ||
+          fallbackCand?.strongs_base ||
+          fallbackCand?.extended_strongs ||
+          (resolvedLemmaId ? String(resolvedLemmaId).replace(/^lemma:/i, '') : '') ||
+          (occExtendedStrongs ? String(occExtendedStrongs) : '');
+        const normBase = normalizeStrongsBase(rawBase);
+        const paddedBase = normBase ? normBase.padded : rawBase.replace(/^([HG]\d+)[A-Za-z]+$/i, '$1');
+        if (!queryText && paddedBase) queryText = paddedBase;
+        if (!effectiveFocusLemma && paddedBase) effectiveFocusLemma = paddedBase;
+
+        const lemmaLabel = resolvedLemmaId || paddedBase || 'the resolved lemma';
+        discoveryScope = {
+          level: 'lemma_and_concept_index',
+          occurrence_anchored: occAnchored,
+          word_id_alone_is_not_unique_occurrence: true,
+          scope_explanation: occAnchored
+            ? `Exact occurrence identity preserved (${res.resolved_occurrence.reference} position ${res.resolved_occurrence.position}, STEP word_id ${res.resolved_occurrence.word_id}, ${lemmaLabel}). Discovery results query the corpus-wide lemma and concept index for ${lemmaLabel} rather than claiming every discovered connection is specific only to this single token occurrence.`
+            : `A STEP word_id alone identifies a word form, not a unique verse occurrence. Supply {word_id, book, chapter, verse, position, edition_key?} for exact occurrence identity. Discovery results reflect corpus-wide lemma and concept connections for ${lemmaLabel}.`,
+        };
+      }
+    }
+  }
+
   if (!queryText && (!concepts || concepts.length === 0)) {
     return {
       schema_version: 1,
       status: 'invalid_request',
-      error: 'Provide non-empty query or concepts for biblical connection discovery.',
+      error: 'Could not derive a discovery query from the supplied occurrence anchor.',
+      ...(selectedOccurrence ? { selected_occurrence: selectedOccurrence } : {}),
     };
   }
+
   const reader = createWorkerR10Reader(ctx);
   const releaseId = params.release_id ? String(params.release_id).trim() : DEFAULT_R10_RELEASE;
   const limit = params.limit !== undefined ? Math.min(25, Math.max(1, finiteOr(params.limit, 10))) : 10;
-  return await discoverBiblicalConnections(reader, {
+  const result = await discoverBiblicalConnections(reader, {
     query: queryText || (concepts ? concepts.join(' ') : ''),
     concepts,
     mode: params.mode ? String(params.mode) : undefined,
     cluster_id: params.cluster_id ? String(params.cluster_id) : undefined,
-    focus_lemma: params.focus_lemma ? String(params.focus_lemma) : undefined,
+    focus_lemma: effectiveFocusLemma,
     compare_targets: parseOptionalListParam(params.compare_targets),
     filters: params.filters && typeof params.filters === 'object' ? params.filters : undefined,
     limit,
@@ -2973,6 +3116,14 @@ export async function handleDiscoverBiblicalConnectionsV1(ctx, params = {}) {
     max_hops: params.max_hops !== undefined ? finiteOr(params.max_hops, 3) : 3,
     release_id: releaseId,
   }, releaseId);
+  if (selectedOccurrence || discoveryScope) {
+    return {
+      ...result,
+      ...(selectedOccurrence ? { selected_occurrence: selectedOccurrence } : {}),
+      ...(discoveryScope ? { discovery_scope: discoveryScope } : {}),
+    };
+  }
+  return result;
 }
 
 export const handleDiscoverBiblicalConnectionsV2 = handleDiscoverBiblicalConnectionsV1;

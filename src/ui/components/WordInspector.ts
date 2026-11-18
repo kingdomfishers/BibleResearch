@@ -17,6 +17,19 @@ import { createLexicalRelationshipsSection } from './LexicalRelationshipsSection
 import type { RelationshipNotePrefill } from '../../api/relationship-notes-adapter';
 
 // === @section:types ===
+export interface WordDiscoveryOrigin {
+  word_id: number;
+  book: number;
+  chapter: number;
+  verse: number;
+  position?: number;
+  lemma_id?: string;
+  strongs_nr: string;
+  original_word: string;
+  transliteration: string;
+  english?: string;
+}
+
 interface Selection { id: number; position?: number; english?: string; rendering?: string; suggested?: boolean; lemmaId?: string }
 
 // === @section:ui:main ===
@@ -25,7 +38,7 @@ export function createWordInspector(
   navigate: (p: ActivePassage) => void,
   onAddNote?: (data: { word: WordRecord; position?: number }) => void,
   onEvaluateRelationship?: (prefill: RelationshipNotePrefill) => void,
-  onDiscoverConnectionsForWord?: (term: string) => void
+  onDiscoverConnectionsForWord?: (term: string, origin?: WordDiscoveryOrigin) => void
 ) {
   const element = el('aside', 'word-inspector'); element.setAttribute('aria-label', 'Word meaning and connections');
   let generation = 0, selection: Selection | null = null, overview: ReaderOverview | null = null;
@@ -49,7 +62,7 @@ export function createWordInspector(
   element.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
 
   // === @section:ui:summary ===
-  function renderSummary(word: WordRecord, data: ReaderWord, selected: Selection) {
+  function renderSummary(word: WordRecord, data: ReaderWord, selected: Selection, passage: ActivePassage) {
     summary.replaceChildren(el('p', 'eyebrow', selected.suggested ? 'SUGGESTED WORD' : 'SELECTED WORD'));
     const original = el('h2', 'modal-original', word.original_word);
     original.dir = word.strongs_nr.startsWith('H') ? 'rtl' : 'ltr';
@@ -57,10 +70,23 @@ export function createWordInspector(
     const gematria = word.gematria ?? calculateGematria(word.original_word);
     const metaRow = el('div', 'inspector-word-meta');
     const discoverBtn = action('Discover Biblical Connections →', () => {
-      const seed = selected.lemmaId ?? word.strongs_nr;
+      const seed = word.strongs_nr;
+      const singleLexeme = data.lexemes?.length === 1 ? data.lexemes[0].extended_strongs : undefined;
+      const origin: WordDiscoveryOrigin = {
+        word_id: selected.id,
+        book: passage.book,
+        chapter: passage.chapter,
+        verse: passage.verse,
+        position: selected.position,
+        lemma_id: selected.lemmaId ?? (singleLexeme ? `lemma:${singleLexeme}` : undefined),
+        strongs_nr: word.strongs_nr,
+        original_word: word.original_word,
+        transliteration: word.transliteration,
+        english: selected.english,
+      };
       if (onDiscoverConnectionsForWord) {
-        close();
-        onDiscoverConnectionsForWord(seed);
+        element.dataset.open = 'false';
+        onDiscoverConnectionsForWord(seed, origin);
       }
     }, 'study-button primary');
     discoverBtn.style.marginTop = '8px';
@@ -208,7 +234,7 @@ export function createWordInspector(
       return;
     }
     currentData = result.data;
-    renderSummary(result.data.word, result.data, next); renderOccurrences(result.data);
+    renderSummary(result.data.word, result.data, next, currentPassage); renderOccurrences(result.data);
     const strongs = result.data.word.strongs_nr;
     // Direct evidence must not wait for optional formation/candidate lookups.
     // Keep the passage captured before the reader request, not a later navigation.

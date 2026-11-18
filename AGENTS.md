@@ -4,7 +4,15 @@
 
 Work from the local checkout. Inspect Git status and branch first; preserve unrelated work. Make one cohesive change at a time. Aim for 1?5 implementation files including relevant tests. Before exceeding about eight files, check for unnecessary refactoring, formatting, generated tests, or documentation churn. Explain genuine dependencies and keep the larger scope justified.
 
-Never deploy, change production data, or execute recovery/reclamation operations without explicit authorization. Applied migrations, source datasets, recovery archives, provenance and license notices are protected. Do not treat an old filename as evidence that a file is disposable.
+**Direct Live Development Policy:** BibleResearch uses direct live development. Ordinary changes follow this cycle:
+1. Implement.
+2. Run focused tests.
+3. Deploy directly to the main Cloudflare Worker (`bibleresearch-corpus`, `bibleresearch`) and/or main MCP (`bible-mcp`).
+4. Verify the actual live functionality.
+5. Commit, push and record the deployment.
+6. Continue development.
+
+No mandatory staging cycle, extensive release ceremony, or exhaustive benchmark is required before every deployment. Routine production deployments are authorized; historical no-deployment restrictions are superseded for ordinary development. Still require separate explicit authorization for destructive database operations, deletion of unique data, recovery/reclamation operations, security/permission changes, or paid infrastructure modifications. Applied migrations, existing notes, source datasets, recovery archives, provenance, license notices, and previous deployment versions remain protected. Do not treat an old filename as evidence that a file is disposable.
 
 ## Find ? Understand ? Change
 
@@ -28,4 +36,4 @@ Keep useful existing @section anchors; use targeted rg searches. Six-line manife
 
 Apply [post-code](.agents/skills/post-code/SKILL.md). Available commands: npm run dev, npm run check:types, npm run build, npm run check:size (advisory structure review); check:lines is an alias. On Windows use npm.cmd if PowerShell blocks npm.ps1.
 
-There is no generic test:run command. Inspect a relevant script's runtime, prerequisites and side effects before running it directly. Some verification scripts access or mutate live services. Run local targeted checks first; broader tests require interface/risk justification. Update documentation only when its content changes, PROJECTMAP only for responsibility/location/entry-point changes, and the queue only for relevant progress. Stage explicit intended paths; never use broad staging in a dirty checkout.
+There is no generic test:run command. Inspect a relevant script's runtime, prerequisites and side effects before running it directly. Some verification scripts access or mutate live services. Run focused local checks (`npm.cmd run check:types`, `npm.cmd run build`, targeted verifiers) first, then deploy ordinary changes directly to the main production services (`bibleresearch-corpus`, `bibleresearch`, `bible-mcp`), verify the actual live endpoints, and commit, push, and record the deployment. Update documentation only when its content changes, PROJECTMAP only for responsibility/location/entry-point changes, and the queue only for relevant progress. Stage explicit intended paths; never use broad staging in a dirty checkout.

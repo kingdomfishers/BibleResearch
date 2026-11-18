@@ -5,8 +5,22 @@
   "compatibility_date": "2026-11-02",
   "preview_urls": false,
   "assets": {
-    "directory": "./.artifacts/static-corpus",
+    "directory": "./.artifacts-r12/staging-bundle",
     "binding": "ASSETS",
     "run_worker_first": true
+  },
+  "version_metadata": {
+    "binding": "WORKER_VERSION"
+  },
+  "vars": {
+    "R12_RELEASE_ID": "r12-witnesses-1",
+    "R12_ASSET_SHA256": "5d26a11510359b5200a7169c77b73578a7be57fcc95f15764142cc46a5f42eb9",
+    "R12_SOURCE_COMMIT": "712d3627b881b137fe11da6fc97d0871600c568c"
+  },
+  "observability": {
+    "enabled": true,
+    "traces": {
+      "enabled": true
+    }
   }
 }

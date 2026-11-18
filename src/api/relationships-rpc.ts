@@ -629,10 +629,10 @@ export interface UnifiedWordRelationshipsResponse extends GrammaticalRelationshi
   lxx_translation?: R9BLxxLayerResult | null;
 }
 
-const DEFAULT_RELATIONSHIPS_RELEASE = 'r9b-v1.0';
+const DEFAULT_RELATIONSHIPS_RELEASE = 'r9b-v1.1';
 const PREVIEW_STORAGE_KEY = 'bibleresearch_rel_preview';
 
-/** Resolves relationship graph release (defaults to `r9b-v1.0`; supports `?release=...` or `?preview=off`). */
+/** Resolves relationship graph release (defaults to `r9b-v1.1`; supports `?release=...` or `?preview=off`). */
 export function getConfiguredRelationshipsRelease(): string | undefined {
   if (typeof window !== 'undefined') {
     try {
@@ -647,11 +647,15 @@ export function getConfiguredRelationshipsRelease(): string | undefined {
         window.sessionStorage?.setItem(PREVIEW_STORAGE_KEY, rel);
         return rel;
       }
-      if (preview === 'r9b' || preview === 'r9c' || preview === 'r9b-v1.0' || preview === '1' || preview === 'true') {
+      if (preview === 'r9b' || preview === 'r9c' || preview === 'r9b-v1.0' || preview === 'r9b-v1.1' || preview === '1' || preview === 'true') {
         window.sessionStorage?.setItem(PREVIEW_STORAGE_KEY, DEFAULT_RELATIONSHIPS_RELEASE);
         return DEFAULT_RELATIONSHIPS_RELEASE;
       }
       const stored = window.sessionStorage?.getItem(PREVIEW_STORAGE_KEY);
+      if (stored === 'r9b-v1.0') {
+        window.sessionStorage?.setItem(PREVIEW_STORAGE_KEY, DEFAULT_RELATIONSHIPS_RELEASE);
+        return DEFAULT_RELATIONSHIPS_RELEASE;
+      }
       if (stored && /^[A-Za-z0-9._-]+$/.test(stored)) return stored;
     } catch { /* ignore storage errors */ }
   }

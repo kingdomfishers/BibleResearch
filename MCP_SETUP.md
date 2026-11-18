@@ -1,7 +1,7 @@
 # BibleResearch MCP — deployed on Supabase
 
 The server is deployed as the `bible-mcp` Supabase Edge Function in project `ejoperxiwxlcbsqrkrvb`.
-Deployment version 8 is active (server v1.9.0, 25 read-only tools, 18 prompts; up to 33 tools and 22 prompts when write tools are configured). Rollback version: Deployment version 7 (server v1.4.0). You can connect now; no local server, additional host, or API-key entry is needed.
+Deployment version **41** is active (server `1.7.0`, **46 tools** — 41 read-only corpus/notes tools + 5 note/DLM write tools — and **22 prompts**; `ezbr_sha256: 60dc5cbeeb332e3b009fe9bd60ee198a88c35d140e2527687f94e81c20d2fba7`; routed to production corpus `https://bibleresearch-corpus.kingdomfishers-custom.workers.dev` release `r12-witnesses-1` / `r9b-v1.1` / `r8-v1.2`). Rollback version: Deployment version **40**. You can connect now; no local server, additional host, or API-key entry is needed for read tools (and `writes: "enabled"` is configured via project secrets).
 
 **Server URL — paste this into both assistants:**
 
@@ -74,11 +74,9 @@ reduced structured JSON by 81% (242,204 versus 1,274,531 bytes) while preserving
 verse data, totals, ranked connections and lexical candidates. This is a measured
 case, not a universal payload or answer-quality guarantee.
 
-After refreshing existing ChatGPT/Gemini MCP connections, verify 17 tools and
-17 prompts, including `get_verse_research`, `lookup_lexical_semantics`, `get_syntax_tree`,
-`compare_hebrew_septuagint_passage`, `get_septuagint_passage`, and `study_bible`. Restart/new-chat may
-be required after host-side schema refresh. This session's tool list cannot be
-replaced by server deployment alone.
+After updating `bible-mcp`, existing ChatGPT connectors pointing at `https://ejoperxiwxlcbsqrkrvb.supabase.co/functions/v1/bible-mcp/mcp` keep working with all 46 preserved tool names routing immediately to the live R12 production corpus (`r12-witnesses-1`). However, ChatGPT caches tool input schemas on the client side: **trigger a manual connector refresh** (in ChatGPT connector/plugin settings, run **Refresh** / update tools) and **start a new conversation** so ChatGPT loads the updated R12 descriptions and optional exact occurrence-anchor fields (`{word_id, book, chapter, verse, position, edition_key?}`) on `discover_biblical_connections_v2`, `discover_biblical_connections_v1`, and `get_word_relationships_v2`. Server deployment alone does not prove ChatGPT has refreshed its cached catalog.
+
+Verify **46 tools** and **22 prompts** via `/health` or MCP `tools/list` / `prompts/list`. Restart/new-chat may be required after host-side schema refresh.
 
 References: [OpenAI package and local marketplace setup](https://developers.openai.com/plugins/build/plugins),
 [Gemini extension installation](https://geminicli.com/docs/extensions/reference/).
@@ -152,7 +150,7 @@ Official instructions: [Gemini CLI MCP servers](https://geminicli.com/docs/tools
 
 ## Research prompts you can use immediately
 
-All seventeen templates accept one required string argument named `subject`.
+All 22 templates accept one required string argument named `subject`.
 
 | Template | Example subject | Workflow |
 | --- | --- | --- |
@@ -211,12 +209,41 @@ Templates return instructions; the assistant then performs the actual research t
 | `lookup_hebrew_septuagint_alignments` | `p_word_query` | Sourced 3-tier Hebrew-Greek candidate alignments |
 | `inspect_word_formation` | `p_query` (optional `p_word_id`) | Documented compound formations, theophoric names, roots, and paronomasia |
 | `suggest_word_connections` | `p_query` (optional `p_limit`, `p_min_chars`) | Exploratory consonantal substring overlap candidates |
-| `get_notes` | optional `passage`, `word_id`, `note_id`, `limit`, `offset` | Read user and AI notes with anchor and connection resolution |
-| `search_note_targets` | `p_query` (optional `p_kinds`, `p_limit`) | Search note target candidates across 10 anchor types |
-| `list_note_connection_types` | (none) | List 16 supported typed connection vocabulary items |
-| `create_note` | `title`, `body_md`, `note_kind`, `anchors` (optional `connections`, `blocks`, `confidence`, `source_context`) | AI agent note creation (`author_kind='ai'`, `review_status='unreviewed'`) |
-| `update_my_note` | `note_id`, `expected_version` | Update an existing AI note owned by this agent |
-| `delete_my_note` | `note_id`, `expected_version` | Soft-delete an existing AI note owned by this agent |
+| `get_notes` | `book`+`chapter`+`verse_start` or `word_id` or `note_id` | Read user and AI notes with anchor and connection resolution |
+| `search_note_targets` | `query` (optional `kinds`, `limit`) | Search note target candidates across anchor types |
+| `list_note_connection_types` | (none) | List supported typed connection vocabulary items and note kinds |
+| `create_note` | `body_md`, `note_kind`, `anchors` (optional `title`, `connections`, `blocks`, `confidence`, `source_context`) | AI agent note creation (`author_kind='ai'`, `review_status='unreviewed'`) |
+| `update_my_note` | `note_id`, `expected_version`, `body_md`, `note_kind`, `anchors` | Update an existing AI note owned by this agent |
+| `delete_my_note` | `note_id` | Soft-delete an existing AI note owned by this agent |
+| `add_research_note` | `body_md`, `references` (1–8 refs with `book`, `chapter`, `verse`, optional `word_position`, `word_id`) | Save validated verse/word-anchored research note |
+| `save_dlm_research_note` | `card_kind`, `evidence_class`, `title`, `claim`, `scope`, `body_md`, `references` | Save evidence-classified DLM card (strictly separates Scripture, science, and hypotheses) |
+| `get_dlm_research` | `book`, `chapter`, `verse` | Retrieve compact DLM evidence cards anchored to verse/word/lemma |
+| `get_verse_hydrated` | `book`, `chapter`, `verse` | Compact single-verse hydration (lexemes, syntax, DLM, notes, orthographic candidates) |
+| `research_word_lens` | `query` | Compact lemma, senses, documented roots, counts, and book-diverse samples |
+| `trace_biblical_bridge` | `left`, `right` | Direct same-verse or nearby-verse witnesses linking two original-language words |
+| `research_passage_lens` | `book`, `chapter`, `verse` | Compact STEP-indexed verse with MACULA morphology and roles |
+| `research_macula_syntax` | `book`, `chapter`, `verse` (optional `edition_key`, `word_position`) | Complete bounded constituent syntax tree (without withheld semantic frames) |
+| `audit_evidence_coverage` | (none) | Deterministic coverage stats, checksums, and licenses across datasets |
+| `get_passage_grammatical_frames_v2` | `book`, `chapter`, `verse` | Verified R3 grammatical frames & relations for a passage |
+| `get_word_relationships_v2` | One of `query`, `lemma_id`, `extended_strongs`, `word_id`, `summary_id`, or `book/chapter/verse/position` | Query R3 grammatical relations (`summary_id` drills down into exact witnesses) |
+| `get_relationship_coverage_v2` | (optional `edition_key`, `predicate`, `book`, `chapter`, `verse`, `release`) | Active R12/R9B/R8 relationship release manifest, provenance, and coverage |
+| `get_unified_word_relationships_v2` | Occurrence or lemma selector (`{word_id?, book, chapter, verse, position, edition_key?}` or `query`/`lemma_id`) | Unified 4-layer original-language evidence (`grammatical`, `lexical`, `contextual`, `lxx_translation`) |
+| `page_contextual_neighbors_v2` | Occurrence/lemma selector + `contextual_scope` (`all`, `same_clause`, `collocation`, `same_verse`) | Paginated contextual co-occurrence partners with matching-witness samples (`r9b-v1.1`) |
+| `lookup_lexical_relations_v2` | `endpoint_key` or occurrence/lemma selector | Bidirectional lexical relations (roots, cognates, formations, sense subdivisions) |
+| `lookup_lxx_translations_v2` | Occurrence or lemma selector | Septuagint Hebrew↔Greek translation bridge candidates & source counts |
+| `resolve_research_concept_v1` | `query` | Disambiguate English concepts, Strong's IDs, forms, or canonical `lemma:`/`root:`/`sense:` keys |
+| `discover_relationship_paths_v1` | `source` (optional `target`, `targets`, `max_hops` 1–3) | Bounded 1–3 hop cross-layer path discovery between canonical entities |
+| `discover_biblical_connections_v2` | `query`, `concepts`, or occurrence anchor (`{word_id?, book, chapter, verse, position, edition_key?}`) | Universal R11/R12 corpus-wide discovery with `mode` (`discover`/`expand`/`bridge`/`compare`/`explain`/`challenge`) & exact occurrence preservation |
+| `discover_biblical_connections_v1` | `query`, `concepts`, or occurrence anchor | Backward-compatible R10/R11 discovery endpoint with exact occurrence anchor support |
+| `get_connection_evidence_v1` | `evidence_id` | Full original-language tokens, WEB text, provenance, and limitations (`r11:cluster:*`, `r11:gram:*`, `r11:intersect:pericope:*`, `r11:intersect:verse:*`, `r11:occ:*`, `r11:lex:*`, `r11:bridge:*`, `r11:lxx:*`, `r11:xref:*`, `r10:*`) |
+| `expand_biblical_connection_v1` | `node_id` | Expand a motif, lemma, passage, concept, or cluster into neighboring connections and controls |
+
+### Exact occurrence identity & R12 corpus routing (v41)
+
+- All corpus-backed relationship and discovery RPCs route to the production Worker `https://bibleresearch-corpus.kingdomfishers-custom.workers.dev` (release `r12-witnesses-1`, defaults `r9b-v1.1` / `r8-v1.2`), returning `verification_release` provenance (`mcp_release`, `corpus_target: "production"`, `corpus_url`, `corpus_release`, `worker_version`, `source_commit`, `asset_sha256`).
+- A STEP `word_id` alone identifies a word form, **not** a unique verse occurrence (and may carry prefix morphemes such as `H9002` + stem `H7307`). Maintain exact occurrence identity using `{word_id, book, chapter, verse, position, edition_key?}`.
+- Contradictory selectors (e.g., `word_id: 999999999` or mismatched `position`) return explicit `status: "selector_mismatch"` rather than silently substituting another word.
+- When `discover_biblical_connections_v2` / `v1` receives an occurrence anchor, it preserves `selected_occurrence` and emits `discovery_scope` stating honestly that results query the corpus-wide lemma and concept index rather than claiming every discovered connection is unique to that single token occurrence.
 
 ### Notes integration & untrusted content security
 
@@ -235,7 +262,10 @@ Templates return instructions; the assistant then performs the actual research t
    The database table `public.note_settings` maintains `human_writes_enabled` and `ai_writes_enabled`. If disabled, save RPCs reject immediately with error code `writes_disabled`.
 
 5. **Rollback Plan:**
-   If Edge Function deployment version 8 needs to be rolled back, redeploy previous deployment version 7 (server v1.4.0) using the Supabase deployment workflow.
+   If Edge Function deployment version 41 needs to be rolled back, redeploy previous deployment version 40 (or check the Supabase Edge Function version history).
+
+6. **Live Verification Suite:**
+   Run `node scripts/verify-r12-production-live.mjs` to test `bible-mcp` over real Streamable HTTP (`initialize`, all 46 tools, 22 prompts, Genesis 1:2 `H7307` pos 9 -> `130555`, John 1:1 `G3056` pos 5/8/17 -> `15230/15229/15231`, `"scarlet Tamar Rahab Matthew 1"` discovery + evidence, Hebrew & Greek evidence, expansion, `"spirit wind"` negative control, legacy compatibility tools) together with desktop (`1280x900`) and mobile (`390x844`) Playwright end-to-end checks on `https://bibleresearch.kingdomfishers-custom.workers.dev`.
 
 The four research tools additionally accept `limit` (1–100, default 25) and `offset` (default 0).
 Legacy database results have `source: "live"`, `rows`, and `page` metadata. Continue with `page.next_offset`
@@ -305,11 +335,7 @@ npx supabase functions deploy bible-mcp --project-ref ejoperxiwxlcbsqrkrvb --no-
 
 This command requires an authenticated CLI or a scoped `SUPABASE_ACCESS_TOKEN` with `edge_functions_write`.
 The current deployment is complete; you do not need to run it to connect your assistants.
-When deploying through the Supabase MCP tool, explicitly set `import_map_path` to `deno.json` along with the
-`index.ts`, `catalog.ts`, `pattern-prompts.ts`, `research-workflow.ts`,
-`workflow-contract.ts`, and `deno.json` files, to avoid retaining an import-map
-path or omitting workflow dependencies. Run the package builder first because
-it generates research-workflow.ts from the canonical skill.
+When deploying through the Supabase MCP tool (`deploy_edge_function`), explicitly set `import_map_path` to `deno.json` along with all 13 server modules (`index.ts`, `catalog.ts`, `relationships-v2.ts`, `research-lenses.ts`, `verse-hydrated.ts`, `syntax-research.ts`, `notes-tools.ts`, `notes-write.ts`, `dlm-notes.ts`, `pattern-prompts.ts`, `research-workflow.ts`, `workflow-contract.ts`, and `deno.json`), to avoid retaining an old import-map path or omitting workflow/tool dependencies. Run the package builder first when modifying `skills/bible-research/SKILL.md`.
 
 After changing tool descriptions or schemas, refresh the ChatGPT plugin connection and start a new conversation.
 In Gemini Developer Mode use **Sync schema**, or refresh/reconnect the custom app. Restart Gemini CLI to rediscover tools.

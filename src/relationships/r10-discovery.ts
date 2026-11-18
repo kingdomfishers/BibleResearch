@@ -2324,6 +2324,155 @@ export async function getConnectionEvidence(
         },
       };
     }
+  } else if (evidenceId.startsWith('r11:intersect:pericope:')) {
+    const [, , , vAStr, vBStr] = evidenceId.split(':');
+    const vA = Number(vAStr);
+    const vB = Number(vBStr);
+    if (Number.isInteger(vA) && vA > 0 && Number.isInteger(vB) && vB > 0) {
+      const p1 = await hydratePassageByVid(vA);
+      const p2 = await hydratePassageByVid(vB);
+      if (p1 && p2) {
+        record = {
+          evidence_id: evidenceId,
+          predicate: 'shared_motif',
+          evidence_tier: 4,
+          epistemic_class: 'shared_motif_evidence',
+          title: `Close pericope proximity: ${p1.ref} ↔ ${p2.ref}`,
+          summary: `Verses ${p1.ref} and ${p2.ref} appear within ${Math.abs(vA - vB)} verse(s) of each other in the same literary context.`,
+          source_node_id: `passage:${p1.ref}`,
+          target_node_id: `passage:${p2.ref}`,
+          passages: [p1, p2],
+          original_words: [],
+          matched_terms: [p1.ref, p2.ref],
+          limitations: ['A four-verse window is a statistical proximity candidate, not a verified pericope boundary or intentional literary relationship.'],
+          provenance: {
+            source_dataset: 'MACULA Hebrew & Greek',
+            source_record_ids: [p1.ref, p2.ref],
+            license: 'CC BY 4.0',
+            derivation_method: 'pericope_window_intersection',
+          },
+          score_components: {
+            base_tier_score: TIER_BASE_SCORE[4],
+            specificity_bonus: 90,
+            witness_bonus: 20,
+            common_word_penalty: 0,
+            number_coincidence_penalty: 0,
+            orthographic_penalty: 0,
+            final_score: TIER_BASE_SCORE[4] + 110,
+          },
+        };
+      }
+    }
+  } else if (evidenceId.startsWith('r11:lex:')) {
+    const [, , bs, idxStr] = evidenceId.split(':');
+    const idx = Number(idxStr);
+    if (bs && Number.isInteger(idx) && idx >= 0) {
+      targetStrongs.add(bs);
+      const prof = await readProfile(reader, releaseId, fastManifest, bs, budget);
+      const lrel = prof?.lexical_relations?.[idx];
+      if (prof && lrel) {
+        if (lrel.target_strongs) targetStrongs.add(lrel.target_strongs);
+        const samplePassages: R10PassageRef[] = (prof.clusters?.[0]?.sample_passages || []).slice(0, 3).map((p: any) => ({
+          verse_id: p.verse_id,
+          ref: p.ref,
+          mt_ref: p.mt_ref,
+          book: p.book,
+          chapter: p.chapter,
+          verse: p.verse,
+          testament: p.testament,
+          snippet: p.snippet,
+          is_psalm_heading: p.book === 19 && p.verse === 0,
+        }));
+        record = {
+          evidence_id: evidenceId,
+          predicate: 'verified_lexical_grammatical',
+          evidence_tier: 3,
+          epistemic_class: 'documented_lexical_relationship',
+          title: `Lexical relation (${lrel.type.replace(/_/g, ' ')}): ${prof.sc} (${prof.bs}) ↔ ${lrel.label || `${lrel.script || ''} (${lrel.target_strongs || ''})`}`,
+          summary: `Morphological and root derivation analysis links ${prof.sc} (${prof.bs}) to ${lrel.label || `${lrel.script || ''} (${lrel.target_strongs || ''}, "${lrel.gloss || ''}")`}.`,
+          source_node_id: `lemma:${prof.bs}`,
+          target_node_id: lrel.target_strongs ? `lemma:${lrel.target_strongs}` : `root:${lrel.root || prof.bs}`,
+          passages: samplePassages,
+          original_words: [
+            { lemma_key: prof.lk, strongs: prof.bs, language: prof.lang, lemma_script: prof.sc, transliteration: prof.tr, gloss: prof.gl },
+            ...(lrel.target_strongs ? [{ strongs: lrel.target_strongs, language: prof.lang, lemma_script: lrel.script || '', transliteration: '', gloss: lrel.gloss || '' }] : []),
+          ],
+          matched_terms: [prof.gl, prof.sc, lrel.gloss || ''].filter(Boolean),
+          limitations: ['Lexical root derivation reflects shared etymological origin; semantic usage in specific verses diverges.'],
+          provenance: {
+            source_dataset: 'STEPBible TBESH/TBESG Lexicon',
+            source_record_ids: [prof.bs, lrel.target_strongs || ''].filter(Boolean),
+            license: 'CC BY 4.0',
+            derivation_method: 'lexical_root_derivation',
+          },
+          score_components: {
+            base_tier_score: TIER_BASE_SCORE[3],
+            specificity_bonus: 15,
+            witness_bonus: 20,
+            common_word_penalty: 0,
+            number_coincidence_penalty: 0,
+            orthographic_penalty: 0,
+            final_score: TIER_BASE_SCORE[3] + 35,
+          },
+        };
+      }
+    }
+  } else if (evidenceId.startsWith('r11:bridge:')) {
+    const [, , bsA, bsB, cwBs] = evidenceId.split(':');
+    if (bsA && bsB && cwBs) {
+      [bsA, bsB, cwBs].forEach(s => targetStrongs.add(s));
+      const [profA, profB, profCw] = await Promise.all([
+        readProfile(reader, releaseId, fastManifest, bsA, budget),
+        readProfile(reader, releaseId, fastManifest, bsB, budget),
+        readProfile(reader, releaseId, fastManifest, cwBs, budget),
+      ]);
+      if (profA && profB) {
+        const mapSamples = (prof: any): R10PassageRef[] =>
+          (prof.clusters?.[0]?.sample_passages || []).slice(0, 2).map((p: any) => ({
+            verse_id: p.verse_id,
+            ref: p.ref,
+            mt_ref: p.mt_ref,
+            book: p.book,
+            chapter: p.chapter,
+            verse: p.verse,
+            testament: p.testament,
+            snippet: p.snippet,
+            is_psalm_heading: p.book === 19 && p.verse === 0,
+          }));
+        record = {
+          evidence_id: evidenceId,
+          predicate: 'shared_motif',
+          evidence_tier: 4,
+          epistemic_class: 'shared_motif_evidence',
+          title: `Shared collocation bridge: ${profA.sc} (${profA.bs}) ↔ ${profCw?.sc || cwBs} ↔ ${profB.sc} (${profB.bs})`,
+          summary: `Both ${profA.sc} ("${profA.gl}", ${profA.bs}) and ${profB.sc} ("${profB.gl}", ${profB.bs}) co-occur with ${profCw ? `${profCw.sc} ("${profCw.gl}", ${profCw.bs})` : cwBs} in scriptural contexts.`,
+          source_node_id: `lemma:${profA.bs}`,
+          target_node_id: `lemma:${profB.bs}`,
+          passages: [...mapSamples(profA), ...mapSamples(profB)],
+          original_words: [
+            { lemma_key: profA.lk, strongs: profA.bs, language: profA.lang, lemma_script: profA.sc, transliteration: profA.tr, gloss: profA.gl },
+            { lemma_key: profB.lk, strongs: profB.bs, language: profB.lang, lemma_script: profB.sc, transliteration: profB.tr, gloss: profB.gl },
+          ],
+          matched_terms: [profA.gl, profB.gl, profCw?.gl || cwBs].filter(Boolean),
+          limitations: ['Indirect collocation bridge through a third term; check individual verse contexts before inferring a thematic link.'],
+          provenance: {
+            source_dataset: 'MACULA Hebrew & Greek + STEPBible',
+            source_record_ids: [profA.bs, cwBs, profB.bs],
+            license: 'CC BY 4.0',
+            derivation_method: 'shared_collocation_bridge',
+          },
+          score_components: {
+            base_tier_score: TIER_BASE_SCORE[4],
+            specificity_bonus: 60,
+            witness_bonus: 20,
+            common_word_penalty: 0,
+            number_coincidence_penalty: 0,
+            orthographic_penalty: 0,
+            final_score: TIER_BASE_SCORE[4] + 80,
+          },
+        };
+      }
+    }
   }
 
   // Fallback to explicitData

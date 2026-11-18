@@ -160,9 +160,24 @@ export function createDatabaseReader(
         if (corpRes.ok) {
           const corpData = await corpRes.json();
           if (corpData && typeof corpData === 'object' && !Array.isArray(corpData)) {
+            const corpusRelease = corpRes.headers.get('X-BibleResearch-Release');
+            const rowPayload = corpusRelease
+              ? {
+                  ...(corpData as Record<string, unknown>),
+                  verification_release: {
+                    mcp_release: WORKFLOW_VERSION,
+                    corpus_target: corpusBase.includes('staging') ? 'staging' : 'production',
+                    corpus_url: corpusBase,
+                    corpus_release: corpusRelease,
+                    worker_version: corpRes.headers.get('X-BibleResearch-Version'),
+                    source_commit: corpRes.headers.get('X-BibleResearch-Commit'),
+                    asset_sha256: corpRes.headers.get('X-BibleResearch-Assets'),
+                  },
+                }
+              : (corpData as Record<string, unknown>);
             return {
               source: 'live',
-              rows: [corpData as Record<string, unknown>],
+              rows: [rowPayload],
               page: { limit: 1, offset: 0, has_more: false, next_offset: null },
             };
           }
@@ -278,6 +293,8 @@ export function createApp(config: DatabaseConfig, fetcher: typeof fetch = fetch)
     if (request.method === 'GET' && path.endsWith('/health')) {
       const writesEnabled = Boolean(writer);
       const totalTools = RESEARCH_TOOL_NAMES.length + (writesEnabled ? 5 : 0);
+      const corpusTarget = config.corpusUrl ? 'custom' : (path.includes('bible-mcp-staging') ? 'staging' : 'production');
+      const activeCorpusUrl = config.corpusUrl || (path.includes('bible-mcp-staging') ? DEFAULT_STAGING_CORPUS_URL : DEFAULT_CORPUS_URL);
       return withCors(Response.json({
         name: 'BibleResearch',
         version: WORKFLOW_VERSION,
@@ -286,7 +303,8 @@ export function createApp(config: DatabaseConfig, fetcher: typeof fetch = fetch)
         authentication: config.agentKey ? 'bearer' : 'none',
         read_only: !writesEnabled,
         writes: writesEnabled ? 'enabled' : 'disabled',
-        corpus_target: config.corpusUrl ? 'custom' : (path.includes('bible-mcp-staging') ? 'staging' : 'production'),
+        corpus_target: corpusTarget,
+        corpus_url: activeCorpusUrl,
         tools: totalTools,
         prompts: Object.keys(PROMPTS).length,
       }));

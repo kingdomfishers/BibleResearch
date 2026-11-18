@@ -268,6 +268,17 @@ export interface R10ControlOrWarning {
   original_words?: R10OriginalWordRef[];
 }
 
+export interface OccurrenceAnchorInput {
+  word_id?: number;
+  book?: number;
+  chapter?: number;
+  verse?: number;
+  position?: number;
+  edition_key?: string;
+  lemma_id?: string;
+  extended_strongs?: string;
+}
+
 export interface DiscoverConnectionsQuery {
   query: string;
   concepts?: string[];
@@ -275,6 +286,15 @@ export interface DiscoverConnectionsQuery {
   cluster_id?: string;
   focus_lemma?: string;
   compare_targets?: string[];
+  word_id?: number;
+  book?: number;
+  chapter?: number;
+  verse?: number;
+  position?: number;
+  edition_key?: string;
+  lemma_id?: string;
+  extended_strongs?: string;
+  anchor?: OccurrenceAnchorInput;
   filters?: {
     predicates?: R10Predicate[];
     max_tier?: R10EvidenceTier;
@@ -291,8 +311,29 @@ export interface DiscoverConnectionsQuery {
 
 export interface DiscoverConnectionsResult {
   schema_version: 1;
-  status: 'ok' | 'partial' | 'no_match';
+  status: 'ok' | 'partial' | 'no_match' | 'selector_mismatch' | 'invalid_request';
   release_id: string;
+  error?: string;
+  mismatch?: Record<string, unknown>;
+  selected_occurrence?: {
+    word_id: number | null;
+    book: number | null;
+    chapter: number | null;
+    verse: number | null;
+    position: number | null;
+    edition_key: string | null;
+    reference: string | null;
+    surface_form?: string | null;
+    source_token_id?: string | null;
+    lemma_id: string | null;
+    occurrence_resolution_status: string;
+  } | null;
+  discovery_scope?: {
+    level: 'lemma_and_concept_index';
+    occurrence_anchored: boolean;
+    word_id_alone_is_not_unique_occurrence: true;
+    scope_explanation: string;
+  };
   parsed_query: {
     raw_query: string;
     extracted_terms: string[];

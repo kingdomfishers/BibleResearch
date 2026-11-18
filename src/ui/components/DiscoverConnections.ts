@@ -21,10 +21,15 @@ import type {
   R10Predicate,
   R10ResolvedConcept,
 } from '../../relationships/r10-types';
+import { BOOK_NAMES } from '../utils';
+import type { ContextPreview } from './ContextPreview';
+import type { WordDiscoveryOrigin } from './WordInspector';
 
 export interface DiscoverConnectionsCallbacks {
   onNavigatePassage: (book: number, chapter: number, verse: number, originWordStrongs?: string) => void;
   onInspectWordQuery?: (strongsOrLemma: string, passage?: R10PassageRef) => void;
+  onReturnToOriginWord?: (origin: WordDiscoveryOrigin) => void;
+  preview?: ContextPreview;
 }
 
 interface AutocompleteSuggestion {
@@ -102,11 +107,16 @@ export class DiscoverConnectionsPanel {
   private errorMsg: string | null = null;
   private result: DiscoverConnectionsResult | null = null;
   private evidenceCache = new Map<string, ConnectionEvidenceResult>();
+  private evidenceErrors = new Map<string, string>();
   private openEvidenceIds = new Set<string>();
+  private originSelection: WordDiscoveryOrigin | null = null;
+  private activeOccurrenceAnchor: WordDiscoveryOrigin | null = null;
+  private originResult: DiscoverConnectionsResult | null = null;
   private previousStates: Array<{
     query: string;
     filter: FilterBucket;
     mode: DiscoveryMode;
+    anchor: WordDiscoveryOrigin | null;
     result: DiscoverConnectionsResult | null;
   }> = [];
   private awayFromDiscovery = false;
@@ -177,12 +187,24 @@ export class DiscoverConnectionsPanel {
     this.container.querySelector<HTMLFormElement>('.js-discover-form')!.addEventListener('submit', e => {
       e.preventDefault();
       const val = this.inputEl.value.trim();
-      if (val) void this.runDiscovery(val, true);
+      if (val) {
+        this.currentMode = 'discover';
+        this.currentClusterId = undefined;
+        this.compareTargets = undefined;
+        this.focusLemma = undefined;
+        void this.runDiscovery(val, true, null);
+      }
     });
 
     this.container.querySelectorAll<HTMLButtonElement>('.js-example-query').forEach(btn => {
       btn.addEventListener('click', () => {
-        if (btn.dataset.q) void this.runDiscovery(btn.dataset.q, true);
+        if (btn.dataset.q) {
+          this.currentMode = 'discover';
+          this.currentClusterId = undefined;
+          this.compareTargets = undefined;
+          this.focusLemma = undefined;
+          void this.runDiscovery(btn.dataset.q, true, null);
+        }
       });
     });
 
@@ -193,14 +215,20 @@ export class DiscoverConnectionsPanel {
         this.inputEl.value = prev.query;
         this.activeFilter = prev.filter;
         this.currentMode = prev.mode || 'discover';
+        this.activeOccurrenceAnchor = prev.anchor;
         this.result = prev.result;
         this.awayFromDiscovery = false;
+        this.errorMsg = null;
         this.renderResults();
       }
     });
   }
 
-  public async runDiscovery(queryText: string, pushHistory = true): Promise<void> {
+  public async runDiscovery(
+    queryText: string,
+    pushHistory = true,
+    anchorOverride?: WordDiscoveryOrigin | null
+  ): Promise<void> {
     const clean = queryText.trim();
     if (!clean) return;
     if (pushHistory && this.result && this.currentQuery && (this.currentQuery !== clean || this.currentMode !== 'discover')) {
@@ -208,9 +236,15 @@ export class DiscoverConnectionsPanel {
         query: this.currentQuery,
         filter: this.activeFilter,
         mode: this.currentMode,
+        anchor: this.activeOccurrenceAnchor,
         result: this.result,
       });
       if (this.previousStates.length > 8) this.previousStates.shift();
+    }
+    if (anchorOverride !== undefined) {
+      this.activeOccurrenceAnchor = anchorOverride;
+    } else if (clean !== this.currentQuery) {
+      this.activeOccurrenceAnchor = null;
     }
     this.currentQuery = clean;
     this.inputEl.value = clean;
@@ -221,12 +255,23 @@ export class DiscoverConnectionsPanel {
     this.renderAutocomplete();
     this.renderResults();
 
+    const anchor = this.activeOccurrenceAnchor;
     const res = await discoverBiblicalConnectionsRpc({
       query: clean,
       mode: this.currentMode,
       cluster_id: this.currentClusterId,
       focus_lemma: this.focusLemma,
       compare_targets: this.compareTargets,
+      ...(anchor
+        ? {
+            word_id: anchor.word_id,
+            book: anchor.book,
+            chapter: anchor.chapter,
+            verse: anchor.verse,
+            position: anchor.position,
+            lemma_id: anchor.lemma_id,
+          }
+        : {}),
       filters: this.buildFilterPayload(),
       limit: 10,
       cursor: null,
@@ -236,15 +281,29 @@ export class DiscoverConnectionsPanel {
     if (res.error || !res.data) {
       this.errorMsg = res.error || 'Discovery request failed.';
       this.result = null;
+    } else if (res.data.status === 'selector_mismatch' || res.data.status === 'invalid_request') {
+      this.errorMsg = res.data.error || 'Supplied occurrence selector could not be matched.';
+      this.result = null;
     } else {
       this.result = res.data;
+      if (anchor && this.originSelection && anchor.word_id === this.originSelection.word_id && !this.originResult) {
+        this.originResult = res.data;
+      }
     }
     this.renderResults();
   }
 
-  public seedAndOpen(term: string): void {
+  public seedAndOpen(term: string, origin?: WordDiscoveryOrigin): void {
+    this.originSelection = origin ?? null;
+    this.activeOccurrenceAnchor = origin ?? null;
+    this.originResult = null;
+    this.currentMode = 'discover';
+    this.currentClusterId = undefined;
+    this.focusLemma = undefined;
+    this.compareTargets = undefined;
+    this.activeFilter = 'all';
     this.container.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    void this.runDiscovery(term, true);
+    void this.runDiscovery(term, true, origin ?? null);
   }
 
   public markNavigatedToReader(): void {
@@ -281,6 +340,31 @@ export class DiscoverConnectionsPanel {
     });
   }
 
+  private formatOriginLabel(origin: WordDiscoveryOrigin): string {
+    const bookName = BOOK_NAMES[origin.book - 1] ?? `Book ${origin.book}`;
+    const pos = origin.position != null ? ` pos ${origin.position}` : '';
+    return `${bookName} ${origin.chapter}:${origin.verse}${pos} · ${origin.strongs_nr}`;
+  }
+
+  private returnToInitialSelection(): void {
+    if (!this.originSelection) return;
+    const origin = this.originSelection;
+    this.awayFromDiscovery = false;
+    this.activeOccurrenceAnchor = origin;
+    this.currentQuery = origin.strongs_nr;
+    this.inputEl.value = origin.strongs_nr;
+    this.currentMode = 'discover';
+    this.currentClusterId = undefined;
+    this.focusLemma = undefined;
+    this.compareTargets = undefined;
+    this.activeFilter = 'all';
+    if (this.originResult) {
+      this.result = this.originResult;
+    }
+    this.renderResults();
+    this.callbacks.onReturnToOriginWord?.(origin);
+  }
+
   private renderReturnBar(): void {
     if (!this.awayFromDiscovery || !this.result) {
       this.returnBarSlot.innerHTML = '';
@@ -289,13 +373,19 @@ export class DiscoverConnectionsPanel {
     this.returnBarSlot.innerHTML = `
       <div class="discover-return-bar">
         <span>Inspecting passage from discovery: <strong>${esc(this.currentQuery)}</strong></span>
-        <button type="button" class="study-button primary js-return-discovery">← Return to discovery</button>
+        <div class="discover-return-bar__actions">
+          <button type="button" class="study-button primary js-return-discovery">← Return to discovery</button>
+          ${this.originSelection ? `<button type="button" class="study-button js-return-origin-selection">↩ Return to ${esc(this.formatOriginLabel(this.originSelection))}</button>` : ''}
+        </div>
       </div>
     `;
     this.returnBarSlot.querySelector<HTMLButtonElement>('.js-return-discovery')?.addEventListener('click', () => {
       this.awayFromDiscovery = false;
       this.renderReturnBar();
       this.container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    this.returnBarSlot.querySelector<HTMLButtonElement>('.js-return-origin-selection')?.addEventListener('click', () => {
+      this.returnToInitialSelection();
     });
   }
 
@@ -320,18 +410,31 @@ export class DiscoverConnectionsPanel {
     if (!this.result?.pagination.next_cursor || this.loading) return;
     this.loading = true;
     this.renderResults();
+    const anchor = this.activeOccurrenceAnchor;
     const res = await discoverBiblicalConnectionsRpc({
       query: this.currentQuery,
       mode: this.currentMode,
       cluster_id: this.currentClusterId,
       focus_lemma: this.focusLemma,
       compare_targets: this.compareTargets,
+      ...(anchor
+        ? {
+            word_id: anchor.word_id,
+            book: anchor.book,
+            chapter: anchor.chapter,
+            verse: anchor.verse,
+            position: anchor.position,
+            lemma_id: anchor.lemma_id,
+          }
+        : {}),
       filters: this.buildFilterPayload(),
       limit: 10,
       cursor: this.result.pagination.next_cursor,
     });
     this.loading = false;
-    if (res.data) {
+    if (res.error || !res.data) {
+      this.errorMsg = res.error || 'Could not load additional connections.';
+    } else {
       this.result = {
         ...res.data,
         strongest_connections: [...this.result.strongest_connections, ...res.data.strongest_connections],
@@ -366,18 +469,21 @@ export class DiscoverConnectionsPanel {
     this.renderResults();
   }
 
-  private async toggleEvidenceDrawer(evidenceId: string): Promise<void> {
-    if (this.openEvidenceIds.has(evidenceId)) {
+  private async toggleEvidenceDrawer(evidenceId: string, forceReload = false): Promise<void> {
+    if (!forceReload && this.openEvidenceIds.has(evidenceId)) {
       this.openEvidenceIds.delete(evidenceId);
       this.renderResults();
       return;
     }
     this.openEvidenceIds.add(evidenceId);
-    if (!this.evidenceCache.has(evidenceId)) {
+    if (forceReload || !this.evidenceCache.has(evidenceId)) {
+      this.evidenceErrors.delete(evidenceId);
       this.renderResults();
       const res = await getConnectionEvidenceRpc(evidenceId);
       if (res.data) {
         this.evidenceCache.set(evidenceId, res.data);
+      } else {
+        this.evidenceErrors.set(evidenceId, res.error || 'Evidence could not be loaded.');
       }
     }
     this.renderResults();
@@ -389,21 +495,52 @@ export class DiscoverConnectionsPanel {
         query: this.currentQuery,
         filter: this.activeFilter,
         mode: this.currentMode,
+        anchor: this.activeOccurrenceAnchor,
         result: this.result,
       });
+      if (this.previousStates.length > 8) this.previousStates.shift();
     }
+    const targetQuery = nodeId.startsWith('lemma:')
+      ? nodeId.slice(6).trim()
+      : nodeId.startsWith('passage:')
+        ? nodeId.slice(8).trim()
+        : (label.replace(/^[a-z]+:/i, '').trim() || nodeId.replace(/^[a-z]+:/i, '').trim());
     this.loading = true;
     this.errorMsg = null;
+    this.activeOccurrenceAnchor = null;
+    this.currentMode = 'discover';
+    this.currentClusterId = undefined;
+    this.focusLemma = undefined;
     this.renderResults();
-    const exp = await expandBiblicalConnectionRpc(nodeId, { limit: 8 });
+    const [exp, next] = await Promise.all([
+      expandBiblicalConnectionRpc(nodeId, { limit: 8 }),
+      discoverBiblicalConnectionsRpc({ query: targetQuery, limit: 10 }),
+    ]);
     this.loading = false;
-    if (exp.data && exp.data.connections.length > 0) {
-      const next = await discoverBiblicalConnectionsRpc({ query: label.replace(/^[a-z]+:/, ''), limit: 8 });
-      if (next.data) {
-        this.currentQuery = label;
-        this.inputEl.value = label;
-        this.result = next.data;
-      }
+    if (next.data) {
+      const seenIds = new Set(next.data.strongest_connections.map(c => c.evidence_id));
+      const extraConns = (exp.data?.connections || []).filter(c => !seenIds.has(c.evidence_id));
+      this.currentQuery = targetQuery;
+      this.inputEl.value = targetQuery;
+      this.result = extraConns.length
+        ? { ...next.data, strongest_connections: [...next.data.strongest_connections, ...extraConns] }
+        : next.data;
+    } else if (exp.data && exp.data.connections.length > 0 && this.result) {
+      this.currentQuery = targetQuery;
+      this.inputEl.value = targetQuery;
+      this.result = {
+        ...this.result,
+        strongest_connections: exp.data.connections,
+        controls_and_alternatives: exp.data.controls,
+        pagination: {
+          total_available: exp.data.connections.length,
+          returned: exp.data.connections.length,
+          next_cursor: exp.data.pagination.next_cursor,
+          has_more: exp.data.pagination.has_more,
+        },
+      };
+    } else {
+      this.errorMsg = next.error || exp.error || `Unable to expand ${targetQuery}.`;
     }
     this.renderResults();
   }
@@ -675,14 +812,52 @@ export class DiscoverConnectionsPanel {
     `;
   }
 
+  private renderOriginBanner(res: DiscoverConnectionsResult): string {
+    const occ = res.selected_occurrence;
+    const anchor = this.activeOccurrenceAnchor || this.originSelection;
+    if (!occ && !anchor && !res.discovery_scope) return '';
+
+    const bookNum = occ?.book ?? anchor?.book ?? null;
+    const chapNum = occ?.chapter ?? anchor?.chapter ?? null;
+    const verseNum = occ?.verse ?? anchor?.verse ?? null;
+    const posNum = occ?.position ?? anchor?.position ?? null;
+    const wordId = occ?.word_id ?? anchor?.word_id ?? null;
+    const bookName = bookNum ? (BOOK_NAMES[bookNum - 1] ?? `Book ${bookNum}`) : null;
+    const refText = occ?.reference || (bookName && chapNum != null && verseNum != null ? `${bookName} ${chapNum}:${verseNum}` : null);
+    const strongsText = anchor?.strongs_nr || occ?.lemma_id?.replace(/^lemma:/, '') || '';
+    const scriptText = anchor?.original_word ? `${anchor.original_word} (${anchor.transliteration})` : '';
+    const scopeText = res.discovery_scope?.scope_explanation ||
+      'Exact selected occurrence identity is preserved; discovery queries evaluate corpus-wide lemma and concept connections rather than claiming occurrence-exclusive discoveries.';
+
+    return `
+      <div class="discover-origin-banner">
+        <div class="discover-origin-banner__top">
+          <div>
+            <strong>Selected occurrence:</strong>
+            ${scriptText ? `<span class="original-script">${esc(scriptText)}</span> · ` : ''}
+            ${strongsText ? `<span>${esc(strongsText)}</span> · ` : ''}
+            ${refText ? `<span>${esc(refText)}${posNum != null ? ` position ${posNum}` : ''}</span>` : ''}
+            ${wordId != null ? ` <span class="study-muted">(STEP word_id ${wordId})</span>` : ''}
+            ${occ?.lemma_id ? ` <span class="study-muted">· ${esc(occ.lemma_id)}</span>` : ''}
+          </div>
+          ${this.originSelection ? `<button type="button" class="study-button js-return-origin-selection">↩ Return to initial word (${esc(this.formatOriginLabel(this.originSelection))})</button>` : ''}
+        </div>
+        <p class="discover-origin-banner__scope">${esc(scopeText)}</p>
+      </div>
+    `;
+  }
+
   private renderCard(c: R10ConnectionSummary): string {
     const isOpen = this.openEvidenceIds.has(c.evidence_id);
     const evData = this.evidenceCache.get(c.evidence_id);
+    const evErr = this.evidenceErrors.get(c.evidence_id);
     const isCaution = c.evidence_tier >= 5 || c.predicate === 'orthographic_overlap';
+    const verificationLabel = c.evidence_tier <= 4 ? 'Verified source evidence' : 'Candidate / hypothesis';
 
     return `
       <article class="discover-conn-card tier-${c.evidence_tier}" data-evidence-id="${esc(c.evidence_id)}">
         <div class="discover-conn-meta">
+          <span class="discover-badge ${isCaution ? 'is-caution' : ''}">${esc(verificationLabel)}</span>
           <span class="discover-badge ${isCaution ? 'is-caution' : ''}">${esc(tierBadgeLabel(c.evidence_tier, c.predicate))}</span>
           <span class="discover-badge">${esc(c.epistemic_class.replace(/_/g, ' '))}</span>
           <span class="study-muted">Score ${c.score} · ${c.witness_count} witness(es)</span>
@@ -697,9 +872,15 @@ export class DiscoverConnectionsPanel {
         <div class="discover-chips-row">
           ${c.passages.map(p => {
             const label = p.mt_ref ? `${p.ref} [MT ${p.mt_ref}]` : p.ref;
-            return `<button type="button" class="discover-chip js-nav-passage" data-book="${p.book}" data-chapter="${p.chapter}" data-verse="${p.verse}" data-strongs="${esc(c.original_words[0]?.strongs || '')}">${esc(label)} (${p.testament})</button>`;
+            return `<button type="button" class="discover-chip js-nav-passage" data-book="${p.book}" data-chapter="${p.chapter}" data-verse="${p.verse}" data-ref="${esc(label)}" data-strongs="${esc(c.original_words[0]?.strongs || '')}">${esc(label)} (${p.testament})</button>`;
           }).join('')}
-          ${c.original_words.map(w => `<button type="button" class="discover-chip js-expand-node" data-node="lemma:${esc(w.strongs || w.transliteration)}" data-label="${esc(w.transliteration || w.gloss)}">${esc(w.lemma_script)} ${esc(w.transliteration)} (${esc(w.gloss)})</button>`).join('')}
+          ${c.original_words.map(w => {
+            const code = w.strongs || w.lemma_key || w.transliteration;
+            return `
+              <button type="button" class="discover-chip js-expand-node" data-node="lemma:${esc(code)}" data-label="${esc(w.strongs || w.transliteration || w.gloss)}">Follow ${esc(w.lemma_script)} ${esc(w.transliteration)} (${esc(w.gloss)})</button>
+              ${w.strongs ? `<button type="button" class="discover-chip js-inspect-word" data-strongs="${esc(w.strongs)}" data-book="${c.passages[0]?.book ?? ''}" data-chapter="${c.passages[0]?.chapter ?? ''}" data-verse="${c.passages[0]?.verse ?? ''}">Inspect ${esc(w.strongs)}</button>` : ''}
+            `;
+          }).join('')}
         </div>
         <div class="discover-conn-actions">
           <button type="button" class="study-button js-toggle-evidence" data-evidence-id="${esc(c.evidence_id)}">${isOpen ? 'Hide evidence' : 'Inspect biblical evidence'}</button>
@@ -708,21 +889,29 @@ export class DiscoverConnectionsPanel {
           <button type="button" class="study-button js-card-compare" data-conn-id="${esc(c.connection_id)}" data-concepts="${esc(c.matched_concepts.join(' '))}">Compare</button>
           <button type="button" class="study-button js-card-challenge" data-conn-id="${esc(c.connection_id)}">Challenge</button>
         </div>
-        ${isOpen ? this.renderEvidenceDrawer(c.evidence_id, evData) : ''}
+        ${isOpen ? this.renderEvidenceDrawer(c.evidence_id, evData, evErr) : ''}
       </article>
     `;
   }
 
-  private renderEvidenceDrawer(evidenceId: string, evData?: ConnectionEvidenceResult): string {
+  private renderEvidenceDrawer(evidenceId: string, evData?: ConnectionEvidenceResult, evErr?: string): string {
+    if (evErr) {
+      return `<div class="discover-evidence-drawer"><p class="study-muted" style="color:var(--gold)">${esc(evErr)}</p><button type="button" class="study-button js-retry-evidence" data-evidence-id="${esc(evidenceId)}">Retry loading evidence</button></div>`;
+    }
     if (!evData) {
       return `<div class="discover-evidence-drawer"><p class="study-muted">Loading original-language evidence for ${esc(evidenceId)}…</p></div>`;
     }
     if (!evData.evidence) {
-      return `<div class="discover-evidence-drawer"><p class="study-muted">Detailed passage breakdown unavailable for this synthetic item.</p></div>`;
+      return `<div class="discover-evidence-drawer"><p class="study-muted">Detailed passage breakdown is unavailable for this connection item (${esc(evData.status)}).</p></div>`;
     }
+    const prov = evData.evidence.provenance;
+    const sourceRefs = (prov.source_record_ids || []).slice(0, 6);
+    const moreSourceCount = Math.max(0, (prov.source_record_ids || []).length - sourceRefs.length);
     return `
       <div class="discover-evidence-drawer">
-        <strong>Source Evidence & Provenance (${esc(evData.evidence.provenance.source_dataset)} · ${esc(evData.evidence.provenance.license)})</strong>
+        <strong>Source Evidence & Provenance (${esc(prov.source_dataset)} · ${esc(prov.license)})</strong>
+        ${sourceRefs.length > 0 ? `<p class="study-muted"><strong>Source references:</strong> ${esc(sourceRefs.join(', '))}${moreSourceCount > 0 ? ` (+${moreSourceCount} more)` : ''}</p>` : ''}
+        ${evData.evidence.limitations?.length ? `<ul class="discover-evidence-limitations">${evData.evidence.limitations.map(lim => `<li>${esc(lim)}</li>`).join('')}</ul>` : ''}
         ${evData.evidence.orthographic_analysis ? `<p class="study-muted"><strong>Consonants:</strong> ${esc(evData.evidence.orthographic_analysis.source_script)} [${esc(evData.evidence.orthographic_analysis.source_consonants)}] vs ${esc(evData.evidence.orthographic_analysis.target_script)} [${esc(evData.evidence.orthographic_analysis.target_consonants)}] — ${esc(evData.evidence.orthographic_analysis.etymology_warning)}</p>` : ''}
         ${evData.evidence.number_classification ? `<p class="study-muted"><strong>Number analysis:</strong> ${evData.evidence.number_classification.number_value} × ${esc(evData.evidence.number_classification.counted_entity)} (${esc(evData.evidence.number_classification.kind.replace(/_/g, ' '))}; coincidence risk: ${evData.evidence.number_classification.coincidence_risk})</p>` : ''}
         ${(evData.passage_details || []).map(pd => {
@@ -738,10 +927,15 @@ export class DiscoverConnectionsPanel {
             : (pd.english_edition ? `[${pd.english_edition}]` : '[WEB]');
           return `
             <div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border)">
-              <button type="button" class="reference-link js-nav-passage" data-book="${pd.passage.book}" data-chapter="${pd.passage.chapter}" data-verse="${pd.passage.verse}">${esc(pd.passage.ref)}${esc(mtRefLabel)} → Open in Reader</button>
+              <div class="discover-chips-row" style="margin-top:0">
+                <button type="button" class="reference-link js-nav-passage" data-book="${pd.passage.book}" data-chapter="${pd.passage.chapter}" data-verse="${pd.passage.verse}" data-ref="${esc(pd.passage.ref)}">${esc(pd.passage.ref)}${esc(mtRefLabel)} → Open in Reader</button>
+                <button type="button" class="discover-chip js-preview-passage" data-book="${pd.passage.book}" data-chapter="${pd.passage.chapter}" data-verse="${pd.passage.verse}" data-ref="${esc(pd.passage.ref)}">Preview passage</button>
+              </div>
               ${pd.english_text ? `<p style="margin:4px 0;font-size:13px">${esc(pd.english_text)} <span class="study-muted">${esc(editionLabel)}</span></p>` : ''}
               <div class="discover-token-strip">
-                ${dedupedTokens.slice(0, 26).map(tok => `<span class="discover-token-chip ${tok.is_highlighted ? 'is-hit' : ''}" title="${esc(tok.strongs)} · ${esc(tok.gloss)}"><strong>${esc(tok.surface)}</strong><br><small>${esc(tok.strongs)} ${esc(tok.gloss)}</small></span>`).join('')}
+                ${dedupedTokens.slice(0, 26).map(tok => tok.strongs
+                  ? `<button type="button" class="discover-token-chip ${tok.is_highlighted ? 'is-hit' : ''} js-inspect-word" data-strongs="${esc(tok.strongs)}" data-book="${pd.passage.book}" data-chapter="${pd.passage.chapter}" data-verse="${pd.passage.verse}" title="Inspect ${esc(tok.strongs)} · ${esc(tok.gloss)}"><strong>${esc(tok.surface)}</strong><br><small>${esc(tok.strongs)} ${esc(tok.gloss)}</small></button>`
+                  : `<span class="discover-token-chip ${tok.is_highlighted ? 'is-hit' : ''}" title="${esc(tok.gloss)}"><strong>${esc(tok.surface)}</strong><br><small>${esc(tok.gloss)}</small></span>`).join('')}
               </div>
             </div>
           `;
@@ -761,6 +955,14 @@ export class DiscoverConnectionsPanel {
       this.resultsSlot.innerHTML = '';
       return;
     }
+
+    const coverageInfo = res
+      ? [
+          res.search_metadata.scope ? `Scope: ${res.search_metadata.scope}` : null,
+          res.search_metadata.completeness_state ? `Coverage: ${res.search_metadata.completeness_state.replace(/_/g, ' ')}` : null,
+          res.search_metadata.bounded_by?.length ? `Bounded by: ${res.search_metadata.bounded_by.slice(0, 2).join('; ')}` : null,
+        ].filter(Boolean).join(' · ')
+      : '';
 
     this.resultsSlot.innerHTML = `
       ${res ? `
@@ -799,7 +1001,10 @@ export class DiscoverConnectionsPanel {
           <strong>Status: ${esc(res.status.toUpperCase())}</strong> · ${res.strongest_connections.length} of ${res.pagination.total_available} ranked connections shown · ${res.search_metadata.execution_ms} ms (${res.search_metadata.asset_requests_used} shard reads · ${res.search_metadata.exhaustive ? 'exhaustive' : 'bounded'})
           ${this.currentMode !== 'discover' ? ` · <span class="discover-badge is-mode">Mode: ${esc(this.currentMode.toUpperCase())}</span>` : ''}
           ${this.currentClusterId ? ` · <span class="study-muted">Cluster: ${esc(this.currentClusterId)}</span>` : ''}
+          ${coverageInfo ? `<div class="study-muted" style="margin:4px 0 0">${esc(coverageInfo)}</div>` : ''}
         </div>
+
+        ${this.renderOriginBanner(res)}
 
         ${this.renderConceptResolution(res.parsed_query.resolved_concepts)}
 
@@ -859,6 +1064,27 @@ export class DiscoverConnectionsPanel {
   }
 
   private bindResultEvents(): void {
+    this.resultsSlot.querySelector<HTMLButtonElement>('.js-return-origin-selection')?.addEventListener('click', () => {
+      this.returnToInitialSelection();
+    });
+
+    this.resultsSlot.querySelectorAll<HTMLButtonElement>('.js-retry-evidence').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.evidenceId;
+        if (id) void this.toggleEvidenceDrawer(id, true);
+      });
+    });
+
+    this.resultsSlot.querySelectorAll<HTMLButtonElement>('.js-preview-passage').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const book = Number(btn.dataset.book);
+        const chapter = Number(btn.dataset.chapter);
+        const verse = Number(btn.dataset.verse);
+        if (Number.isFinite(book) && Number.isFinite(chapter) && Number.isFinite(verse) && book > 0 && chapter > 0 && verse >= 0) {
+          this.callbacks.preview?.pin({ book, chapter, verse }, `Discovery evidence (${this.currentQuery})`);
+        }
+      });
+    });
     this.resultsSlot.querySelectorAll<HTMLButtonElement>('.js-filter-bucket').forEach(btn => {
       btn.addEventListener('click', () => {
         this.activeFilter = (btn.dataset.filter as FilterBucket) || 'all';
@@ -988,16 +1214,35 @@ export class DiscoverConnectionsPanel {
       btn.addEventListener('click', () => {
         const strongs = btn.dataset.strongs;
         if (strongs && this.callbacks.onInspectWordQuery) {
-          this.callbacks.onInspectWordQuery(strongs);
+          const book = Number(btn.dataset.book);
+          const chapter = Number(btn.dataset.chapter);
+          const verse = Number(btn.dataset.verse);
+          const passage: R10PassageRef | undefined =
+            Number.isFinite(book) && book > 0 && Number.isFinite(chapter) && chapter > 0 && Number.isFinite(verse) && verse >= 0
+              ? {
+                  verse_id: 0,
+                  ref: '',
+                  book,
+                  chapter,
+                  verse,
+                  testament: book <= 39 ? 'OT' : 'NT',
+                }
+              : undefined;
+          this.awayFromDiscovery = true;
+          this.renderReturnBar();
+          this.callbacks.onInspectWordQuery(strongs, passage);
         }
       });
     });
 
     this.resultsSlot.querySelectorAll<HTMLButtonElement>('.js-nav-passage').forEach(btn => {
+      const book = Number(btn.dataset.book);
+      const chapter = Number(btn.dataset.chapter);
+      const verse = Number(btn.dataset.verse);
+      if (Number.isFinite(book) && Number.isFinite(chapter) && Number.isFinite(verse) && book > 0 && chapter > 0 && verse >= 0) {
+        this.callbacks.preview?.attach(btn, { book, chapter, verse }, `Discovery evidence (${this.currentQuery})`);
+      }
       btn.addEventListener('click', () => {
-        const book = Number(btn.dataset.book);
-        const chapter = Number(btn.dataset.chapter);
-        const verse = Number(btn.dataset.verse);
         const strongs = btn.dataset.strongs || undefined;
         if (Number.isFinite(book) && Number.isFinite(chapter) && Number.isFinite(verse) && book > 0 && chapter > 0 && verse >= 0) {
           this.awayFromDiscovery = true;

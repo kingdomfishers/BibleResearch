@@ -56,9 +56,31 @@ const noteEditor = createNoteEditor({
 const discoverConnections = new DiscoverConnectionsPanel(
   app.querySelector<HTMLElement>('#discover-connections')!,
   {
+    preview,
     onNavigatePassage: (book, chapter, verse) => {
       navigate({ book, chapter, verse });
       app.querySelector('#reader')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    },
+    onInspectWordQuery: async (strongsOrLemma, passage) => {
+      const cleanCode = strongsOrLemma.replace(/^lemma:/i, '').trim();
+      const targetWordId = await BibleRPC.resolveWordId(cleanCode);
+      if (passage) {
+        navigate({ book: passage.book, chapter: passage.chapter, verse: passage.verse });
+      }
+      if (targetWordId && targetWordId > 0) {
+        selectWord(targetWordId);
+        app.querySelector('#inspector')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    },
+    onReturnToOriginWord: (origin) => {
+      const cur = appState.getPassage();
+      if (cur.book !== origin.book || cur.chapter !== origin.chapter || cur.verse !== origin.verse) {
+        selections.set(key(origin), { id: origin.word_id, position: origin.position, english: origin.english });
+        navigate({ book: origin.book, chapter: origin.chapter, verse: origin.verse });
+      } else {
+        selectWord(origin.word_id, origin.position, origin.english, undefined, false);
+      }
+      app.querySelector('#reader')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     },
   }
 );
@@ -66,7 +88,7 @@ const inspector = createWordInspector(
   preview, navigate,
   data => noteEditor.openNew({ passage: appState.getPassage(), selectedWord: data.word, selectedPosition: data.position }),
   prefill => noteEditor.openNew({ passage: appState.getPassage(), prefill }),
-  term => discoverConnections.seedAndOpen(term)
+  (term, origin) => discoverConnections.seedAndOpen(term, origin)
 );
 const passageXrefs = createPassageCrossReferences({
   onNavigate: navigate,
