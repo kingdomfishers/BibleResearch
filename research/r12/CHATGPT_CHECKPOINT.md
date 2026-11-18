@@ -331,3 +331,85 @@ Verify the BibleResearch staging MCP server tools and report exact returned JSON
    - get_septuagint_passage p_book_no=1, p_chapter=32, p_verse_nr=1 (confirm tokens[0].word_text="εἰς" and raw_source_word_text="XXXIIεἰς")
    - Check p_book_no=1 for 30:1, 31:1, 33:1 and p_book_no=2 (Exodus) 32:1, plus H0430 disambiguation and Psalm 3:0->LXX 3:1 controls.
 ```
+
+---
+
+## FOR CHATGPT — CLOUDFLARE 503 / CPU RECOVERY
+
+**Fix Commit SHA (`feat/r12-qa-fixes`):** `579cd49a720ee69f01f85cb7c334918d64f71ea2`
+**Website Worker (`bibleresearch`):** Unchanged (`d147114c-6a5c-4927-80ed-2a48877c2af4`, not redeployed).
+
+### 1. Root Cause of Production HTTP 503 / `exceededCpu`
+
+The frozen 239-case MCP benchmark (`research/r12/live_mcp_results_2026-11-18/current/manifest.json`) completed 44/60 attempted cases before hitting 16 failures (rows 41–60: 16/20 failed) and 164/168 sampled discovery Worker events reporting HTTP 503 (`exceededCpu` at the Cloudflare Free Plan **10 ms CPU limit**). Local V8 `workerd` profiling (`X-R12-Trace: 1` + `.cpuprofile`) identified five compound runtime causes:
+
+1. **Monolithic pilot load:** Cold requests fetched, gunzipped, and parsed the entire `r12-pilot.json.gz` (`1,113,145` B gz -> `10,099,953` B = `9.63 MiB` raw JSON) on every request, even for non-pilot queries (`~185–317 ms` CPU on local i7-8650U).
+2. **`readPackedRange` full-blob streaming (`207–418 MiB`/req):** Stage G hydrated up to 25 verses from `packed-discovery-0..7.bin` (`~21.6 MiB` blobs, offsets up to `19.3 MiB`). Because Cloudflare Workers `env.ASSETS.fetch` ignores HTTP `Range` headers and returns HTTP `200`, each lookup streamed and discarded tens of megabytes of prefix bytes in JS.
+3. **Cold `lemma-lookup` thrashing & unaligned buckets:** `lemma-lookup/shard-*.json.gz` (`~370 KiB` raw, `7,135` entries each) mixed with `MAX_LRU_SHARDS = 64` evicted shards across lookups; lowercase Strong's lookup keys (`"h0120"`) and uppercase profile keys (`"H0120"`) mapped to different 1024-buckets, forcing two `fast-profiles` shard reads per Strong's query.
+4. **Double-JSON + recursive deep-clone security wrapper (`15–28 ms` on warm/cold):** `withCorpusSecurity` (`scripts/corpus-security.mjs`) re-parsed `corpusWorker`'s already-stringified JSON via `await res.json()`, recursively cloned every object/array in `__stripRestrictedFields()`, and called `JSON.stringify()` a second time — costing `~15 ms` even on 0-read warm cache hits.
+5. **Retry amplification (`bible-mcp`):** Retrying HTTP `503`/`500` twice in `supabase/functions/bible-mcp/index.ts` turned single `exceededCpu` failures into `3x` Upstream Worker load alongside benchmark client retries (`164/168` sampled Worker events).
+
+Rows 1–40 survived only because 11 consecutive duplicate queries and small-occurrence lemmas (`G1953`, `H0231`, `G3088`) gave Cloudflare's isolate burst bucket intermittent recovery room; rows 41–60 had no consecutive duplicates and repeatedly hit the 10 ms hard cap.
+
+### 2. Offline Repacking & Runtime Changes Deployed (Zero Algorithm Changes)
+
+Discovery ranking weights, graph edges, candidate generation, semantic-hop rules, provenance, restrictions, and external semantic datasets were **NOT** modified.
+
+- **Idempotent offline asset repacking (`scripts/pack-r12-cpu-safe-assets.mjs` on `.artifacts-r12/staging-bundle`):**
+  - Preserved exact `20,000 / 20,000` static files (`max_individual_file_bytes = 22,131,013 <= 25 MiB`) and kept all existing R3–R11 files (`packed-discovery-0..7.bin`, `lemma-lookup/*`, `lemma-profiles/*`, `orthographic/*`, `r12-pilot.json.gz`) intact on disk.
+  - Enriched each of the `19,566` `LemmaProfile`s with pre-hydrated `first_occ_passages` (up to 25), `orth_entry` (`3,898`), and compacted `r12_pilot_anchor` (`48` anchors; verified `pilot_compaction_parity: PASS` across `1,152` multihop paths, `68` bridges, `239` structural parallels, `276` orthographic candidates).
+  - Repacked `1,024` `fast-profiles/shard-*.json.gz` as `r10-b64gz-1` co-locating Strong's `/^[hg]\d{4}$/` lookup keys into their uppercase profile bucket (`strongs_lookup_upper_bucket: true`, `16,384` sub-buckets across `456,129` entries), `488` `fast-verses/chunk-*.json.gz` (`31,203` summary tuples + base64-gz full verses), and `66` `evidence-passages/book-*.json.gz` (`r10-book-index-1`).
+  - Filtered `explicit-and-typology.json.gz` (`169 -> 24` records, `22,076` B gz), repacked `motifs-and-patterns.json.gz` as `r10-lazy-motifs-1`, and embedded `motifs_event_keywords` (`524` entries) + `r12_pilot_embedded: true` in `fast-manifest.json.gz` (`6,314` B gz).
+- **Runtime & Worker caching (`src/relationships/r10-discovery.ts`, `src/relationships/adjacency-loader.ts`, `scripts/corpus-worker.mjs`, `scripts/corpus-relationships-rpc.mjs`):**
+  - Added `direct_b64gz` per-entry decoding with native `Buffer.from(b64, 'base64')` + `gunzipSync`, pinned the immutable R10 metadata files in `pinnedBaseCache`, raised `MAX_LRU_SHARDS` to `256` (`16 MiB`), skipped `motifs-and-patterns.json.gz` unless a motif/event keyword matches, and fast-pathed `normalizeNumberPhrases`.
+- **Zero-copy security pass-through (`scripts/corpus-security.mjs`):**
+  - Registered `jsonResponse()` text via `registerFastJsonText` and bypassed double `JSON.parse` + recursive `__stripRestrictedFields` when `!__restrictedKeyPattern.test(rawText)`, while still parsing & redacting any response containing restricted keys (`semantic_frame`, `frame`, `greekstrong`, `sdbh`, `lexdomain`, `coredomain`, `contextualdomain`, `domain`, `ln`, `field_name`) or `\u00` escapes.
+- **MCP gateway retry policy (`supabase/functions/bible-mcp/index.ts`):**
+  - Removed HTTP `503` and `500` retries for `discover_biblical_connections_v1` and `discover_biblical_connections_v2` (`retryableCorpusStatuses = [502, 504]`), eliminating retry amplification while preserving all `46` tools (including all note tools), `22` prompts, auth, and `writes: "enabled"`.
+
+### 3. Live Deployment Identifiers
+
+| Service | Previous Baseline | New Live Production | Notes |
+|---|---|---|---|
+| **Corpus Worker (`bibleresearch-corpus`)** | Version `7f51d378-ecef-4022-bcbc-94123397c6ec` | Version **`cf2182ed-b3fc-4ab6-99ab-5590e7e8a075`** | `https://bibleresearch-corpus.kingdomfishers-custom.workers.dev`; release `r12-discovery-1`; `20,000` files |
+| **Static Bundle (`R12_ASSET_SHA256`)** | `c23272125b34f179237e1c61381ec0b3b92e282f6ae496194bf994` | **`a0715c17a2641b6acf0053695dd9aeb2c153400c71d730ee00201e4a06ccd17b`** | `packed_full_responses=0` across all 44 baseline cases |
+| **Main MCP (`bible-mcp`)** | Version **`42`** (`ea4402c3...`) | Version **`43`** (`ezbr_sha256: 55efd6c339b458fa2ca146cc991005c703518a561d2aad3e605cfd9392ae3824`) | `https://ejoperxiwxlcbsqrkrvb.supabase.co/functions/v1/bible-mcp/mcp`; `ACTIVE`, `verify_jwt: false`, `46` tools, `22` prompts, `writes: "enabled"` |
+
+### 4. Local Parity, Security & `workerd` Verification
+
+- `npm.cmd run check:types`: **PASS** (`exit 0`) | `npm.cmd run build`: **PASS** (`exit 0`, 104 modules) | `verify-r12-smoke.mjs`: **PASS** (`5/5`) | `verify-r12-packed-loading.mjs`: **PASS**.
+- **44/44 Regression Parity (`scripts/verify-r12-cpu-parity.mjs`, `.artifacts-r12/reports/cpu-parity-2026-11-18T22-51-34-053Z/report.json`):** **`44/44` PASS (`0` diffs)** against `batch_001_020.json`, `batch_021_040.json`, `batch_041_060.json`; `packed_full_responses_total = 0`; `packed_stream_bytes_total = 0`.
+- **Security Redaction Regression (`security_check.passed`):** **`PASS`** (`clean_registered_bypass`, `registered_restricted_redaction`, `unregistered_escaped_redaction`).
+- **Local `workerd` `1.20261116.1` CPU/IO (Intel Core i7-8650U @ 1.90 GHz with `50 us` V8 Inspector sampling overhead):**
+  - Cold isolates: Strong's (`H0120`, `G3088`, `H5869`, `H1285`) dropped to **`4` reads** (`414–506 KiB`, `motifs_skipped: true`; `47.2–175.4 ms` laptop sampled CPU, `48.7–184.8 ms` wall); `Genesis 1:1` `10` reads (`1,215 KiB`, `216.9 ms` CPU), `Exodus 12:15` `11` reads (`1,314 KiB`, `162.1 ms` CPU).
+  - Warm isolate / unseen queries (warmed only with `H0120`): unseen Strong's (`G3088`, `H5869`, `H1285`) did **`1` read** (`299–392 KiB`, `31.3–46.9 ms` sampled CPU, `35.1–50.8 ms` wall); `Genesis 1:1` `7` reads (`107.1 ms` CPU), `Exodus 12:15` `8` reads (`76.8 ms` CPU).
+  - Warm repeat (`0` reads, `0` decoded B): `7.1–38.8 ms` sampled CPU (includes GC / Inspector overhead; unprofiled repeat wall `11.9–29.6 ms` on Strong's, `19.1–23.7 ms` on `Gen 1:1`/`Exod 12:15`; `__stripRestrictedFields` `0 ms`).
+
+### 5. Live Production Smoke Test & Parity (Serial, Concurrency 1)
+
+- **Worker Security & Integrity:** `/__integrity/b7` HTTP `200` (`PASS_CANARIES`, `worker_version: cf2182ed-b3fc-4ab6-99ab-5590e7e8a075`, `asset_sha256: a0715c17a2641b6acf0053695dd9aeb2c153400c71d730ee00201e4a06ccd17b`); `/v1/catalog/metadata.json.gz` HTTP `403` (`raw_corpus_asset_access_disabled`).
+- **MCP `/health` & `tools/list`:** HTTP `200`, `46` tools registered (note tools & `discover_biblical_connections_v2` present), `22` prompts, `writes: "enabled"`, `corpus_target: "production"`.
+- **Pass 1 Direct Corpus Worker (`discover_biblical_connections_v2`, `{ limit: 25, max_hops: 5, mode: "discover" }`):**
+  - `H0120`: HTTP `200` (`761.5 ms`, `25` returned / `49` total)
+  - `G3088`: HTTP `200` (`566.4 ms`, `25` / `31`)
+  - `H5869`: HTTP `200` (`463.9 ms`, `25` / `57`)
+  - `H1285`: HTTP `200` (`228.9 ms`, `25` / `43`)
+  - `Genesis 1:1`: HTTP `200` (`1577.5 ms`, `25` / `177`)
+  - `Exodus 12:15`: HTTP `200` (`1651.2 ms`, `25` / `196`)
+- **Pass 1 Live MCP `tools/call` (`discover_biblical_connections_v2`):**
+  - `H0120` `200` (`377.3 ms`), `G3088` `200` (`181.4 ms`), `H5869` `200` (`125.1 ms`), `H1285` `200` (`124.7 ms`), `Genesis 1:1` `200` (`225.3 ms`), `Exodus 12:15` `200` (`244.6 ms`).
+- **Evidence Checks (`get_connection_evidence_v1` via live MCP):**
+  - `r12:path:H5869:G0457`: HTTP `200` (`726.3 ms`, `status: "ok"`, `predicate: "multihop_proof_path"`, passages returned)
+  - `r12:prop:G3088:H5216`: HTTP `200` (`694.3 ms`, `status: "ok"`, `predicate: "shared_external_property"`, passages returned)
+- **Live Parity (`H0120` `L001`, `G3088` `L027`, `H5869` `L011`, `H1285` `L006`):** **`4/4` exact match (`0` diffs)** against `research/r12/live_mcp_results_2026-11-18/current/batch_*.json`.
+- **Pass 2 Second Serial Live MCP Sample:**
+  - `H0120` `200` (`124.2 ms`), `G3088` `200` (`94.5 ms`), `H5869` `200` (`129.0 ms`), `H1285` `200` (`222.7 ms`), `Genesis 1:1` `200` (`102.3 ms`), `Exodus 12:15` `200` (`115.7 ms`).
+  - **Result:** `0` HTTP `503`, `0` HTTP `500`, `0` `exceededCpu`, `0` timeouts across all 22 live requests.
+
+### 6. Honest Remaining Limitations & Benchmark Resumption
+
+- This short serial live smoke test verifies end-to-end live recovery on the 6 smoke queries and 2 evidence lookups, **not** an exhaustive 239-query guarantee under Cloudflare Workers Free Plan's **10 ms hard CPU limit**: cold multi-lemma passage queries (such as `Genesis 1:1` / `Exodus 12:15`, which read `10–11` compressed shards on a fresh isolate) still consume more CPU on cold misses than single-Strong's queries (`4` cold reads / `1` warm-unseen read). If long serial batches encounter isolated cold `exceededCpu` events under Free-tier throttling, further splitting `fast-profiles` lookup sub-buckets or upgrading the Worker CPU tier may still be warranted.
+- **For ChatGPT — Resume the Frozen 239-Case Benchmark:**
+  - Definition file: `research/r12/R12_EXPECTED_CONNECTIONS_180_PLUS.json`
+  - Existing partial baseline (`60` attempted: `44` saved observations + `16` prior `TOOL_ERROR` + `179` untested): `research/r12/live_mcp_results_2026-11-18/current/` (`manifest.json`, `batch_001_020.json`, `batch_021_040.json`, `batch_041_060.json`, `review-matrix.csv`, `review-matrix.json`).
+  - Resume serially (`concurrency: 1`) against `https://ejoperxiwxlcbsqrkrvb.supabase.co/functions/v1/bible-mcp/mcp` for the 16 prior `TOOL_ERROR` cases and 179 `NOT_RUN_CPU_BLOCK` cases while keeping all benchmark definitions frozen.
