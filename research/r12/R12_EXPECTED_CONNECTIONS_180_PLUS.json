@@ -14,7 +14,9 @@
     "scoring": "Automatic candidate matching by aliases/IDs/references should be followed by evidence-aware adjudication; report PASS@K, PARTIAL, FAIL, UNSUPPORTED, NOT_PRECOMPUTED, ERROR, and NO_DATA separately.",
     "leakage": "Many queries intentionally name only the source anchor; target is held in expected. The suite is public and is NOT a sealed or independent statistical holdout. Never hardcode cases into the discovery algorithm.",
     "coverage": "Cases include beyond-pilot anchors; expected absence of precomputation must be recorded as coverage rather than evidence that the relationship is false.",
-    "classification": "explicit_text=direct attestation; explicit_intertext=quoted/referenced; lexical_relationship=language evidence; literary_wordplay=source-contextual form resemblance; orthographic_candidate=letters alone; candidate_intertext=plausible comparison, not authorial intent; external_world=modern claims not biblical proof."
+    "classification": "explicit_text=direct attestation; explicit_intertext=quoted/referenced; lexical_relationship=language evidence; literary_wordplay=source-contextual form resemblance; orthographic_candidate=letters alone; candidate_intertext=plausible comparison, not authorial intent; external_world=modern claims not biblical proof.",
+    "negative_controls": "Negative cases are NOT scored as failure just because their target word appears somewhere. Fail only when the system asserts/ranks the specified false causal, lexical, textual or theological relationship as supported, or gives a contradicted source claim. Inspect evidence provenance and epistemic status.",
+    "metrics": "Report PositiveRecall@K by category/difficulty and strict evidence-backed precision, negative assertion violation rate, target leakage, not_precomputed coverage, source verification rate, rank of first acceptable evidence, malformed evidence and latency independently."
   },
   "cases": [
     {
@@ -7808,6 +7810,872 @@
       },
       "review_status": "proposed_not_individually_verified",
       "polarity": "positive"
+    },
+    {
+      "id": "N001",
+      "category": "false_path_composition",
+      "difficulty": 4,
+      "query_type": "negative_control",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H1904",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "forbidden_claim": "Hagar is meaningfully related to an ostrich because separate passages mention daughter and birth",
+        "basis": "Valid grammatical edges from different events do not constitute endpoint support",
+        "acceptable_target_terms": [
+          "H3284",
+          "ostrich"
+        ],
+        "biblical_witnesses": [
+          "Genesis 16:15",
+          "Deuteronomy 14:15"
+        ],
+        "disallowed_rank_at_or_above": 10,
+        "expected_status": "MUST_NOT_ASSERT_AS_SUPPORTED",
+        "allowed_handling": "May mention only as weak exploratory association with clear qualification; never mark a false endpoint relation as direct/documented or repeat a fabricated external source."
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "suspicious_result.evidence_id"
+      },
+      "review_status": "proposed_negative_adjudication",
+      "polarity": "negative"
+    },
+    {
+      "id": "N002",
+      "category": "false_path_composition",
+      "difficulty": 4,
+      "query_type": "negative_control",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H5869",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "forbidden_claim": "Eye is related to angels because eye pity and spare connect through unrelated texts",
+        "basis": "Different clause witnesses cannot be composed as a single endpoint claim",
+        "acceptable_target_terms": [
+          "G0032",
+          "angel"
+        ],
+        "biblical_witnesses": [
+          "Deuteronomy 13:8",
+          "2 Peter 2:4"
+        ],
+        "disallowed_rank_at_or_above": 10,
+        "expected_status": "MUST_NOT_ASSERT_AS_SUPPORTED",
+        "allowed_handling": "May mention only as weak exploratory association with clear qualification; never mark a false endpoint relation as direct/documented or repeat a fabricated external source."
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "suspicious_result.evidence_id"
+      },
+      "review_status": "proposed_negative_adjudication",
+      "polarity": "negative"
+    },
+    {
+      "id": "N003",
+      "category": "false_path_composition",
+      "difficulty": 4,
+      "query_type": "negative_control",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "G3056",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "forbidden_claim": "Logos has a documented lexical relationship to kidney via unrelated graph hops",
+        "basis": "Source-backed edge chain is not a lexical relationship between endpoints",
+        "acceptable_target_terms": [
+          "H3629",
+          "kidney"
+        ],
+        "biblical_witnesses": [
+          "John 1:1",
+          "Jeremiah 17:10"
+        ],
+        "disallowed_rank_at_or_above": 10,
+        "expected_status": "MUST_NOT_ASSERT_AS_SUPPORTED",
+        "allowed_handling": "May mention only as weak exploratory association with clear qualification; never mark a false endpoint relation as direct/documented or repeat a fabricated external source."
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "suspicious_result.evidence_id"
+      },
+      "review_status": "proposed_negative_adjudication",
+      "polarity": "negative"
+    },
+    {
+      "id": "N004",
+      "category": "false_path_composition",
+      "difficulty": 4,
+      "query_type": "negative_control",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H1285",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "forbidden_claim": "Covenant meaningfully concerns wheel through isolated grammatical links",
+        "basis": "Unrelated grammatical links do not prove a covenant-wheel connection",
+        "acceptable_target_terms": [
+          "H0212",
+          "wheel"
+        ],
+        "biblical_witnesses": [
+          "Deuteronomy 4:23",
+          "Ezekiel 1:16"
+        ],
+        "disallowed_rank_at_or_above": 10,
+        "expected_status": "MUST_NOT_ASSERT_AS_SUPPORTED",
+        "allowed_handling": "May mention only as weak exploratory association with clear qualification; never mark a false endpoint relation as direct/documented or repeat a fabricated external source."
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "suspicious_result.evidence_id"
+      },
+      "review_status": "proposed_negative_adjudication",
+      "polarity": "negative"
+    },
+    {
+      "id": "N005",
+      "category": "sense_contamination",
+      "difficulty": 4,
+      "query_type": "negative_control",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H7307",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "forbidden_claim": "Every occurrence of ruach denotes physical moving air",
+        "basis": "Wind sense cannot import air physics into spirit senses",
+        "acceptable_target_terms": [
+          "wind",
+          "air",
+          "Spirit"
+        ],
+        "biblical_witnesses": [
+          "Genesis 1:2",
+          "Zechariah 4:6"
+        ],
+        "disallowed_rank_at_or_above": 25,
+        "expected_status": "MUST_NOT_ASSERT_AS_SUPPORTED",
+        "allowed_handling": "May mention only as weak exploratory association with clear qualification; never mark a false endpoint relation as direct/documented or repeat a fabricated external source."
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "suspicious_result.evidence_id"
+      },
+      "review_status": "proposed_negative_adjudication",
+      "polarity": "negative"
+    },
+    {
+      "id": "N006",
+      "category": "sense_contamination",
+      "difficulty": 4,
+      "query_type": "negative_control",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H5869",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "forbidden_claim": "The anatomical eye literally is a spring in all occurrences",
+        "basis": "Eye and spring senses of one lemma need exact contextual discrimination",
+        "acceptable_target_terms": [
+          "eye",
+          "spring",
+          "water"
+        ],
+        "biblical_witnesses": [
+          "Genesis 16:7",
+          "Zechariah 4:10"
+        ],
+        "disallowed_rank_at_or_above": 25,
+        "expected_status": "MUST_NOT_ASSERT_AS_SUPPORTED",
+        "allowed_handling": "May mention only as weak exploratory association with clear qualification; never mark a false endpoint relation as direct/documented or repeat a fabricated external source."
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "suspicious_result.evidence_id"
+      },
+      "review_status": "proposed_negative_adjudication",
+      "polarity": "negative"
+    },
+    {
+      "id": "N007",
+      "category": "sense_contamination",
+      "difficulty": 4,
+      "query_type": "negative_control",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H2233",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "forbidden_claim": "Every reference to descendants is a botanical seed able to germinate",
+        "basis": "Botanical property must not transfer to genealogical sense",
+        "acceptable_target_terms": [
+          "seed",
+          "offspring",
+          "plant"
+        ],
+        "biblical_witnesses": [
+          "Genesis 22:17",
+          "Genesis 1:11"
+        ],
+        "disallowed_rank_at_or_above": 25,
+        "expected_status": "MUST_NOT_ASSERT_AS_SUPPORTED",
+        "allowed_handling": "May mention only as weak exploratory association with clear qualification; never mark a false endpoint relation as direct/documented or repeat a fabricated external source."
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "suspicious_result.evidence_id"
+      },
+      "review_status": "proposed_negative_adjudication",
+      "polarity": "negative"
+    },
+    {
+      "id": "N008",
+      "category": "false_self_intersection",
+      "difficulty": 4,
+      "query_type": "negative_control",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "spirit wind",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "forbidden_claim": "One original token H7307 constitutes two distinct co-occurring Hebrew tokens in Genesis 1:2",
+        "basis": "Identical source token cannot constitute a two-token intersection",
+        "acceptable_target_terms": [
+          "r11:intersect:verse:H7307:H7307:2"
+        ],
+        "biblical_witnesses": [
+          "Genesis 1:2"
+        ],
+        "disallowed_rank_at_or_above": 25,
+        "expected_status": "MUST_NOT_ASSERT_AS_SUPPORTED",
+        "allowed_handling": "May mention only as weak exploratory association with clear qualification; never mark a false endpoint relation as direct/documented or repeat a fabricated external source."
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "suspicious_result.evidence_id"
+      },
+      "review_status": "proposed_negative_adjudication",
+      "polarity": "negative"
+    },
+    {
+      "id": "N009",
+      "category": "numerical_false_positive",
+      "difficulty": 4,
+      "query_type": "negative_control",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "three days resurrection",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "forbidden_claim": "Genesis 5:23 is a three-day resurrection because its number 365 contains digit three",
+        "basis": "365 years is not a three-day restoration event",
+        "acceptable_target_terms": [
+          "Genesis 5:23",
+          "365 years"
+        ],
+        "biblical_witnesses": [
+          "Genesis 5:23",
+          "1 Corinthians 15:4"
+        ],
+        "disallowed_rank_at_or_above": 10,
+        "expected_status": "MUST_NOT_ASSERT_AS_SUPPORTED",
+        "allowed_handling": "May mention only as weak exploratory association with clear qualification; never mark a false endpoint relation as direct/documented or repeat a fabricated external source."
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "suspicious_result.evidence_id"
+      },
+      "review_status": "proposed_negative_adjudication",
+      "polarity": "negative"
+    },
+    {
+      "id": "N010",
+      "category": "interpretive_overclaim",
+      "difficulty": 4,
+      "query_type": "negative_control",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Hosea 6:2",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "forbidden_claim": "Hosea explicitly quotes Jesus and names his death and resurrection",
+        "basis": "Hosea discusses corporate restoration; typological relevance is interpretation",
+        "acceptable_target_terms": [
+          "explicit prediction of Jesus",
+          "direct quote"
+        ],
+        "biblical_witnesses": [
+          "Hosea 6:2",
+          "1 Corinthians 15:4"
+        ],
+        "disallowed_rank_at_or_above": 25,
+        "expected_status": "MUST_NOT_ASSERT_AS_SUPPORTED",
+        "allowed_handling": "May mention only as weak exploratory association with clear qualification; never mark a false endpoint relation as direct/documented or repeat a fabricated external source."
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "suspicious_result.evidence_id"
+      },
+      "review_status": "proposed_negative_adjudication",
+      "polarity": "negative"
+    },
+    {
+      "id": "N011",
+      "category": "chronology_overclaim",
+      "difficulty": 4,
+      "query_type": "negative_control",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Exodus 12:15",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "forbidden_claim": "The feast explicitly commemorates sea crossing instead of Exodus departure",
+        "basis": "Separate liturgical explanation from later narrative crossing",
+        "acceptable_target_terms": [
+          "explicit festival of crossing",
+          "Sea festival"
+        ],
+        "biblical_witnesses": [
+          "Exodus 12:15",
+          "Exodus 12:39",
+          "Exodus 14:21"
+        ],
+        "disallowed_rank_at_or_above": 25,
+        "expected_status": "MUST_NOT_ASSERT_AS_SUPPORTED",
+        "allowed_handling": "May mention only as weak exploratory association with clear qualification; never mark a false endpoint relation as direct/documented or repeat a fabricated external source."
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "suspicious_result.evidence_id"
+      },
+      "review_status": "proposed_negative_adjudication",
+      "polarity": "negative"
+    },
+    {
+      "id": "N012",
+      "category": "physical_overclaim",
+      "difficulty": 4,
+      "query_type": "negative_control",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H4501",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "forbidden_claim": "Zechariah 4 directly asserts that its lampstand visibly emitted smoke",
+        "basis": "World physics must not rewrite the prophetic narrative",
+        "acceptable_target_terms": [
+          "smoking lampstand in Zechariah",
+          "literal smoke"
+        ],
+        "biblical_witnesses": [
+          "Zechariah 4:2",
+          "Zechariah 4:12"
+        ],
+        "disallowed_rank_at_or_above": 25,
+        "expected_status": "MUST_NOT_ASSERT_AS_SUPPORTED",
+        "allowed_handling": "May mention only as weak exploratory association with clear qualification; never mark a false endpoint relation as direct/documented or repeat a fabricated external source."
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "suspicious_result.evidence_id"
+      },
+      "review_status": "proposed_negative_adjudication",
+      "polarity": "negative"
+    },
+    {
+      "id": "N013",
+      "category": "etymology_overclaim",
+      "difficulty": 4,
+      "query_type": "negative_control",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Adam dam",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "forbidden_claim": "Adam derives historically from the root of blood because letters overlap",
+        "basis": "Orthographic overlap does not prove etymological derivation",
+        "acceptable_target_terms": [
+          "proven same root",
+          "derived from blood"
+        ],
+        "biblical_witnesses": [
+          "Genesis 2:7",
+          "Genesis 9:6"
+        ],
+        "disallowed_rank_at_or_above": 25,
+        "expected_status": "MUST_NOT_ASSERT_AS_SUPPORTED",
+        "allowed_handling": "May mention only as weak exploratory association with clear qualification; never mark a false endpoint relation as direct/documented or repeat a fabricated external source."
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "suspicious_result.evidence_id"
+      },
+      "review_status": "proposed_negative_adjudication",
+      "polarity": "negative"
+    },
+    {
+      "id": "N014",
+      "category": "authorial_intent_overclaim",
+      "difficulty": 4,
+      "query_type": "negative_control",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "scarlet Tamar Rahab",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "forbidden_claim": "The biblical authors explicitly identify the two scarlet threads as one prophecy",
+        "basis": "Shared color object is a candidate image not explicit authorial linkage",
+        "acceptable_target_terms": [
+          "explicit prophecy",
+          "identical referent"
+        ],
+        "biblical_witnesses": [
+          "Genesis 38:28",
+          "Joshua 2:18"
+        ],
+        "disallowed_rank_at_or_above": 25,
+        "expected_status": "MUST_NOT_ASSERT_AS_SUPPORTED",
+        "allowed_handling": "May mention only as weak exploratory association with clear qualification; never mark a false endpoint relation as direct/documented or repeat a fabricated external source."
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "suspicious_result.evidence_id"
+      },
+      "review_status": "proposed_negative_adjudication",
+      "polarity": "negative"
+    },
+    {
+      "id": "N015",
+      "category": "entity_conflation",
+      "difficulty": 4,
+      "query_type": "negative_control",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "G3088",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "forbidden_claim": "Individual portable lamp and multi-branched lampstand are physically the same object",
+        "basis": "Part versus container/support is not equivalence",
+        "acceptable_target_terms": [
+          "same object as menorah",
+          "identical"
+        ],
+        "biblical_witnesses": [
+          "Exodus 25:31",
+          "Matthew 5:15"
+        ],
+        "disallowed_rank_at_or_above": 25,
+        "expected_status": "MUST_NOT_ASSERT_AS_SUPPORTED",
+        "allowed_handling": "May mention only as weak exploratory association with clear qualification; never mark a false endpoint relation as direct/documented or repeat a fabricated external source."
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "suspicious_result.evidence_id"
+      },
+      "review_status": "proposed_negative_adjudication",
+      "polarity": "negative"
+    },
+    {
+      "id": "N016",
+      "category": "false_symbolism",
+      "difficulty": 4,
+      "query_type": "negative_control",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H8081",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "forbidden_claim": "Every use of olive oil means the Holy Spirit or fire without exception",
+        "basis": "One substance used in two settings cannot establish universal symbolism",
+        "acceptable_target_terms": [
+          "always symbolizes Spirit",
+          "certain identity"
+        ],
+        "biblical_witnesses": [
+          "Exodus 27:20",
+          "1 Samuel 16:13"
+        ],
+        "disallowed_rank_at_or_above": 25,
+        "expected_status": "MUST_NOT_ASSERT_AS_SUPPORTED",
+        "allowed_handling": "May mention only as weak exploratory association with clear qualification; never mark a false endpoint relation as direct/documented or repeat a fabricated external source."
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "suspicious_result.evidence_id"
+      },
+      "review_status": "proposed_negative_adjudication",
+      "polarity": "negative"
+    },
+    {
+      "id": "N017",
+      "category": "source_provenance",
+      "difficulty": 4,
+      "query_type": "negative_control",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "G3088",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "forbidden_claim": "An invented wd combustion fuel GUID is an authentic structured Wikidata claim",
+        "basis": "Modern property claims require an actual original statement or explicit derived status",
+        "acceptable_target_terms": [
+          "wd:combustion_fuel_agent",
+          "synthetic Wikidata GUID"
+        ],
+        "biblical_witnesses": [
+          "Exodus 27:20",
+          "Matthew 5:15"
+        ],
+        "disallowed_rank_at_or_above": 25,
+        "expected_status": "MUST_NOT_ASSERT_AS_SUPPORTED",
+        "allowed_handling": "May mention only as weak exploratory association with clear qualification; never mark a false endpoint relation as direct/documented or repeat a fabricated external source."
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "suspicious_result.evidence_id"
+      },
+      "review_status": "proposed_negative_adjudication",
+      "polarity": "negative"
+    },
+    {
+      "id": "N018",
+      "category": "quantity_overclaim",
+      "difficulty": 4,
+      "query_type": "negative_control",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Jonah 1:17",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "forbidden_claim": "All three-days formulations require exactly 72 elapsed hours",
+        "basis": "Cannot infer universal exact elapsed duration from idiomatic formulation alone",
+        "acceptable_target_terms": [
+          "exact 72 hours",
+          "universal rule"
+        ],
+        "biblical_witnesses": [
+          "Jonah 1:17",
+          "Matthew 12:40"
+        ],
+        "disallowed_rank_at_or_above": 25,
+        "expected_status": "MUST_NOT_ASSERT_AS_SUPPORTED",
+        "allowed_handling": "May mention only as weak exploratory association with clear qualification; never mark a false endpoint relation as direct/documented or repeat a fabricated external source."
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "suspicious_result.evidence_id"
+      },
+      "review_status": "proposed_negative_adjudication",
+      "polarity": "negative"
+    },
+    {
+      "id": "N019",
+      "category": "theology_overclaim",
+      "difficulty": 4,
+      "query_type": "negative_control",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Revelation 4:5",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "forbidden_claim": "Seven spirits are seven independent gods because lamps are seven",
+        "basis": "Vision does not assert seven independent deities",
+        "acceptable_target_terms": [
+          "seven gods",
+          "separate deities"
+        ],
+        "biblical_witnesses": [
+          "Revelation 4:5",
+          "Revelation 5:6"
+        ],
+        "disallowed_rank_at_or_above": 25,
+        "expected_status": "MUST_NOT_ASSERT_AS_SUPPORTED",
+        "allowed_handling": "May mention only as weak exploratory association with clear qualification; never mark a false endpoint relation as direct/documented or repeat a fabricated external source."
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "suspicious_result.evidence_id"
+      },
+      "review_status": "proposed_negative_adjudication",
+      "polarity": "negative"
+    },
+    {
+      "id": "N020",
+      "category": "typology_overclaim",
+      "difficulty": 4,
+      "query_type": "negative_control",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Exodus 14:21",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "forbidden_claim": "Crossing physically administered later Christian sacramental ceremony to Israelites",
+        "basis": "Paul's baptismal analogy is not account of a later ritual performed there",
+        "acceptable_target_terms": [
+          "literal sacrament",
+          "Christian baptism ceremony"
+        ],
+        "biblical_witnesses": [
+          "Exodus 14:21",
+          "1 Corinthians 10:2"
+        ],
+        "disallowed_rank_at_or_above": 25,
+        "expected_status": "MUST_NOT_ASSERT_AS_SUPPORTED",
+        "allowed_handling": "May mention only as weak exploratory association with clear qualification; never mark a false endpoint relation as direct/documented or repeat a fabricated external source."
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "suspicious_result.evidence_id"
+      },
+      "review_status": "proposed_negative_adjudication",
+      "polarity": "negative"
+    },
+    {
+      "id": "N021",
+      "category": "generic_hub",
+      "difficulty": 4,
+      "query_type": "negative_control",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H1285",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "forbidden_claim": "Covenant is meaningful related to every word sharing a generic verb",
+        "basis": "High-degree grammar hub cannot alone prove related endpoints",
+        "acceptable_target_terms": [
+          "every word related",
+          "universal link"
+        ],
+        "biblical_witnesses": [
+          "Deuteronomy 4:23",
+          "Exodus 34:10"
+        ],
+        "disallowed_rank_at_or_above": 10,
+        "expected_status": "MUST_NOT_ASSERT_AS_SUPPORTED",
+        "allowed_handling": "May mention only as weak exploratory association with clear qualification; never mark a false endpoint relation as direct/documented or repeat a fabricated external source."
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "suspicious_result.evidence_id"
+      },
+      "review_status": "proposed_negative_adjudication",
+      "polarity": "negative"
+    },
+    {
+      "id": "N022",
+      "category": "source_scope",
+      "difficulty": 4,
+      "query_type": "negative_control",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H1904",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "forbidden_claim": "Hagar in Genesis 16 bore daughters of David in 1 Chronicles 14",
+        "basis": "Participants of unrelated birth events must not merge",
+        "acceptable_target_terms": [
+          "Hagar daughter of David",
+          "same subject"
+        ],
+        "biblical_witnesses": [
+          "Genesis 16:15",
+          "1 Chronicles 14:3"
+        ],
+        "disallowed_rank_at_or_above": 25,
+        "expected_status": "MUST_NOT_ASSERT_AS_SUPPORTED",
+        "allowed_handling": "May mention only as weak exploratory association with clear qualification; never mark a false endpoint relation as direct/documented or repeat a fabricated external source."
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "suspicious_result.evidence_id"
+      },
+      "review_status": "proposed_negative_adjudication",
+      "polarity": "negative"
+    },
+    {
+      "id": "N023",
+      "category": "source_provenance",
+      "difficulty": 4,
+      "query_type": "negative_control",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H2091",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "forbidden_claim": "A source claim can be fabricated by appending a new target QID to an unrelated Wikidata statement GUID",
+        "basis": "Exact QID predicate target qualifiers must match pinned original claim",
+        "acceptable_target_terms": [
+          "synthetic claim ID",
+          "invented statement"
+        ],
+        "biblical_witnesses": [
+          "Exodus 25:3",
+          "Numbers 31:22"
+        ],
+        "disallowed_rank_at_or_above": 25,
+        "expected_status": "MUST_NOT_ASSERT_AS_SUPPORTED",
+        "allowed_handling": "May mention only as weak exploratory association with clear qualification; never mark a false endpoint relation as direct/documented or repeat a fabricated external source."
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "suspicious_result.evidence_id"
+      },
+      "review_status": "proposed_negative_adjudication",
+      "polarity": "negative"
+    },
+    {
+      "id": "N024",
+      "category": "structural_feature_inflation",
+      "difficulty": 4,
+      "query_type": "negative_control",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H5869",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "forbidden_claim": "Three restatements of lifted eyes syntax prove three independent scene mechanisms",
+        "basis": "Correlated clause role feature encodings are not independent",
+        "acceptable_target_terms": [
+          "three independent mechanisms",
+          "perfect proof"
+        ],
+        "biblical_witnesses": [
+          "1 Chronicles 21:16",
+          "2 Samuel 18:24"
+        ],
+        "disallowed_rank_at_or_above": 25,
+        "expected_status": "MUST_NOT_ASSERT_AS_SUPPORTED",
+        "allowed_handling": "May mention only as weak exploratory association with clear qualification; never mark a false endpoint relation as direct/documented or repeat a fabricated external source."
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "suspicious_result.evidence_id"
+      },
+      "review_status": "proposed_negative_adjudication",
+      "polarity": "negative"
     }
   ]
 }
