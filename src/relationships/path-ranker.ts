@@ -10,6 +10,10 @@ import type {
   MultiHopPath,
   PathExplanation,
   PathStep,
+  R12DestinationRecommendation,
+  R12EpistemicLayer,
+  R12ProofStepInput,
+  R12ScoredPath,
   RankingFactors,
   RankingSummary,
 } from './multihop-types.ts';
@@ -355,4 +359,443 @@ export function compareMultiHopPaths(a: MultiHopPath, b: MultiHopPath): number {
   if (b.ranking.score !== a.ranking.score) return b.ranking.score - a.ranking.score;
   if (a.hop_count !== b.hop_count) return a.hop_count - b.hop_count;
   return a.path_id.localeCompare(b.path_id);
+}
+
+// === @section:logic:r12-proof-ranker ===
+/**
+ * Authoritative TypeScript integration of research/r12/proof-ranker.mjs.
+ * Scores are heuristic discovery priorities, NEVER theological probabilities.
+ */
+export const R12_SCORE_VERSION = 'r12-ranker-v1';
+
+const R12_EPISTEMIC_LAYERS = new Set<R12EpistemicLayer>([
+  'TEXTUAL',
+  'LINGUISTIC',
+  'EXTERNAL_WORLD',
+  'HYPOTHESIS',
+  'RECEPTION',
+]);
+
+export const ADMIN_PREDICATES = new Set<string>([
+  'sense_subdivision_of',
+  'has_sense_subdivision',
+  'occurrence_of_lemma',
+  'lemma_has_occurrence',
+  'canonical_alias_of',
+]);
+
+function clamp01(x: number): number {
+  return Math.max(0, Math.min(1, x));
+}
+
+function uniqueSorted(values: string[]): string[] {
+  return [...new Set(values)].sort();
+}
+
+function round6(n: number): number {
+  return Number(n.toFixed(6));
+}
+
+function jaccardSet(a: string[], b: string[]): number {
+  const A = new Set(a);
+  const B = new Set(b);
+  if (A.size === 0 && B.size === 0) return 0;
+  let inter = 0;
+  for (const x of A) if (B.has(x)) inter += 1;
+  return inter / (A.size + B.size - inter || 1);
+}
+
+function geometricMean(values: number[]): number {
+  if (values.length === 0) return 0;
+  let sumLog = 0;
+  for (const v of values) {
+    sumLog += Math.log(Math.max(1e-6, Math.min(1, v)));
+  }
+  return Math.exp(sumLog / values.length);
+}
+
+export function computeFeatureIdf(totalDocs: number, docFreq: number): number {
+  const N = Math.max(1, totalDocs);
+  const df = Math.max(0, docFreq);
+  return Math.log((N + 1) / (df + 1)) + 1;
+}
+
+export function mapLayerToR12Epistemic(
+  step: Pick<PathStep, 'layer' | 'predicate' | 'quality' | 'source_relationship_id' | 'epistemic_class'>,
+): R12EpistemicLayer {
+  if (step.source_relationship_id.startsWith('ext:') || step.predicate === 'SHARES_EXTERNAL_PROPERTY') {
+    return 'EXTERNAL_WORLD';
+  }
+  if (
+    step.quality === 'candidate' ||
+    step.quality === 'candidate_relation' ||
+    step.epistemic_class === 'interpretive_hypothesis' ||
+    step.predicate === 'SHARES_STRUCTURAL_PATTERN' ||
+    step.predicate === 'SHARES_ORTHOGRAPHIC_FORM'
+  ) {
+    return 'HYPOTHESIS';
+  }
+  if (step.layer === 'grammatical') return 'TEXTUAL';
+  if (step.layer === 'lexical' || step.layer === 'lxx_translation') return 'LINGUISTIC';
+  if (step.layer === 'contextual') {
+    return (step.epistemic_class === 'statistical_association') ? 'LINGUISTIC' : 'TEXTUAL';
+  }
+  return 'LINGUISTIC';
+}
+
+function canonicalEndpointPair(a: string, b: string): string {
+  return a <= b ? `${a}<->${b}` : `${b}<->${a}`;
+}
+
+/**
+ * Extracts independent biblical attestation group IDs for a step.
+ * - Deduplicates mirrored edges (outgoing/incoming of same clause/statement).
+ * - Deduplicates parallel Greek editions (nestle1904/sblgnt) on the same canonical ref/clause.
+ * - Returns [] for external-world assertions so external claims never inflate biblical convergence C.
+ */
+export function extractAttestationGroups(
+  step: Pick<
+    PathStep,
+    'layer' | 'predicate' | 'quality' | 'source_relationship_id' | 'epistemic_class' | 'from_entity' | 'to_entity' | 'evidence_summary'
+  >,
+): string[] {
+  const epistLayer = mapLayerToR12Epistemic(step);
+  if (epistLayer === 'EXTERNAL_WORLD') return [];
+
+  const groups = new Set<string>();
+  const pair = canonicalEndpointPair(step.from_entity.entity_key, step.to_entity.entity_key);
+  const witnesses = step.evidence_summary?.sample_witnesses || [];
+
+  if (step.layer === 'grammatical') {
+    for (const w of witnesses) {
+      const clauseId = w.source_clause_id || (w.relation_id ? w.relation_id.split('#')[1]?.split(':')[0] : '') || w.frame_id || '';
+      const normRef = w.reference || '';
+      if (normRef || clauseId) {
+        // Edition-independent canonical ref + clause key collapses parallel editions (nestle1904/sblgnt)
+        // and symmetric reversed edges into one independent source group.
+        groups.add(`gram:${normRef}:${clauseId}`);
+      }
+    }
+    if (groups.size === 0) {
+      for (const r of step.evidence_summary?.sample_references || []) {
+        groups.add(`gram_ref:${r}:${step.predicate}`);
+      }
+    }
+    if (groups.size === 0) {
+      groups.add(`gram_rel:${step.source_relationship_id}:${pair}`);
+    }
+  } else if (step.layer === 'lexical') {
+    groups.add(`lex:${step.predicate}:${pair}`);
+  } else if (step.layer === 'lxx_translation') {
+    groups.add(`lxx:catss:${pair}`);
+  } else if (step.layer === 'contextual') {
+    const refs = (step.evidence_summary?.sample_references || []).slice(0, 6);
+    if (refs.length > 0) {
+      for (const r of refs) groups.add(`ctx:${r}:${pair}`);
+    } else {
+      groups.add(`ctx:${step.source_relationship_id}:${pair}`);
+    }
+  }
+  return [...groups].sort();
+}
+
+export function pathStepToR12ProofStep(
+  step: PathStep,
+  options: { totalGraphDocs?: number; featureDf?: number; featureIdf?: number } = {},
+): R12ProofStepInput {
+  const isAdmin = ADMIN_PREDICATES.has(step.predicate) || ADMIN_PREDICATES.has(step.display_predicate);
+  const epistLayer = mapLayerToR12Epistemic(step);
+
+  // Quality weight in (0, 1] reflecting reliability, predicate specificity, witness support, and source scope
+  let q = 0.72;
+  if (step.layer === 'grammatical') {
+    const spec = (GRAMMATICAL_SPECIFICITY[step.predicate] ?? 18) / 30;
+    const baseQ = step.quality === 'source_explicit' ? 0.96 : step.quality === 'rule_derived' ? 0.86 : 0.68;
+    q = Math.min(1, Math.max(0.45, baseQ * (0.72 + 0.28 * spec)));
+  } else if (step.layer === 'lexical') {
+    q = isAdmin ? 0.98 : step.quality === 'attested_lexicon' || step.quality === 'attested_lexical_fact' ? 0.92 : 0.80;
+  } else if (step.layer === 'lxx_translation') {
+    const share = clamp01(step.evidence_summary.translation_share ?? 0.35);
+    q = step.uncertainty.homograph_ambiguity ? 0.62 : 0.72 + 0.20 * share;
+  } else if (step.layer === 'contextual') {
+    const colloc = step.evidence_summary.collocation_distance_le_3 ?? 0;
+    const sameClause = step.evidence_summary.same_clause ?? 0;
+    q = colloc > 0 ? 0.74 : sameClause > 0 ? 0.66 : 0.54;
+  }
+  if (step.uncertainty.is_uncertain) q *= 0.88;
+  q = Math.min(1, Math.max(0.1, round6(q)));
+
+  const passages = step.evidence_summary?.distinct_passages ?? step.evidence_summary?.same_verse ?? 100;
+  const featureIdf =
+    options.featureIdf ??
+    computeFeatureIdf(options.totalGraphDocs ?? 31203, options.featureDf ?? Math.max(1, passages));
+
+  const dir: R12ProofStepInput['direction'] =
+    step.traversal_direction === 'forward'
+      ? 'forward'
+      : step.traversal_direction === 'reverse'
+        ? 'reverse'
+        : 'symmetric';
+
+  const mappingStatus: R12ProofStepInput['mapping_status'] =
+    step.uncertainty?.mapping_status === 'candidate'
+      ? 'candidate'
+      : step.uncertainty?.mapping_status === 'unmapped'
+        ? 'unmapped'
+        : 'verified';
+
+  const passageIds = uniqueSorted([
+    ...(step.evidence_summary?.sample_references || []),
+    ...(step.evidence_summary?.sample_witnesses || []).map((w) => w.reference).filter(Boolean),
+  ]);
+
+  return {
+    edge_id: `${step.source_relationship_id}:${step.from_entity.entity_key}->${step.to_entity.entity_key}`,
+    from_id: step.from_entity.entity_key,
+    to_id: step.to_entity.entity_key,
+    relation_type: step.display_predicate || step.predicate,
+    direction: dir,
+    reversed: step.traversal_direction === 'reverse',
+    epistemic_layer: epistLayer,
+    quality_weight: q,
+    administrative: isAdmin,
+    mapping_status: mappingStatus,
+    attestation_groups: extractAttestationGroups(step),
+    passage_ids: passageIds,
+    feature_idf: round6(featureIdf),
+    intermediate_degree: step.to_entity.degree_hint ?? 0,
+    source_dataset: step.provenance?.dataset || 'BibleResearch Corpus',
+  };
+}
+
+function buildR12PathKey(steps: R12ProofStepInput[]): string {
+  return steps.map((s) => `${s.edge_id}${s.reversed ? ':reverse' : ''}`).join('>');
+}
+
+export function scoreR12Path(
+  path: {
+    path_id?: string;
+    anchor_id: string;
+    target_id: string;
+    steps: R12ProofStepInput[];
+  },
+  opts: {
+    maxGraphDegree?: number;
+    allowReception?: boolean;
+    max_hops?: number;
+    max_physical_hops?: number;
+    score_version?: string;
+  } = {},
+): R12ScoredPath {
+  if (!path || !Array.isArray(path.steps) || path.steps.length === 0) {
+    throw new TypeError('Nonempty path required');
+  }
+  const maxPhysical = opts.max_physical_hops ?? 10;
+  const maxMeaningful = opts.max_hops ?? 5;
+  if (path.steps.length > maxPhysical) {
+    throw new RangeError(`Path physical steps (${path.steps.length}) exceed max_physical_hops (${maxPhysical})`);
+  }
+
+  const MAX = opts.maxGraphDegree ?? 5000;
+  const semantic = path.steps.filter((s) => !s.administrative);
+  if (semantic.length === 0) {
+    throw new TypeError('Path with only administrative steps');
+  }
+  if (semantic.length > maxMeaningful) {
+    throw new RangeError(`Path meaningful hops (${semantic.length}) exceed max_hops (${maxMeaningful})`);
+  }
+
+  for (const s of path.steps) {
+    if (!s.edge_id || !s.relation_type || !R12_EPISTEMIC_LAYERS.has(s.epistemic_layer)) {
+      throw new TypeError('Missing typed step');
+    }
+    if (!s.administrative && (!(s.quality_weight > 0) || s.quality_weight > 1)) {
+      throw new RangeError('Quality weight must be within (0, 1]');
+    }
+    if (s.mapping_status === 'unsupported' || (s.epistemic_layer === 'RECEPTION' && !opts.allowReception)) {
+      throw new TypeError('Unsupported/reception step in primary path');
+    }
+  }
+
+  const Q = geometricMean(semantic.map((s) => s.quality_weight)) * Math.pow(0.95, Math.max(0, semantic.length - 2));
+  const freq = semantic.map((s) => clamp01(((s.feature_idf ?? 1) - 1) / 5));
+  const D = freq.reduce((a, b) => a + b, 0) / freq.length;
+  const types = uniqueSorted(semantic.map((s) => s.relation_type));
+  const T = Math.min(1, types.length / 4);
+  const hubDegree = semantic.map((s) => Math.max(0, s.intermediate_degree ?? 0));
+  const penalty =
+    (0.10 * hubDegree.reduce((a, n) => a + Math.min(1, Math.log1p(n) / Math.log1p(MAX)), 0)) / hubDegree.length;
+
+  // External-world claims must never add independent biblical attestation groups
+  const groups = uniqueSorted(
+    path.steps.flatMap((s) =>
+      s.epistemic_layer === 'EXTERNAL_WORLD' || !Array.isArray(s.attestation_groups) ? [] : s.attestation_groups,
+    ),
+  );
+
+  const hypothesis = semantic.some(
+    (s) =>
+      s.epistemic_layer === 'HYPOTHESIS' ||
+      s.epistemic_layer === 'EXTERNAL_WORLD' ||
+      s.mapping_status === 'candidate',
+  );
+  const priority = clamp01(0.45 * Q + 0.15 * D + 0.10 * T - penalty);
+  const pathKey = buildR12PathKey(path.steps);
+  const pathId = path.path_id || `r12p:${fnv1a64Hex(`${path.anchor_id}|${path.target_id}|${pathKey}`).slice(0, 16)}`;
+
+  return {
+    path_id: pathId,
+    path_key: pathKey,
+    anchor_id: path.anchor_id,
+    target_id: path.target_id,
+    steps: path.steps,
+    score_version: opts.score_version ?? R12_SCORE_VERSION,
+    meaningful_hops: semantic.length,
+    physical_hops: path.steps.length,
+    Q: round6(Q),
+    D: round6(D),
+    T: round6(T),
+    hub_penalty: round6(penalty),
+    partial_interest: round6(priority),
+    independent_evidence_groups: groups,
+    edge_ids: uniqueSorted(path.steps.map((s) => s.edge_id)),
+    passage_ids: uniqueSorted(path.steps.flatMap((s) => (Array.isArray(s.passage_ids) ? s.passage_ids : []))),
+    relation_types: types,
+    epistemic_status: hypothesis ? 'EXPLORATORY' : 'SUPPORTED_STEPS_NOT_ENDPOINT_INTERPRETATION',
+    score_parts: {
+      Q: round6(Q),
+      D: round6(D),
+      T: round6(T),
+      hub_penalty: round6(penalty),
+    },
+  };
+}
+
+function r12PathOverlap(a: R12ScoredPath, b: R12ScoredPath): number {
+  return (
+    (jaccardSet(a.edge_ids, b.edge_ids) +
+      jaccardSet(a.passage_ids, b.passage_ids) +
+      jaccardSet(a.relation_types, b.relation_types)) /
+    3
+  );
+}
+
+export function rankR12DiscoveryDestinations(
+  paths: Array<{
+    path_id?: string;
+    anchor_id: string;
+    target_id: string;
+    steps: R12ProofStepInput[];
+  }>,
+  opts: {
+    top_n?: number;
+    limit?: number;
+    mmrPenalty?: number;
+    max_alternatives?: number;
+    maxGraphDegree?: number;
+    allowReception?: boolean;
+    max_hops?: number;
+    max_physical_hops?: number;
+    score_version?: string;
+  } = {},
+): {
+  top: R12DestinationRecommendation[];
+  tail: R12DestinationRecommendation[];
+  next_cursor: string | null;
+  score_version: string;
+  coverage: 'ranked_top_n' | 'complete_candidate_pool';
+  unreturned_destinations: number;
+} {
+  const selectedMax = opts.top_n ?? opts.limit ?? 24;
+  const mmrPenalty = opts.mmrPenalty ?? 0.35;
+  const maxAlts = opts.max_alternatives ?? 3;
+  const scoreVersion = opts.score_version ?? R12_SCORE_VERSION;
+
+  const scored = paths.map((p) => scoreR12Path(p, { ...opts, score_version: scoreVersion }));
+  const grouped = new Map<string, R12ScoredPath[]>();
+  for (const path of scored) {
+    if (!path.anchor_id || !path.target_id) {
+      throw new TypeError('Path needs canonical anchor and target');
+    }
+    if (path.anchor_id === path.target_id) continue;
+    const key = `${path.anchor_id}\u001f${path.target_id}`;
+    const bucket = grouped.get(key) || [];
+    if (!bucket.some((existing) => existing.path_key === path.path_key)) {
+      bucket.push(path);
+      grouped.set(key, bucket);
+    }
+  }
+
+  const pool: R12DestinationRecommendation[] = [];
+  for (const group of grouped.values()) {
+    group.sort((a, b) => b.partial_interest - a.partial_interest || a.path_key.localeCompare(b.path_key));
+    const attestations = uniqueSorted(group.flatMap((p) => p.independent_evidence_groups));
+    const g = attestations.length;
+    const C = round6(Math.min(1, Math.log2(Math.max(1, g)) / 3));
+    const best = group[0];
+    const interest = round6(clamp01(best.partial_interest + 0.30 * C));
+    const exploratory = group.some((p) => p.epistemic_status === 'EXPLORATORY');
+    const enrichedGroup = group.map((p) => ({
+      ...p,
+      C,
+      interest,
+      score_parts: { ...p.score_parts, C },
+    }));
+    const bestEnriched = enrichedGroup[0];
+    pool.push({
+      anchor_id: bestEnriched.anchor_id,
+      target_id: bestEnriched.target_id,
+      score_version: scoreVersion,
+      best_path_quality: bestEnriched.Q,
+      interest,
+      C,
+      convergence: C,
+      independent_group_count: g,
+      support_group_count: g,
+      independent_evidence_groups: attestations,
+      best_path: bestEnriched,
+      alternative_paths: enrichedGroup.slice(1, 1 + maxAlts),
+      paths: enrichedGroup,
+      evidence_status: exploratory ? 'MIXED_OR_EXPLORATORY' : 'SUPPORTED_STEPS_NOT_ENDPOINT_INTERPRETATION',
+      limitation: 'A graph path does not by itself establish that its endpoints symbolize or equal one another.',
+    });
+  }
+
+  // Deterministic initial sort so MMR ties break stably by target_id
+  pool.sort((a, b) => b.interest - a.interest || a.target_id.localeCompare(b.target_id));
+
+  const selected: R12DestinationRecommendation[] = [];
+  while (pool.length > 0 && selected.length < selectedMax) {
+    let bestI = 0;
+    let bestValue = -Infinity;
+    for (let i = 0; i < pool.length; i++) {
+      const candidate = pool[i];
+      let maxOverlap = 0;
+      for (const other of selected) {
+        for (const p of candidate.paths) {
+          for (const q of other.paths) {
+            maxOverlap = Math.max(maxOverlap, r12PathOverlap(p, q));
+          }
+        }
+      }
+      const mmr = candidate.interest - mmrPenalty * maxOverlap;
+      if (mmr > bestValue || (mmr === bestValue && candidate.target_id < pool[bestI].target_id)) {
+        bestI = i;
+        bestValue = mmr;
+      }
+    }
+    const [next] = pool.splice(bestI, 1);
+    const mmrRounded = round6(bestValue);
+    next.best_path.mmr_score = mmrRounded;
+    selected.push({ ...next, mmr_score: mmrRounded });
+  }
+
+  return {
+    top: selected,
+    tail: pool,
+    next_cursor: pool.length > 0 ? `r12tail:${selected.length}` : null,
+    score_version: scoreVersion,
+    coverage: pool.length > 0 ? 'ranked_top_n' : 'complete_candidate_pool',
+    unreturned_destinations: pool.length,
+  };
 }

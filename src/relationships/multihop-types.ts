@@ -175,11 +175,85 @@ export interface SearchLimits {
   max_summary_hydrations?: number;
 }
 
+export type R12EpistemicLayer = 'TEXTUAL' | 'LINGUISTIC' | 'EXTERNAL_WORLD' | 'HYPOTHESIS' | 'RECEPTION';
+
+export interface R12ProofStepInput {
+  edge_id: string;
+  from_id?: string;
+  to_id?: string;
+  relation_type: string;
+  direction?: 'forward' | 'reverse' | 'undirected' | 'symmetric';
+  reversed?: boolean;
+  epistemic_layer: R12EpistemicLayer;
+  quality_weight: number;
+  administrative?: boolean;
+  mapping_status?: 'verified' | 'candidate' | 'unmapped' | 'unsupported';
+  attestation_groups: string[];
+  passage_ids: string[];
+  feature_idf?: number;
+  intermediate_degree?: number;
+  source_dataset?: string;
+}
+
+export interface R12ScoredPath {
+  path_id: string;
+  path_key: string;
+  anchor_id: string;
+  target_id: string;
+  steps: R12ProofStepInput[];
+  score_version: string;
+  meaningful_hops: number;
+  physical_hops: number;
+  Q: number;
+  D: number;
+  T: number;
+  hub_penalty: number;
+  partial_interest: number;
+  C?: number;
+  interest?: number;
+  mmr_score?: number;
+  independent_evidence_groups: string[];
+  edge_ids: string[];
+  passage_ids: string[];
+  relation_types: string[];
+  epistemic_status: 'EXPLORATORY' | 'SUPPORTED_STEPS_NOT_ENDPOINT_INTERPRETATION';
+  score_parts: {
+    Q: number;
+    C?: number;
+    D: number;
+    T: number;
+    hub_penalty: number;
+  };
+}
+
+export interface R12DestinationRecommendation {
+  anchor_id: string;
+  target_id: string;
+  score_version: string;
+  best_path_quality: number;
+  interest: number;
+  C: number;
+  convergence: number;
+  independent_group_count: number;
+  support_group_count: number;
+  independent_evidence_groups: string[];
+  best_path: R12ScoredPath;
+  alternative_paths: R12ScoredPath[];
+  paths: R12ScoredPath[];
+  mmr_score?: number;
+  evidence_status: 'MIXED_OR_EXPLORATORY' | 'SUPPORTED_STEPS_NOT_ENDPOINT_INTERPRETATION';
+  limitation: string;
+}
+
 export interface MultiHopQuery {
   source: string;
   target?: string | null;
   targets?: string[];
   max_hops?: number;
+  min_hops?: number;
+  offline_mode?: 'r12';
+  max_physical_steps?: number;
+  beam_width?: number;
   layers?: GraphLayer[];
   predicates?: string[];
   direction?: DirectionFilter;
@@ -317,6 +391,14 @@ export interface MultiHopResult {
     max_hops: number;
   };
   paths: MultiHopPath[];
+  r12_recommendations?: {
+    top: R12DestinationRecommendation[];
+    tail: R12DestinationRecommendation[];
+    next_cursor: string | null;
+    score_version: string;
+    coverage: 'ranked_top_n' | 'complete_candidate_pool';
+    unreturned_destinations: number;
+  };
   pagination: MultiHopPagination;
   coverage: SearchCoverageMetadata;
   guardrails: {

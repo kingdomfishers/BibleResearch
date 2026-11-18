@@ -144,9 +144,9 @@ function confidenceFromRecord(r: R10EvidenceRecord): R10ConnectionSummary['confi
   if (r.predicate === 'explicit_identification' || r.predicate === 'explicit_comparison' || r.predicate === 'typological_interpretation' || r.predicate === 'direct_quotation' || r.predicate === 'authorial_interpretation') {
     return r.evidence_tier <= 2 ? 'explicit_textual' : 'strong_correspondence';
   }
-  if (r.predicate === 'literary_correspondence' || r.predicate === 'cross_reference_witness') return 'strong_correspondence';
+  if (r.predicate === 'literary_correspondence' || r.predicate === 'cross_reference_witness' || r.predicate === 'multihop_proof_path') return 'strong_correspondence';
   if (r.predicate === 'verified_lexical_grammatical' || r.predicate === 'cross_language_bridge' || r.predicate === 'orthographic_wordplay') return 'lexical_reference';
-  if (r.predicate === 'literary_pattern') return 'candidate_pattern';
+  if (r.predicate === 'literary_pattern' || r.predicate === 'structural_scene_parallel' || r.predicate === 'shared_external_property') return 'candidate_pattern';
   if (r.predicate === 'orthographic_overlap') return 'orthographic_only';
   if (r.predicate === 'interpretive_hypothesis') return 'interpretive';
   return 'moderate_motif';
@@ -157,6 +157,9 @@ function defaultUncertainty(r: R10EvidenceRecord): string {
   if (r.predicate === 'typological_interpretation' || r.predicate === 'explicit_comparison') return 'Explicit NT authorial comparison; separates historical OT narrative from later NT theological interpretation.';
   if (r.predicate === 'authorial_interpretation') return 'Explicit biblical narrator/author gloss; intertextual OT echoes remain secondary.';
   if (r.predicate === 'verified_lexical_grammatical' || r.predicate === 'cross_language_bridge') return 'Documented original-language lexical/translation fact; context governs which sense applies per verse.';
+  if (r.predicate === 'multihop_proof_path') return '2-5 hop attested discovery path; individual steps are source-backed, but a path never proves endpoint identity or authorial intent.';
+  if (r.predicate === 'shared_external_property') return 'Externally sourced physical/semantic property bridge (OEWN 2025 / Wikidata); exploratory hypothesis only (independent_biblical_support=0).';
+  if (r.predicate === 'structural_scene_parallel') return 'At-tested R8 structural clause role parallel; candidate hypothesis only, not proof of literary dependence.';
   if (r.predicate === 'literary_correspondence' || r.predicate === 'cross_reference_witness') return 'Cross-reference / lexical correspondence; shared motif or anchor does not alone prove direct citation.';
   if (r.predicate === 'orthographic_overlap') return 'Spelling/consonantal overlap ONLY; does NOT establish a shared etymological root.';
   if (r.predicate === 'literary_pattern') return 'Candidate literary/structural pattern; interpretive synthesis beyond explicit text links.';
@@ -194,8 +197,401 @@ async function readR10Json<T = any>(
   return (await pending) as T | null;
 }
 
-interface FastManifest { profile_buckets: number; verse_chunk_size: number; selective?: boolean; packed?: boolean }
+interface FastManifest {
+  profile_buckets: number;
+  verse_chunk_size: number;
+  selective?: boolean;
+  packed?: boolean;
+  r12_pilot?: string;
+  r12_version?: string;
+  r12_pilot_anchors?: number;
+}
 type ReadBudget = { used: number; max: number; missing?: string[]; pages?: Map<string, Promise<any>> };
+
+interface R12PilotBundle {
+  schema_version: number;
+  release_id: string;
+  score_version: string;
+  pilot_anchors: string[];
+  external_sources?: Array<{ id: string; provider: string; release: string; license: string; archive_sha256?: string; extract_sha256?: string }>;
+  external_mappings?: Array<Record<string, any>>;
+  anchors: Record<string, any>;
+}
+
+async function readR12Pilot(
+  reader: AssetReader,
+  releaseId: string,
+  manifest: FastManifest | null | undefined,
+  budget: ReadBudget,
+): Promise<R12PilotBundle | null> {
+  const pilotRel = manifest?.r12_pilot || 'r12-pilot.json.gz';
+  return readR10Json<R12PilotBundle>(reader, releaseId, pilotRel, budget);
+}
+
+function r12MultihopRecToRecord(anchorData: any, rec: any): R10EvidenceRecord {
+  const best = rec.best_path || {};
+  const steps: any[] = best.steps || [];
+  const tWord = rec.target_word || best.target_word;
+  const passages: R10PassageRef[] = [];
+  const seenVid = new Set<number>();
+  for (const st of steps) {
+    for (const p of st.witness_passages || []) {
+      if (p?.ref && !seenVid.has(p.verse_id || 0)) {
+        seenVid.add(p.verse_id || passages.length + 1);
+        passages.push({
+          verse_id: Number(p.verse_id || 0),
+          ref: p.ref,
+          mt_ref: p.mt_ref,
+          book: Number(p.book || 1),
+          chapter: Number(p.chapter || 1),
+          verse: Number(p.verse || 1),
+          testament: Number(p.book || 1) <= 39 ? 'OT' : 'NT',
+          snippet: p.snippet,
+        });
+      }
+    }
+  }
+  const origWords: R10OriginalWordRef[] = [
+    {
+      strongs: anchorData.bs,
+      language: anchorData.lang || 'hbo',
+      lemma_script: anchorData.sc,
+      transliteration: anchorData.tr,
+      gloss: anchorData.gl,
+    },
+    ...(tWord
+      ? [{
+          strongs: tWord.strongs,
+          language: tWord.language || 'grc',
+          lemma_script: tWord.script,
+          transliteration: tWord.transliteration,
+          gloss: tWord.gloss,
+        }]
+      : []),
+  ];
+  const hops = best.meaningful_hops ?? steps.length;
+  const chainStr = steps.map((s: any) => `${s.from_label} --[${s.relation_type}]--> ${s.to_label}`).join(' ; ');
+  const isHypothesis = rec.epistemic_layer === 'HYPOTHESIS' || rec.evidence_status === 'MIXED_OR_EXPLORATORY';
+  const tier: R10EvidenceTier = isHypothesis ? 5 : 3;
+  const finalScore = Math.round(700 + (rec.interest || 0) * 260);
+  const epistClass: R10EpistemicClass = isHypothesis ? 'candidate_literary_pattern' : 'documented_lexical_relationship';
+
+  return {
+    evidence_id: rec.evidence_id,
+    predicate: 'multihop_proof_path',
+    evidence_tier: tier,
+    epistemic_class: epistClass,
+    title: `R12 ${hops}-hop discovery: ${anchorData.sc} (${anchorData.bs}) → ${tWord ? `${tWord.script} ("${tWord.gloss}", ${tWord.strongs})` : rec.target_id}`,
+    summary: `${hops}-hop source-backed discovery path (${rec.independent_group_count} independent biblical support group(s); interest=${rec.interest}, Q=${rec.Q}, C=${rec.C}, D=${rec.D}, T=${rec.T}): ${chainStr}`,
+    source_node_id: rec.anchor_id,
+    target_node_id: rec.target_id,
+    passages: passages.slice(0, 6),
+    original_words: origWords,
+    matched_terms: [anchorData.gl, anchorData.bs, tWord?.gloss, tWord?.strongs].filter(Boolean),
+    limitations: [
+      rec.limitation || 'A multi-hop source path connects intermediate attested steps without proving endpoint semantic identity or authorial intent.',
+    ],
+    provenance: {
+      source_dataset: [...new Set(steps.map((s: any) => s.source_dataset).filter(Boolean))].join(' + ') || 'MACULA + STEPBible + CATSS/Swete',
+      source_record_ids: (rec.independent_evidence_groups || []).slice(0, 8),
+      license: 'CC BY 4.0',
+      derivation_method: 'r12_offline_beam_proof_ranker_v1',
+    },
+    score_components: {
+      base_tier_score: TIER_BASE_SCORE[tier],
+      specificity_bonus: Math.round((rec.D || 0) * 100),
+      witness_bonus: Math.round((rec.C || 0) * 100),
+      common_word_penalty: Math.round((rec.hub_penalty || 0) * 100),
+      number_coincidence_penalty: 0,
+      orthographic_penalty: 0,
+      final_score: finalScore,
+    },
+    r12_metadata: {
+      score_version: rec.score_version || 'r12-ranker-v1',
+      epistemic_layer: rec.epistemic_layer || 'LINGUISTIC',
+      epistemic_status: rec.evidence_status === 'SUPPORTED_STEPS_NOT_ENDPOINT_INTERPRETATION'
+        ? 'SUPPORTED_STEPS_NOT_ENDPOINT_INTERPRETATION'
+        : 'EXPLORATORY',
+      meaningful_hops: hops,
+      physical_hops: best.physical_hops ?? steps.length,
+      Q: rec.Q ?? 0,
+      C: rec.C ?? 0,
+      D: rec.D ?? 0,
+      T: rec.T ?? 0,
+      hub_penalty: rec.hub_penalty ?? 0,
+      interest: rec.interest ?? 0,
+      mmr_score: rec.mmr_score,
+      independent_group_count: rec.independent_group_count ?? 0,
+      independent_evidence_groups: rec.independent_evidence_groups || [],
+      alternative_path_count: (rec.alternative_paths || []).length,
+      steps: steps.map((s: any) => ({
+        edge_id: s.edge_id,
+        from_id: s.from_id,
+        from_label: s.from_label,
+        to_id: s.to_id,
+        to_label: s.to_label,
+        relation_type: s.relation_type,
+        direction: s.direction,
+        epistemic_layer: s.epistemic_layer,
+        quality_weight: s.quality_weight,
+        administrative: s.administrative,
+        source_dataset: s.source_dataset,
+        witness_refs: s.witness_refs,
+      })),
+      alternative_paths: (rec.alternative_paths || []).slice(0, 3).map((ap: any) => ({
+        path_id: ap.path_id,
+        partial_interest: ap.partial_interest,
+        steps: (ap.steps || []).map((s: any) => ({
+          edge_id: s.edge_id,
+          from_id: s.from_id,
+          from_label: s.from_label,
+          to_id: s.to_id,
+          to_label: s.to_label,
+          relation_type: s.relation_type,
+          epistemic_layer: s.epistemic_layer,
+          quality_weight: s.quality_weight,
+          witness_refs: s.witness_refs,
+        })),
+      })),
+    },
+  };
+}
+
+function r12PropertyBridgeToRecord(anchorData: any, b: any): R10EvidenceRecord {
+  const tWord = b.target_word;
+  const topFeat = b.shared_features?.[0];
+  const leftRef = topFeat?.left?.[0];
+  const rightRef = topFeat?.right?.[0];
+  const tier: R10EvidenceTier = 5;
+  const finalScore = Math.round(680 + (b.score || 0) * 160);
+  const origWords: R10OriginalWordRef[] = [
+    {
+      strongs: anchorData.bs,
+      language: anchorData.lang || 'hbo',
+      lemma_script: anchorData.sc,
+      transliteration: anchorData.tr,
+      gloss: anchorData.gl,
+    },
+    ...(tWord
+      ? [{
+          strongs: tWord.strongs,
+          language: tWord.language || 'grc',
+          lemma_script: tWord.script,
+          transliteration: tWord.transliteration,
+          gloss: tWord.gloss,
+        }]
+      : []),
+  ];
+
+  const sourceIds = [
+    leftRef?.source_id,
+    rightRef?.source_id,
+    ...(b.shared_features || []).slice(0, 3).flatMap((sf: any) => [sf.left?.[0]?.source_id, sf.right?.[0]?.source_id]),
+  ].filter(Boolean);
+
+  return {
+    evidence_id: b.evidence_id,
+    predicate: 'shared_external_property',
+    evidence_tier: tier,
+    epistemic_class: 'external_world_bridge',
+    title: `Physical/semantic bridge: ${anchorData.sc} (${anchorData.gl}) ↔ ${tWord ? `${tWord.script} ("${tWord.gloss}")` : b.target_id} via "${b.value_label}"`,
+    summary: `External concept bridge (${b.mapping_status} mapping; ${leftRef?.provider || 'OEWN/Wikidata'}) linking ${anchorData.bs} (${b.left_mapping?.sense_gloss || anchorData.gl}) and ${tWord?.strongs || b.target_id} (${b.right_mapping?.sense_gloss || tWord?.gloss || ''}) via shared property ${b.property_key}=${b.value_label}. Independent biblical support=0 (exploratory hypothesis).`,
+    source_node_id: b.anchor_id,
+    target_node_id: b.target_id,
+    passages: (b.passages || []).slice(0, 6).map((p: any) => ({
+      verse_id: Number(p.verse_id || 0),
+      ref: p.ref,
+      mt_ref: p.mt_ref,
+      book: Number(p.book || 1),
+      chapter: Number(p.chapter || 1),
+      verse: Number(p.verse || 1),
+      testament: Number(p.book || 1) <= 39 ? 'OT' : 'NT',
+      snippet: p.snippet,
+    })),
+    original_words: origWords,
+    matched_terms: [anchorData.gl, tWord?.gloss, b.value_label, anchorData.bs, tWord?.strongs].filter(Boolean),
+    limitations: [
+      b.limitation || 'Shared externally sourced physical/semantic properties are exploratory research leads, not biblical identifications or proof of authorial intent.',
+      ...(b.mapping_status === 'candidate' ? ['Lexical-to-external synset/QID mapping is candidate-grade due to polysemy; context determines which biblical sense applies.'] : []),
+    ],
+    provenance: {
+      source_dataset: [...new Set([leftRef?.provider, rightRef?.provider].filter(Boolean))].join(' + ') || 'OpenEnglishWordNet 2025 + Wikidata',
+      source_record_ids: [...new Set(sourceIds)].slice(0, 8),
+      license: [...new Set([leftRef?.license, rightRef?.license].filter(Boolean))].join(' ; ') || 'CC BY 4.0 / CC0 1.0',
+      derivation_method: 'r12_external_property_bridge',
+    },
+    score_components: {
+      base_tier_score: TIER_BASE_SCORE[tier],
+      specificity_bonus: Math.round((b.score || 0) * 160),
+      witness_bonus: 0,
+      common_word_penalty: 0,
+      number_coincidence_penalty: 0,
+      orthographic_penalty: 0,
+      final_score: finalScore,
+    },
+    r12_metadata: {
+      score_version: 'r12-ranker-v1',
+      epistemic_layer: 'EXTERNAL_WORLD',
+      epistemic_status: 'EXPLORATORY',
+      meaningful_hops: 2,
+      physical_hops: 2,
+      Q: b.score ?? 0.5,
+      C: 0,
+      D: Number((topFeat?.rarity ? Math.min(1, topFeat.rarity / 6) : 0.7).toFixed(4)),
+      T: 0.25,
+      hub_penalty: 0,
+      interest: b.score ?? 0.5,
+      independent_group_count: 0,
+      independent_evidence_groups: [],
+      alternative_path_count: Math.max(0, (b.shared_features?.length || 1) - 1),
+      external_bridge: {
+        property_key: b.property_key,
+        value_id: b.value_id,
+        value_label: b.value_label,
+        mapping_status: b.mapping_status === 'verified' ? 'verified' : 'candidate',
+        claim_status: b.claim_status === 'sourced' ? 'sourced' : 'candidate',
+        independent_biblical_support: 0,
+        left_mapping: b.left_mapping || null,
+        right_mapping: b.right_mapping || null,
+        shared_features: b.shared_features || [],
+      },
+    },
+  };
+}
+
+function r12StructuralToRecord(anchorData: any, s: any): R10EvidenceRecord {
+  const tier: R10EvidenceTier = 6;
+  const finalScore = Math.round(620 + (s.weighted_jaccard || 0) * 140);
+  return {
+    evidence_id: s.evidence_id,
+    predicate: 'structural_scene_parallel',
+    evidence_tier: tier,
+    epistemic_class: 'candidate_literary_pattern',
+    title: `Structural clause parallel: ${s.anchor_ref} ↔ ${s.candidate_ref} (${s.all_shared_feature_count} shared roles, J=${s.weighted_jaccard})`,
+    summary: `Candidate R8 grammatical scene parallel around ${anchorData.sc} (${anchorData.bs}) comparing ${s.anchor_ref} and ${s.candidate_ref} across ${(s.distinctive_shared_features || []).map((f: any) => `${f.role}=${f.value}`).join(', ')}.`,
+    source_node_id: s.anchor_scene_id,
+    target_node_id: s.candidate_scene_id,
+    passages: (s.passages || []).slice(0, 6).map((p: any) => ({
+      verse_id: Number(p.verse_id || 0),
+      ref: p.ref,
+      mt_ref: p.mt_ref,
+      book: Number(p.book || 1),
+      chapter: Number(p.chapter || 1),
+      verse: Number(p.verse || 1),
+      testament: Number(p.book || 1) <= 39 ? 'OT' : 'NT',
+      snippet: p.snippet,
+    })),
+    original_words: [{
+      strongs: anchorData.bs,
+      language: anchorData.lang || 'hbo',
+      lemma_script: anchorData.sc,
+      transliteration: anchorData.tr,
+      gloss: anchorData.gl,
+    }],
+    matched_terms: [anchorData.gl, anchorData.bs, s.anchor_ref, s.candidate_ref].filter(Boolean),
+    limitations: [s.limitation || 'Shared structural clause roles are candidate parallels, not proof of authorial dependence.'],
+    provenance: {
+      source_dataset: 'MACULA Hebrew & Greek R8 Grammatical Frames',
+      source_record_ids: [...(s.anchor_witness_ids || []), ...(s.candidate_witness_ids || [])].slice(0, 6),
+      license: 'CC BY 4.0',
+      derivation_method: 'r12_structural_role_weighted_jaccard',
+    },
+    score_components: {
+      base_tier_score: TIER_BASE_SCORE[tier],
+      specificity_bonus: Math.round((s.weighted_jaccard || 0) * 140),
+      witness_bonus: Math.min(30, (s.all_shared_feature_count || 0) * 8),
+      common_word_penalty: 0,
+      number_coincidence_penalty: 0,
+      orthographic_penalty: 0,
+      final_score: finalScore,
+    },
+    r12_metadata: {
+      score_version: 'r12-ranker-v1',
+      epistemic_layer: 'HYPOTHESIS',
+      epistemic_status: 'EXPLORATORY',
+      meaningful_hops: 2,
+      physical_hops: 2,
+      Q: s.weighted_jaccard ?? 0.5,
+      C: 0.25,
+      D: s.weighted_jaccard ?? 0.5,
+      T: 0.25,
+      hub_penalty: 0,
+      interest: s.weighted_jaccard ?? 0.5,
+      independent_group_count: 2,
+      independent_evidence_groups: [...(s.anchor_witness_ids || []), ...(s.candidate_witness_ids || [])].slice(0, 4),
+      alternative_path_count: 0,
+      structural_match: {
+        weighted_jaccard: s.weighted_jaccard,
+        shared_features: s.distinctive_shared_features || [],
+        anchor_witness_ids: s.anchor_witness_ids || [],
+        candidate_witness_ids: s.candidate_witness_ids || [],
+      },
+    },
+  };
+}
+
+function r12OrthographicToRecord(anchorData: any, o: any): R10EvidenceRecord {
+  const tWord = o.target_word;
+  const tier: R10EvidenceTier = 7;
+  const finalScore = Math.round(480 + (o.score || 0) * 100);
+  return {
+    evidence_id: o.evidence_id,
+    predicate: 'orthographic_overlap',
+    evidence_tier: tier,
+    epistemic_class: 'orthographic_similarity_only',
+    title: `Orthographic similarity: ${o.anchor_original} (${anchorData.bs}) ↔ ${o.target_form} (${tWord?.strongs || o.target_id}, matched "${o.matched_normalized_text}")`,
+    summary: `Unpointed/unaccented script similarity (${o.normalization}, score=${o.score}, shared segment "${o.matched_normalized_text}"). ${o.limitation}`,
+    source_node_id: o.anchor_id,
+    target_node_id: o.target_id,
+    passages: (o.passages || []).slice(0, 4).map((p: any) => ({
+      verse_id: Number(p.verse_id || 0),
+      ref: p.ref,
+      mt_ref: p.mt_ref,
+      book: Number(p.book || 1),
+      chapter: Number(p.chapter || 1),
+      verse: Number(p.verse || 1),
+      testament: Number(p.book || 1) <= 39 ? 'OT' : 'NT',
+      snippet: p.snippet,
+    })),
+    original_words: [
+      { strongs: anchorData.bs, language: anchorData.lang || 'hbo', lemma_script: anchorData.sc, transliteration: anchorData.tr, gloss: anchorData.gl },
+      ...(tWord ? [{ strongs: tWord.strongs, language: tWord.language || 'hbo', lemma_script: tWord.script, transliteration: tWord.transliteration, gloss: tWord.gloss }] : []),
+    ],
+    matched_terms: [anchorData.gl, tWord?.gloss, o.matched_normalized_text].filter(Boolean),
+    limitations: [o.limitation || 'Shared spelling does not establish root, etymology, meaning, or intentional wordplay.'],
+    provenance: {
+      source_dataset: 'STEPBible Canonical Lemma Script',
+      source_record_ids: [anchorData.bs, tWord?.strongs].filter(Boolean),
+      license: 'CC BY 4.0',
+      derivation_method: 'r12_orthographic_bigram_containment',
+    },
+    score_components: {
+      base_tier_score: TIER_BASE_SCORE[tier],
+      specificity_bonus: Math.round((o.score || 0) * 100),
+      witness_bonus: 0,
+      common_word_penalty: 0,
+      number_coincidence_penalty: 0,
+      orthographic_penalty: 40,
+      final_score: finalScore,
+    },
+    r12_metadata: {
+      score_version: 'r12-ranker-v1',
+      epistemic_layer: 'HYPOTHESIS',
+      epistemic_status: 'EXPLORATORY',
+      meaningful_hops: 1,
+      physical_hops: 1,
+      Q: o.score ?? 0.5,
+      C: 0,
+      D: o.score ?? 0.5,
+      T: 0.25,
+      hub_penalty: 0,
+      interest: Number(((o.score || 0.5) * 0.5).toFixed(4)),
+      independent_group_count: 0,
+      independent_evidence_groups: [],
+      alternative_path_count: 0,
+    },
+  };
+}
 
 async function readR10Key(reader: AssetReader, release: string, file: string, key: string, field: string, budget: ReadBudget): Promise<any> {
   const index = await readR10Json<any>(reader, release, file, budget);
@@ -1558,13 +1954,73 @@ export async function discoverBiblicalConnections(
     if (entry) orthDetails.push(entry);
   }
 
+  // R12 Pilot Integration: merge offline 2-5 hop beam recommendations, external property bridges,
+  // structural clause parallels, and orthographic candidates for matched pilot anchors.
+  const r12AnchorsMatched: string[] = [];
+  let r12MultihopCount = 0;
+  let r12PropertyCount = 0;
+  let r12StructuralCount = 0;
+  let r12OrthographicCount = 0;
+  let r12TailCursor: string | null = null;
+  let r12ScoreVersion = 'r12-ranker-v1';
+  let r12ExternalSources: Array<{ id: string; provider: string; release: string; license: string }> = [];
+
+  const pilotCandidateKeys = new Set<string>(matchedStrongs);
+  if (query.focus_lemma) pilotCandidateKeys.add(query.focus_lemma);
+  if (query.anchor?.extended_strongs) pilotCandidateKeys.add(query.anchor.extended_strongs.replace(/([HG])0*(\d+)[A-Z]?/i, (_, p, n) => p + n.padStart(4, '0')));
+  if (fastManifest?.r12_pilot && pilotCandidateKeys.size > 0) {
+    const r12Pilot = await readR12Pilot(reader, releaseId, fastManifest, budget);
+    if (r12Pilot?.anchors) {
+      r12ScoreVersion = r12Pilot.score_version || 'r12-ranker-v1';
+      r12ExternalSources = (r12Pilot.external_sources || []).map(s => ({
+        id: s.id,
+        provider: s.provider,
+        release: s.release,
+        license: s.license,
+      }));
+      for (const bs of pilotCandidateKeys) {
+        const anchorData = r12Pilot.anchors[bs];
+        if (!anchorData) continue;
+        r12AnchorsMatched.push(bs);
+
+        const recs: any[] = anchorData.multihop?.recommendations || [];
+        const takeRecs = (query.mode === 'expand' || query.focus_lemma === bs) ? recs.slice(0, 12) : recs.slice(0, 6);
+        for (const rec of takeRecs) {
+          allCandidates.push(r12MultihopRecToRecord(anchorData, rec));
+          r12MultihopCount++;
+        }
+        if ((anchorData.multihop?.unreturned_destinations || 0) > 0 && !r12TailCursor) {
+          r12TailCursor = String(offset + limit);
+        }
+
+        const props: any[] = anchorData.property_bridges || [];
+        for (const b of props.slice(0, 6)) {
+          allCandidates.push(r12PropertyBridgeToRecord(anchorData, b));
+          r12PropertyCount++;
+        }
+
+        const structs: any[] = anchorData.structural_candidates || [];
+        for (const s of structs.slice(0, 3)) {
+          allCandidates.push(r12StructuralToRecord(anchorData, s));
+          r12StructuralCount++;
+        }
+
+        const orths: any[] = anchorData.orthographic_candidates || [];
+        for (const o of orths.slice(0, 2)) {
+          allCandidates.push(r12OrthographicToRecord(anchorData, o));
+          r12OrthographicCount++;
+        }
+      }
+    }
+  }
+
   // Filter and rank candidates
   const filters = query.filters || {};
   let filtered = allCandidates.filter(c => {
     if (filters.predicates?.length && !filters.predicates.includes(c.predicate)) return false;
     if (filters.max_tier && c.evidence_tier > filters.max_tier) return false;
     if (filters.include_orthographic === false && (c.predicate === 'orthographic_overlap' || c.predicate === 'orthographic_wordplay')) return false;
-    if (filters.include_candidate_patterns === false && c.predicate === 'literary_pattern') return false;
+    if (filters.include_candidate_patterns === false && (c.predicate === 'literary_pattern' || c.predicate === 'structural_scene_parallel')) return false;
     if (filters.include_interpretive === false && c.predicate === 'interpretive_hypothesis') return false;
     if (filters.testaments?.length && !c.passages.some(p => filters.testaments!.includes(p.testament))) return false;
     return true;
@@ -1707,6 +2163,7 @@ export async function discoverBiblicalConnections(
         final_score: r.score_components.final_score,
         why_ranked_high: whyRationale,
       },
+      ...(r.r12_metadata ? { r12_metadata: r.r12_metadata } : {}),
     };
   });
 
@@ -1730,8 +2187,50 @@ export async function discoverBiblicalConnections(
     }
   }
 
-  // Construct Connection Paths from top evidence records
-  const connectionPaths: R10ConnectionPath[] = pagedRecords.slice(0, 6).map(r => {
+  // Construct Connection Paths from top evidence records (multi-step for R12 proof paths)
+  const connectionPaths: R10ConnectionPath[] = pagedRecords.slice(0, 8).map(r => {
+    if (r.r12_metadata?.steps?.length) {
+      const steps = r.r12_metadata.steps;
+      const firstSt = steps[0];
+      const lastSt = steps[steps.length - 1];
+      const startNode: R10Node = {
+        id: firstSt.from_id,
+        kind: 'lemma',
+        label: firstSt.from_label,
+        epistemic_class: r.epistemic_class,
+        grounding_source: firstSt.source_dataset || r.provenance.source_dataset,
+      };
+      const endNode: R10Node = {
+        id: lastSt.to_id,
+        kind: 'lemma',
+        label: lastSt.to_label,
+        epistemic_class: r.epistemic_class,
+        grounding_source: lastSt.source_dataset || r.provenance.source_dataset,
+      };
+      return {
+        path_id: `path:${r.evidence_id}`,
+        start_node: startNode,
+        end_node: endNode,
+        matched_concepts: r.matched_terms,
+        weakest_tier: r.evidence_tier,
+        aggregate_score: r.score_components.final_score,
+        explanation: r.summary,
+        limitations: r.limitations,
+        steps: steps.map(st => ({
+          from_node_id: st.from_id,
+          from_label: st.from_label,
+          to_node_id: st.to_id,
+          to_label: st.to_label,
+          predicate: r.predicate,
+          evidence_tier: r.evidence_tier,
+          epistemic_class: r.epistemic_class,
+          evidence_id: r.evidence_id,
+          relation_summary: `${st.relation_type} (${st.epistemic_layer}, q=${st.quality_weight}${st.witness_refs?.length ? `, refs=${st.witness_refs.slice(0, 2).join(', ')}` : ''})`,
+          key_passage: r.passages[0],
+        })),
+      };
+    }
+
     const startP = r.passages[0];
     const endP = r.passages[r.passages.length - 1];
     const startNode: R10Node = startP
@@ -1924,9 +2423,28 @@ export async function discoverBiblicalConnections(
         'CrossReferences.org / OpenBible (CC BY 4.0)',
         'Theographic Bible Data (CC BY-SA 4.0)',
         'World English Bible (Public Domain)',
+        ...(r12PropertyCount > 0
+          ? ['Open English WordNet 2025 (CC BY 4.0 / Princeton WordNet attribution)', 'Wikidata Structured Concept Extract (CC0 1.0)']
+          : []),
       ],
     },
     iterative_analysis: iterativeAnalysis,
+    ...(r12AnchorsMatched.length > 0
+      ? {
+          r12_discovery: {
+            schema_version: 1,
+            release_id: 'r12-discovery-1',
+            score_version: r12ScoreVersion,
+            pilot_anchors_matched: [...new Set(r12AnchorsMatched)],
+            multihop_recommendations_count: r12MultihopCount,
+            property_bridges_count: r12PropertyCount,
+            structural_candidates_count: r12StructuralCount,
+            orthographic_candidates_count: r12OrthographicCount,
+            exploratory_tail_cursor: r12TailCursor,
+            external_sources: r12ExternalSources,
+          },
+        }
+      : {}),
   };
 }
 
@@ -2475,6 +2993,33 @@ export async function getConnectionEvidence(
     }
   }
 
+  // R12 Pilot Evidence Resolution (`r12:path:...`, `r12:prop:...`, `r12:struct:...`, `r12:orth:...`)
+  if (
+    evidenceId.startsWith('r12:path:') ||
+    evidenceId.startsWith('r12:prop:') ||
+    evidenceId.startsWith('r12:struct:') ||
+    evidenceId.startsWith('r12:orth:')
+  ) {
+    const r12Pilot = await readR12Pilot(reader, releaseId, fastManifest, budget);
+    const anchorKey = evidenceId.split(':')[2] || '';
+    const anchorData = r12Pilot?.anchors?.[anchorKey];
+    if (anchorData) {
+      if (evidenceId.startsWith('r12:path:')) {
+        const rec = (anchorData.multihop?.recommendations || []).find((r: any) => r.evidence_id === evidenceId);
+        if (rec) record = r12MultihopRecToRecord(anchorData, rec);
+      } else if (evidenceId.startsWith('r12:prop:')) {
+        const prop = (anchorData.property_bridges || []).find((b: any) => b.evidence_id === evidenceId);
+        if (prop) record = r12PropertyBridgeToRecord(anchorData, prop);
+      } else if (evidenceId.startsWith('r12:struct:')) {
+        const st = (anchorData.structural_candidates || []).find((s: any) => s.evidence_id === evidenceId);
+        if (st) record = r12StructuralToRecord(anchorData, st);
+      } else if (evidenceId.startsWith('r12:orth:')) {
+        const orth = (anchorData.orthographic_candidates || []).find((o: any) => o.evidence_id === evidenceId);
+        if (orth) record = r12OrthographicToRecord(anchorData, orth);
+      }
+    }
+  }
+
   // Fallback to explicitData
   if (!record) {
     const explicitData = await readR10Json(reader, releaseId, 'explicit-and-typology.json.gz', budget) as { records: any[] } | null;
@@ -2612,6 +3157,42 @@ export async function expandBiblicalConnection(
   } else if (nodeId.startsWith('lemma:')) {
     focusLemma = nodeId.replace(/^lemma:/, '');
     seedQuery = focusLemma;
+  } else if (nodeId.startsWith('sense:')) {
+    const rawSense = nodeId.replace(/^sense:/, '');
+    const m = /^([HG]\d+)/i.exec(rawSense);
+    if (m) {
+      focusLemma = m[1].toUpperCase();
+      seedQuery = focusLemma;
+    }
+  } else if (
+    nodeId.startsWith('ext:wd:') ||
+    nodeId.startsWith('ext:oewn:') ||
+    nodeId.startsWith('wd:') ||
+    nodeId.startsWith('oewn:')
+  ) {
+    const extTarget = nodeId.replace(/^ext:/, '');
+    const r12Budget: ReadBudget = { used: 0, max: 10, missing: [] };
+    const manifest = await readR10Json<FastManifest>(reader, releaseId, 'fast-manifest.json.gz', r12Budget);
+    const pilot = await readR12Pilot(reader, releaseId, manifest, r12Budget);
+    if (pilot?.external_mappings) {
+      const mappedAnchors = pilot.external_mappings
+        .filter((m: any) => m.wikidata_id === extTarget || m.oewn_id === extTarget)
+        .map((m: any) => String(m.anchor_id || '').replace(/^lemma:/, ''))
+        .filter(Boolean);
+      if (mappedAnchors.length > 0) {
+        focusLemma = mappedAnchors[0];
+        seedQuery = mappedAnchors.join(' ');
+      }
+    }
+  } else if (nodeId.startsWith('r12:prop:') || nodeId.startsWith('r12:path:')) {
+    const parts = nodeId.split(':');
+    if (parts[3] && /^[HG]\d+$/i.test(parts[3])) {
+      focusLemma = parts[3];
+      seedQuery = parts[3];
+    } else if (parts[2]) {
+      focusLemma = parts[2];
+      seedQuery = parts[2];
+    }
   }
 
   const discovery = await discoverBiblicalConnections(reader, {

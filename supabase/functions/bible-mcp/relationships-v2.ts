@@ -630,9 +630,9 @@ export function registerRelationshipV2Tools(server: McpServer, read: DatabaseRea
   });
 
   server.registerTool('discover_biblical_connections_v2', {
-    title: 'Discover & Explore Universal Biblical Connections (R11)',
+    title: 'Discover & Explore Universal Biblical Connections (R12)',
     description:
-      'Universal corpus-wide biblical discovery and multi-mode exploration. Handles ANY biblical concept, English word (e.g. lily, hyssop, pomegranate, cedar, door, oil, stone, water + spirit), Hebrew/Greek lemma or surface form, Strong\'s ID, exact occurrence anchor {word_id, book, chapter, verse, position, edition_key?}, number, passage (including Psalm verse 0 headings), or multi-concept question across all 31,203 verses. Returns evidence-ranked thematic and lemma clusters, homograph disambiguation, cross-references, LXX bridges, ranking rationale, and iterative discover, expand, bridge, compare, explain, and challenge modes with full pagination.',
+      'Universal corpus-wide biblical discovery and multi-mode exploration with R12 2-5 hop beam proof paths, Q/C/D/T/MMR ranking, Open English WordNet 2025 (CC BY 4.0) & Wikidata (CC0) physical-property bridges, R8 structural scene parallels, and orthographic candidates. Handles ANY biblical concept, English word, Hebrew/Greek lemma or surface form, Strong\'s ID, exact occurrence anchor {word_id, book, chapter, verse, position, edition_key?}, number, passage (including Psalm verse 0 headings), or multi-concept question across all 31,203 verses.',
     inputSchema: z.strictObject({
       query: z.string().trim().min(1).max(400).optional().describe('Natural language question, English concept/word (e.g. lily, hyssop, pomegranate), passage reference (including Psalm headings verse 0), transliteration, Strong\'s ID, or comma-separated concepts.'),
       concepts: z.array(z.string().trim().min(1).max(64)).max(16).optional().describe('Optional explicit list of concepts to analyze alongside query.'),
@@ -651,7 +651,7 @@ export function registerRelationshipV2Tools(server: McpServer, read: DatabaseRea
       }).optional(),
       limit: z.number().int().min(1).max(25).optional(),
       cursor: z.string().trim().max(128).nullable().optional(),
-      max_hops: z.number().int().min(1).max(3).optional(),
+      max_hops: z.number().int().min(1).max(5).optional(),
       release_id: z.string().trim().min(1).max(32).optional(),
     }),
     outputSchema: z.record(z.string(), z.unknown()),
@@ -724,11 +724,11 @@ export function registerRelationshipV2Tools(server: McpServer, read: DatabaseRea
   });
 
   server.registerTool('expand_biblical_connection_v1', {
-    title: 'Expand Biblical Connection Node (R10)',
+    title: 'Expand Biblical Connection Node (R12)',
     description:
-      'Expand a specific motif, Strong\'s lemma, passage, or concept node into its neighboring verified biblical connections, negative controls, and original-language links.',
+      'Expand a specific motif, Strong\'s lemma, sense, external OEWN/Wikidata concept, passage, or concept node into its neighboring verified biblical connections, R12 multihop paths, property bridges, negative controls, and original-language links.',
     inputSchema: z.strictObject({
-      node_id: z.string().trim().min(1).max(192).describe('Node identifier, label, or cluster ID (e.g. motif:lampstand, lemma:H7307, passage:Zechariah 4:2, cluster:H7799:temple_and_sanctuary_architecture).'),
+      node_id: z.string().trim().min(1).max(192).describe('Node identifier, label, or cluster ID (e.g. motif:lampstand, lemma:H7307, sense:H5869_spring, wd:Q124714, oewn:09466357-n, passage:Zechariah 4:2, cluster:H7799:temple_and_sanctuary_architecture).'),
       limit: z.number().int().min(1).max(20).optional(),
       cursor: z.string().trim().max(128).nullable().optional(),
       release_id: z.string().trim().min(1).max(32).optional(),

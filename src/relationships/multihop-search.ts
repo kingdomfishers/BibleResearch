@@ -5,11 +5,15 @@
 import { fnv1a64Hex, isFunctionWordPos, normalizeLang } from './adjacency-loader.ts';
 import { resolveEntityKeyDetailed } from './concept-resolver.ts';
 import {
+  ADMIN_PREDICATES,
   buildPathStep,
   compareMultiHopPaths,
   computePathId,
   edgePreRankScore,
   mergeHubConfig,
+  pathStepToR12ProofStep,
+  R12_SCORE_VERSION,
+  rankR12DiscoveryDestinations,
   scoreAndExplainPath,
 } from './path-ranker.ts';
 import type {
@@ -526,6 +530,122 @@ async function runTargetSearch(
   return Array.from(rawPaths.values());
 }
 
+function isAdministrativeEdge(edge: GraphEdge): boolean {
+  return ADMIN_PREDICATES.has(edge.predicate) || ADMIN_PREDICATES.has(edge.display_predicate);
+}
+
+function countSemanticHops(chain: GraphEdge[]): number {
+  let hops = 0;
+  for (const e of chain) {
+    if (!isAdministrativeEdge(e)) hops += 1;
+  }
+  return hops;
+}
+
+function hasRedundantIdentityJoin(chain: GraphEdge[], nextEdge: GraphEdge): boolean {
+  if (!isAdministrativeEdge(nextEdge)) return false;
+  if (chain.length > 0 && isAdministrativeEdge(chain[chain.length - 1])) {
+    // Prevent chaining sense->lemma->sense or lemma->root->lemma administrative oscillations
+    return true;
+  }
+  const destKey = nextEdge.to_entity.entity_key;
+  if (chain.some((e) => e.from_entity.entity_key === destKey || e.to_entity.entity_key === destKey)) {
+    return true;
+  }
+  return false;
+}
+
+async function runR12BeamSearch(
+  loader: AdjacencyLoader,
+  tracker: SearchBudgetTracker,
+  sourceKey: string,
+  targetKeys: Set<string>,
+  maxSemanticHops: number,
+  maxPhysicalSteps: number,
+  beamWidth: number,
+  minSemanticHops: number,
+  allowCycles: boolean,
+): Promise<GraphEdge[][]> {
+  const results = new Map<string, GraphEdge[]>();
+  const recordChain = (chain: GraphEdge[]): boolean => {
+    const sem = countSemanticHops(chain);
+    if (sem < minSemanticHops || sem > maxSemanticHops) return true;
+    const endKey = chain[chain.length - 1].to_entity.entity_key;
+    if (endKey === sourceKey && !allowCycles) return true;
+    if (targetKeys.size > 0 && !targetKeys.has(endKey)) return true;
+    // Do not end an open-ended path on an administrative edge alone
+    if (isAdministrativeEdge(chain[chain.length - 1])) return true;
+    const key = chain.map((e) => e.edge_id).join('>');
+    if (results.has(key)) return true;
+    if (results.size >= tracker.limits.max_candidate_paths) {
+      tracker.limitsReached.add('max_candidate_paths');
+      return false;
+    }
+    results.set(key, chain);
+    return true;
+  };
+
+  interface BeamItem {
+    chain: GraphEdge[];
+    score: number;
+    semanticHops: number;
+  }
+
+  let frontier: BeamItem[] = [{ chain: [], score: 0, semanticHops: 0 }];
+  const perNodeOutCap = Math.min(16, tracker.limits.max_per_node_edges);
+
+  for (let physDepth = 1; physDepth <= maxPhysicalSteps; physDepth++) {
+    if (frontier.length === 0 || results.size >= tracker.limits.max_candidate_paths) break;
+    const nextCandidates: BeamItem[] = [];
+    for (const item of frontier) {
+      const currentKey = item.chain.length === 0 ? sourceKey : item.chain[item.chain.length - 1].to_entity.entity_key;
+      const tipEntity = item.chain.length === 0 ? null : item.chain[item.chain.length - 1].to_entity;
+      if (item.chain.length > 0 && !tracker.hubConfig.allow_function_word_intermediates && isFunctionWordPos(tipEntity?.pos || null)) {
+        continue;
+      }
+      if (!hasRemainingExecutionAndResourceBudget(tracker, true)) {
+        frontier = [];
+        break;
+      }
+      tracker.nodesExpanded += 1;
+      const adjRaw = await fetchNodeEdges(loader, tracker, currentKey, tracker.direction, null, item.chain.length > 0);
+      const adj = layerBalancedSlice(adjRaw, perNodeOutCap, targetKeys.size > 0 ? targetKeys : undefined);
+      for (const nextEdge of adj) {
+        if (hasLanguageConflict(nextEdge, tracker.languages)) continue;
+        if (nextEdge.to_entity.entity_key === sourceKey && !allowCycles) continue;
+        if (wouldCreateCycle(item.chain, nextEdge.to_entity.entity_key, allowCycles)) continue;
+        if (hasRedundantIdentityJoin(item.chain, nextEdge)) continue;
+        const isAdmin = isAdministrativeEdge(nextEdge);
+        const nextSemHops = item.semanticHops + (isAdmin ? 0 : 1);
+        if (nextSemHops > maxSemanticHops) continue;
+
+        const nextChain = [...item.chain, nextEdge];
+        const edgeScore = edgePreRankScore(nextEdge, tracker.hubConfig, true);
+        const nextScore = item.score + edgeScore * (isAdmin ? 0.25 : 1);
+
+        if (!recordChain(nextChain)) {
+          return Array.from(results.values());
+        }
+        if (physDepth < maxPhysicalSteps) {
+          nextCandidates.push({ chain: nextChain, score: nextScore, semanticHops: nextSemHops });
+        }
+      }
+    }
+
+    if (nextCandidates.length === 0) break;
+    // Stable deterministic beam selection up to beamWidth (default 64)
+    nextCandidates.sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      const ka = a.chain.map((e) => e.edge_id).join('>');
+      const kb = b.chain.map((e) => e.edge_id).join('>');
+      return ka.localeCompare(kb);
+    });
+    frontier = nextCandidates.slice(0, beamWidth);
+  }
+
+  return Array.from(results.values());
+}
+
 async function runOpenEndedSearch(
   loader: AdjacencyLoader,
   tracker: SearchBudgetTracker,
@@ -691,7 +811,20 @@ function buildInvalidResponse(
 // === @section:logic:search-execution ===
 export async function discoverMultiHopPaths(loader: AdjacencyLoader, query: MultiHopQuery): Promise<MultiHopResult> {
   const startTimeMs = Date.now();
-  const limits = clampLimits(query.limits, query.limit);
+  const isR12Offline = query.offline_mode === 'r12';
+  const limits = clampLimits(
+    isR12Offline
+      ? {
+          max_nodes_expanded: 250,
+          max_edges_examined: 12000,
+          max_candidate_paths: 800,
+          max_asset_requests: 400,
+          max_execution_ms: 12000,
+          ...query.limits,
+        }
+      : query.limits,
+    query.limit,
+  );
   const budget: AssetBudgetContext = {
     asset_requests: 0,
     shards_read: 0,
@@ -703,13 +836,28 @@ export async function discoverMultiHopPaths(loader: AdjacencyLoader, query: Mult
   };
   const layers = query.layers?.length ? query.layers : ALL_LAYERS;
   const hubConfig = mergeHubConfig(query.hub_penalty);
-  const rawMaxHops = query.max_hops ?? 2;
+  const rawMaxHops = query.max_hops ?? (isR12Offline ? 5 : 2);
+  const minMeaningfulHops = Math.max(1, query.min_hops ?? (isR12Offline ? 2 : 1));
+  const maxPhysicalSteps = Math.max(rawMaxHops, Math.min(10, query.max_physical_steps ?? 10));
+  const beamWidth = Math.max(1, Math.min(64, query.beam_width ?? 64));
   const releaseVersion = await loader.getReleaseVersion(budget);
   if (budget.budget_exceeded) {
     return buildInvalidResponse('incomplete_coverage', `Stopped by resource budget (${budget.exceeded_reason}) before search started.`, query.source, 2, releaseVersion, layers, query, hubConfig, budget, Date.now() - startTimeMs);
   }
-  if (!Number.isInteger(rawMaxHops) || rawMaxHops < 1 || rawMaxHops > 3) {
-    return buildInvalidResponse('invalid_request', `max_hops must be an integer between 1 and 3 (received ${rawMaxHops}).`, query.source, 2, releaseVersion, layers, query, hubConfig, budget, Date.now() - startTimeMs);
+  const allowedMaxHopCap = isR12Offline ? 5 : 3;
+  if (!Number.isInteger(rawMaxHops) || rawMaxHops < 1 || rawMaxHops > allowedMaxHopCap) {
+    return buildInvalidResponse(
+      'invalid_request',
+      `max_hops must be an integer between 1 and ${allowedMaxHopCap} (received ${rawMaxHops}).`,
+      query.source,
+      2,
+      releaseVersion,
+      layers,
+      query,
+      hubConfig,
+      budget,
+      Date.now() - startTimeMs,
+    );
   }
   if (query.offset !== undefined && (!Number.isInteger(query.offset) || query.offset < 0)) {
     return buildInvalidResponse('invalid_request', `offset must be a non-negative integer (received ${query.offset}).`, query.source, rawMaxHops, releaseVersion, layers, query, hubConfig, budget, Date.now() - startTimeMs);
@@ -782,12 +930,44 @@ export async function discoverMultiHopPaths(loader: AdjacencyLoader, query: Mult
   };
 
   const allowCycles = Boolean(query.allow_cycles);
-  const chains =
-    targetKeys.size > 0
+  const chains = isR12Offline
+    ? await runR12BeamSearch(
+        loader,
+        tracker,
+        sourceKey,
+        targetKeys,
+        rawMaxHops,
+        maxPhysicalSteps,
+        beamWidth,
+        minMeaningfulHops,
+        allowCycles,
+      )
+    : targetKeys.size > 0
       ? await runTargetSearch(loader, tracker, sourceKey, targetKeys, rawMaxHops, allowCycles)
       : await runOpenEndedSearch(loader, tracker, sourceKey, rawMaxHops, allowCycles);
 
   const sortedPaths = await enrichTopGrammaticalJoins(loader, chains, hubConfig, tracker);
+  let r12Recommendations: MultiHopResult['r12_recommendations'];
+  if (isR12Offline && sortedPaths.length > 0) {
+    const r12Inputs = sortedPaths
+      .filter((p) => p.steps.length > 0)
+      .map((p) => ({
+        path_id: p.path_id,
+        anchor_id: p.entities[0].entity_key,
+        target_id: p.entities[p.entities.length - 1].entity_key,
+        steps: p.steps.map((st) => pathStepToR12ProofStep(st)),
+      }))
+      .filter((p) => p.anchor_id !== p.target_id && p.steps.some((st) => !st.administrative));
+    if (r12Inputs.length > 0) {
+      r12Recommendations = rankR12DiscoveryDestinations(r12Inputs, {
+        top_n: 24,
+        max_alternatives: 3,
+        max_hops: rawMaxHops,
+        max_physical_hops: maxPhysicalSteps,
+        score_version: R12_SCORE_VERSION,
+      });
+    }
+  }
   const totalAvailable = sortedPaths.length;
   const queryFingerprint = JSON.stringify({
     releaseVersion,
@@ -885,6 +1065,7 @@ export async function discoverMultiHopPaths(loader: AdjacencyLoader, query: Mult
       max_hops: rawMaxHops,
     },
     paths: pagedPaths,
+    ...(r12Recommendations ? { r12_recommendations: r12Recommendations } : {}),
     pagination: {
       limit: pageLimit,
       offset,

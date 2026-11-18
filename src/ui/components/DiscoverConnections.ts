@@ -394,11 +394,11 @@ export class DiscoverConnectionsPanel {
       case 'explicit':
         return { max_tier: 2 as R10EvidenceTier };
       case 'lexical':
-        return { predicates: ['verified_lexical_grammatical', 'cross_language_bridge'] as R10Predicate[] };
+        return { predicates: ['verified_lexical_grammatical', 'cross_language_bridge', 'multihop_proof_path'] as R10Predicate[] };
       case 'xref':
         return { predicates: ['literary_correspondence', 'cross_reference_witness'] as R10Predicate[] };
       case 'motif':
-        return { predicates: ['shared_motif', 'literary_pattern', 'numbered_entity'] as R10Predicate[] };
+        return { predicates: ['shared_motif', 'literary_pattern', 'numbered_entity', 'shared_external_property', 'structural_scene_parallel'] as R10Predicate[] };
       case 'orthographic':
         return { predicates: ['orthographic_wordplay', 'orthographic_overlap'] as R10Predicate[] };
       default:
@@ -851,7 +851,8 @@ export class DiscoverConnectionsPanel {
     const isOpen = this.openEvidenceIds.has(c.evidence_id);
     const evData = this.evidenceCache.get(c.evidence_id);
     const evErr = this.evidenceErrors.get(c.evidence_id);
-    const isCaution = c.evidence_tier >= 5 || c.predicate === 'orthographic_overlap';
+    const m = c.r12_metadata;
+    const isCaution = c.evidence_tier >= 5 || c.predicate === 'orthographic_overlap' || m?.epistemic_layer === 'EXTERNAL_WORLD';
     const verificationLabel = c.evidence_tier <= 4 ? 'Verified source evidence' : 'Candidate / hypothesis';
 
     return `
@@ -860,10 +861,17 @@ export class DiscoverConnectionsPanel {
           <span class="discover-badge ${isCaution ? 'is-caution' : ''}">${esc(verificationLabel)}</span>
           <span class="discover-badge ${isCaution ? 'is-caution' : ''}">${esc(tierBadgeLabel(c.evidence_tier, c.predicate))}</span>
           <span class="discover-badge">${esc(c.epistemic_class.replace(/_/g, ' '))}</span>
+          ${m ? `<span class="discover-badge ${m.epistemic_status === 'EXPLORATORY' ? 'is-caution' : ''}">R12 ${esc(m.epistemic_layer)} · ${m.meaningful_hops}h · interest ${m.interest.toFixed(2)}${m.alternative_path_count ? ` (+${m.alternative_path_count} alt)` : ''}</span>` : ''}
           <span class="study-muted">Score ${c.score} · ${c.witness_count} witness(es)</span>
         </div>
         <h4 class="discover-conn-title">${esc(c.title)}</h4>
         <p class="discover-conn-summary">${esc(c.explanation)}</p>
+        ${m?.external_bridge ? `
+          <p class="study-muted"><strong>External property:</strong> ${esc(m.external_bridge.property_key)}=${esc(m.external_bridge.value_label)} (${esc(m.external_bridge.mapping_status)} mapping · independent biblical support=0)</p>
+        ` : ''}
+        ${m && !m.external_bridge && m.Q !== undefined ? `
+          <p class="study-muted"><strong>R12 Proof Metrics:</strong> Q=${m.Q.toFixed(2)} · C=${m.C.toFixed(2)} (${m.independent_group_count} biblical group(s)) · D=${m.D.toFixed(2)} · T=${m.T.toFixed(2)}${m.mmr_score !== undefined ? ` · MMR=${m.mmr_score.toFixed(2)}` : ''}</p>
+        ` : ''}
         ${c.query_support ? `<p class="study-muted">Query support: ${esc(c.query_support.replace(/_/g, ' '))}${c.shared_witness_refs?.length ? ` · ${esc(c.shared_witness_refs.join(', '))}` : ''}</p>` : ''}
         ${c.ranking_rationale?.why_ranked_high ? `
           <p class="discover-ranking-rationale"><span class="study-muted">Ranking rationale:</span> ${esc(c.ranking_rationale.why_ranked_high)}</p>
@@ -914,6 +922,25 @@ export class DiscoverConnectionsPanel {
         ${evData.evidence.limitations?.length ? `<ul class="discover-evidence-limitations">${evData.evidence.limitations.map(lim => `<li>${esc(lim)}</li>`).join('')}</ul>` : ''}
         ${evData.evidence.orthographic_analysis ? `<p class="study-muted"><strong>Consonants:</strong> ${esc(evData.evidence.orthographic_analysis.source_script)} [${esc(evData.evidence.orthographic_analysis.source_consonants)}] vs ${esc(evData.evidence.orthographic_analysis.target_script)} [${esc(evData.evidence.orthographic_analysis.target_consonants)}] — ${esc(evData.evidence.orthographic_analysis.etymology_warning)}</p>` : ''}
         ${evData.evidence.number_classification ? `<p class="study-muted"><strong>Number analysis:</strong> ${evData.evidence.number_classification.number_value} × ${esc(evData.evidence.number_classification.counted_entity)} (${esc(evData.evidence.number_classification.kind.replace(/_/g, ' '))}; coincidence risk: ${evData.evidence.number_classification.coincidence_risk})</p>` : ''}
+        ${evData.evidence.r12_metadata?.steps?.length ? `
+          <div style="margin-top:8px">
+            <strong>R12 Multi-Hop Path (${evData.evidence.r12_metadata.meaningful_hops} meaningful / ${evData.evidence.r12_metadata.physical_hops} physical steps · ${esc(evData.evidence.r12_metadata.epistemic_status)}):</strong>
+            <div class="discover-chips-row" style="margin-top:4px">
+              ${evData.evidence.r12_metadata.steps.map(st => `
+                <button type="button" class="discover-chip js-expand-node" data-node="${esc(st.to_id)}" data-label="${esc(st.to_label)}" title="${esc(st.relation_type)} (${esc(st.source_dataset || '')})">
+                  ${esc(st.from_label)} --[${esc(st.relation_type)}]--> <strong>${esc(st.to_label)}</strong> (q=${st.quality_weight.toFixed(2)})
+                </button>
+              `).join('')}
+            </div>
+            ${evData.evidence.r12_metadata.alternative_paths?.length ? `<p class="study-muted" style="margin-top:4px">${evData.evidence.r12_metadata.alternative_paths.length} alternative source-backed route(s) available (${esc(evData.evidence.r12_metadata.alternative_paths.map(ap => ap.steps.map(s => s.relation_type).join(' -> ')).join(' | '))}).</p>` : ''}
+          </div>
+        ` : ''}
+        ${evData.evidence.r12_metadata?.external_bridge ? `
+          <div style="margin-top:8px">
+            <strong>External Concept Bridge (${esc(evData.evidence.r12_metadata.external_bridge.property_key)}=${esc(evData.evidence.r12_metadata.external_bridge.value_label)} · ${esc(evData.evidence.r12_metadata.external_bridge.mapping_status)} mapping):</strong>
+            <p class="study-muted" style="margin:4px 0">Independent biblical support = 0 (exploratory external-world hypothesis). ${evData.evidence.r12_metadata.external_bridge.left_mapping ? `Left: ${esc(String(evData.evidence.r12_metadata.external_bridge.left_mapping.sense_gloss || ''))} [${esc(String(evData.evidence.r12_metadata.external_bridge.left_mapping.wikidata_id || ''))} / ${esc(String(evData.evidence.r12_metadata.external_bridge.left_mapping.oewn_id || ''))}, status=${esc(String(evData.evidence.r12_metadata.external_bridge.left_mapping.mapping_status || ''))}]` : ''} · ${evData.evidence.r12_metadata.external_bridge.right_mapping ? `Right: ${esc(String(evData.evidence.r12_metadata.external_bridge.right_mapping.sense_gloss || ''))} [${esc(String(evData.evidence.r12_metadata.external_bridge.right_mapping.wikidata_id || ''))} / ${esc(String(evData.evidence.r12_metadata.external_bridge.right_mapping.oewn_id || ''))}, status=${esc(String(evData.evidence.r12_metadata.external_bridge.right_mapping.mapping_status || ''))}]` : ''}</p>
+          </div>
+        ` : ''}
         ${(evData.passage_details || []).map(pd => {
           const seenWord = new Set<number>();
           const dedupedTokens = pd.original_tokens.filter(t => {
@@ -1026,7 +1053,8 @@ export class DiscoverConnectionsPanel {
             <h3>Connection Paths</h3>
             ${res.connection_paths.map(p => `
               <div class="discover-control-item">
-                <strong>${esc(p.start_node.label)}</strong> → ${p.steps.map(s => `<span class="discover-badge">${esc(s.predicate.replace(/_/g, ' '))} (Tier ${s.evidence_tier})</span>`).join(' → ')} → <strong>${esc(p.end_node.label)}</strong>
+                <button type="button" class="discover-chip js-expand-node" data-node="${esc(p.start_node.id)}" data-label="${esc(p.start_node.label)}"><strong>${esc(p.start_node.label)}</strong></button>
+                ${p.steps.map(s => ` → <span class="discover-badge">${esc(s.relation_summary || s.predicate.replace(/_/g, ' '))} (T${s.evidence_tier})</span> → <button type="button" class="discover-chip js-expand-node" data-node="${esc(s.to_node_id)}" data-label="${esc(s.to_label)}">${esc(s.to_label)}</button>`).join('')}
                 <p class="study-muted" style="margin:4px 0 0">${esc(p.explanation)}</p>
               </div>
             `).join('')}

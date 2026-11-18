@@ -36,6 +36,9 @@ export type R10Predicate =
   | 'orthographic_overlap'
   | 'cross_language_bridge'
   | 'biblical_event'
+  | 'shared_external_property'
+  | 'structural_scene_parallel'
+  | 'multihop_proof_path'
   | 'interpretive_hypothesis';
 
 export type R10EpistemicClass =
@@ -46,6 +49,7 @@ export type R10EpistemicClass =
   | 'shared_motif_evidence'
   | 'candidate_literary_pattern'
   | 'orthographic_similarity_only'
+  | 'external_world_bridge'
   | 'interpretive_hypothesis'
   | 'user_note';
 
@@ -125,6 +129,71 @@ export interface R10ResolvedConcept {
   ambiguity_note?: string;
 }
 
+export interface R12EvidenceMetadata {
+  score_version: string;
+  epistemic_layer: 'TEXTUAL' | 'LINGUISTIC' | 'EXTERNAL_WORLD' | 'HYPOTHESIS' | 'RECEPTION';
+  epistemic_status: 'EXPLORATORY' | 'SUPPORTED_STEPS_NOT_ENDPOINT_INTERPRETATION';
+  meaningful_hops: number;
+  physical_hops: number;
+  Q: number;
+  C: number;
+  D: number;
+  T: number;
+  hub_penalty: number;
+  interest: number;
+  mmr_score?: number;
+  independent_group_count: number;
+  independent_evidence_groups: string[];
+  alternative_path_count: number;
+  steps?: Array<{
+    edge_id: string;
+    from_id: string;
+    from_label: string;
+    to_id: string;
+    to_label: string;
+    relation_type: string;
+    direction?: string;
+    epistemic_layer: string;
+    quality_weight: number;
+    administrative?: boolean;
+    source_dataset?: string;
+    witness_refs?: string[];
+  }>;
+  alternative_paths?: Array<{
+    path_id: string;
+    interest?: number;
+    partial_interest?: number;
+    steps: Array<{
+      edge_id: string;
+      from_id: string;
+      from_label: string;
+      to_id: string;
+      to_label: string;
+      relation_type: string;
+      epistemic_layer: string;
+      quality_weight: number;
+      witness_refs?: string[];
+    }>;
+  }>;
+  external_bridge?: {
+    property_key: string;
+    value_id: string;
+    value_label: string;
+    mapping_status: 'verified' | 'candidate';
+    claim_status: 'sourced' | 'candidate';
+    independent_biblical_support: 0;
+    left_mapping?: Record<string, any> | null;
+    right_mapping?: Record<string, any> | null;
+    shared_features?: Array<Record<string, any>>;
+  };
+  structural_match?: {
+    weighted_jaccard: number;
+    shared_features: Array<{ role: string; value: string }>;
+    anchor_witness_ids: string[];
+    candidate_witness_ids: string[];
+  };
+}
+
 export interface R10EvidenceRecord {
   evidence_id: string;
   predicate: R10Predicate;
@@ -172,6 +241,7 @@ export interface R10EvidenceRecord {
     orthographic_penalty: number;
     final_score: number;
   };
+  r12_metadata?: R12EvidenceMetadata;
 }
 
 export interface R10ConnectionSummary {
@@ -201,6 +271,7 @@ export interface R10ConnectionSummary {
     final_score: number;
     why_ranked_high: string;
   };
+  r12_metadata?: R12EvidenceMetadata;
 }
 
 export interface R10PathStep {
@@ -389,6 +460,18 @@ export interface DiscoverConnectionsResult {
       has_more: boolean;
       passages: R10PassageRef[];
     };
+  };
+  r12_discovery?: {
+    schema_version: 1;
+    release_id: string;
+    score_version: string;
+    pilot_anchors_matched: string[];
+    multihop_recommendations_count: number;
+    property_bridges_count: number;
+    structural_candidates_count: number;
+    orthographic_candidates_count: number;
+    exploratory_tail_cursor: string | null;
+    external_sources?: Array<{ id: string; provider: string; release: string; license: string }>;
   };
 }
 
