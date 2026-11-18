@@ -1,4 +1,4 @@
-# R12 published increment — 2026-11-17
+# R12 published increment — 2026-11-18
 
 ## FOR CHATGPT — INDEPENDENT TESTING
 
@@ -6,21 +6,23 @@ This partial preview supersedes the historical deployment tables below. Producti
 
 ### Published release
 
-- Branch `feat/r12-qa-fixes`; source commit `d5bc1a10fda801f6dbb80064693e56e64468a861`.
-- Corpus: https://bibleresearch-corpus-staging.kingdomfishers-custom.workers.dev — Worker `4f42ad58-7bdf-499e-b6c1-7128acd30e8e`, release `r12-witnesses-1`.
+- Branch `feat/r12-qa-fixes`; source commit `712d3627b881b137fe11da6fc97d0871600c568c`.
+- Corpus: https://bibleresearch-corpus-staging.kingdomfishers-custom.workers.dev — Worker `713d40b0-5e2e-4d6d-9597-da02b51424e3`, release `r12-witnesses-1`.
 - Application: https://bibleresearch-staging.kingdomfishers-custom.workers.dev — retained version `dedf634a-ce72-4a71-9442-79b647b18dc3`; not redeployed.
 - MCP: https://ejoperxiwxlcbsqrkrvb.supabase.co/functions/v1/bible-mcp-staging/mcp — function version **2**, ACTIVE; deployment artifact SHA-256 `62fe10759482d4f20aa3ea471511d9697f81e7b51dcf8062252bef4d02ca7268`.
 - Asset revision `5d26a11510359b5200a7169c77b73578a7be57fcc95f15764142cc46a5f42eb9`: manifest fingerprint combining base bundle hash and chapter-index hashes, not a direct digest of the final tree. Inventory **19,999 assets**, 20 packed blobs, each asset within 25 MiB. Generated corpus assets are not committed.
 
 ### Implemented and narrowly verified
 
-R8/R11 packed indexes load individual compressed records through validated byte ranges. Redundant summary relations were removed while original evidence, counts and pagination remain available. Secondary resolution avoids unnecessary uncovered-lemma loading. Atomic replacement prevents writes through source hardlinks; affected local derived copies were restored against pinned hashes.
+R8/R11 packed indexes load individual compressed records through validated byte ranges. Packed loader fix in `scripts/corpus-worker.mjs`: bounded streaming extraction (`readPackedRange` via BYOB reader / `readAtLeast` slices), early stream cancellation of unread suffixes, native `gunzipSync` decoding, request-local promise inflight cache, and completed-record caching. This prevents buffering whole packed blobs on HTTP 200 responses. Verified in Node (`scripts/verify-r12-packed-loading.mjs`) and the actual Cloudflare Workers runtime (`workerd`).
+
+Redundant summary relations were removed while original evidence, counts and pagination remain available. Secondary resolution avoids unnecessary uncovered-lemma loading. Atomic replacement prevents writes through source hardlinks; affected local derived copies were restored against pinned hashes.
 
 Grammatical discovery now validates both original-language token identities/coordinates against exact source witnesses and counts independent clauses across mirrored edges/editions. Chapter context prioritizes attested lexical candidates, deduplicates base Strong’s candidates, and retains alternatives without example-specific person mappings.
 
 The separate staging MCP exposes **14 read-only corpus tools**, no notes/writes, and no production fallback. Additive `verification_release` identifies `mcp_release`, `corpus_target`, `corpus_url`, `corpus_release`, `worker_version`, `source_commit`, and `asset_sha256`. Discovery provenance uses exact `rel:...` IDs; alternatives remain in `sense_candidates`.
 
-Type-check, focused Deno boundary test/check, representative packed-record/discovery checks and diff checks passed. Deployment smoke: application HTTP 200; MCP health/backend HTTP 200; 14 read-only tools; actual stone/precious evidence returned the expected three passages and release tuple above. Earlier local grammatical comparison improved matching displayed witnesses from **39/220 to 193/193** over 16 queries; this preceded final packaging/context ordering and is preliminary. No full postdeployment regression, browser acceptance or load/CPU testing was run.
+Type-check, build, loader regression, and workerd runtime tests passed. Deployment smoke: Worker version `713d40b0-5e2e-4d6d-9597-da02b51424e3`; health/backend HTTP 200; 12/12 cold and warm concurrent resource probes HTTP 200 with 0 HTTP 503s (`scripts/verify-r12-staging-resources.mjs`); Greek evidence (`r11:gram:G3037:modifies:G5093`), Hebrew evidence (`r11:gram:H5397:possessive_construction_with:H7307`), and discovery (`discover_biblical_connections_v2` for `scarlet Tamar Rahab Matthew 1`) verified live. Earlier local grammatical comparison improved matching displayed witnesses from **39/220 to 193/193** over 16 queries; this preceded final packaging/context ordering and is preliminary. Full postdeployment load/CPU acceptance remains open for independent testing.
 
 ### Independent cases (use published tool schemas for argument names)
 
