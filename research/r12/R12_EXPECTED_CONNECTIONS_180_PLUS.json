@@ -1,0 +1,2000 @@
+{
+  "schema_version": "r12-expected-connections-v1",
+  "created_at": "2026-11-18",
+  "purpose": "Public, source-referenced behavioral benchmark for automatic BibleResearch discovery. Tests whether a semantically equivalent connection ranks near the top, not exact result titles, IDs or prescribed intermediate hops.",
+  "source_status": "Human-curated expectations. Reference locations are proposed biblical witness anchors, not 55 independently audited MCP result proofs. Each candidate must be checked against the cited texts and source data before being treated as gold.",
+  "methodology": {
+    "primary_mcp_tool": "discover_biblical_connections_v2",
+    "mcp_endpoint": "https://ejoperxiwxlcbsqrkrvb.supabase.co/functions/v1/bible-mcp/mcp",
+    "http_fallback": "POST https://bibleresearch-corpus.kingdomfishers-custom.workers.dev/v1/rpc/discover_biblical_connections_v2",
+    "evidence_tool": "get_connection_evidence_v1",
+    "default_result_window": 25,
+    "rank_rule": "Count a match only if a result in strongest_connections[0:top_k] expresses the specified source-to-target relationship, including equivalent paraphrases, original-script lexical IDs, cross-references, or a justified typed multi-hop path. A bare shared word, distant verse overlap, or fabricated/unsupported chain does not pass.",
+    "evidence_rule": "Fetch the matched evidence_id and confirm actual original-language or biblical verse witnesses support the claimed relationship and epistemic status. Any of expected.biblical_witnesses may support an equivalent result; they are not mandatory exact citation strings unless directly required by the relation.",
+    "scoring": "Automatic candidate matching by aliases/IDs/references should be followed by evidence-aware adjudication; report PASS@K, PARTIAL, FAIL, UNSUPPORTED, NOT_PRECOMPUTED, ERROR, and NO_DATA separately.",
+    "leakage": "Many queries intentionally name only the source anchor; target is held in expected. The suite is public and is NOT a sealed or independent statistical holdout. Never hardcode cases into the discovery algorithm.",
+    "coverage": "Cases include beyond-pilot anchors; expected absence of precomputation must be recorded as coverage rather than evidence that the relationship is false.",
+    "classification": "explicit_text=direct attestation; explicit_intertext=quoted/referenced; lexical_relationship=language evidence; literary_wordplay=source-contextual form resemblance; orthographic_candidate=letters alone; candidate_intertext=plausible comparison, not authorial intent; external_world=modern claims not biblical proof."
+  },
+  "cases": [
+    {
+      "id": "L001",
+      "category": "linguistic_form",
+      "difficulty": 2,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H0120",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Adamah ground H0127",
+        "basis": "Man formed from ground shares Hebrew consonantal and literary wordplay",
+        "acceptable_target_terms": [
+          "H0127",
+          "adamah",
+          "ground"
+        ],
+        "biblical_witnesses": [
+          "Genesis 2:7",
+          "Genesis 3:19"
+        ],
+        "evidence_status": "literary_wordplay",
+        "top_k": 15
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "L002",
+      "category": "linguistic_form",
+      "difficulty": 3,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H0120",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Dam blood H1818",
+        "basis": "Adam and dam share dalet-mem letters and are juxtaposed in the blood and human life discourse",
+        "acceptable_target_terms": [
+          "H1818",
+          "dam",
+          "blood"
+        ],
+        "biblical_witnesses": [
+          "Genesis 9:5",
+          "Genesis 9:6"
+        ],
+        "evidence_status": "orthographic_candidate",
+        "top_k": 25
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "L003",
+      "category": "linguistic_lexical",
+      "difficulty": 2,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H1818",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Life of flesh and blood",
+        "basis": "Blood is linked explicitly with life in sacrificial instructions",
+        "acceptable_target_terms": [
+          "H5315",
+          "life",
+          "nephesh"
+        ],
+        "biblical_witnesses": [
+          "Leviticus 17:11",
+          "Deuteronomy 12:23"
+        ],
+        "evidence_status": "explicit_text",
+        "top_k": 10
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "L004",
+      "category": "linguistic_form",
+      "difficulty": 2,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H2233",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Sowing seed verb H2232",
+        "basis": "Hebrew noun seed and verb sow share a word family and agriculture scene",
+        "acceptable_target_terms": [
+          "H2232",
+          "zara",
+          "sow"
+        ],
+        "biblical_witnesses": [
+          "Genesis 1:11",
+          "Genesis 26:12"
+        ],
+        "evidence_status": "lexical_relationship",
+        "top_k": 15
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "L005",
+      "category": "linguistic_lexical",
+      "difficulty": 2,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H2233",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Offspring of Abraham",
+        "basis": "Zera denotes descendants in promises to Abraham",
+        "acceptable_target_terms": [
+          "H0085",
+          "Abraham",
+          "offspring"
+        ],
+        "biblical_witnesses": [
+          "Genesis 22:17",
+          "Isaiah 41:8"
+        ],
+        "evidence_status": "explicit_text",
+        "top_k": 12
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "L006",
+      "category": "linguistic_lexical",
+      "difficulty": 2,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H1285",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Cutting a covenant H3772",
+        "basis": "Hebrew covenant enters into the idiom cut a covenant",
+        "acceptable_target_terms": [
+          "H3772",
+          "karat",
+          "cut"
+        ],
+        "biblical_witnesses": [
+          "Genesis 15:18",
+          "Deuteronomy 5:2"
+        ],
+        "evidence_status": "explicit_text",
+        "top_k": 10
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "L007",
+      "category": "linguistic_lexical",
+      "difficulty": 2,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H1285",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Remember covenant H2142",
+        "basis": "The covenant is explicitly remembered by God",
+        "acceptable_target_terms": [
+          "H2142",
+          "remember",
+          "zakar"
+        ],
+        "biblical_witnesses": [
+          "Genesis 9:15",
+          "Exodus 2:24"
+        ],
+        "evidence_status": "explicit_text",
+        "top_k": 12
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "L008",
+      "category": "linguistic_lexical",
+      "difficulty": 3,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H1285",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Forgetting covenant H7911",
+        "basis": "Warning not to forget covenant supplies precise grammar and concept relation",
+        "acceptable_target_terms": [
+          "H7911",
+          "forget",
+          "shakach"
+        ],
+        "biblical_witnesses": [
+          "Deuteronomy 4:23",
+          "2 Kings 17:38"
+        ],
+        "evidence_status": "explicit_text",
+        "top_k": 15
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "L009",
+      "category": "linguistic_polysemy",
+      "difficulty": 3,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H7307",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Wind blowing over waters",
+        "basis": "Ruach wind or spirit and waters form a source backed parallel with sense distinctions",
+        "acceptable_target_terms": [
+          "H4325",
+          "water",
+          "wind"
+        ],
+        "biblical_witnesses": [
+          "Genesis 1:2",
+          "Genesis 8:1"
+        ],
+        "evidence_status": "literary_comparison",
+        "top_k": 20
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "L010",
+      "category": "linguistic_polysemy",
+      "difficulty": 3,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H7307",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Breath and giving life",
+        "basis": "Ruach functions as breath or wind in revivification vision",
+        "acceptable_target_terms": [
+          "H2416",
+          "breath",
+          "live"
+        ],
+        "biblical_witnesses": [
+          "Ezekiel 37:9",
+          "Ezekiel 37:10"
+        ],
+        "evidence_status": "explicit_text",
+        "top_k": 15
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "L011",
+      "category": "linguistic_polysemy",
+      "difficulty": 2,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H5869",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Eye and spring senses of ayin",
+        "basis": "Hebrew ayin has distinct anatomical and water-source senses without proving they are interchangeable",
+        "acceptable_target_terms": [
+          "H0875",
+          "spring",
+          "well"
+        ],
+        "biblical_witnesses": [
+          "Genesis 16:7",
+          "Zechariah 4:10"
+        ],
+        "evidence_status": "lexical_relationship",
+        "top_k": 20
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "L012",
+      "category": "linguistic_translation",
+      "difficulty": 4,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H5869",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Greek eye G3788 and prophetic eyes",
+        "basis": "Eye terminology is used in separate visions with a possible intertextual comparison",
+        "acceptable_target_terms": [
+          "G3788",
+          "ophthalmos",
+          "eyes"
+        ],
+        "biblical_witnesses": [
+          "Zechariah 4:10",
+          "Revelation 5:6"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 20
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "L013",
+      "category": "linguistic_lexical",
+      "difficulty": 1,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H4501",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Lamps H5216 mounted on lampstand",
+        "basis": "Lampstand has seven lamps in the tabernacle instructions",
+        "acceptable_target_terms": [
+          "H5216",
+          "ner",
+          "lamp"
+        ],
+        "biblical_witnesses": [
+          "Exodus 25:31",
+          "Exodus 25:37"
+        ],
+        "evidence_status": "explicit_text",
+        "top_k": 10
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "L014",
+      "category": "linguistic_translation",
+      "difficulty": 2,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H4501",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Greek lampstand G3087",
+        "basis": "Hebrew and Greek lampstand terminology connects original language images",
+        "acceptable_target_terms": [
+          "G3087",
+          "luchnia",
+          "lampstand"
+        ],
+        "biblical_witnesses": [
+          "Exodus 25:31",
+          "Revelation 1:12"
+        ],
+        "evidence_status": "lexical_relationship",
+        "top_k": 15
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "L015",
+      "category": "linguistic_translation",
+      "difficulty": 2,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H5216",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Greek oil lamp G3088",
+        "basis": "Hebrew ner and Greek luchnos designate lamps with distinct source settings",
+        "acceptable_target_terms": [
+          "G3088",
+          "luchnos",
+          "lamp"
+        ],
+        "biblical_witnesses": [
+          "Exodus 27:20",
+          "Matthew 5:15"
+        ],
+        "evidence_status": "lexical_relationship",
+        "top_k": 15
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "L016",
+      "category": "linguistic_lexical",
+      "difficulty": 2,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H5216",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Oil H8081 feeding lamps",
+        "basis": "Lighting oil and lamps are functionally and textually associated",
+        "acceptable_target_terms": [
+          "H8081",
+          "shemen",
+          "oil"
+        ],
+        "biblical_witnesses": [
+          "Exodus 27:20",
+          "Zechariah 4:12"
+        ],
+        "evidence_status": "explicit_text",
+        "top_k": 15
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "L017",
+      "category": "linguistic_translation",
+      "difficulty": 3,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H8438",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Scarlet color Greek G2847",
+        "basis": "Scarlet dye or color vocabulary links Hebrew ritual descriptions and Greek scarlet wool",
+        "acceptable_target_terms": [
+          "G2847",
+          "kokkinos",
+          "scarlet"
+        ],
+        "biblical_witnesses": [
+          "Leviticus 14:4",
+          "Hebrews 9:19"
+        ],
+        "evidence_status": "lexical_relationship",
+        "top_k": 15
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "L018",
+      "category": "linguistic_translation",
+      "difficulty": 2,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H0231",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Greek hyssop G5301",
+        "basis": "Hyssop reappears in Greek ritual account of sprinkling",
+        "acceptable_target_terms": [
+          "G5301",
+          "hyssop",
+          "hyssopos"
+        ],
+        "biblical_witnesses": [
+          "Exodus 12:22",
+          "Hebrews 9:19"
+        ],
+        "evidence_status": "lexical_relationship",
+        "top_k": 10
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "L019",
+      "category": "linguistic_lexical",
+      "difficulty": 2,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H0231",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Scarlet thread or material in purification",
+        "basis": "Hyssop and scarlet material share distinct cleansing ceremonies",
+        "acceptable_target_terms": [
+          "H8438",
+          "scarlet",
+          "red"
+        ],
+        "biblical_witnesses": [
+          "Leviticus 14:4",
+          "Numbers 19:6"
+        ],
+        "evidence_status": "explicit_text",
+        "top_k": 12
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "L020",
+      "category": "linguistic_translation",
+      "difficulty": 2,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H4682",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Greek unleavened G0106",
+        "basis": "Hebrew matzah and Greek azyma occur in covenant and Passover contexts",
+        "acceptable_target_terms": [
+          "G0106",
+          "azyma",
+          "unleavened"
+        ],
+        "biblical_witnesses": [
+          "Exodus 12:15",
+          "1 Corinthians 5:8"
+        ],
+        "evidence_status": "lexical_relationship",
+        "top_k": 15
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "L021",
+      "category": "linguistic_lexical",
+      "difficulty": 1,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H0784",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Smoke H6227 from fire",
+        "basis": "Both fire and smoke explicitly occur in Sinai and covenant theophany",
+        "acceptable_target_terms": [
+          "H6227",
+          "smoke",
+          "ashan"
+        ],
+        "biblical_witnesses": [
+          "Exodus 19:18",
+          "Genesis 15:17"
+        ],
+        "evidence_status": "explicit_text",
+        "top_k": 10
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "L022",
+      "category": "linguistic_translation",
+      "difficulty": 2,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H3899",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Greek bread G0740",
+        "basis": "Jesus cites the Hebrew bread versus word of God text in Greek tradition",
+        "acceptable_target_terms": [
+          "G0740",
+          "artos",
+          "bread"
+        ],
+        "biblical_witnesses": [
+          "Deuteronomy 8:3",
+          "Matthew 4:4"
+        ],
+        "evidence_status": "explicit_intertext",
+        "top_k": 12
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "L023",
+      "category": "linguistic_translation",
+      "difficulty": 2,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H0216",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Greek light G5457",
+        "basis": "Light and darkness are an explicit creation vocabulary and prologue comparison",
+        "acceptable_target_terms": [
+          "G5457",
+          "phos",
+          "light"
+        ],
+        "biblical_witnesses": [
+          "Genesis 1:3",
+          "John 1:5"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 15
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "L024",
+      "category": "linguistic_lexical",
+      "difficulty": 2,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H3722",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Atonement and mercy seat",
+        "basis": "Atonement rite is connected to mercy seat and purification",
+        "acceptable_target_terms": [
+          "H3727",
+          "kapporeth",
+          "mercy seat"
+        ],
+        "biblical_witnesses": [
+          "Leviticus 16:14",
+          "Leviticus 16:30"
+        ],
+        "evidence_status": "explicit_text",
+        "top_k": 20
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "L025",
+      "category": "linguistic_translation",
+      "difficulty": 2,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H4325",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Greek water G5204",
+        "basis": "Hebrew and Greek water imagery across provision and life-giving water",
+        "acceptable_target_terms": [
+          "G5204",
+          "hydor",
+          "water"
+        ],
+        "biblical_witnesses": [
+          "Exodus 17:6",
+          "John 4:14"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 20
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "L026",
+      "category": "linguistic_lexical",
+      "difficulty": 3,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "G3056",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Rhema word G4487",
+        "basis": "Greek logos and rhema are related speech terms but are not interchangeable synonyms in context",
+        "acceptable_target_terms": [
+          "G4487",
+          "rhema",
+          "utterance"
+        ],
+        "biblical_witnesses": [
+          "John 1:1",
+          "Hebrews 1:3"
+        ],
+        "evidence_status": "lexical_relationship",
+        "top_k": 20
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "L027",
+      "category": "linguistic_lexical",
+      "difficulty": 2,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "G3088",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Morning star or light-bearer G5459",
+        "basis": "Lamp and morning star are jointly attested in one verse and form a light image progression",
+        "acceptable_target_terms": [
+          "G5459",
+          "phosphoros",
+          "morning star"
+        ],
+        "biblical_witnesses": [
+          "2 Peter 1:19"
+        ],
+        "evidence_status": "explicit_text",
+        "top_k": 10
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "L028",
+      "category": "linguistic_translation",
+      "difficulty": 2,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "G3087",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Hebrew lampstand menorah H4501",
+        "basis": "Vision lampstand vocabulary supports a cautious literary comparison",
+        "acceptable_target_terms": [
+          "H4501",
+          "menorah",
+          "lampstand"
+        ],
+        "biblical_witnesses": [
+          "Zechariah 4:2",
+          "Revelation 1:12"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 15
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "L029",
+      "category": "linguistic_lexical",
+      "difficulty": 1,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "G2847",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Scarlet wool G2053",
+        "basis": "Scarlet directly modifies wool in ritual description",
+        "acceptable_target_terms": [
+          "G2053",
+          "erion",
+          "wool"
+        ],
+        "biblical_witnesses": [
+          "Hebrews 9:19"
+        ],
+        "evidence_status": "explicit_text",
+        "top_k": 10
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "L030",
+      "category": "linguistic_translation",
+      "difficulty": 3,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "G1953",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Hebrew remembering or forgetting a covenant",
+        "basis": "Cross-language lexical forgetfulness can prompt a covenantal-memory comparison without establishing literary dependence",
+        "acceptable_target_terms": [
+          "H7911",
+          "shakach",
+          "forget"
+        ],
+        "biblical_witnesses": [
+          "Deuteronomy 4:23",
+          "James 1:25"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 20
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "L031",
+      "category": "linguistic_lexical",
+      "difficulty": 2,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "G5140",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Three days G2250",
+        "basis": "Numeral three attaches to days in death and resurrection descriptions",
+        "acceptable_target_terms": [
+          "G2250",
+          "hemera",
+          "day"
+        ],
+        "biblical_witnesses": [
+          "Matthew 12:40",
+          "1 Corinthians 15:4"
+        ],
+        "evidence_status": "explicit_text",
+        "top_k": 12
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "L032",
+      "category": "linguistic_lexical",
+      "difficulty": 2,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "G1453",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Resurrection anastasis G0386",
+        "basis": "Verb raise and noun resurrection connect in same doctrinal discourse",
+        "acceptable_target_terms": [
+          "G0386",
+          "anastasis",
+          "resurrection"
+        ],
+        "biblical_witnesses": [
+          "1 Corinthians 15:12",
+          "1 Corinthians 15:13"
+        ],
+        "evidence_status": "lexical_relationship",
+        "top_k": 12
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "L033",
+      "category": "linguistic_lexical",
+      "difficulty": 2,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "G3957",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Unleavened bread festival",
+        "basis": "Passover and the Feast of Unleavened Bread share adjacent liturgical calendar context",
+        "acceptable_target_terms": [
+          "G0106",
+          "unleavened",
+          "azyma"
+        ],
+        "biblical_witnesses": [
+          "Luke 22:1",
+          "1 Corinthians 5:7"
+        ],
+        "evidence_status": "explicit_text",
+        "top_k": 12
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "L034",
+      "category": "linguistic_lexical",
+      "difficulty": 2,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H4682",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Departure from Egypt",
+        "basis": "Unleavened bread is connected directly to the departure and haste",
+        "acceptable_target_terms": [
+          "H3318",
+          "come out",
+          "Egypt"
+        ],
+        "biblical_witnesses": [
+          "Exodus 12:39",
+          "Deuteronomy 16:3"
+        ],
+        "evidence_status": "explicit_text",
+        "top_k": 15
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "L035",
+      "category": "linguistic_lexical",
+      "difficulty": 2,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H5216",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Light from a lamp",
+        "basis": "The light of a lamp is a textual expression across scripture",
+        "acceptable_target_terms": [
+          "G5457",
+          "light",
+          "phos"
+        ],
+        "biblical_witnesses": [
+          "Revelation 18:23",
+          "Matthew 5:15"
+        ],
+        "evidence_status": "explicit_text",
+        "top_k": 15
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "L036",
+      "category": "linguistic_translation",
+      "difficulty": 2,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H2091",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Gold in lampstand and heavenly city",
+        "basis": "Material gold connects sanctuary objects and New Jerusalem description without proving identity",
+        "acceptable_target_terms": [
+          "G5553",
+          "gold",
+          "chrysion"
+        ],
+        "biblical_witnesses": [
+          "Exodus 25:31",
+          "Revelation 21:18"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 20
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "L037",
+      "category": "linguistic_lexical",
+      "difficulty": 1,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H3220",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Red Sea or Sea of Reeds",
+        "basis": "Sea is described in the crossing and Song of Moses",
+        "acceptable_target_terms": [
+          "H5488",
+          "reeds",
+          "Red Sea"
+        ],
+        "biblical_witnesses": [
+          "Exodus 14:21",
+          "Exodus 15:4"
+        ],
+        "evidence_status": "explicit_text",
+        "top_k": 10
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "L038",
+      "category": "linguistic_translation",
+      "difficulty": 3,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H2416",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Greek life G2222",
+        "basis": "Hebrew life and Greek life are comparable but theological referents must stay distinct",
+        "acceptable_target_terms": [
+          "G2222",
+          "zoe",
+          "life"
+        ],
+        "biblical_witnesses": [
+          "Genesis 2:7",
+          "John 1:4"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 20
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "L039",
+      "category": "linguistic_translation",
+      "difficulty": 3,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H4194",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Greek death G2288",
+        "basis": "NT cites death swallowed up in victory across language traditions",
+        "acceptable_target_terms": [
+          "G2288",
+          "thanatos",
+          "death"
+        ],
+        "biblical_witnesses": [
+          "Isaiah 25:8",
+          "1 Corinthians 15:54"
+        ],
+        "evidence_status": "explicit_intertext",
+        "top_k": 15
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "L040",
+      "category": "linguistic_translation",
+      "difficulty": 2,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H1285",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Greek covenant diatheke G1242",
+        "basis": "Hebrews explicitly quotes the new covenant announcement",
+        "acceptable_target_terms": [
+          "G1242",
+          "diatheke",
+          "new covenant"
+        ],
+        "biblical_witnesses": [
+          "Jeremiah 31:31",
+          "Hebrews 8:8"
+        ],
+        "evidence_status": "explicit_intertext",
+        "top_k": 10
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "L041",
+      "category": "linguistic_translation",
+      "difficulty": 2,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H3068",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Greek Lord kyrios G2962",
+        "basis": "The Shema is cited in Greek using Lord language",
+        "acceptable_target_terms": [
+          "G2962",
+          "kyrios",
+          "Lord"
+        ],
+        "biblical_witnesses": [
+          "Deuteronomy 6:4",
+          "Mark 12:29"
+        ],
+        "evidence_status": "explicit_intertext",
+        "top_k": 10
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "L042",
+      "category": "linguistic_translation",
+      "difficulty": 2,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H0157",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Greek love agapao G0025",
+        "basis": "The command to love God is cited in Greek",
+        "acceptable_target_terms": [
+          "G0025",
+          "agapao",
+          "love"
+        ],
+        "biblical_witnesses": [
+          "Deuteronomy 6:5",
+          "Mark 12:30"
+        ],
+        "evidence_status": "explicit_intertext",
+        "top_k": 10
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "L043",
+      "category": "linguistic_translation",
+      "difficulty": 2,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H0539",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Greek believe G4100",
+        "basis": "Abraham believed God in source text and Paul's quotation",
+        "acceptable_target_terms": [
+          "G4100",
+          "pisteuo",
+          "believe"
+        ],
+        "biblical_witnesses": [
+          "Genesis 15:6",
+          "Romans 4:3"
+        ],
+        "evidence_status": "explicit_intertext",
+        "top_k": 12
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "L044",
+      "category": "linguistic_translation",
+      "difficulty": 2,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H7225",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Greek beginning arche G0746",
+        "basis": "Beginning phrase is a strong literary and lexical comparison",
+        "acceptable_target_terms": [
+          "G0746",
+          "arche",
+          "beginning"
+        ],
+        "biblical_witnesses": [
+          "Genesis 1:1",
+          "John 1:1"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 10
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "L045",
+      "category": "linguistic_translation",
+      "difficulty": 2,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H0430",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Greek God theos G2316",
+        "basis": "Original language terms designate God in creation/prologue contexts",
+        "acceptable_target_terms": [
+          "G2316",
+          "theos",
+          "God"
+        ],
+        "biblical_witnesses": [
+          "Genesis 1:1",
+          "John 1:1"
+        ],
+        "evidence_status": "lexical_relationship",
+        "top_k": 15
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "L046",
+      "category": "linguistic_translation",
+      "difficulty": 2,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H7676",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Greek Sabbath G4521",
+        "basis": "Sabbath practice and Greek discussion of Sabbath are related",
+        "acceptable_target_terms": [
+          "G4521",
+          "sabbaton",
+          "Sabbath"
+        ],
+        "biblical_witnesses": [
+          "Exodus 20:8",
+          "Mark 2:27"
+        ],
+        "evidence_status": "lexical_relationship",
+        "top_k": 15
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "L047",
+      "category": "linguistic_translation",
+      "difficulty": 2,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H8064",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Greek heaven ouranos G3772",
+        "basis": "Cosmic and prayer language use corresponding heaven terms",
+        "acceptable_target_terms": [
+          "G3772",
+          "ouranos",
+          "heaven"
+        ],
+        "biblical_witnesses": [
+          "Genesis 1:1",
+          "Matthew 6:10"
+        ],
+        "evidence_status": "lexical_relationship",
+        "top_k": 15
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "L048",
+      "category": "linguistic_polysemy",
+      "difficulty": 3,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H2233",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Physical seed versus descendants",
+        "basis": "One Hebrew lemma has agricultural and genealogical usages requiring distinct occurrence senses",
+        "acceptable_target_terms": [
+          "offspring",
+          "grain",
+          "sow",
+          "descendant"
+        ],
+        "biblical_witnesses": [
+          "Genesis 1:11",
+          "Genesis 22:17"
+        ],
+        "evidence_status": "lexical_relationship",
+        "top_k": 20
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "L049",
+      "category": "linguistic_polysemy",
+      "difficulty": 4,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H7307",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Spirit of God versus moving air",
+        "basis": "Ruach has context-bound spirit and wind meanings and must not automatically receive physical air properties",
+        "acceptable_target_terms": [
+          "spirit",
+          "wind",
+          "breath"
+        ],
+        "biblical_witnesses": [
+          "Genesis 1:2",
+          "Genesis 8:1",
+          "Zechariah 4:6"
+        ],
+        "evidence_status": "lexical_relationship",
+        "top_k": 20
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "L050",
+      "category": "linguistic_form",
+      "difficulty": 3,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H0127",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Man adam H0120",
+        "basis": "Ground and man share a sound and consonantal pattern that the narrative exploits",
+        "acceptable_target_terms": [
+          "H0120",
+          "adam",
+          "human"
+        ],
+        "biblical_witnesses": [
+          "Genesis 2:7",
+          "Genesis 3:19"
+        ],
+        "evidence_status": "literary_wordplay",
+        "top_k": 15
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "L051",
+      "category": "linguistic_form",
+      "difficulty": 3,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H1818",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Man adam H0120",
+        "basis": "Blood and mankind occur together; shared dalet-mem string is orthographic not proven etymology",
+        "acceptable_target_terms": [
+          "H0120",
+          "adam",
+          "man"
+        ],
+        "biblical_witnesses": [
+          "Genesis 9:5",
+          "Genesis 9:6"
+        ],
+        "evidence_status": "orthographic_candidate",
+        "top_k": 20
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "L052",
+      "category": "linguistic_lexical",
+      "difficulty": 3,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H0231",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Hyssop and cleansing scarlet wool",
+        "basis": "Source-backed ritual bridge through scarlet material and Greek passage",
+        "acceptable_target_terms": [
+          "G2053",
+          "scarlet wool",
+          "wool"
+        ],
+        "biblical_witnesses": [
+          "Leviticus 14:4",
+          "Hebrews 9:19"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 15
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "L053",
+      "category": "linguistic_lexical",
+      "difficulty": 3,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H1285",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Greek forgetfulness in James 1",
+        "basis": "Covenant forgetfulness through Hebrew forget and LXX vocabulary gives an exploratory comparison",
+        "acceptable_target_terms": [
+          "G1953",
+          "forgetfulness",
+          "James"
+        ],
+        "biblical_witnesses": [
+          "Deuteronomy 4:23",
+          "James 1:25"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 25
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "L054",
+      "category": "linguistic_lexical",
+      "difficulty": 2,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "H5237",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Stranger foreigner in separation laws",
+        "basis": "Foreignness vocabulary appears in food and Passover participation laws",
+        "acceptable_target_terms": [
+          "foreigner",
+          "stranger",
+          "alien"
+        ],
+        "biblical_witnesses": [
+          "Deuteronomy 14:21",
+          "Exodus 12:43"
+        ],
+        "evidence_status": "explicit_text",
+        "top_k": 20
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "L055",
+      "category": "linguistic_lexical",
+      "difficulty": 2,
+      "query_type": "single_anchor",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "G3088",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Lamp and illuminating G5461",
+        "basis": "Lamp directly participates in the act of giving light",
+        "acceptable_target_terms": [
+          "G5461",
+          "photizo",
+          "illuminate"
+        ],
+        "biblical_witnesses": [
+          "Luke 11:36"
+        ],
+        "evidence_status": "explicit_text",
+        "top_k": 12
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    }
+  ]
+}
