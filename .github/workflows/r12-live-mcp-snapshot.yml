@@ -16,7 +16,7 @@ jobs:
   collect:
     name: Capture actual BibleResearch MCP results
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 55
     steps:
       - uses: actions/checkout@v4
         with:
@@ -25,13 +25,17 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Configure commit author
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
       - name: Collect and checkpoint all 239 exact MCP queries
         env:
           BIBLERESEARCH_MCP_URL: https://ejoperxiwxlcbsqrkrvb.supabase.co/functions/v1/bible-mcp/mcp
-          MCP_CONCURRENCY: '2'
+          MCP_CONCURRENCY: '1'
           MCP_BATCH: '20'
-          MCP_ATTEMPTS: '2'
-          MCP_EVIDENCE: '1'
+          MCP_ATTEMPTS: '3'
+          MCP_EVIDENCE: '0'
         run: node scripts/collect-r12-live-mcp-snapshot.mjs
       - name: Keep results as artifact even if a push failed
         if: always()
