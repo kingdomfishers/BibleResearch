@@ -25,9 +25,33 @@ for(const file of manifest.batches||[]){
   observations.set(item.case_id,item);
  }
 }
+const normalized=s=>String(s??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim();
+function literalAlias(value,haystack){
+ const v=normalized(value);
+ if(!v)return false;
+ const h=normalized(haystack);
+ // Unicode word boundaries: "dam" must NOT match inside "adamah".
+ const esc=[...v].map(ch=>".*+?^$()[]{}|\\".includes(ch)?"\\"+ch:ch).join("");
+ return new RegExp("(^|[^\\p{L}\\p{N}])"+esc+"(?=$|[^\\p{L}\\p{N}])","u").test(h);
+}
+function strictAliasMatches(c,ranked){
+ const k=c.expected.top_k??c.expected.disallowed_rank_at_or_above??25;
+ const al=c.expected.acceptable_target_terms||[];
+ return ranked.filter(r=>r.rank<=k).flatMap(r=>{
+  const fields=[
+   ["title",r.title],["summary",r.summary],["target",r.target_node_id],
+   ["evidence_id",r.evidence_id],
+   ["matched_terms",(r.matched_terms||[]).join(" | ")],
+   ["passage_refs",(r.passages||[]).map(p=>p.ref).join(" | ")]
+  ];
+  const hits=al.flatMap(alias=>fields.filter(([where,text])=>literalAlias(alias,text)).map(([where])=>({alias,where})));
+  return hits.length?[{rank:r.rank,evidence_id:r.evidence_id,title:r.title,hits}]:[];
+ });
+}
+
 const rows=reference.cases.map(c=>{
  const x=observations.get(c.id);
- const matches=x?.target_candidates||[];
+ const matches=x?strictAliasMatches(c,x.top25||[]):[];
  const first=matches[0];
  const ranked=x?.top25||[];
  const rank=first?.rank??null;
@@ -44,6 +68,7 @@ const rows=reference.cases.map(c=>{
   first_alias_rank:rank,
   first_alias_evidence_id:chosen?.evidence_id||"",
   first_alias_title:chosen?.title||"",
+  first_alias_hit_reasons:JSON.stringify(first?.hits||[]),
   first_alias_epistemic_class:chosen?.epistemic_class||"",
   first_alias_witness_refs:(chosen?.passages||[]).map(p=>p.ref).join("; "),
   first_alias_r12_interest:chosen?.r12_metadata?.interest??"",
@@ -87,7 +112,7 @@ const report={
  duplicate_ids:duplicates,
  status_counts:counts,
  by_category:byCategory,
- note:"No PASS or FAIL is inferred from text aliases alone. Review each case's evidence, provenance, semantic composition and epistemic scope before assigning a verdict.",
+ note:"Literal aliases use Unicode token boundaries to avoid substring false positives (e.g. dam inside adamah). No PASS or FAIL is inferred from text aliases alone. Review each case's evidence, provenance, semantic composition and epistemic scope before assigning a verdict.",
  manual_verdict_values:["PASS_AT_K","PARTIAL","FAIL_AT_K","PASS_NEG","FAIL_NEG","NOT_PRECOMPUTED","NO_QUERY_MATCH","TRANSPORT_ERROR","INCONCLUSIVE"],
  rows
 };
