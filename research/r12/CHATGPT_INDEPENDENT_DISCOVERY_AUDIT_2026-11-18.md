@@ -1,5 +1,14 @@
 # BibleResearch R12 — Independent Discovery Algorithm Audit
 
+## Infrastructure status correction — 2026-11-19
+
+**The HTTP 503 / Cloudflare `exceededCpu` incident documented in this November 18 audit is FIXED for the observed full production serial retest.** Worker `cf2182ed-b3fc-4ab6-99ab-5590e7e8a075` and MCP v43 returned valid responses on **239/239 benchmark cases** (238 `ok`, one `no_match` for unresolved “yeast”), with **zero 503/timeout/transport errors** across 222 actual MCP requests. The historic errors below describe the **prior deployed version** and remain useful for regression analysis. **Ranking, source-provenance and semantic-composition defects remain open**: 4 misleading multi-hop paths were independently rechecked and still labeled `documented_lexical_relationship`.
+
+[2026-11-19 complete retest report](https://github.com/kingdomfishers/BibleResearch/blob/feat/r12-qa-fixes/research/r12/live_mcp_retest_2026-11-19/R12_MCP_RETEST_REPORT.md) · [Case-by-case results](https://github.com/kingdomfishers/BibleResearch/blob/feat/r12-qa-fixes/research/r12/live_mcp_retest_2026-11-19/R12_MCP_RETEST_ALL_239.json).
+
+---
+
+
 **Date:** 2026-11-18  
 **Author:** ChatGPT independent audit, using live production RPC/MCP, GitHub source inspection, Cloudflare telemetry, STEP verse-token calls, and selected published scholarship.  
 **Scope:** Discovery relevance, evidence correctness, unexpected multihop patterns, linguistic wordplay, physical-world provenance, ranking calibration, runtime reliability, and reproducibility.  
