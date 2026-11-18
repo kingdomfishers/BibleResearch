@@ -11,9 +11,10 @@ permissions:
   contents: write
 concurrency:
   group: r12-live-mcp-snapshot
-  cancel-in-progress: false
+  cancel-in-progress: true
 jobs:
   collect:
+    if: github.event_name == 'workflow_dispatch'
     name: Capture actual BibleResearch MCP results
     runs-on: ubuntu-latest
     timeout-minutes: 55
