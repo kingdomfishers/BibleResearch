@@ -3980,6 +3980,2353 @@
       },
       "review_status": "proposed_not_individually_verified",
       "polarity": "positive"
+    },
+    {
+      "id": "S001",
+      "category": "narrative_chronology",
+      "difficulty": 4,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Exodus 12:15",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Feast of Unleavened Bread and sea-crossing sequence",
+        "basis": "Matzah preparation belongs to same Exodus departure timeline preceding the sea crossing not a direct feast commemoration of the crossing",
+        "acceptable_target_terms": [
+          "Exodus 14:21",
+          "Red Sea",
+          "crossing"
+        ],
+        "biblical_witnesses": [
+          "Exodus 12:15",
+          "Exodus 12:39",
+          "Exodus 14:21"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 25
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S002",
+      "category": "narrative_chronology",
+      "difficulty": 4,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Exodus 12:39",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Hasty bread and deliverance through sea",
+        "basis": "Unleavened bread indicates haste in escape before dry-ground sea passage",
+        "acceptable_target_terms": [
+          "Exodus 14:29",
+          "sea",
+          "dry land"
+        ],
+        "biblical_witnesses": [
+          "Exodus 12:39",
+          "Exodus 14:29",
+          "Deuteronomy 16:3"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 25
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S003",
+      "category": "narrative_chronology",
+      "difficulty": 3,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Exodus 13:3",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Remembering Exodus with unleavened bread",
+        "basis": "Ritual eating is linked to remembrance of Egyptian deliverance",
+        "acceptable_target_terms": [
+          "Deuteronomy 16:3",
+          "affliction",
+          "remember"
+        ],
+        "biblical_witnesses": [
+          "Exodus 13:3",
+          "Exodus 13:7",
+          "Deuteronomy 16:3"
+        ],
+        "evidence_status": "explicit_text",
+        "top_k": 20
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S004",
+      "category": "narrative_pattern",
+      "difficulty": 4,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Exodus 14:21",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Waters separated dry land appears in creation",
+        "basis": "Parted water and exposed dry ground repeat creation-like physical configuration",
+        "acceptable_target_terms": [
+          "Genesis 1:9",
+          "dry land",
+          "waters gathered"
+        ],
+        "biblical_witnesses": [
+          "Exodus 14:21",
+          "Genesis 1:9"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 25
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S005",
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Exodus 14:21",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Wind over water at creation and flood",
+        "basis": "Wind ruach operates over water in multiple creation or deliverance scenes",
+        "acceptable_target_terms": [
+          "Genesis 8:1",
+          "wind",
+          "waters"
+        ],
+        "biblical_witnesses": [
+          "Exodus 14:21",
+          "Genesis 8:1",
+          "Genesis 1:2"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 25
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S006",
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Exodus 14:30",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Deliverance through sea as baptism",
+        "basis": "Paul explicitly recalls sea deliverance as baptism into Moses",
+        "acceptable_target_terms": [
+          "1 Corinthians 10:2",
+          "baptized",
+          "Moses"
+        ],
+        "biblical_witnesses": [
+          "Exodus 14:30",
+          "1 Corinthians 10:1",
+          "1 Corinthians 10:2"
+        ],
+        "evidence_status": "explicit_intertext",
+        "top_k": 15
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S007",
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Joshua 3:16",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Jordan crossing as parallel to Red Sea",
+        "basis": "Water cut off and dry crossing provide typologically comparable events",
+        "acceptable_target_terms": [
+          "Exodus 14:21",
+          "Red Sea",
+          "divided waters"
+        ],
+        "biblical_witnesses": [
+          "Joshua 3:16",
+          "Exodus 14:21"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 15
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S008",
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "2 Kings 2:8",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Elijah parts Jordan and Joshua crossing",
+        "basis": "Waters divided to enable passage across Jordan",
+        "acceptable_target_terms": [
+          "Joshua 3:16",
+          "Jordan",
+          "waters divided"
+        ],
+        "biblical_witnesses": [
+          "2 Kings 2:8",
+          "Joshua 3:16"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 15
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S009",
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "2 Kings 2:14",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Elisha repeats Elijah water-parting",
+        "basis": "Elisha and Elijah both use mantle at divided Jordan",
+        "acceptable_target_terms": [
+          "2 Kings 2:8",
+          "mantle",
+          "divided"
+        ],
+        "biblical_witnesses": [
+          "2 Kings 2:14",
+          "2 Kings 2:8"
+        ],
+        "evidence_status": "explicit_text",
+        "top_k": 12
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S010",
+      "category": "narrative_pattern",
+      "difficulty": 2,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Numbers 20:11",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Water from rock in two wilderness episodes",
+        "basis": "Moses provides water from rock in two distinct wilderness episodes",
+        "acceptable_target_terms": [
+          "Exodus 17:6",
+          "rock",
+          "water"
+        ],
+        "biblical_witnesses": [
+          "Numbers 20:11",
+          "Exodus 17:6"
+        ],
+        "evidence_status": "explicit_text",
+        "top_k": 15
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S011",
+      "category": "narrative_pattern",
+      "difficulty": 2,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Numbers 11:7",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Manna provision in wilderness",
+        "basis": "Manna described and provided in wilderness generation",
+        "acceptable_target_terms": [
+          "Exodus 16:4",
+          "manna",
+          "heaven bread"
+        ],
+        "biblical_witnesses": [
+          "Numbers 11:7",
+          "Exodus 16:4"
+        ],
+        "evidence_status": "explicit_text",
+        "top_k": 15
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S012",
+      "category": "narrative_chronology",
+      "difficulty": 2,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Leviticus 23:5",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Passover date and original Exodus institution",
+        "basis": "Fourteenth day of first month anchors the Passover calendar",
+        "acceptable_target_terms": [
+          "Exodus 12:6",
+          "fourteenth day",
+          "Passover"
+        ],
+        "biblical_witnesses": [
+          "Leviticus 23:5",
+          "Exodus 12:6"
+        ],
+        "evidence_status": "explicit_text",
+        "top_k": 15
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S013",
+      "category": "narrative_chronology",
+      "difficulty": 2,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Leviticus 23:6",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Seven days of Unleavened Bread",
+        "basis": "Feast begins fifteenth and lasts seven days as ordained in Exodus",
+        "acceptable_target_terms": [
+          "Exodus 12:15",
+          "seven days",
+          "unleavened"
+        ],
+        "biblical_witnesses": [
+          "Leviticus 23:6",
+          "Exodus 12:15"
+        ],
+        "evidence_status": "explicit_text",
+        "top_k": 12
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S014",
+      "category": "narrative_chronology",
+      "difficulty": 4,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Numbers 33:3",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Egypt departure then sea crossing in itinerary",
+        "basis": "Departure after Passover and later crossing listed in sequence",
+        "acceptable_target_terms": [
+          "Numbers 33:8",
+          "sea",
+          "departed"
+        ],
+        "biblical_witnesses": [
+          "Numbers 33:3",
+          "Numbers 33:8"
+        ],
+        "evidence_status": "explicit_text",
+        "top_k": 20
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S015",
+      "category": "narrative_chronology",
+      "difficulty": 3,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Joshua 5:10",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Passover in promised land echoes Exodus",
+        "basis": "Israel celebrates Passover after entering Canaan",
+        "acceptable_target_terms": [
+          "Exodus 12:6",
+          "Passover",
+          "Egypt"
+        ],
+        "biblical_witnesses": [
+          "Joshua 5:10",
+          "Exodus 12:6"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 15
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S016",
+      "category": "narrative_pattern",
+      "difficulty": 4,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "1 Kings 19:8",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Forty days journey to Horeb and Moses forty days",
+        "basis": "Elijah's forty-day Horeb journey can be compared to Moses on mountain",
+        "acceptable_target_terms": [
+          "Exodus 24:18",
+          "forty days",
+          "Moses"
+        ],
+        "biblical_witnesses": [
+          "1 Kings 19:8",
+          "Exodus 24:18"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 25
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S017",
+      "category": "narrative_pattern",
+      "difficulty": 4,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Genesis 40:13",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Third day restored cupbearer",
+        "basis": "Three-day restoration is a candidate narrative/temporal parallel with subject differences",
+        "acceptable_target_terms": [
+          "Hosea 6:2",
+          "third day",
+          "restoration"
+        ],
+        "biblical_witnesses": [
+          "Genesis 40:13",
+          "Hosea 6:2"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 25
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S018",
+      "category": "narrative_pattern",
+      "difficulty": 4,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Hosea 6:2",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Raised on third day and Christ's resurrection",
+        "basis": "Hosea corporate restoration on third day is a candidate Christian interpretive parallel to Jesus raised on third day",
+        "acceptable_target_terms": [
+          "1 Corinthians 15:4",
+          "third day",
+          "raised"
+        ],
+        "biblical_witnesses": [
+          "Hosea 6:2",
+          "1 Corinthians 15:4"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 25
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S019",
+      "category": "narrative_pattern",
+      "difficulty": 2,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Jonah 1:17",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Jonah three days and Son of Man three days",
+        "basis": "Jesus explicitly compares three-day Jonah story and Son of Man",
+        "acceptable_target_terms": [
+          "Matthew 12:40",
+          "three days",
+          "Jonah"
+        ],
+        "biblical_witnesses": [
+          "Jonah 1:17",
+          "Matthew 12:40"
+        ],
+        "evidence_status": "explicit_intertext",
+        "top_k": 10
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S020",
+      "category": "narrative_pattern",
+      "difficulty": 4,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "2 Kings 20:5",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Healing and third-day temple ascent",
+        "basis": "Hezekiah healing and Hosea third-day restoration share temporal imagery without equal referents",
+        "acceptable_target_terms": [
+          "Hosea 6:2",
+          "third day",
+          "revive"
+        ],
+        "biblical_witnesses": [
+          "2 Kings 20:5",
+          "Hosea 6:2"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 25
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S021",
+      "category": "narrative_pattern",
+      "difficulty": 4,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Hosea 6:2",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Hezekiah third-day recovery",
+        "basis": "Shared third-day restoration context and distinct identities",
+        "acceptable_target_terms": [
+          "2 Kings 20:5",
+          "third day",
+          "heal"
+        ],
+        "biblical_witnesses": [
+          "Hosea 6:2",
+          "2 Kings 20:5"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 25
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S022",
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "1 Kings 17:22",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Elijah revives a widow's son and Jesus raises son",
+        "basis": "Two narratives feature restoration of a widow's son to life",
+        "acceptable_target_terms": [
+          "Luke 7:15",
+          "widow",
+          "raised son"
+        ],
+        "biblical_witnesses": [
+          "1 Kings 17:22",
+          "Luke 7:15"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 20
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S023",
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "2 Kings 4:34",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Elisha restores boy and Peter raises Tabitha",
+        "basis": "Prophetic revival narratives can be compared to apostolic raising from death",
+        "acceptable_target_terms": [
+          "Acts 9:40",
+          "raised",
+          "Tabitha"
+        ],
+        "biblical_witnesses": [
+          "2 Kings 4:34",
+          "Acts 9:40"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 25
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S024",
+      "category": "narrative_pattern",
+      "difficulty": 4,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Ezekiel 37:7",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Dry bones restored and Lazarus called forth",
+        "basis": "God brings life to the dead through a spoken command in contexts with distinct scale",
+        "acceptable_target_terms": [
+          "John 11:43",
+          "Lazarus",
+          "come out"
+        ],
+        "biblical_witnesses": [
+          "Ezekiel 37:7",
+          "John 11:43"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 25
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S025",
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Ezekiel 37:12",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Graves opened resurrection imagery",
+        "basis": "Opening of graves and rising imagery in prophecy and passion narrative",
+        "acceptable_target_terms": [
+          "Matthew 27:52",
+          "graves",
+          "raised"
+        ],
+        "biblical_witnesses": [
+          "Ezekiel 37:12",
+          "Matthew 27:52"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 25
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S026",
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Isaiah 26:19",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Dead rise and voice awakens tombs",
+        "basis": "Resurrection wording provides candidate cross-testament correspondence",
+        "acceptable_target_terms": [
+          "John 5:28",
+          "dead shall live",
+          "graves"
+        ],
+        "biblical_witnesses": [
+          "Isaiah 26:19",
+          "John 5:28",
+          "John 5:29"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 20
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S027",
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Exodus 12:13",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Marked house survives danger and Rahab scarlet cord",
+        "basis": "Two rescue narratives mark households for protection; different symbols and contracts",
+        "acceptable_target_terms": [
+          "Joshua 2:18",
+          "scarlet cord",
+          "house"
+        ],
+        "biblical_witnesses": [
+          "Exodus 12:13",
+          "Joshua 2:18",
+          "Joshua 2:21"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 25
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S028",
+      "category": "narrative_genealogy",
+      "difficulty": 2,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Joshua 2:18",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Rahab identified in Matthew genealogy",
+        "basis": "Rahab in Joshua and Matthew genealogy are traditionally identified; genealogical continuity requires review",
+        "acceptable_target_terms": [
+          "Matthew 1:5",
+          "Rahab",
+          "Salmon"
+        ],
+        "biblical_witnesses": [
+          "Joshua 2:18",
+          "Matthew 1:5"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 20
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S029",
+      "category": "narrative_genealogy",
+      "difficulty": 2,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Genesis 38:29",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Tamar's Perez in Matthew genealogy",
+        "basis": "Perez born to Tamar is named in Jesus genealogy",
+        "acceptable_target_terms": [
+          "Matthew 1:3",
+          "Perez",
+          "Tamar"
+        ],
+        "biblical_witnesses": [
+          "Genesis 38:29",
+          "Matthew 1:3"
+        ],
+        "evidence_status": "explicit_text",
+        "top_k": 15
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S030",
+      "category": "narrative_pattern",
+      "difficulty": 4,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Genesis 38:28",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Scarlet thread in Tamar twins and Rahab cord",
+        "basis": "Scarlet thread used as sign in births and rescue narratives",
+        "acceptable_target_terms": [
+          "Joshua 2:18",
+          "scarlet cord",
+          "thread"
+        ],
+        "biblical_witnesses": [
+          "Genesis 38:28",
+          "Joshua 2:18"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 25
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S031",
+      "category": "narrative_genealogy",
+      "difficulty": 2,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Genesis 38:30",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Perez and Zerah in Judah genealogy",
+        "basis": "Tamar twins appear in Judah lineage",
+        "acceptable_target_terms": [
+          "Matthew 1:3",
+          "Perez",
+          "Zerah"
+        ],
+        "biblical_witnesses": [
+          "Genesis 38:30",
+          "Matthew 1:3"
+        ],
+        "evidence_status": "explicit_text",
+        "top_k": 15
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S032",
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Exodus 25:31",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Tabernacle menorah and Zechariah lampstand",
+        "basis": "Vision of golden menorah reuses tabernacle visual vocabulary",
+        "acceptable_target_terms": [
+          "Zechariah 4:2",
+          "seven lamps",
+          "lampstand"
+        ],
+        "biblical_witnesses": [
+          "Exodus 25:31",
+          "Zechariah 4:2"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 15
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S033",
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Zechariah 4:2",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Lampstand in Revelation vision",
+        "basis": "Lampstand imagery recurs in distinct visions with separate interpretations",
+        "acceptable_target_terms": [
+          "Revelation 1:12",
+          "lampstands",
+          "golden"
+        ],
+        "biblical_witnesses": [
+          "Zechariah 4:2",
+          "Revelation 1:12"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 15
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S034",
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Zechariah 4:10",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Seven eyes of LORD and Lamb's seven eyes",
+        "basis": "Seven eyes imagery links divine surveillance and Lamb vision",
+        "acceptable_target_terms": [
+          "Revelation 5:6",
+          "seven eyes",
+          "spirits"
+        ],
+        "biblical_witnesses": [
+          "Zechariah 4:10",
+          "Revelation 5:6"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 15
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S035",
+      "category": "narrative_pattern",
+      "difficulty": 4,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Zechariah 4:6",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Spirit in lampstand vision and seven lamps at throne",
+        "basis": "Spirit and lamp imagery is a candidate apocalyptic visual link",
+        "acceptable_target_terms": [
+          "Revelation 4:5",
+          "seven lamps",
+          "seven spirits"
+        ],
+        "biblical_witnesses": [
+          "Zechariah 4:6",
+          "Revelation 4:5"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 25
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S036",
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Exodus 27:20",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Oil for lamps and Zechariah's olive branches",
+        "basis": "Oil-fed lights in sanctuary and prophetic vision share fuel imagery",
+        "acceptable_target_terms": [
+          "Zechariah 4:12",
+          "olive oil",
+          "lamp"
+        ],
+        "biblical_witnesses": [
+          "Exodus 27:20",
+          "Zechariah 4:12"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 15
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S037",
+      "category": "narrative_pattern",
+      "difficulty": 2,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Matthew 5:15",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Lamp not hidden under basket",
+        "basis": "Jesus teaches visible lamp imagery in both Gospel accounts",
+        "acceptable_target_terms": [
+          "Luke 11:33",
+          "lamp",
+          "basket"
+        ],
+        "biblical_witnesses": [
+          "Matthew 5:15",
+          "Luke 11:33"
+        ],
+        "evidence_status": "explicit_text",
+        "top_k": 12
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S038",
+      "category": "narrative_pattern",
+      "difficulty": 2,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Luke 11:34",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Eye as lamp of body",
+        "basis": "Synoptic teaching compares eye and bodily illumination",
+        "acceptable_target_terms": [
+          "Matthew 6:22",
+          "eye",
+          "lamp of the body"
+        ],
+        "biblical_witnesses": [
+          "Luke 11:34",
+          "Matthew 6:22"
+        ],
+        "evidence_status": "explicit_text",
+        "top_k": 12
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S039",
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "2 Peter 1:19",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Morning star and bright morning star",
+        "basis": "Light bearer term can be compared with bright morning star declaration though vocabulary differs",
+        "acceptable_target_terms": [
+          "Revelation 22:16",
+          "morning star",
+          "daystar"
+        ],
+        "biblical_witnesses": [
+          "2 Peter 1:19",
+          "Revelation 22:16"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 20
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S040",
+      "category": "narrative_pattern",
+      "difficulty": 1,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Revelation 1:20",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Lampstands signify seven churches",
+        "basis": "Interpretation explicitly identifies seven lampstands as churches",
+        "acceptable_target_terms": [
+          "Revelation 2:1",
+          "seven churches",
+          "lampstand"
+        ],
+        "biblical_witnesses": [
+          "Revelation 1:20",
+          "Revelation 2:1"
+        ],
+        "evidence_status": "explicit_text",
+        "top_k": 10
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S041",
+      "category": "narrative_pattern",
+      "difficulty": 2,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Revelation 4:5",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Seven lamps and seven Spirits linked to Lamb's eyes",
+        "basis": "Different throne vision images are explicitly interpreted as seven Spirits",
+        "acceptable_target_terms": [
+          "Revelation 5:6",
+          "seven eyes",
+          "seven spirits"
+        ],
+        "biblical_witnesses": [
+          "Revelation 4:5",
+          "Revelation 5:6"
+        ],
+        "evidence_status": "explicit_text",
+        "top_k": 12
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S042",
+      "category": "narrative_pattern",
+      "difficulty": 2,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Isaiah 6:3",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Holy holy holy in Revelation throne worship",
+        "basis": "Threefold holy acclamation links prophet vision and worship vision",
+        "acceptable_target_terms": [
+          "Revelation 4:8",
+          "holy holy holy",
+          "Lord"
+        ],
+        "biblical_witnesses": [
+          "Isaiah 6:3",
+          "Revelation 4:8"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 12
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S043",
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Ezekiel 1:26",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Throne and appearance of human-like figure",
+        "basis": "Throne imagery creates a potential inter-vision comparison",
+        "acceptable_target_terms": [
+          "Revelation 4:2",
+          "throne",
+          "heaven"
+        ],
+        "biblical_witnesses": [
+          "Ezekiel 1:26",
+          "Revelation 4:2"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 20
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S044",
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Ezekiel 1:28",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Rainbow around divine glory and throne",
+        "basis": "Rainbow-like radiance surrounds divine throne appearances",
+        "acceptable_target_terms": [
+          "Revelation 4:3",
+          "rainbow",
+          "throne"
+        ],
+        "biblical_witnesses": [
+          "Ezekiel 1:28",
+          "Revelation 4:3"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 15
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S045",
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Exodus 19:18",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Smoke and fire in Revelation heavenly worship",
+        "basis": "Divine manifestation associated with smoke in Sinai and heavenly temple",
+        "acceptable_target_terms": [
+          "Revelation 15:8",
+          "smoke",
+          "glory"
+        ],
+        "biblical_witnesses": [
+          "Exodus 19:18",
+          "Revelation 15:8"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 20
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S046",
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Genesis 15:17",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Smoking furnace flaming torch and Sinai smoke",
+        "basis": "Smoke and fire accompany divine covenant and theophany settings",
+        "acceptable_target_terms": [
+          "Exodus 19:18",
+          "fire",
+          "smoke"
+        ],
+        "biblical_witnesses": [
+          "Genesis 15:17",
+          "Exodus 19:18"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 20
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S047",
+      "category": "narrative_pattern",
+      "difficulty": 2,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Leviticus 16:12",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Incense before God and heavenly altar incense",
+        "basis": "Incense rites form background for heavenly altar scene",
+        "acceptable_target_terms": [
+          "Revelation 8:3",
+          "incense",
+          "altar"
+        ],
+        "biblical_witnesses": [
+          "Leviticus 16:12",
+          "Revelation 8:3"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 15
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S048",
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Psalm 141:2",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Prayer as incense and saints' prayers as incense",
+        "basis": "Poetic prayer/incense comparison and heavenly interpretation",
+        "acceptable_target_terms": [
+          "Revelation 5:8",
+          "prayers",
+          "incense"
+        ],
+        "biblical_witnesses": [
+          "Psalm 141:2",
+          "Revelation 5:8"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 12
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S049",
+      "category": "narrative_pattern",
+      "difficulty": 4,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Isaiah 11:2",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Sevenfold Spirit and seven spirits of Revelation",
+        "basis": "Spirit descriptions compared to seven spirits while numbering is a later interpretation",
+        "acceptable_target_terms": [
+          "Revelation 4:5",
+          "seven spirits",
+          "Spirit"
+        ],
+        "biblical_witnesses": [
+          "Isaiah 11:2",
+          "Revelation 4:5"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 25
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S050",
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Ezekiel 47:1",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "River from temple and water of life from throne",
+        "basis": "Life-giving river flows from sacred place across temple visions",
+        "acceptable_target_terms": [
+          "Revelation 22:1",
+          "river of life",
+          "throne"
+        ],
+        "biblical_witnesses": [
+          "Ezekiel 47:1",
+          "Revelation 22:1"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 15
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S051",
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Genesis 2:10",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "River of Eden and New Jerusalem river",
+        "basis": "River motifs bookend Eden and heavenly city without direct identity statement",
+        "acceptable_target_terms": [
+          "Revelation 22:1",
+          "river",
+          "water of life"
+        ],
+        "biblical_witnesses": [
+          "Genesis 2:10",
+          "Revelation 22:1"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 20
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S052",
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Genesis 3:24",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Restricted tree of life becomes accessible",
+        "basis": "Exclusion from tree of life contrasted with access granted in final vision",
+        "acceptable_target_terms": [
+          "Revelation 22:14",
+          "tree of life",
+          "enter gates"
+        ],
+        "biblical_witnesses": [
+          "Genesis 3:24",
+          "Revelation 22:14"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 20
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S053",
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Genesis 2:9",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Tree of life in New Jerusalem",
+        "basis": "Tree of life images recur at beginning and end of canon",
+        "acceptable_target_terms": [
+          "Revelation 22:2",
+          "tree of life",
+          "fruit"
+        ],
+        "biblical_witnesses": [
+          "Genesis 2:9",
+          "Revelation 22:2"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 15
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S054",
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Genesis 3:17",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Curse of ground and absence of curse",
+        "basis": "Curse enters Eden narrative while vision depicts curse removed",
+        "acceptable_target_terms": [
+          "Revelation 22:3",
+          "no curse",
+          "ground"
+        ],
+        "biblical_witnesses": [
+          "Genesis 3:17",
+          "Revelation 22:3"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 15
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S055",
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Genesis 1:3",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Light of creation and Lamb as lamp",
+        "basis": "Creation light compared to eschatological illumination by God and Lamb",
+        "acceptable_target_terms": [
+          "Revelation 21:23",
+          "Lamb",
+          "lamp"
+        ],
+        "biblical_witnesses": [
+          "Genesis 1:3",
+          "Revelation 21:23"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 20
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S056",
+      "category": "narrative_pattern",
+      "difficulty": 4,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Genesis 11:9",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Babel languages and Pentecost speech",
+        "basis": "Confusion of language can be compared to Spirit-enabled hearing in many native languages",
+        "acceptable_target_terms": [
+          "Acts 2:6",
+          "languages",
+          "tongues"
+        ],
+        "biblical_witnesses": [
+          "Genesis 11:9",
+          "Acts 2:6"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 25
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S057",
+      "category": "narrative_pattern",
+      "difficulty": 2,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Genesis 4:10",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Abel's blood and Jesus' sprinkled blood",
+        "basis": "Hebrews directly contrasts blood of Abel with better speaking blood of Jesus",
+        "acceptable_target_terms": [
+          "Hebrews 12:24",
+          "Abel",
+          "blood"
+        ],
+        "biblical_witnesses": [
+          "Genesis 4:10",
+          "Hebrews 12:24"
+        ],
+        "evidence_status": "explicit_intertext",
+        "top_k": 10
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S058",
+      "category": "narrative_chronology",
+      "difficulty": 4,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Leviticus 23:15",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Weeks count and Pentecost",
+        "basis": "Feast of Weeks counting and Greek Pentecost linked historically while Acts omits detailed calendar math",
+        "acceptable_target_terms": [
+          "Acts 2:1",
+          "Pentecost",
+          "fifty days"
+        ],
+        "biblical_witnesses": [
+          "Leviticus 23:15",
+          "Acts 2:1"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 25
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S059",
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Numbers 6:25",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Face shines and servants see God's face",
+        "basis": "Blessing of divine face compared to final beatific vision",
+        "acceptable_target_terms": [
+          "Revelation 22:4",
+          "face",
+          "shine"
+        ],
+        "biblical_witnesses": [
+          "Numbers 6:25",
+          "Revelation 22:4"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 25
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S060",
+      "category": "narrative_pattern",
+      "difficulty": 2,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Exodus 34:29",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Moses radiant face and New Covenant veil",
+        "basis": "Paul explicitly discusses reflected glory on Moses' face",
+        "acceptable_target_terms": [
+          "2 Corinthians 3:7",
+          "Moses",
+          "glory"
+        ],
+        "biblical_witnesses": [
+          "Exodus 34:29",
+          "2 Corinthians 3:7"
+        ],
+        "evidence_status": "explicit_intertext",
+        "top_k": 12
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S061",
+      "category": "narrative_pattern",
+      "difficulty": 2,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Jeremiah 31:33",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Law written on hearts cited in Hebrews",
+        "basis": "Hebrews quotes law written on hearts and minds",
+        "acceptable_target_terms": [
+          "Hebrews 10:16",
+          "law in hearts",
+          "covenant"
+        ],
+        "biblical_witnesses": [
+          "Jeremiah 31:33",
+          "Hebrews 10:16"
+        ],
+        "evidence_status": "explicit_intertext",
+        "top_k": 10
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S062",
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Deuteronomy 30:6",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Circumcision of heart",
+        "basis": "Heart circumcision imagery appears across Torah and Paul's teaching",
+        "acceptable_target_terms": [
+          "Romans 2:29",
+          "circumcision of heart",
+          "spirit"
+        ],
+        "biblical_witnesses": [
+          "Deuteronomy 30:6",
+          "Romans 2:29"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 20
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S063",
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Genesis 17:11",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Circumcision and putting off flesh in Christ",
+        "basis": "Covenant sign contrasted with spiritual circumcision without hands",
+        "acceptable_target_terms": [
+          "Colossians 2:11",
+          "circumcision",
+          "without hands"
+        ],
+        "biblical_witnesses": [
+          "Genesis 17:11",
+          "Colossians 2:11"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 20
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S064",
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Psalm 51:7",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Hyssop cleansing linked to ritual purification",
+        "basis": "Psalms uses hyssop purification imagery with ritual background",
+        "acceptable_target_terms": [
+          "Numbers 19:18",
+          "hyssop",
+          "clean"
+        ],
+        "biblical_witnesses": [
+          "Psalm 51:7",
+          "Numbers 19:18"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 15
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "S065",
+      "category": "narrative_pattern",
+      "difficulty": 3,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "John 19:29",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Hyssop at crucifixion and Passover application",
+        "basis": "Hyssop appears at crucifixion and Passover blood application without explicit statement of intentional connection",
+        "acceptable_target_terms": [
+          "Exodus 12:22",
+          "hyssop",
+          "Passover"
+        ],
+        "biblical_witnesses": [
+          "John 19:29",
+          "Exodus 12:22"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 20
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
     }
   ]
 }
