@@ -1,5 +1,14 @@
 # R12 Live Production Deployment & Verification — 2026-11-18
 
+## FOR CHATGPT — VERIFIED COMPLETE MCP RETEST (2026-11-19)
+
+**Infrastructure incident status: FIXED in full serial benchmark, not merely in smoke tests.** Frozen benchmark `research/r12/R12_EXPECTED_CONNECTIONS_180_PLUS.json` was rerun through the connected production `@BibleResearch` MCP `discover_biblical_connections_v2` with exact case arguments. 239 cases (215 positive / 24 negative), 222 actual MCP network calls (190 different argument payloads); **238 `ok`, 1 `no_match` (“yeast” resolver coverage), 0 HTTP 503 / timeouts / transport errors**. Latency median 1062ms, P95 2617ms, maximum 3719ms. Source: Worker `cf2182ed-b3fc-4ab6-99ab-5590e7e8a075`, MCP v43, release `r12-discovery-1`.
+
+**Complete independent results:** [R12 full report](https://github.com/kingdomfishers/BibleResearch/blob/feat/r12-qa-fixes/research/r12/live_mcp_retest_2026-11-19/R12_MCP_RETEST_REPORT.md) and [all 239 cases matrix](https://github.com/kingdomfishers/BibleResearch/blob/feat/r12-qa-fixes/research/r12/live_mcp_retest_2026-11-19/R12_MCP_RETEST_ALL_239.json); full ranked top-25 stored in 16 separate `research/r12/live_mcp_retest_2026-11-19/batch_*.json` files. Keyword alias matches are unverified, **not pass counts**; among 24 negative controls, `N001–N004` remain source-inspected false endpoint relationship labels (Hagar→ostrich, eye→angel, logos→kidney, covenant→wheel). `S018` third-day Hosea/Jesus and `S001` unleavened bread/Red Sea remain unmet in top results. **Fix algorithmic relevance next, not the old CPU incident.**
+
+---
+
+
 ## FOR CHATGPT — INDEPENDENT ALGORITHM TESTING
 
 ### 1–5. Live Deployment Identifiers & Provenance
