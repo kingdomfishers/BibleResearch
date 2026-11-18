@@ -1,4 +1,54 @@
-# R12 published increment — 2026-11-18
+# R12 Live Production Deployment & Verification — 2026-11-18
+
+## Production Status (Main Website & Main MCP)
+
+Current production services run R12 functionality directly under the new **Direct Live Development Policy** (`AGENTS.md`, `ARCHITECTURE.md`, `TASKS.md` / `R12TASKS.md` SHA-256 `26E9FCF45095D31460B6586DFDABFE7A145CB741A32AF514A3881A4E5DE4F570`):
+
+- **Branch / Implementation Commit:** `feat/r12-qa-fixes` · commit `249de9f7801bba7eecc056c2b7d44d1435427b78` (packed corpus source commit `712d3627b881b137fe11da6fc97d0871600c568c`)
+- **Production Corpus Worker (`bibleresearch-corpus`):** `https://bibleresearch-corpus.kingdomfishers-custom.workers.dev`
+  - **Version ID:** `574aa5a1-b50f-471e-a1e3-3d319bddee67` (superseding `69d85126-59cd-4711-ba39-23589f59af01` and initial R12 cutover `f9241946-17f8-492e-ae75-111e2fcd1f70`)
+  - **Release / Defaults:** `r12-witnesses-1`, defaults `r9b-v1.1` / `r8-v1.2`, asset fingerprint `5d26a11510359b5200a7169c77b73578a7be57fcc95f15764142cc46a5f42eb9` (`19,999` assets; all R3–R11 releases preserved)
+  - **Fixes live in production:** Occurrence-anchor validation & scope disclosure in `discover_biblical_connections_v1`/`v2` (`scripts/corpus-relationships-rpc.mjs`) plus `r11:intersect:pericope:`, `r11:lex:`, and `r11:bridge:` handlers in `getConnectionEvidence` (`src/relationships/r10-discovery.ts`)
+- **Production Website Worker (`bibleresearch`):** `https://bibleresearch.kingdomfishers-custom.workers.dev`
+  - **Version ID:** `f68e7b8d-9a78-45be-9025-765ff2ad85a5` (superseding `60eefd79-a256-4ed8-b117-8fc89922a326` and `3dd0c5eb-d310-4920-8995-f6bc22eb31d8`)
+  - **UI workflow wired:** Read → Select word → `Discover Biblical Connections →` (passing `{word_id, book, chapter, verse, position}` and defaulting to `r9b-v1.1` / `discover_biblical_connections_v2`) → Origin banner with honest lemma-scope explanation → Verified vs Candidate evidence labels → Evidence drawer (`source_record_ids`, limitations, passage preview, clickable tokens) → Follow passage → `↩ Return to initial word`
+- **Main Production MCP (`bible-mcp`):** `https://ejoperxiwxlcbsqrkrvb.supabase.co/functions/v1/bible-mcp/mcp`
+  - **Function Version:** **41** (`ACTIVE`, `verify_jwt: false`, server `1.7.0`, `ezbr_sha256: 60dc5cbeeb332e3b009fe9bd60ee198a88c35d140e2527687f94e81c20d2fba7`, rollback `v40`, `writes: "enabled"`)
+  - **Tools preserved & updated:** All **46 tools** (`41` read-only + `5` write tools: `create_note`, `update_my_note`, `delete_my_note`, `add_research_note`, `save_dlm_research_note`) and **22 prompts** preserved (no replacement with the 14-tool staging MCP). Updated existing tool contracts to add optional occurrence-anchor inputs `{word_id, book, chapter, verse, position, edition_key?}` on `discover_biblical_connections_v2` / `v1`, expose `word_id` / `extended_strongs` / `release` on `get_word_relationships_v2`, default `UPSTREAM_PIN` to `r9b-v1.1` / `r8-v1.2`, and attach `verification_release` provenance on production corpus responses.
+
+### Live Production Acceptance Results (`node scripts/verify-r12-production-live.mjs` — PASS exit 0)
+
+- **Main MCP HTTP transport (`https://ejoperxiwxlcbsqrkrvb.supabase.co/functions/v1/bible-mcp/mcp`):**
+  - `/health`: `200`, `name: "BibleResearch"`, `version: "1.7.0"`, `corpus_target: "production"`, `corpus_url: "https://bibleresearch-corpus.kingdomfishers-custom.workers.dev"`, `writes: "enabled"`, `tools: 46`, `prompts: 22`
+  - `initialize`, `tools/list` (`46` tools; confirmed `word_id`, `book`, `chapter`, `verse`, `position`, `edition_key` present on `discover_biblical_connections_v2`), `prompts/list` (`22` prompts)
+  - `get_relationship_coverage_v2`: `release_version: "r9b-v1.1"`, `verification_release.corpus_release: "r12-witnesses-1"`, `worker_version: "574aa5a1-b50f-471e-a1e3-3d319bddee67"`
+  - Hebrew Gen 1:2 `H7307` pos `9` → `word_id: 130555`; occurrence-anchored `discover_biblical_connections_v2` preserves `selected_occurrence.word_id: 130555` and `discovery_scope.occurrence_anchored: true`; contradictory `word_id: 999999999` → `status: "selector_mismatch"`
+  - Greek John 1:1 `G3056` pos `5 / 8 / 17` → `word_ids: [15230, 15229, 15231]`
+  - Discovery `"scarlet Tamar Rahab Matthew 1"` → `6` connections; `get_connection_evidence_v1` PASS (`status: "ok"`) for both `r11:intersect:pericope:1148:1144` and `r11:cluster:H8144:temple_and_sanctuary_architecture`
+  - Hebrew evidence `r11:gram:H5397:possessive_construction_with:H7307` → `status: "ok"` (`H5397`, `H7307`)
+  - Greek evidence `r11:gram:G3037:modifies:G5093` → `status: "ok"` (`G3037`, `G5093`)
+  - `expand_biblical_connection_v1("lemma:H7307")` → `status: "ok"`, `6` connections
+  - Negative control `"spirit wind"` → `status: "ok"`, no `r11:intersect:verse:H7307:H7307:2`
+  - Legacy compatibility: `get_verse_research` (Gen 1:2 with `notes`), `get_notes` (`epistemic_layer: "user_note"`), `get_septuagint_passage(1, 32, 1)` (`found: true`, production corpus routing) → PASS
+- **Main Website Playwright E2E (`https://bibleresearch.kingdomfishers-custom.workers.dev`):**
+  - **Desktop (`1280x900`):** `#1-1-2` → clicked `H7307` → `Discover Biblical Connections →` → verified origin banner (`GEN 1:2 position 9`, `STEP word_id 130555`, `lemma:H7307`, corpus-wide lemma-scope explanation) → `10` cards → opened evidence drawer (`HEBREW_LXX_WORD_ALIGNMENTS + STEPBible`) → followed `"Ezekiel 37:9 (OT)"` (`#26-37-9`) → clicked `↩ Return to initial word` back to `#1-1-2` with `H7307` selected (`scrollWidth: 1280`, `overflowPx: 0`). Also searched `"scarlet Tamar Rahab Matthew 1"` (`10` cards + expanded first evidence drawer `r11:intersect:pericope:1148:1144`) and `"spirit wind"` negative control → PASS, zero page/console errors.
+  - **Mobile (`390x844`):** Fresh session `#1-1-2` → `H7307` → `Discover` → origin banner → `10` cards → opened evidence drawer → followed `"Ezekiel 37:9 (OT)"` (`#26-37-9`) → clicked `↩ Return to initial word` back to `#1-1-2` (`scrollWidth: 390`, `innerWidth: 390`, `overflowPx: 0`, zero page/console errors).
+  - **Corpus origin check:** Only `https://bibleresearch-corpus.kingdomfishers-custom.workers.dev` requested (zero staging traffic).
+
+### ChatGPT Connector Refresh Status
+
+- **Server-side:** Production MCP `bible-mcp` v41 is deployed and live-verified at `https://ejoperxiwxlcbsqrkrvb.supabase.co/functions/v1/bible-mcp/mcp`. All 46 tool names and the connector URL are preserved, so existing ChatGPT tool calls immediately route to the production R12 corpus (`r12-witnesses-1`).
+- **ChatGPT account-side refresh recommended:** Server deployment alone does not prove ChatGPT has refreshed its cached tool catalog. To pick up the updated R12 tool descriptions and new optional `{word_id, book, chapter, verse, position, edition_key?}` schema parameters on `discover_biblical_connections_v2` / `v1` and `get_word_relationships_v2`, open the existing **BibleResearch** connector/plugin in ChatGPT settings, trigger a manual **Refresh** / schema update, and start a **new conversation**.
+
+### Remaining Limitations
+
+- Corpus discovery currently indexes lemma/concept-level connections (`r11-v1.0` / `r12-witnesses-1`); occurrence anchors are validated and preserved with explicit scope disclosure rather than claiming occurrence-exclusive discovery edges across the entire corpus.
+- Cloudflare Workers Free-tier CPU/isolate limits can still produce rare transient HTTP 503 (`Error 1102`) bursts under heavy back-to-back cold requests; `bible-mcp` retries transient `500/502/503/504` twice with jittered backoff, and `verify-r12-production-live.mjs` retries a transient `502/503/504` once after 800 ms.
+- Algorithmic R12 milestones `R12-02` through `R12-14` remain open and will iterate via direct live experimentation.
+
+---
+
+# Historical R12 staging increment — 2026-11-18 (superseded by production cutover above)
 
 ## FOR CHATGPT — INDEPENDENT TESTING
 
