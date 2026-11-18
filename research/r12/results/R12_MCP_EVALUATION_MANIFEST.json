@@ -2,7 +2,7 @@
   "schema_version": "r12-live-evaluation-manifest-v1",
   "date": "2026-11-18",
   "source": "Actual connected @BibleResearch MCP, not mock",
-  "status": "BLOCKED_GATEWAY_HTTP_503",
+  "status": "HISTORICAL_503_FAILURE_SUPERSEDED_BY_SUCCESSFUL_FULL_RETEST",
   "total_cases": 239,
   "executed_cases": 12,
   "distinct_executed_queries": 6,
@@ -4077,5 +4077,24 @@
       "evaluation_status": "NOT_SCORED",
       "expected_top_k": 25
     }
-  ]
+  ],
+  "historical_snapshot": true,
+  "incident_status_as_of_2026_11_19": "RESOLVED_IN_FULL_PRODUCTION_SERIAL_RETEST",
+  "superseding_retest": {
+    "date": "2026-11-19",
+    "report_path": "research/r12/live_mcp_retest_2026-11-19/R12_MCP_RETEST_REPORT.md",
+    "case_matrix_path": "research/r12/live_mcp_retest_2026-11-19/R12_MCP_RETEST_ALL_239.json",
+    "cases": 239,
+    "mcp_responses": 239,
+    "status_ok": 238,
+    "status_no_match": 1,
+    "observed_http_503": 0,
+    "observed_transport_errors": 0,
+    "actual_mcp_requests": 222,
+    "cloudflare_worker_version": "cf2182ed-b3fc-4ab6-99ab-5590e7e8a075",
+    "supabase_mcp_version": 43,
+    "discovery_release": "r12-discovery-1",
+    "note": "Original 2026-11-18 errors and partial completion counts below remain historically correct. The now-fixed gateway must not be conflated with persistent algorithmic relevance defects."
+  },
+  "original_run_status": "BLOCKED_GATEWAY_HTTP_503"
 }
