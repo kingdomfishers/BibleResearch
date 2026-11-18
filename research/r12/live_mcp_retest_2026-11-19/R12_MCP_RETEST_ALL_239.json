@@ -13,15 +13,15 @@
     "total_cases": 239,
     "positive": 215,
     "negative": 24,
-    "successful_case_results": 238,
-    "transport_errors": 1,
+    "successful_case_results": 239,
+    "transport_errors": 0,
     "distinct_actual_network_requests_within_batches": 222,
     "distinct_query_argument_payloads": 190,
     "alias_candidates_UNVERIFIED": 155,
     "no_alias_within_top_k": 83,
     "latency_ms": {
-      "n": 221,
-      "min": 289,
+      "n": 222,
+      "min": 277,
       "median": 1062,
       "p95": 2617,
       "max": 3719
@@ -91,7 +91,8 @@
         "total": 12,
         "alias_candidates": 8,
         "not_found_by_alias": 3,
-        "errors": 1
+        "errors": 0,
+        "no_match": 1
       },
       "real_world_property": {
         "total": 10,
@@ -237,11 +238,16 @@
         "total": 19,
         "alias_candidates": 9,
         "not_found_by_alias": 9,
-        "errors": 1
+        "errors": 0,
+        "no_match": 1
       }
-    }
+    },
+    "mcp_status_ok": 238,
+    "mcp_status_no_match": 1,
+    "no_query_match": 1,
+    "status_infrastructure": "FIXED_IN_OBSERVED_FULL_SERIAL_RUN_ZERO_HTTP_503"
   },
-  "review_contract": "ALIAS_CANDIDATE_UNVERIFIED is never PASS. Same-word occurrences, generic terms, and duplicated passages may produce candidates. All positive/negative assertions require get_connection_evidence_v1, actual source-scope and epistemic review. No alias is not automatically semantic FAIL.",
+  "review_contract": "ALIAS_CANDIDATE_UNVERIFIED is never PASS. Same-word occurrences, generic terms, and duplicated passages may produce candidates. All positive/negative assertions require get_connection_evidence_v1, actual source-scope and epistemic review. No alias is not automatically semantic FAIL. 'no_match' is a successful MCP response that exposes a concept-resolution gap; NOT a transport failure.",
   "detail_files": [
     {
       "path": "research/r12/live_mcp_retest_2026-11-19/batch_001_020.json",
@@ -27048,18 +27054,18 @@
       ],
       "required_evidence_status": "external_world",
       "top_k": 20,
-      "transport_status": "NON_OK_PAYLOAD",
+      "transport_status": "OK_NO_MATCH",
       "result_status": "no_match",
       "release_id": "r11-v1.0",
       "r12_pilot_anchors": null,
       "response_ms": 277,
       "returned_count": 0,
-      "triage_status": "TRANSPORT_OR_PAYLOAD_ERROR",
+      "triage_status": "NO_QUERY_MATCH",
       "first_candidate": null,
       "candidates": [],
       "top_5": [],
       "batch_file": "research/r12/live_mcp_retest_2026-11-19/batch_196_210.json",
-      "evidence_review": "PENDING_HUMAN_SOURCE_VALIDATION"
+      "evidence_review": "QUERY_RESOLUTION_FAILED (yeast unresolved): source benchmark remains expected but is not covered by current resolver."
     },
     {
       "id": "W026",
