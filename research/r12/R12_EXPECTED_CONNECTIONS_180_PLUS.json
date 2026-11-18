@@ -16,7 +16,15 @@
     "coverage": "Cases include beyond-pilot anchors; expected absence of precomputation must be recorded as coverage rather than evidence that the relationship is false.",
     "classification": "explicit_text=direct attestation; explicit_intertext=quoted/referenced; lexical_relationship=language evidence; literary_wordplay=source-contextual form resemblance; orthographic_candidate=letters alone; candidate_intertext=plausible comparison, not authorial intent; external_world=modern claims not biblical proof.",
     "negative_controls": "Negative cases are NOT scored as failure just because their target word appears somewhere. Fail only when the system asserts/ranks the specified false causal, lexical, textual or theological relationship as supported, or gives a contradicted source claim. Inspect evidence provenance and epistemic status.",
-    "metrics": "Report PositiveRecall@K by category/difficulty and strict evidence-backed precision, negative assertion violation rate, target leakage, not_precomputed coverage, source verification rate, rank of first acceptable evidence, malformed evidence and latency independently."
+    "metrics": "Report PositiveRecall@K by category/difficulty and strict evidence-backed precision, negative assertion violation rate, target leakage, not_precomputed coverage, source verification rate, rank of first acceptable evidence, malformed evidence and latency independently.",
+    "difficulty_scale": {
+      "1": "Direct, commonly quoted source-to-target link; expect top 10",
+      "2": "Single lexical or known textual association; expect top 10-15",
+      "3": "Cross-passage imagery/grammar or polysemy; expect top 12-20",
+      "4": "Indirect source-backed path, world property or event configuration; expect top 20-25",
+      "5": "Challenging multi-step cross-domain or chronology/typology; aspirational top 25"
+    },
+    "quality_gate": "A result passes only when its top-K evidence points to the intended target and the source-supported mechanism actually justifies the stated relation; exact wording/IDs/path routes are not required. A bad promoted interpretation is a FAIL even if aliases match. Cases tagged candidate_* and external_world must not be promoted to explicit biblical facts."
   },
   "cases": [
     {
@@ -3986,7 +3994,7 @@
     {
       "id": "S001",
       "category": "narrative_chronology",
-      "difficulty": 4,
+      "difficulty": 5,
       "query_type": "passage_seed",
       "mcp_call": {
         "tool": "discover_biblical_connections_v2",
@@ -4023,7 +4031,7 @@
     {
       "id": "S002",
       "category": "narrative_chronology",
-      "difficulty": 4,
+      "difficulty": 5,
       "query_type": "passage_seed",
       "mcp_call": {
         "tool": "discover_biblical_connections_v2",
@@ -4097,7 +4105,7 @@
     {
       "id": "S004",
       "category": "narrative_pattern",
-      "difficulty": 4,
+      "difficulty": 5,
       "query_type": "passage_seed",
       "mcp_call": {
         "tool": "discover_biblical_connections_v2",
@@ -4531,7 +4539,7 @@
     {
       "id": "S016",
       "category": "narrative_pattern",
-      "difficulty": 4,
+      "difficulty": 5,
       "query_type": "passage_seed",
       "mcp_call": {
         "tool": "discover_biblical_connections_v2",
@@ -4567,7 +4575,7 @@
     {
       "id": "S017",
       "category": "narrative_pattern",
-      "difficulty": 4,
+      "difficulty": 5,
       "query_type": "passage_seed",
       "mcp_call": {
         "tool": "discover_biblical_connections_v2",
@@ -4603,7 +4611,7 @@
     {
       "id": "S018",
       "category": "narrative_pattern",
-      "difficulty": 4,
+      "difficulty": 5,
       "query_type": "passage_seed",
       "mcp_call": {
         "tool": "discover_biblical_connections_v2",
@@ -4783,7 +4791,7 @@
     {
       "id": "S023",
       "category": "narrative_pattern",
-      "difficulty": 3,
+      "difficulty": 5,
       "query_type": "passage_seed",
       "mcp_call": {
         "tool": "discover_biblical_connections_v2",
@@ -4928,7 +4936,7 @@
     {
       "id": "S027",
       "category": "narrative_pattern",
-      "difficulty": 3,
+      "difficulty": 5,
       "query_type": "passage_seed",
       "mcp_call": {
         "tool": "discover_biblical_connections_v2",
@@ -5037,7 +5045,7 @@
     {
       "id": "S030",
       "category": "narrative_pattern",
-      "difficulty": 4,
+      "difficulty": 5,
       "query_type": "passage_seed",
       "mcp_call": {
         "tool": "discover_biblical_connections_v2",
@@ -5721,7 +5729,7 @@
     {
       "id": "S049",
       "category": "narrative_pattern",
-      "difficulty": 4,
+      "difficulty": 5,
       "query_type": "passage_seed",
       "mcp_call": {
         "tool": "discover_biblical_connections_v2",
@@ -5973,7 +5981,7 @@
     {
       "id": "S056",
       "category": "narrative_pattern",
-      "difficulty": 4,
+      "difficulty": 5,
       "query_type": "passage_seed",
       "mcp_call": {
         "tool": "discover_biblical_connections_v2",
@@ -6045,7 +6053,7 @@
     {
       "id": "S058",
       "category": "narrative_chronology",
-      "difficulty": 4,
+      "difficulty": 5,
       "query_type": "passage_seed",
       "mcp_call": {
         "tool": "discover_biblical_connections_v2",
@@ -6407,7 +6415,7 @@
     {
       "id": "W003",
       "category": "real_world_process",
-      "difficulty": 4,
+      "difficulty": 5,
       "query_type": "single_anchor",
       "mcp_call": {
         "tool": "discover_biblical_connections_v2",
@@ -6555,7 +6563,7 @@
     {
       "id": "W007",
       "category": "real_world_part_whole",
-      "difficulty": 4,
+      "difficulty": 5,
       "query_type": "concept_or_passage_seed",
       "mcp_call": {
         "tool": "discover_biblical_connections_v2",
@@ -6629,7 +6637,7 @@
     {
       "id": "W009",
       "category": "real_world_property",
-      "difficulty": 3,
+      "difficulty": 5,
       "query_type": "single_anchor",
       "mcp_call": {
         "tool": "discover_biblical_connections_v2",
@@ -6666,7 +6674,7 @@
     {
       "id": "W010",
       "category": "real_world_property",
-      "difficulty": 4,
+      "difficulty": 5,
       "query_type": "single_anchor",
       "mcp_call": {
         "tool": "discover_biblical_connections_v2",
@@ -7221,7 +7229,7 @@
     {
       "id": "W025",
       "category": "real_world_process",
-      "difficulty": 4,
+      "difficulty": 5,
       "query_type": "concept_or_passage_seed",
       "mcp_call": {
         "tool": "discover_biblical_connections_v2",
@@ -7629,7 +7637,7 @@
     {
       "id": "W036",
       "category": "real_world_property",
-      "difficulty": 4,
+      "difficulty": 5,
       "query_type": "single_anchor",
       "mcp_call": {
         "tool": "discover_biblical_connections_v2",
@@ -8677,5 +8685,56 @@
       "review_status": "proposed_negative_adjudication",
       "polarity": "negative"
     }
-  ]
+  ],
+  "benchmark_stats": {
+    "total": 239,
+    "positive": 215,
+    "negative": 24,
+    "difficulty_counts": {
+      "1": 43,
+      "2": 67,
+      "3": 67,
+      "4": 43,
+      "5": 19
+    },
+    "category_counts": {
+      "authorial_intent_overclaim": 1,
+      "chronology_overclaim": 1,
+      "direct_intertext": 55,
+      "entity_conflation": 1,
+      "etymology_overclaim": 1,
+      "false_path_composition": 4,
+      "false_self_intersection": 1,
+      "false_symbolism": 1,
+      "generic_hub": 1,
+      "interpretive_overclaim": 1,
+      "linguistic_form": 5,
+      "linguistic_lexical": 23,
+      "linguistic_polysemy": 5,
+      "linguistic_translation": 22,
+      "narrative_chronology": 8,
+      "narrative_genealogy": 3,
+      "narrative_pattern": 54,
+      "numerical_false_positive": 1,
+      "physical_overclaim": 1,
+      "quantity_overclaim": 1,
+      "real_world_material": 14,
+      "real_world_part_whole": 4,
+      "real_world_process": 12,
+      "real_world_property": 10,
+      "sense_contamination": 3,
+      "source_provenance": 2,
+      "source_scope": 1,
+      "structural_feature_inflation": 1,
+      "theology_overclaim": 1,
+      "typology_overclaim": 1
+    }
+  },
+  "how_to_run": {
+    "preview": "node scripts/evaluate-r12-expected-connections.mjs --max=5",
+    "one_case": "node scripts/evaluate-r12-expected-connections.mjs --id=S018 --evidence",
+    "by_category": "node scripts/evaluate-r12-expected-connections.mjs --category=real_world_process --max=8",
+    "full_review": "node scripts/evaluate-r12-expected-connections.mjs --all --delay-ms=1500 --output=r12-review.json",
+    "warning": "The runner is a candidate-retrieval triage tool, not a semantic/evidence judge. Never count CANDIDATE_FOR_EVIDENCE_REVIEW as PASS without validating source evidence, endpoint coherence, and epistemic classification."
+  }
 }
