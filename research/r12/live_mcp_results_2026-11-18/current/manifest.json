@@ -11,13 +11,14 @@
   "attempts": 3,
   "evidence_probe_enabled": false,
   "status": "RUNNING",
-  "completed": 40,
-  "success": 40,
-  "errors": 0,
-  "possible_matches": 29,
+  "completed": 60,
+  "success": 44,
+  "errors": 16,
+  "possible_matches": 30,
   "batches": [
     "batch_001_020.json",
-    "batch_021_040.json"
+    "batch_021_040.json",
+    "batch_041_060.json"
   ],
   "notice": "Every result is an observed top-K retrieval, not an independently verified PASS. Missing data after TOOL_ERROR is transport failure, not a negative discovery result."
 }
