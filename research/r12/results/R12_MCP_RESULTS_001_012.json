@@ -1,0 +1,165 @@
+{
+  "schema": "r12-live-mcp-observations-v1",
+  "observed_at": "2026-11-18",
+  "source": "Connected @BibleResearch MCP tool, not Cloudflare HTTP fallback",
+  "case_range": "L001-L012",
+  "cases": [
+    {
+      "id": "L001",
+      "query": {
+        "query": "H0120",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "actual": {
+        "status": "MCP_ERROR",
+        "error": "INVALID_ARGUMENT: Error code: INVALID_ARGUMENT; Error: RuntimeException: Error calling MCP tool: [TextContent(type='text', text='Signal timed out.', annotations=None, meta=None)]"
+      }
+    },
+    {
+      "id": "L002",
+      "query": {
+        "query": "H0120",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "actual": {
+        "status": "MCP_ERROR",
+        "error": "INVALID_ARGUMENT: Error code: INVALID_ARGUMENT; Error: RuntimeException: Error calling MCP tool: [TextContent(type='text', text='Signal timed out.', annotations=None, meta=None)]"
+      }
+    },
+    {
+      "id": "L003",
+      "query": {
+        "query": "H1818",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "actual": {
+        "status": "MCP_ERROR",
+        "error": "INVALID_ARGUMENT: Error code: INVALID_ARGUMENT; Error: RuntimeException: Error calling MCP tool: [TextContent(type='text', text='Signal timed out.', annotations=None, meta=None)]"
+      }
+    },
+    {
+      "id": "L004",
+      "query": {
+        "query": "H2233",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "actual": {
+        "status": "MCP_ERROR",
+        "error": "INVALID_ARGUMENT: Error code: INVALID_ARGUMENT; Error: RuntimeException: Error calling MCP tool: [TextContent(type='text', text='Signal timed out.', annotations=None, meta=None)]"
+      }
+    },
+    {
+      "id": "L005",
+      "query": {
+        "query": "H2233",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "actual": {
+        "status": "MCP_ERROR",
+        "error": "INVALID_ARGUMENT: Error code: INVALID_ARGUMENT; Error: RuntimeException: Error calling MCP tool: [TextContent(type='text', text='Signal timed out.', annotations=None, meta=None)]"
+      }
+    },
+    {
+      "id": "L006",
+      "query": {
+        "query": "H1285",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "actual": {
+        "status": "MCP_ERROR",
+        "error": "INVALID_ARGUMENT: Error code: INVALID_ARGUMENT; Error: RuntimeException: Error calling MCP tool: [TextContent(type='text', text='Signal timed out.', annotations=None, meta=None)]"
+      }
+    },
+    {
+      "id": "L007",
+      "query": {
+        "query": "H1285",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "actual": {
+        "status": "MCP_ERROR",
+        "error": "INVALID_ARGUMENT: Error code: INVALID_ARGUMENT; Error: RuntimeException: Error calling MCP tool: [TextContent(type='text', text='Signal timed out.', annotations=None, meta=None)]"
+      }
+    },
+    {
+      "id": "L008",
+      "query": {
+        "query": "H1285",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "actual": {
+        "status": "MCP_ERROR",
+        "error": "INVALID_ARGUMENT: Error code: INVALID_ARGUMENT; Error: RuntimeException: Error calling MCP tool: [TextContent(type='text', text='Signal timed out.', annotations=None, meta=None)]"
+      }
+    },
+    {
+      "id": "L009",
+      "query": {
+        "query": "H7307",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "actual": {
+        "status": "MCP_ERROR",
+        "error": "INVALID_ARGUMENT: Error code: INVALID_ARGUMENT; Error: RuntimeException: Error calling MCP tool: [TextContent(type='text', text='Signal timed out.', annotations=None, meta=None)]"
+      }
+    },
+    {
+      "id": "L010",
+      "query": {
+        "query": "H7307",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "actual": {
+        "status": "MCP_ERROR",
+        "error": "INVALID_ARGUMENT: Error code: INVALID_ARGUMENT; Error: RuntimeException: Error calling MCP tool: [TextContent(type='text', text='Signal timed out.', annotations=None, meta=None)]"
+      }
+    },
+    {
+      "id": "L011",
+      "query": {
+        "query": "H5869",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "actual": {
+        "status": "MCP_ERROR",
+        "error": "INVALID_ARGUMENT: Error code: INVALID_ARGUMENT; Error: RuntimeException: Error calling MCP tool: [TextContent(type='text', text='Cloudflare relationship graph gateway HTTP 503', annotations=None, meta=None)]"
+      }
+    },
+    {
+      "id": "L012",
+      "query": {
+        "query": "H5869",
+        "limit": 25,
+        "max_hops": 5,
+        "mode": "discover"
+      },
+      "actual": {
+        "status": "MCP_ERROR",
+        "error": "INVALID_ARGUMENT: Error code: INVALID_ARGUMENT; Error: RuntimeException: Error calling MCP tool: [TextContent(type='text', text='Cloudflare relationship graph gateway HTTP 503', annotations=None, meta=None)]"
+      }
+    }
+  ],
+  "adjudication": "unreviewed_raw_observations; no PASS automatically"
+}
