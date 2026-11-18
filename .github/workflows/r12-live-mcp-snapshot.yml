@@ -1,0 +1,42 @@
+name: BibleResearch R12 Live MCP 239-Case Snapshot
+on:
+  push:
+    branches:
+      - feat/r12-qa-fixes
+    paths:
+      - .github/workflows/r12-live-mcp-snapshot.yml
+      - scripts/collect-r12-live-mcp-snapshot.mjs
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: r12-live-mcp-snapshot
+  cancel-in-progress: false
+jobs:
+  collect:
+    name: Capture actual BibleResearch MCP results
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Collect and checkpoint all 239 exact MCP queries
+        env:
+          BIBLERESEARCH_MCP_URL: https://ejoperxiwxlcbsqrkrvb.supabase.co/functions/v1/bible-mcp/mcp
+          MCP_CONCURRENCY: '2'
+          MCP_BATCH: '20'
+          MCP_ATTEMPTS: '2'
+          MCP_EVIDENCE: '1'
+        run: node scripts/collect-r12-live-mcp-snapshot.mjs
+      - name: Keep results as artifact even if a push failed
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r12-live-mcp-239-snapshot
+          path: research/r12/live_mcp_results_2026-11-18/current/
+          if-no-files-found: warn
