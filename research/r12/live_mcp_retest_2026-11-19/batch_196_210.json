@@ -2,7 +2,7 @@
   "schema": "r12-retest-batch-v1",
   "run_date": "2026-11-19",
   "transport": "Connected @BibleResearch MCP discover_biblical_connections_v2",
-  "methodology": "Actual original calls; repeated identical queries reused within batch. Alias candidates need manual evidence checks.",
+  "methodology": "Actual original calls; repeated identical queries reused within batch. Alias candidates need manual evidence checks. The successful no_match outcome for W025 is an algorithm coverage gap, not an infrastructure error.",
   "range": [
     196,
     210
@@ -4756,18 +4756,21 @@
         "external_provenance_requirement": "Any modern-world assertion must cite a verifiable original statement or openly label its derivation; no synthetic Wikidata GUID or unsupported physical inference."
       },
       "actual": {
-        "transport_status": "NON_OK_PAYLOAD",
+        "transport_status": "OK_NO_MATCH",
         "status": "no_match",
         "release_id": "r11-v1.0",
         "response_ms": 277,
         "meta": null,
-        "results": []
+        "results": [],
+        "missing_concepts": [
+          "yeast"
+        ]
       },
       "match_triage": {
-        "status": "TRANSPORT_OR_PAYLOAD_ERROR",
+        "status": "NO_QUERY_MATCH",
         "top_k": 20,
         "candidates": [],
-        "judgement": "NOT_HUMAN_REVIEWED"
+        "judgement": "Query resolver does not match yeast; legitimate no_match response, not 503/transport error"
       }
     },
     {
