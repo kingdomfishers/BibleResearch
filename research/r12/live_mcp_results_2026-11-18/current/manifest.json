@@ -10,7 +10,7 @@
   "batch_size": 20,
   "attempts": 3,
   "evidence_probe_enabled": false,
-  "status": "RUNNING",
+  "status": "PARTIAL_BLOCKED_BY_CLOUDFLARE_CPU_LIMIT",
   "completed": 60,
   "success": 44,
   "errors": 16,
@@ -20,5 +20,19 @@
     "batch_021_040.json",
     "batch_041_060.json"
   ],
-  "notice": "Every result is an observed top-K retrieval, not an independently verified PASS. Missing data after TOOL_ERROR is transport failure, not a negative discovery result."
+  "notice": "Every result is an observed top-K retrieval, not an independently verified PASS. Missing data after TOOL_ERROR is transport failure, not a negative discovery result.",
+  "finished_at": "2026-11-18T19:49:12Z",
+  "unrun": 179,
+  "run_id": 44382847987,
+  "run_conclusion": "cancelled_after_confirmed_widespread_exceededCpu",
+  "stop_reason": "Corpus Worker returned repeated HTTP 503 exceededCpu at 10 ms CPU; continuing would produce invalid benchmark misses and unnecessary production load.",
+  "cloudflare_telemetry_sample": {
+    "window": "approximately last 22 minutes, as queried 2026-11-18T19:48Z",
+    "observed_worker_events": 169,
+    "discovery_v2_events": 168,
+    "discovery_v2_http_503_exceededCpu": 164,
+    "discovery_v2_http_200": 4,
+    "limits": "Observed worker CPU=10ms on exceededCpu events; sample is not all production traffic."
+  },
+  "quality_notice": "Alias matches are unverified candidates, not PASS. 16 errors are transport failures; 179 cases were not executed. Re-run only after CPU mitigation or appropriate production capacity."
 }
