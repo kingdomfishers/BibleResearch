@@ -1995,6 +1995,1991 @@
       },
       "review_status": "proposed_not_individually_verified",
       "polarity": "positive"
+    },
+    {
+      "id": "D001",
+      "category": "direct_intertext",
+      "difficulty": 2,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Genesis 1:1",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Beginning phrase of John prologue",
+        "basis": "John opens in the beginning intentionally evocative of creation wording",
+        "acceptable_target_terms": [
+          "John 1:1",
+          "in the beginning",
+          "logos"
+        ],
+        "biblical_witnesses": [
+          "Genesis 1:1",
+          "John 1:1"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 10
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "D002",
+      "category": "direct_intertext",
+      "difficulty": 2,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Genesis 1:3",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Light and darkness in John prologue",
+        "basis": "Creation light imagery echoes in prologue's light and darkness",
+        "acceptable_target_terms": [
+          "John 1:5",
+          "light darkness",
+          "true light"
+        ],
+        "biblical_witnesses": [
+          "Genesis 1:3",
+          "John 1:4",
+          "John 1:5"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 15
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "D003",
+      "category": "direct_intertext",
+      "difficulty": 2,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Genesis 1:26",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Human image of God grounds blood protection",
+        "basis": "Genesis 9:6 explicitly grounds bloodshed prohibition in human divine image",
+        "acceptable_target_terms": [
+          "Genesis 9:6",
+          "image of God",
+          "blood"
+        ],
+        "biblical_witnesses": [
+          "Genesis 1:26",
+          "Genesis 9:6"
+        ],
+        "evidence_status": "explicit_text",
+        "top_k": 10
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "D004",
+      "category": "direct_intertext",
+      "difficulty": 2,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Genesis 2:7",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Adam and last Adam living spirit comparison",
+        "basis": "Paul quotes living soul statement and compares first and last Adam",
+        "acceptable_target_terms": [
+          "1 Corinthians 15:45",
+          "last Adam",
+          "living being"
+        ],
+        "biblical_witnesses": [
+          "Genesis 2:7",
+          "1 Corinthians 15:45"
+        ],
+        "evidence_status": "explicit_intertext",
+        "top_k": 10
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "D005",
+      "category": "direct_intertext",
+      "difficulty": 3,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Genesis 3:15",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Serpent opposition and offspring war",
+        "basis": "Narrative seed and serpent antagonism compared to dragon fighting woman's offspring",
+        "acceptable_target_terms": [
+          "Revelation 12:17",
+          "offspring",
+          "serpent"
+        ],
+        "biblical_witnesses": [
+          "Genesis 3:15",
+          "Revelation 12:17"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 20
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "D006",
+      "category": "direct_intertext",
+      "difficulty": 2,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Genesis 6:18",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Noah covenant established after flood",
+        "basis": "Covenant announced before flood is established afterward",
+        "acceptable_target_terms": [
+          "Genesis 9:9",
+          "Noah",
+          "covenant"
+        ],
+        "biblical_witnesses": [
+          "Genesis 6:18",
+          "Genesis 9:9",
+          "Genesis 9:11"
+        ],
+        "evidence_status": "explicit_text",
+        "top_k": 10
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "D007",
+      "category": "direct_intertext",
+      "difficulty": 3,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Genesis 8:1",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Wind waters and renewed world in creation",
+        "basis": "Ruach passing over waters can be compared across creation and post-flood restoration",
+        "acceptable_target_terms": [
+          "Genesis 1:2",
+          "wind",
+          "waters"
+        ],
+        "biblical_witnesses": [
+          "Genesis 8:1",
+          "Genesis 1:2"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 15
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "D008",
+      "category": "direct_intertext",
+      "difficulty": 3,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Genesis 9:13",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Rainbow around divine throne",
+        "basis": "Bow covenant sign and bow around throne share imagery but not explicit identity",
+        "acceptable_target_terms": [
+          "Revelation 4:3",
+          "rainbow",
+          "bow"
+        ],
+        "biblical_witnesses": [
+          "Genesis 9:13",
+          "Revelation 4:3"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 20
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "D009",
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Genesis 12:3",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Blessing of nations in Galatians 3",
+        "basis": "Paul explicitly quotes blessing of all nations in Abraham",
+        "acceptable_target_terms": [
+          "Galatians 3:8",
+          "Abraham",
+          "nations"
+        ],
+        "biblical_witnesses": [
+          "Genesis 12:3",
+          "Galatians 3:8"
+        ],
+        "evidence_status": "explicit_intertext",
+        "top_k": 10
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "D010",
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Genesis 15:6",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Faith counted as righteousness",
+        "basis": "Paul directly quotes Abraham believing God reckoned righteousness",
+        "acceptable_target_terms": [
+          "Romans 4:3",
+          "counted as righteousness",
+          "believed"
+        ],
+        "biblical_witnesses": [
+          "Genesis 15:6",
+          "Romans 4:3"
+        ],
+        "evidence_status": "explicit_intertext",
+        "top_k": 10
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "D011",
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Genesis 22:2",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Abraham offers Isaac in Hebrews 11",
+        "basis": "Hebrews explicitly recalls testing of Abraham and offering Isaac",
+        "acceptable_target_terms": [
+          "Hebrews 11:17",
+          "Isaac",
+          "offered"
+        ],
+        "biblical_witnesses": [
+          "Genesis 22:2",
+          "Hebrews 11:17",
+          "Hebrews 11:19"
+        ],
+        "evidence_status": "explicit_intertext",
+        "top_k": 10
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "D012",
+      "category": "direct_intertext",
+      "difficulty": 3,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Genesis 22:8",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Provision of lamb and Lamb of God",
+        "basis": "God provides sacrificial animal and John calls Jesus Lamb of God; candidate typology",
+        "acceptable_target_terms": [
+          "John 1:29",
+          "Lamb of God",
+          "provision"
+        ],
+        "biblical_witnesses": [
+          "Genesis 22:8",
+          "John 1:29"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 20
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "D013",
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Genesis 28:12",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Angels ascending descending on Son of Man",
+        "basis": "Jesus alludes to Jacob's ladder vision imagery",
+        "acceptable_target_terms": [
+          "John 1:51",
+          "ascending",
+          "descending"
+        ],
+        "biblical_witnesses": [
+          "Genesis 28:12",
+          "John 1:51"
+        ],
+        "evidence_status": "explicit_intertext",
+        "top_k": 10
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "D014",
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Exodus 3:6",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "God of Abraham as God of living",
+        "basis": "Jesus cites bush revelation in argument about resurrection",
+        "acceptable_target_terms": [
+          "Matthew 22:32",
+          "God of living",
+          "Abraham"
+        ],
+        "biblical_witnesses": [
+          "Exodus 3:6",
+          "Matthew 22:32"
+        ],
+        "evidence_status": "explicit_intertext",
+        "top_k": 10
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "D015",
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Exodus 12:5",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Passover lamb and Christ sacrificed",
+        "basis": "Paul explicitly calls Christ our Passover lamb",
+        "acceptable_target_terms": [
+          "1 Corinthians 5:7",
+          "Passover",
+          "Christ"
+        ],
+        "biblical_witnesses": [
+          "Exodus 12:5",
+          "1 Corinthians 5:7"
+        ],
+        "evidence_status": "explicit_intertext",
+        "top_k": 10
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "D016",
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Exodus 12:13",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Faith at Passover blood marking",
+        "basis": "Hebrews recalls Passover and sprinkling blood to avoid destroyer",
+        "acceptable_target_terms": [
+          "Hebrews 11:28",
+          "sprinkling",
+          "Passover"
+        ],
+        "biblical_witnesses": [
+          "Exodus 12:13",
+          "Hebrews 11:28"
+        ],
+        "evidence_status": "explicit_intertext",
+        "top_k": 10
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "D017",
+      "category": "direct_intertext",
+      "difficulty": 2,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Exodus 12:22",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Hyssop and sprinkling in Hebrews",
+        "basis": "Hyssop blood use reappears in Hebrews discussion of Moses and purification",
+        "acceptable_target_terms": [
+          "Hebrews 9:19",
+          "hyssop",
+          "sprinkling"
+        ],
+        "biblical_witnesses": [
+          "Exodus 12:22",
+          "Hebrews 9:19"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 15
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "D018",
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Exodus 14:21",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Israel crossed sea baptized into Moses",
+        "basis": "Paul explicitly references passage through sea and baptism into Moses",
+        "acceptable_target_terms": [
+          "1 Corinthians 10:2",
+          "sea",
+          "baptism"
+        ],
+        "biblical_witnesses": [
+          "Exodus 14:21",
+          "1 Corinthians 10:1",
+          "1 Corinthians 10:2"
+        ],
+        "evidence_status": "explicit_intertext",
+        "top_k": 10
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "D019",
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Exodus 16:4",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Manna and true bread from heaven",
+        "basis": "Jesus compares historical manna with bread of life",
+        "acceptable_target_terms": [
+          "John 6:32",
+          "bread from heaven",
+          "manna"
+        ],
+        "biblical_witnesses": [
+          "Exodus 16:4",
+          "John 6:32",
+          "John 6:35"
+        ],
+        "evidence_status": "explicit_intertext",
+        "top_k": 10
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "D020",
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Exodus 17:6",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Rock struck in wilderness Christ reference",
+        "basis": "Paul explicitly describes spiritual rock associated with Christ",
+        "acceptable_target_terms": [
+          "1 Corinthians 10:4",
+          "rock",
+          "Christ"
+        ],
+        "biblical_witnesses": [
+          "Exodus 17:6",
+          "1 Corinthians 10:4"
+        ],
+        "evidence_status": "explicit_intertext",
+        "top_k": 10
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "D021",
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Exodus 20:12",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Honor father and mother cited",
+        "basis": "Paul quotes commandment with promise",
+        "acceptable_target_terms": [
+          "Ephesians 6:2",
+          "honor father",
+          "mother"
+        ],
+        "biblical_witnesses": [
+          "Exodus 20:12",
+          "Ephesians 6:2"
+        ],
+        "evidence_status": "explicit_intertext",
+        "top_k": 10
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "D022",
+      "category": "direct_intertext",
+      "difficulty": 2,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Exodus 25:31",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Tabernacle lampstand described in Hebrews",
+        "basis": "Hebrews describes first tabernacle compartment with lampstand",
+        "acceptable_target_terms": [
+          "Hebrews 9:2",
+          "lampstand",
+          "tabernacle"
+        ],
+        "biblical_witnesses": [
+          "Exodus 25:31",
+          "Hebrews 9:2"
+        ],
+        "evidence_status": "explicit_text",
+        "top_k": 12
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "D023",
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Leviticus 16:15",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "High priest entering sanctuary once yearly",
+        "basis": "Hebrews compares ancient high priest entry and blood sacrifice",
+        "acceptable_target_terms": [
+          "Hebrews 9:7",
+          "high priest",
+          "once a year"
+        ],
+        "biblical_witnesses": [
+          "Leviticus 16:15",
+          "Hebrews 9:7"
+        ],
+        "evidence_status": "explicit_intertext",
+        "top_k": 10
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "D024",
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Leviticus 17:11",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Blood shedding and forgiveness",
+        "basis": "Hebrews argues purification by blood and remission",
+        "acceptable_target_terms": [
+          "Hebrews 9:22",
+          "blood",
+          "forgiveness"
+        ],
+        "biblical_witnesses": [
+          "Leviticus 17:11",
+          "Hebrews 9:22"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 12
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "D025",
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Numbers 21:9",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Bronze serpent lifted and Son of Man",
+        "basis": "Jesus explicitly compares lifted serpent and Son of Man",
+        "acceptable_target_terms": [
+          "John 3:14",
+          "serpent",
+          "lifted"
+        ],
+        "biblical_witnesses": [
+          "Numbers 21:9",
+          "John 3:14"
+        ],
+        "evidence_status": "explicit_intertext",
+        "top_k": 10
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "D026",
+      "category": "direct_intertext",
+      "difficulty": 3,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Numbers 24:17",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Star from Jacob and star of Messiah",
+        "basis": "Star oracle and Magi star interpreted together but not explicitly quoted",
+        "acceptable_target_terms": [
+          "Matthew 2:2",
+          "star of Jacob",
+          "Magi"
+        ],
+        "biblical_witnesses": [
+          "Numbers 24:17",
+          "Matthew 2:2"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 20
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "D027",
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Deuteronomy 6:4",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Shema quoted by Jesus",
+        "basis": "Jesus directly quotes Hear O Israel the Lord is one",
+        "acceptable_target_terms": [
+          "Mark 12:29",
+          "Shema",
+          "one Lord"
+        ],
+        "biblical_witnesses": [
+          "Deuteronomy 6:4",
+          "Mark 12:29"
+        ],
+        "evidence_status": "explicit_intertext",
+        "top_k": 10
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "D028",
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Deuteronomy 6:5",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Love God with all heart commandment",
+        "basis": "Jesus quotes love God command as greatest commandment",
+        "acceptable_target_terms": [
+          "Mark 12:30",
+          "love the Lord",
+          "heart"
+        ],
+        "biblical_witnesses": [
+          "Deuteronomy 6:5",
+          "Mark 12:30"
+        ],
+        "evidence_status": "explicit_intertext",
+        "top_k": 10
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "D029",
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Deuteronomy 8:3",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Not by bread alone",
+        "basis": "Jesus directly quotes Deuteronomy against temptation",
+        "acceptable_target_terms": [
+          "Matthew 4:4",
+          "bread alone",
+          "word"
+        ],
+        "biblical_witnesses": [
+          "Deuteronomy 8:3",
+          "Matthew 4:4"
+        ],
+        "evidence_status": "explicit_intertext",
+        "top_k": 10
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "D030",
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Deuteronomy 21:23",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Hanged on tree and curse in Galatians",
+        "basis": "Paul cites curse on a tree",
+        "acceptable_target_terms": [
+          "Galatians 3:13",
+          "curse",
+          "tree"
+        ],
+        "biblical_witnesses": [
+          "Deuteronomy 21:23",
+          "Galatians 3:13"
+        ],
+        "evidence_status": "explicit_intertext",
+        "top_k": 10
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "D031",
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Deuteronomy 25:4",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Do not muzzle working ox",
+        "basis": "Paul directly quotes the command in discussion of workers",
+        "acceptable_target_terms": [
+          "1 Corinthians 9:9",
+          "ox",
+          "muzzle"
+        ],
+        "biblical_witnesses": [
+          "Deuteronomy 25:4",
+          "1 Corinthians 9:9"
+        ],
+        "evidence_status": "explicit_intertext",
+        "top_k": 10
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "D032",
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Psalm 22:1",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "My God why have you forsaken me",
+        "basis": "Jesus' cry quotes Psalm 22 in passion narrative",
+        "acceptable_target_terms": [
+          "Matthew 27:46",
+          "forsaken",
+          "my God"
+        ],
+        "biblical_witnesses": [
+          "Psalm 22:1",
+          "Matthew 27:46"
+        ],
+        "evidence_status": "explicit_intertext",
+        "top_k": 10
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "D033",
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Psalm 22:18",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Dividing garments casting lots",
+        "basis": "John explicitly applies garment casting lots text",
+        "acceptable_target_terms": [
+          "John 19:24",
+          "garments",
+          "lots"
+        ],
+        "biblical_witnesses": [
+          "Psalm 22:18",
+          "John 19:24"
+        ],
+        "evidence_status": "explicit_intertext",
+        "top_k": 10
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "D034",
+      "category": "direct_intertext",
+      "difficulty": 2,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Psalm 69:21",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Sour wine given at crucifixion",
+        "basis": "Passion narrative gives sour wine with scriptural resonance",
+        "acceptable_target_terms": [
+          "John 19:29",
+          "sour wine",
+          "vinegar"
+        ],
+        "biblical_witnesses": [
+          "Psalm 69:21",
+          "John 19:29"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 12
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "D035",
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Psalm 110:1",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Sit at my right hand quotation",
+        "basis": "Jesus explicitly quotes David's Lord at right hand",
+        "acceptable_target_terms": [
+          "Mark 12:36",
+          "right hand",
+          "Lord"
+        ],
+        "biblical_witnesses": [
+          "Psalm 110:1",
+          "Mark 12:36"
+        ],
+        "evidence_status": "explicit_intertext",
+        "top_k": 10
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "D036",
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Psalm 118:22",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Rejected stone became cornerstone",
+        "basis": "NT quotes cornerstone rejection",
+        "acceptable_target_terms": [
+          "1 Peter 2:7",
+          "rejected stone",
+          "cornerstone"
+        ],
+        "biblical_witnesses": [
+          "Psalm 118:22",
+          "1 Peter 2:7"
+        ],
+        "evidence_status": "explicit_intertext",
+        "top_k": 10
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "D037",
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Isaiah 7:14",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Immanuel child cited",
+        "basis": "Matthew explicitly introduces Isaiah statement as fulfillment",
+        "acceptable_target_terms": [
+          "Matthew 1:23",
+          "Immanuel",
+          "virgin"
+        ],
+        "biblical_witnesses": [
+          "Isaiah 7:14",
+          "Matthew 1:23"
+        ],
+        "evidence_status": "explicit_intertext",
+        "top_k": 10
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "D038",
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Isaiah 9:2",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "People in darkness saw great light",
+        "basis": "Matthew cites Isaiah on light in Galilee",
+        "acceptable_target_terms": [
+          "Matthew 4:16",
+          "great light",
+          "darkness"
+        ],
+        "biblical_witnesses": [
+          "Isaiah 9:2",
+          "Matthew 4:16"
+        ],
+        "evidence_status": "explicit_intertext",
+        "top_k": 10
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "D039",
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Isaiah 40:3",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Voice crying in wilderness",
+        "basis": "Mark cites wilderness preparation text",
+        "acceptable_target_terms": [
+          "Mark 1:3",
+          "wilderness",
+          "prepare way"
+        ],
+        "biblical_witnesses": [
+          "Isaiah 40:3",
+          "Mark 1:3"
+        ],
+        "evidence_status": "explicit_intertext",
+        "top_k": 10
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "D040",
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Isaiah 53:4",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Servant bore sicknesses",
+        "basis": "Matthew explicitly interprets healing ministry with Isaiah",
+        "acceptable_target_terms": [
+          "Matthew 8:17",
+          "infirmities",
+          "borne"
+        ],
+        "biblical_witnesses": [
+          "Isaiah 53:4",
+          "Matthew 8:17"
+        ],
+        "evidence_status": "explicit_intertext",
+        "top_k": 10
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "D041",
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Isaiah 53:7",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Silent sheep before slaughter",
+        "basis": "Acts quotes suffering servant text in Ethiopian's reading",
+        "acceptable_target_terms": [
+          "Acts 8:32",
+          "sheep",
+          "slaughter"
+        ],
+        "biblical_witnesses": [
+          "Isaiah 53:7",
+          "Acts 8:32"
+        ],
+        "evidence_status": "explicit_intertext",
+        "top_k": 10
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "D042",
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Isaiah 61:1",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Spirit of Lord anointed to proclaim",
+        "basis": "Jesus quotes Isaiah in Nazareth synagogue",
+        "acceptable_target_terms": [
+          "Luke 4:18",
+          "anointed",
+          "good news"
+        ],
+        "biblical_witnesses": [
+          "Isaiah 61:1",
+          "Luke 4:18"
+        ],
+        "evidence_status": "explicit_intertext",
+        "top_k": 10
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "D043",
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Jeremiah 31:31",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "New covenant prophecy cited in Hebrews",
+        "basis": "Hebrews quotes new covenant oracle",
+        "acceptable_target_terms": [
+          "Hebrews 8:8",
+          "new covenant",
+          "Israel"
+        ],
+        "biblical_witnesses": [
+          "Jeremiah 31:31",
+          "Hebrews 8:8"
+        ],
+        "evidence_status": "explicit_intertext",
+        "top_k": 10
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "D044",
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Hosea 11:1",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Out of Egypt I called my son",
+        "basis": "Matthew cites Hosea regarding Jesus' return from Egypt",
+        "acceptable_target_terms": [
+          "Matthew 2:15",
+          "out of Egypt",
+          "son"
+        ],
+        "biblical_witnesses": [
+          "Hosea 11:1",
+          "Matthew 2:15"
+        ],
+        "evidence_status": "explicit_intertext",
+        "top_k": 10
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "D045",
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Joel 2:28",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Spirit poured on all flesh",
+        "basis": "Peter explicitly quotes Joel at Pentecost",
+        "acceptable_target_terms": [
+          "Acts 2:17",
+          "pour out Spirit",
+          "all flesh"
+        ],
+        "biblical_witnesses": [
+          "Joel 2:28",
+          "Acts 2:17"
+        ],
+        "evidence_status": "explicit_intertext",
+        "top_k": 10
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "D046",
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Amos 9:11",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Restoration of fallen tent of David",
+        "basis": "James cites Amos at Jerusalem council",
+        "acceptable_target_terms": [
+          "Acts 15:16",
+          "David",
+          "tent"
+        ],
+        "biblical_witnesses": [
+          "Amos 9:11",
+          "Acts 15:16"
+        ],
+        "evidence_status": "explicit_intertext",
+        "top_k": 10
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "D047",
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Micah 5:2",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Ruler coming from Bethlehem",
+        "basis": "Matthew cites Bethlehem ruler oracle",
+        "acceptable_target_terms": [
+          "Matthew 2:6",
+          "Bethlehem",
+          "ruler"
+        ],
+        "biblical_witnesses": [
+          "Micah 5:2",
+          "Matthew 2:6"
+        ],
+        "evidence_status": "explicit_intertext",
+        "top_k": 10
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "D048",
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Habakkuk 2:4",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Righteous by faith",
+        "basis": "Paul quotes the righteous will live by faith",
+        "acceptable_target_terms": [
+          "Romans 1:17",
+          "faith",
+          "live"
+        ],
+        "biblical_witnesses": [
+          "Habakkuk 2:4",
+          "Romans 1:17"
+        ],
+        "evidence_status": "explicit_intertext",
+        "top_k": 10
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "D049",
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Zechariah 9:9",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "King riding on donkey",
+        "basis": "Matthew explicitly cites humble king entering city",
+        "acceptable_target_terms": [
+          "Matthew 21:5",
+          "donkey",
+          "king"
+        ],
+        "biblical_witnesses": [
+          "Zechariah 9:9",
+          "Matthew 21:5"
+        ],
+        "evidence_status": "explicit_intertext",
+        "top_k": 10
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "D050",
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Zechariah 12:10",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Look on the one pierced",
+        "basis": "John cites pierced-one text during passion",
+        "acceptable_target_terms": [
+          "John 19:37",
+          "pierced",
+          "look upon"
+        ],
+        "biblical_witnesses": [
+          "Zechariah 12:10",
+          "John 19:37"
+        ],
+        "evidence_status": "explicit_intertext",
+        "top_k": 10
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "D051",
+      "category": "direct_intertext",
+      "difficulty": 1,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Malachi 3:1",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Messenger prepares the way",
+        "basis": "Mark's introductory composite quotation invokes messenger passage",
+        "acceptable_target_terms": [
+          "Mark 1:2",
+          "messenger",
+          "prepare"
+        ],
+        "biblical_witnesses": [
+          "Malachi 3:1",
+          "Mark 1:2"
+        ],
+        "evidence_status": "explicit_intertext",
+        "top_k": 10
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "D052",
+      "category": "direct_intertext",
+      "difficulty": 2,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Psalm 16:10",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Holy One not see corruption",
+        "basis": "Peter cites psalm in resurrection argument",
+        "acceptable_target_terms": [
+          "Acts 2:27",
+          "corruption",
+          "Holy One"
+        ],
+        "biblical_witnesses": [
+          "Psalm 16:10",
+          "Acts 2:27"
+        ],
+        "evidence_status": "explicit_intertext",
+        "top_k": 10
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "D053",
+      "category": "direct_intertext",
+      "difficulty": 2,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Zechariah 13:7",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Strike shepherd sheep scatter",
+        "basis": "Jesus quotes struck shepherd oracle in arrest prediction",
+        "acceptable_target_terms": [
+          "Matthew 26:31",
+          "shepherd",
+          "scatter"
+        ],
+        "biblical_witnesses": [
+          "Zechariah 13:7",
+          "Matthew 26:31"
+        ],
+        "evidence_status": "explicit_intertext",
+        "top_k": 10
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "D054",
+      "category": "direct_intertext",
+      "difficulty": 2,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Isaiah 6:9",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Hearing without understanding",
+        "basis": "Jesus quotes Isaiah in parables explanation",
+        "acceptable_target_terms": [
+          "Matthew 13:14",
+          "hearing",
+          "not understand"
+        ],
+        "biblical_witnesses": [
+          "Isaiah 6:9",
+          "Matthew 13:14"
+        ],
+        "evidence_status": "explicit_intertext",
+        "top_k": 12
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
+    },
+    {
+      "id": "D055",
+      "category": "direct_intertext",
+      "difficulty": 2,
+      "query_type": "passage_seed",
+      "mcp_call": {
+        "tool": "discover_biblical_connections_v2",
+        "arguments": {
+          "query": "Malachi 4:5",
+          "limit": 25,
+          "max_hops": 5,
+          "mode": "discover"
+        }
+      },
+      "expected": {
+        "relationship": "Elijah promise and John the Baptist",
+        "basis": "John goes in Elijah's spirit and power as interpreted in Luke",
+        "acceptable_target_terms": [
+          "Luke 1:17",
+          "Elijah",
+          "turn hearts"
+        ],
+        "biblical_witnesses": [
+          "Malachi 4:5",
+          "Luke 1:17"
+        ],
+        "evidence_status": "candidate_intertext",
+        "top_k": 15
+      },
+      "evidence_followup": {
+        "tool": "get_connection_evidence_v1",
+        "argument_source": "matched_result.evidence_id"
+      },
+      "review_status": "proposed_not_individually_verified",
+      "polarity": "positive"
     }
   ]
 }
