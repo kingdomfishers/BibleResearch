@@ -702,10 +702,10 @@ export function registerRelationshipV2Tools(server: McpServer, read: DatabaseRea
   server.registerTool('get_connection_evidence_v1', {
     title: 'Inspect Biblical Connection Evidence (R10)',
     description:
-      'Retrieve full original-language Greek/Hebrew tokens (Strong\'s, lemma, gloss, highlighted matches), public-domain English text, orthographic decomposition, number classification, and dataset provenance/license for any connection returned by discover_biblical_connections_v1.',
+      'Retrieve full original-language Greek/Hebrew tokens (Strong\'s, lemma, gloss, highlighted matches), public-domain English text, orthographic decomposition, number classification, and dataset provenance/license for any connection returned by discover_biblical_connections_v1 or discover_biblical_connections_v2. Omit release_id or pass evidence_release_id (not verification_release.corpus_release).',
     inputSchema: z.strictObject({
       evidence_id: z.string().trim().min(1).max(220).describe('The evidence_id returned inside strongest_connections by discover_biblical_connections_v1 or discover_biblical_connections_v2.'),
-      release_id: z.string().trim().min(1).max(32).optional(),
+      release_id: z.string().trim().min(1).max(32).optional().describe('Optional evidence index release (pass evidence_release_id, or omit to use the loaded evidence release; do not pass verification_release.corpus_release).'),
     }),
     outputSchema: z.record(z.string(), z.unknown()),
     ...readOnlyMeta,

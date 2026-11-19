@@ -48,6 +48,7 @@ export type R10EpistemicClass =
   | 'documented_collocation_or_cooccurrence'
   | 'documented_cross_language_bridge'
   | 'verified_cross_reference'
+  | 'editorial_cross_reference'
   | 'shared_motif_evidence'
   | 'candidate_literary_pattern'
   | 'orthographic_similarity_only'
@@ -265,6 +266,7 @@ export interface R10ConnectionSummary {
   shared_witness_refs?: string[];
   connection_id: string;
   evidence_id: string;
+  evidence_release_id?: string;
   title: string;
   explanation: string;
   predicate: R10Predicate;
@@ -400,6 +402,7 @@ export interface DiscoverConnectionsResult {
   schema_version: 1;
   status: 'ok' | 'partial' | 'no_match' | 'selector_mismatch' | 'invalid_request';
   release_id: string;
+  evidence_release_id?: string;
   error?: string;
   mismatch?: Record<string, unknown>;
   selected_occurrence?: {
@@ -480,6 +483,7 @@ export interface DiscoverConnectionsResult {
   r12_discovery?: {
     schema_version: 1;
     release_id: string;
+    evidence_release_id?: string;
     score_version: string;
     pilot_anchors_matched: string[];
     multihop_recommendations_count: number;
@@ -494,8 +498,19 @@ export interface DiscoverConnectionsResult {
 export interface ConnectionEvidenceResult {
   coverage?: { state: 'resource_limits_reached' | 'missing_source_coverage' | 'available'; missing_assets: string[] };
   schema_version: 1;
-  status: 'ok' | 'not_found';
+  status: 'ok' | 'not_found' | 'release_mismatch';
   release_id: string;
+  evidence_release_id?: string;
+  requested_release_id?: string;
+  corpus_release_id?: string;
+  error?: string;
+  mismatch?: {
+    requested_release_id: string;
+    expected_evidence_release_id: string;
+    loaded_corpus_release_id?: string;
+    reason: 'corpus_overlay_release_id_passed' | 'unsupported_evidence_release_id';
+    hint: string;
+  };
   evidence: R10EvidenceRecord | null;
   passage_details: Array<{
     passage: R10PassageRef;
@@ -522,6 +537,7 @@ export interface ExpandConnectionResult {
   schema_version: 1;
   status: 'ok' | 'not_found';
   release_id: string;
+  evidence_release_id?: string;
   center_node: R10Node | null;
   connections: R10ConnectionSummary[];
   controls: R10ControlOrWarning[];
