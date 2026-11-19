@@ -1,14 +1,16 @@
 # BibleResearch — AI Discovery MCP Requirements and DLM Research Architecture
 
+> **CURRENT INTERFACE DECISION — 2026-11-19 (v2):** The authoritative public API is the owner's **seven-function compact contract**: `get_Passage`, `get_Word`, `write_Note`, `get_Connection`, `research`, `follow_connectionchain`, and `get_prompt`. See [MCP_CODEMODE_DISCOVERY_STRATEGY.md](MCP_CODEMODE_DISCOVERY_STRATEGY.md) and the [updated Neon prompt](NEON_MCP_CODEMODE_IMPLEMENTATION_PROMPT.md). **The eight-read-tool design, tool names and roadmap below are historical supporting analysis, not current implementation instructions.** Retain its source-evidence, DLM, prophetic, ranking and evaluation requirements.
+
 **Status:** Research and implementation specification; **no MCP code or deployment changed by this document**  
 **Date:** 2026-11-19  
 **Repository baseline:** inspected branch `feat/r12-qa-fixes`; live BibleResearch MCP catalog observed with **46 tools**.  
 **Owner for future implementation:** BibleResearch orchestrator / architecture team.  
 **Goal:** Give ChatGPT, Gemini and comparable language models the *smallest useful research interface* that makes them substantially more capable of discovering, testing, explaining and extending surprising biblical patterns — especially complex prophetic imagery and DLM hypotheses — than they are from general training alone.
 
-## 1. Executive decision
+## 1. Evidence-first principles (historical interface proposal superseded)
 
-**Do not confuse more MCP tools with more research capability.** The project has substantial corpus evidence but exposes it through too many overlapping, specialized tool calls. Reduce the *default AI-facing catalog* to approximately **8 read tools plus 1 explicitly authorized write tool**, while retaining legacy/expert access and all underlying source functionality. The public AI interface should support iterative, evidence-driven research:
+**Do not confuse more MCP tools with more research capability.** The project has substantial corpus evidence but exposes it through too many overlapping, specialized tool calls. The former recommendation to reduce the default catalog to **eight read tools plus one write tool has been superseded** by the owner’s seven-function compact interface; preserve the underlying source operations and legacy/expert access. The public AI interface should support iterative, evidence-driven research:
 
 **Orient a question → read the whole passage → identify symbols/claims → retrieve candidate parallels → examine decisive witnesses → test alternatives and counterexamples → synthesize a carefully qualified interpretation → continue exploring.**
 
@@ -107,9 +109,9 @@ Every deep passage dossier should offer *progressive retrieval* of the following
 
 **Novel key requirement: biblical symbol-sense registry.** Represent symbols with **occurrence-specific meaning assignments**: symbol surface, agent/action/object, passage, explicit/interpreted referent, source of interpretation, confidence class, historical context and known counterexamples. Do **not** create a single global definition of "eye," "horn," "oil," "water," "dragon," "beast" or "seven." Distinct symbol occurrences may mean different things. Unreviewed inferred mappings must remain candidate hypotheses.
 
-## 5. Proposed minimal default MCP toolset
+## 5. Historical eight-read-tool interface (superseded; capability inventory only)
 
-Target **8 read tools + 1 optional write tool**. Names are *proposed contracts*, not current deployed endpoints.
+**This earlier eight-read-tool table is archived as an inventory of capabilities, not a build instruction.** The binding interface is seven named functions in [MCP_CODEMODE_DISCOVERY_STRATEGY.md](MCP_CODEMODE_DISCOVERY_STRATEGY.md): two compact frequent reads; connection comparison; persistent chain; composable research; prompt; authorized notes write. Names below are not current endpoint commitments.
 
 | Tool | Core responsibility | Modes / mandatory contract |
 | --- | --- | --- |
@@ -328,7 +330,7 @@ Never assign these subjective qualities fictitious probability percentages witho
 
 **Deployment note:** `MCP_SETUP.md` may have stale deployed-version wording relative to later release handoffs. Verify actual active MCP/corpus release before implementing or shipping.
 
-## 12. Implementation roadmap for Neon (future task, not performed here)
+## 12. Historical implementation roadmap (superseded by v2 Neon prompt)
 
 **P0 — Measure before refactor (small):**
 1. Snapshot actual `tools/list`, source registration, tool aliases, schema, current calls used by UI and scripts, deployed versions and note security.
@@ -372,7 +374,7 @@ Measure:
 
 Success is **not** a higher raw connection count. Success is an AI that finds, verifies and explains materially better discoveries with fewer actions and fewer false certainties. Add adversarial foils with superficial common vocabulary and ask the model to reject them.
 
-## 14. Immediate next actions and acceptance criteria
+## 14. Historical next actions (use v2 prompt for current plan)
 
 1. Authoritatively define the 0–7 DLM layer registry with the project owner (source document, semantics and evidence criteria); *do not fill it by guesswork*.
 2. Implement and unit-test `study_passage(profile=prophetic)` and `compare_passages` before rewriting every other tool.
@@ -400,4 +402,4 @@ Success is **not** a higher raw connection count. Success is an AI that finds, v
 - [USCCB Ezekiel 10](https://bible.usccb.org/bible/ezekiel/10), [Zechariah 4](https://bible.usccb.org/bible/zechariah/4), [Revelation 11](https://bible.usccb.org/bible/revelation/11), [Revelation 13](https://bible.usccb.org/bible/revelation/13), [Daniel 7](https://bible.usccb.org/bible/daniel/7): illustrative primary passages and annotated cross-references; their explanatory notes are commentary, not primary corpus proof.
 - [G. V. Allen, "Textual Pluriformity and Allusion in the Book of Revelation: The Text of Zechariah 4 in the Apocalypse" (2015)](https://repository.up.ac.za/items/e1a028b8-bfd0-4872-b023-89a73d03667b): why textual plurality matters when comparing OT visions with Revelation.
 
-**Bottom line:** Give an AI fewer, clearer research instruments — but each one must reveal *more of the right context and more checkable evidence*. For DLM and prophecy, optimize for **interpretable discoveries with explicit warrant**, not vocabulary matches, mystery claims or maximal tool count.
+**Bottom line (still valid):** Give an AI fewer, clearer research instruments — but each one must reveal *more of the right context and more checkable evidence*. The owner's current seven-function API controls what is returned, especially z passage/verse connections, x word connections, y etymology/similar spelling candidates, and optional real-world enrichment. For DLM and prophecy, optimize for **interpretable discoveries with explicit warrant**, not vocabulary matches, mystery claims or maximal tool count.
