@@ -1,0 +1,966 @@
+{
+  "method": "12 read-only get_connection_evidence_v1 calls against corpus release r12-discovery-2. Records are evidence snippets, not automatic semantic verdicts.",
+  "items": [
+    {
+      "evidence_id": "r12:orth:H0120:H1818",
+      "status": "ok",
+      "release": "r12-discovery-2",
+      "title": "Orthographic similarity: אָדָם (H0120) ↔ דָּם (H1818, matched \"דם\")",
+      "summary": "Unpointed/unaccented script similarity (hebrew_unpointed, score=1, shared segment \"דם\", co-occurs in 11 canonical verse(s)). Shared spelling does not establish root, etymology, meaning, or intentional wordplay.",
+      "epistemic_class": "orthographic_similarity_only",
+      "predicate": "orthographic_overlap",
+      "evidence_tier": 6,
+      "limitations": [
+        "Shared spelling does not establish root, etymology, meaning, or intentional wordplay."
+      ],
+      "provenance": {
+        "source_dataset": "STEPBible Canonical Lemma Script",
+        "source_record_ids": [
+          "H0120",
+          "H1818"
+        ],
+        "license": "CC BY 4.0",
+        "derivation_method": "r12_orthographic_bigram_containment"
+      },
+      "score_components": {
+        "base_tier_score": 380,
+        "specificity_bonus": 100,
+        "witness_bonus": 0,
+        "common_word_penalty": 0,
+        "number_coincidence_penalty": 0,
+        "orthographic_penalty": 40,
+        "final_score": 800
+      },
+      "r12_metadata": {
+        "score_version": "r12-ranker-v2",
+        "C": 0
+      },
+      "passage_details": [
+        {
+          "ref": "Genesis 9:5",
+          "english_text": "I will surely require accounting for your life’s blood. At the hand of every animal I will require it. At the hand of man, even at the hand of every man’s brother, I will require the life of man.",
+          "highlights": [
+            {
+              "s": "H1818",
+              "gloss": "blood your"
+            },
+            {
+              "s": "H0120",
+              "gloss": "of.(the) humankind"
+            },
+            {
+              "s": "H0120",
+              "gloss": "of.(the) humankind"
+            }
+          ]
+        },
+        {
+          "ref": "Genesis 9:6",
+          "english_text": "Whoever sheds man’s blood, his blood will be shed by man, for God made man in his own image.",
+          "highlights": [
+            {
+              "s": "H1818",
+              "gloss": "(of).the.blood"
+            },
+            {
+              "s": "H0120",
+              "gloss": "of.(the) humankind"
+            },
+            {
+              "s": "H0120",
+              "gloss": "by (the) humankind"
+            },
+            {
+              "s": "H1818",
+              "gloss": "blood his"
+            },
+            {
+              "s": "H0120",
+              "gloss": "(the) humankind"
+            }
+          ]
+        },
+        {
+          "ref": "Genesis 1:26",
+          "english_text": "God said, “Let’s make man in our image, after our likeness. Let them have dominion over the fish of the sea, and over the birds of the sky, and over the livestock, and over all the earth, and over every creeping thing that creeps on the earth.”",
+          "highlights": [
+            {
+              "s": "H0120",
+              "gloss": "humankind"
+            }
+          ]
+        },
+        {
+          "ref": "Genesis 4:10",
+          "english_text": "The LORD said, “What have you done? The voice of your brother’s blood cries to me from the ground.",
+          "highlights": [
+            {
+              "s": "H1818",
+              "gloss": "of.the.blood(s)"
+            }
+          ]
+        }
+      ],
+      "coverage": {
+        "state": "available",
+        "missing_assets": []
+      }
+    },
+    {
+      "evidence_id": "r12:path:G3088:G5459",
+      "status": "ok",
+      "release": "r12-discovery-2",
+      "title": "R12 2-hop discovery: λύχνος (G3088) → φωσφόρος (\"light-bearing\", G5459)",
+      "summary": "2-hop source-backed discovery path (direct endpoint witness, K=0.95, endpoint_groups=4, step_groups=16; interest=0.719112): λύχνος (lamp) --[gram_grammatical_subject_of]--> φωτίζω (to illuminate) ; φωτίζω (to illuminate) --[lex_shares_root]--> φωσφόρος (light-bearing)",
+      "epistemic_class": "documented_collocation_or_cooccurrence",
+      "predicate": "multihop_proof_path",
+      "evidence_tier": 4,
+      "limitations": [
+        "A graph path does not by itself establish that its endpoints symbolize or equal one another."
+      ],
+      "provenance": {
+        "source_dataset": "MACULA Grammar + STEPBible Lexicon",
+        "source_record_ids": [
+          "gram:LUK 11:36|cl3",
+          "lex:step:shares_root:G5459<->G5461"
+        ],
+        "license": "CC BY 4.0",
+        "derivation_method": "r12_offline_beam_proof_ranker_v2"
+      },
+      "score_components": {
+        "base_tier_score": 650,
+        "specificity_bonus": 100,
+        "witness_bonus": 77,
+        "common_word_penalty": 5,
+        "number_coincidence_penalty": 0,
+        "orthographic_penalty": 0,
+        "final_score": 902
+      },
+      "r12_metadata": {
+        "score_version": "r12-ranker-v2",
+        "K": 0.95,
+        "C": 0.773976,
+        "endpoint_epistemic_status": "DIRECT_ENDPOINT_WITNESS",
+        "endpoint_support_group_count": 4,
+        "direct_endpoint_witnesses": [
+          "2 Peter 1:19"
+        ],
+        "steps": [
+          {
+            "source_dataset": "MACULA Grammar",
+            "witness_refs": [
+              "LUK 11:36"
+            ],
+            "relation_type": "gram_grammatical_subject_of"
+          },
+          {
+            "source_dataset": "STEPBible Lexicon",
+            "witness_refs": [
+              "Luke 11:36",
+              "John 1:9"
+            ],
+            "relation_type": "lex_shares_root"
+          }
+        ]
+      },
+      "passage_details": [
+        {
+          "ref": "2 Peter 1:19",
+          "english_text": "We have the more sure word of prophecy; and you do well that you heed it as to a lamp shining in a dark place, until the day dawns and the morning star arises in your hearts,",
+          "highlights": [
+            {
+              "s": "G3088",
+              "gloss": "to a lamp"
+            },
+            {
+              "s": "G5459",
+              "gloss": "[the] morning star"
+            }
+          ]
+        },
+        {
+          "ref": "Luke 11:36",
+          "english_text": "If therefore your whole body is full of light, having no part dark, it will be wholly full of light, as when the lamp with its bright shining gives you light.”",
+          "highlights": [
+            {
+              "s": "G3088",
+              "gloss": "lamp"
+            }
+          ]
+        },
+        {
+          "ref": "John 1:9",
+          "english_text": "The true light that enlightens everyone was coming into the world.",
+          "highlights": []
+        }
+      ],
+      "coverage": {
+        "state": "available",
+        "missing_assets": []
+      }
+    },
+    {
+      "evidence_id": "r11:xref:22286:28823",
+      "status": "ok",
+      "release": "r12-discovery-2",
+      "title": "Reciprocal cross-reference (OT↔NT): Hosea 6:2 → 1 Corinthians 15:4",
+      "summary": "Bidirectional canonical cross-reference connects Hosea 6:2 and 1 Corinthians 15:4 via \"He will revive us\".",
+      "epistemic_class": "verified_cross_reference",
+      "predicate": "cross_reference_witness",
+      "evidence_tier": 2,
+      "limitations": [
+        "Cross-reference witness documents ancient editorial or intertextual connection."
+      ],
+      "provenance": {
+        "source_dataset": "CrossReferences.org / OpenBible",
+        "source_record_ids": [
+          "Hosea 6:2",
+          "1 Corinthians 15:4"
+        ],
+        "license": "CC BY 4.0",
+        "derivation_method": "embedded_bidirectional_cross_reference"
+      },
+      "score_components": {
+        "base_tier_score": 860,
+        "specificity_bonus": 40,
+        "witness_bonus": 45,
+        "common_word_penalty": 0,
+        "number_coincidence_penalty": 0,
+        "orthographic_penalty": 0,
+        "final_score": 915
+      },
+      "r12_metadata": null,
+      "passage_details": [
+        {
+          "ref": "Hosea 6:2",
+          "english_text": "After two days he will revive us. On the third day he will raise us up, and we will live before him.",
+          "highlights": []
+        },
+        {
+          "ref": "1 Corinthians 15:4",
+          "english_text": "that he was buried, that he was raised on the third day according to the Scriptures,",
+          "highlights": []
+        }
+      ],
+      "coverage": {
+        "state": "available",
+        "missing_assets": []
+      }
+    },
+    {
+      "evidence_id": "r11:xref:156:30279",
+      "status": "ok",
+      "release": "r12-discovery-2",
+      "title": "Reciprocal cross-reference (OT↔NT): Genesis 6:18 → Hebrews 11:7",
+      "summary": "Bidirectional canonical cross-reference connects Genesis 6:18 and Hebrews 11:7 via \"enter the ark\".",
+      "epistemic_class": "verified_cross_reference",
+      "predicate": "cross_reference_witness",
+      "evidence_tier": 2,
+      "limitations": [
+        "Cross-reference witness documents ancient editorial or intertextual connection."
+      ],
+      "provenance": {
+        "source_dataset": "CrossReferences.org / OpenBible",
+        "source_record_ids": [
+          "Genesis 6:18",
+          "Hebrews 11:7"
+        ],
+        "license": "CC BY 4.0",
+        "derivation_method": "embedded_bidirectional_cross_reference"
+      },
+      "score_components": {
+        "base_tier_score": 860,
+        "specificity_bonus": 40,
+        "witness_bonus": 45,
+        "common_word_penalty": 0,
+        "number_coincidence_penalty": 0,
+        "orthographic_penalty": 0,
+        "final_score": 915
+      },
+      "r12_metadata": null,
+      "passage_details": [
+        {
+          "ref": "Genesis 6:18",
+          "english_text": "But I will establish my covenant with you. You shall come into the ship, you, your sons, your wife, and your sons’ wives with you.",
+          "highlights": []
+        },
+        {
+          "ref": "Hebrews 11:7",
+          "english_text": "By faith Noah, being warned about things not yet seen, moved with godly fear, prepared a ship for the saving of his house, through which he condemned the world and became heir of the righteousness which is according to faith.",
+          "highlights": []
+        }
+      ],
+      "coverage": {
+        "state": "available",
+        "missing_assets": []
+      }
+    },
+    {
+      "evidence_id": "r11:xref:21797:31183",
+      "status": "ok",
+      "release": "r12-discovery-2",
+      "title": "Reciprocal cross-reference (OT↔NT): Ezekiel 47:1 → Revelation 22:1",
+      "summary": "Bidirectional canonical cross-reference connects Ezekiel 47:1 and Revelation 22:1 via \"water flowing\".",
+      "epistemic_class": "verified_cross_reference",
+      "predicate": "cross_reference_witness",
+      "evidence_tier": 2,
+      "limitations": [
+        "Cross-reference witness documents ancient editorial or intertextual connection."
+      ],
+      "provenance": {
+        "source_dataset": "CrossReferences.org / OpenBible",
+        "source_record_ids": [
+          "Ezekiel 47:1",
+          "Revelation 22:1"
+        ],
+        "license": "CC BY 4.0",
+        "derivation_method": "embedded_bidirectional_cross_reference"
+      },
+      "score_components": {
+        "base_tier_score": 860,
+        "specificity_bonus": 40,
+        "witness_bonus": 45,
+        "common_word_penalty": 0,
+        "number_coincidence_penalty": 0,
+        "orthographic_penalty": 0,
+        "final_score": 915
+      },
+      "r12_metadata": null,
+      "passage_details": [
+        {
+          "ref": "Ezekiel 47:1",
+          "english_text": "He brought me back to the door of the temple; and behold, waters flowed out from under the threshold of the temple eastward, for the front of the temple faced toward the east. The waters came down from underneath, from the right side of the temple, on the south of the altar.",
+          "highlights": []
+        },
+        {
+          "ref": "Revelation 22:1",
+          "english_text": "He showed me a river of water of life, clear as crystal, proceeding out of the throne of God and of the Lamb,",
+          "highlights": []
+        }
+      ],
+      "coverage": {
+        "state": "available",
+        "missing_assets": []
+      }
+    },
+    {
+      "evidence_id": "r11:xref:73:28238",
+      "status": "ok",
+      "release": "r12-discovery-2",
+      "title": "Reciprocal cross-reference (OT↔NT): Genesis 3:17 → Romans 8:20",
+      "summary": "Bidirectional canonical cross-reference connects Genesis 3:17 and Romans 8:20 via \"cursed is the ground\".",
+      "epistemic_class": "verified_cross_reference",
+      "predicate": "cross_reference_witness",
+      "evidence_tier": 2,
+      "limitations": [
+        "Cross-reference witness documents ancient editorial or intertextual connection."
+      ],
+      "provenance": {
+        "source_dataset": "CrossReferences.org / OpenBible",
+        "source_record_ids": [
+          "Genesis 3:17",
+          "Romans 8:20"
+        ],
+        "license": "CC BY 4.0",
+        "derivation_method": "embedded_bidirectional_cross_reference"
+      },
+      "score_components": {
+        "base_tier_score": 860,
+        "specificity_bonus": 40,
+        "witness_bonus": 45,
+        "common_word_penalty": 0,
+        "number_coincidence_penalty": 0,
+        "orthographic_penalty": 0,
+        "final_score": 915
+      },
+      "r12_metadata": null,
+      "passage_details": [
+        {
+          "ref": "Genesis 3:17",
+          "english_text": "To Adam he said, “Because you have listened to your wife’s voice, and have eaten from the tree, about which I commanded you, saying, ‘You shall not eat of it,’ the ground is cursed for your sake. You will eat from it with much labor all the days of your life.",
+          "highlights": []
+        },
+        {
+          "ref": "Romans 8:20",
+          "english_text": "For the creation was subjected to vanity, not of its own will, but because of him who subjected it, in hope",
+          "highlights": []
+        }
+      ],
+      "coverage": {
+        "state": "available",
+        "missing_assets": []
+      }
+    },
+    {
+      "evidence_id": "r12:prop:G3088:H4501",
+      "status": "ok",
+      "release": "r12-discovery-2",
+      "title": "Physical/semantic bridge: λύχνος (lamp) ↔ מְנוֹרָה (\"lampstand (menorah)\") via \"olive oil\"",
+      "summary": "External property bridge (verified mapping; BibleResearch Derived Physical Graph) linking G3088 (portable oil lamp) and H4501 (lampstand / menorah) via shared property derived:functional_association=olive oil. Independent biblical support=0 (exploratory hypothesis).",
+      "epistemic_class": "external_world_bridge",
+      "predicate": "shared_external_property",
+      "evidence_tier": 5,
+      "limitations": [
+        "Shared externally sourced properties are research leads, not biblical identifications or authorial intent."
+      ],
+      "provenance": {
+        "source_dataset": "BibleResearch Derived Physical Graph (derived from Wikidata / OpenEnglishWordNet 2025)",
+        "source_record_ids": [
+          "derived:lamp_fuel:G3088_lamp:Q93165",
+          "derived:lamp_fuel:H4501_menorah:Q93165"
+        ],
+        "license": "CC0 1.0",
+        "derivation_method": "r12_external_property_bridge"
+      },
+      "score_components": {
+        "base_tier_score": 520,
+        "specificity_bonus": 67,
+        "witness_bonus": 0,
+        "common_word_penalty": 0,
+        "number_coincidence_penalty": 0,
+        "orthographic_penalty": 0,
+        "final_score": 799
+      },
+      "r12_metadata": {
+        "score_version": "r12-ranker-v2",
+        "C": 0
+      },
+      "passage_details": [
+        {
+          "ref": "Matthew 5:15",
+          "english_text": "Neither do you light a lamp and put it under a measuring basket, but on a stand; and it shines to all who are in the house.",
+          "highlights": [
+            {
+              "s": "G3088",
+              "gloss": "a lamp"
+            }
+          ]
+        },
+        {
+          "ref": "Matthew 6:22",
+          "english_text": "“The lamp of the body is the eye. If therefore your eye is sound, your whole body will be full of light.",
+          "highlights": [
+            {
+              "s": "G3088",
+              "gloss": "lamp"
+            }
+          ]
+        },
+        {
+          "ref": "Exodus 25:31",
+          "english_text": "“You shall make a lamp stand of pure gold. The lamp stand shall be made of hammered work. Its base, its shaft, its cups, its buds, and its flowers shall be of one piece with it.",
+          "highlights": [
+            {
+              "s": "H4501",
+              "gloss": "a.lampstand"
+            },
+            {
+              "s": "H4501",
+              "gloss": "the lampstand"
+            }
+          ]
+        },
+        {
+          "ref": "Exodus 25:32",
+          "english_text": "There shall be six branches going out of its sides: three branches of the lamp stand out of its one side, and three branches of the lamp stand out of its other side;",
+          "highlights": [
+            {
+              "s": "H4501",
+              "gloss": "of.lampstand"
+            },
+            {
+              "s": "H4501",
+              "gloss": "of.lampstand"
+            }
+          ]
+        }
+      ],
+      "coverage": {
+        "state": "available",
+        "missing_assets": []
+      }
+    },
+    {
+      "evidence_id": "r11:intersect:verse:H3117:H7969:173",
+      "status": "ok",
+      "release": "r12-discovery-2",
+      "title": "Direct textual convergence in Genesis 7:13",
+      "summary": "Scripture text contains both H3117 and H7969 in the same verse (Genesis 7:13): \"In the same day Noah, and Shem, Ham, and Japheth—the sons of Noah—and Noah’s wife and the three wives of his sons with them, entered into the ship—\".",
+      "epistemic_class": "direct_textual_evidence",
+      "predicate": "verified_lexical_grammatical",
+      "evidence_tier": 2,
+      "limitations": [
+        "Direct intra-verse co-occurrence establishes textual contact; syntax and discourse function determine relationship."
+      ],
+      "provenance": {
+        "source_dataset": "MACULA Hebrew & Greek",
+        "source_record_ids": [
+          "Genesis 7:13"
+        ],
+        "license": "CC BY 4.0",
+        "derivation_method": "exact_verse_lemma_intersection"
+      },
+      "score_components": {
+        "base_tier_score": 860,
+        "specificity_bonus": 180,
+        "witness_bonus": 40,
+        "common_word_penalty": 0,
+        "number_coincidence_penalty": 0,
+        "orthographic_penalty": 0,
+        "final_score": 1080
+      },
+      "r12_metadata": null,
+      "passage_details": [
+        {
+          "ref": "Genesis 7:13",
+          "english_text": "In the same day Noah, and Shem, Ham, and Japheth—the sons of Noah—and Noah’s wife and the three wives of his sons with them, entered into the ship—",
+          "highlights": [
+            {
+              "s": "H3117",
+              "gloss": "of the.day"
+            },
+            {
+              "s": "H7969",
+              "gloss": "and the.three"
+            }
+          ]
+        }
+      ],
+      "coverage": {
+        "state": "available",
+        "missing_assets": []
+      }
+    },
+    {
+      "evidence_id": "r10:typo:1cor10_1_2_red_sea_baptism",
+      "status": "ok",
+      "release": "r12-discovery-2",
+      "title": "1 Corinthians 10:1–2 explicitly compares Israel’s Red Sea & cloud crossing (Exodus 14) to baptism (\"baptized into Moses in the cloud and in the sea\")",
+      "summary": "Paul writes that Israel’s fathers were \"under the cloud, and all passed through the sea (διὰ τῆς θαλάσσης διῆλθον), and were all baptized into Moses in the cloud and in the sea (εἰς τὸν Μωϋσῆν ἐβαπτίσαντο ἐν τῇ νεφέλῃ καὶ ἐν τῇ θαλάσσῃ),\" calling these events examples/types (τύποι G5179 in 1 Cor 10:6). This separates the historical Exodus 13–14 event from Paul’s later NT typological interpretation.",
+      "epistemic_class": "authorial_typology_or_quote",
+      "predicate": "typological_interpretation",
+      "evidence_tier": 1,
+      "limitations": [
+        "Explicit NT authorial typology by Paul (1 Cor 10:1–6); Exodus 14 itself narrates a historical deliverance without using ritual washing/baptism terminology.",
+        "Do not infer that every narrative detail of Exodus 14 is an allegory or fixed symbol of Christian baptism beyond Paul’s explicit comparison (cloud, sea passage, deliverance under Moses)."
+      ],
+      "provenance": {
+        "source_dataset": "MACULA Greek + MACULA Hebrew + CrossReferences.org",
+        "source_record_ids": [
+          "n46010001-n46010006",
+          "xref:1cor10:1->exod13:21",
+          "xref:1cor10:1->exod14:22"
+        ],
+        "license": "CC BY 4.0",
+        "derivation_method": "explicit_nt_typology_marker_and_xref"
+      },
+      "r12_metadata": null,
+      "passage_details": [
+        {
+          "ref": "1 Corinthians 10:1",
+          "english_text": "Now I would not have you ignorant, brothers, that our fathers were all under the cloud, and all passed through the sea;",
+          "highlights": [
+            {
+              "s": "G3507",
+              "gloss": "cloud"
+            },
+            {
+              "s": "G2281",
+              "gloss": "sea"
+            },
+            {
+              "s": "G1330",
+              "gloss": "passed"
+            }
+          ]
+        },
+        {
+          "ref": "1 Corinthians 10:2",
+          "english_text": "and were all baptized into Moses in the cloud and in the sea;",
+          "highlights": [
+            {
+              "s": "G0907",
+              "gloss": "were baptized"
+            },
+            {
+              "s": "G3507",
+              "gloss": "cloud"
+            },
+            {
+              "s": "G2281",
+              "gloss": "sea"
+            }
+          ]
+        },
+        {
+          "ref": "1 Corinthians 10:6",
+          "english_text": "Now these things were our examples, to the intent we should not lust after evil things as they also lusted.",
+          "highlights": [
+            {
+              "s": "G5179",
+              "gloss": "types"
+            }
+          ]
+        },
+        {
+          "ref": "Exodus 14:21",
+          "english_text": "Moses stretched out his hand over the sea, and the LORD caused the sea to go back by a strong east wind all night, and made the sea dry land, and the waters were divided.",
+          "highlights": [
+            {
+              "s": "H3220",
+              "gloss": "the sea"
+            },
+            {
+              "s": "H3220",
+              "gloss": "the sea"
+            },
+            {
+              "s": "H3220",
+              "gloss": "the sea"
+            }
+          ]
+        },
+        {
+          "ref": "Exodus 14:22",
+          "english_text": "The children of Israel went into the middle of the sea on the dry ground; and the waters were a wall to them on their right hand and on their left.",
+          "highlights": [
+            {
+              "s": "H3220",
+              "gloss": "of the.sea"
+            }
+          ]
+        },
+        {
+          "ref": "Exodus 13:21",
+          "english_text": "The LORD went before them by day in a pillar of cloud, to lead them on their way, and by night in a pillar of fire, to give them light, that they might go by day and by night:",
+          "highlights": [
+            {
+              "s": "H6051",
+              "gloss": "of.cloud"
+            }
+          ]
+        }
+      ],
+      "coverage": {
+        "state": "available",
+        "missing_assets": []
+      }
+    },
+    {
+      "evidence_id": "r12:path:H1285:H3772",
+      "status": "ok",
+      "release": "r12-discovery-2",
+      "title": "R12 3-hop discovery: בְּרִית (H1285) → כָּרַת (\"to cut: cut\", H3772)",
+      "summary": "3-hop source-backed discovery path (direct endpoint witness, K=0.95, endpoint_groups=5, step_groups=3; interest=0.710136): בְּרִית (covenant) --[lxx_translation_bridge]--> διαθήκη (covenant) ; διαθήκη (covenant) --[lex_shares_root]--> διατίθημι (to make a covenant) ; διατίθημι (to make a covenant) --[lxx_translation_bridge]--> כָּרַת (to cut: cut)",
+      "epistemic_class": "documented_collocation_or_cooccurrence",
+      "predicate": "multihop_proof_path",
+      "evidence_tier": 4,
+      "limitations": [
+        "A graph path does not by itself establish that its endpoints symbolize or equal one another."
+      ],
+      "provenance": {
+        "source_dataset": "CATSS/Swete LXX + STEPBible Lexicon",
+        "source_record_ids": [
+          "lex:step:shares_root:G1242<->G1303",
+          "lxx:catss:G1242<->H1285",
+          "lxx:catss:G1303<->H3772"
+        ],
+        "license": "CC BY 4.0",
+        "derivation_method": "r12_offline_beam_proof_ranker_v2"
+      },
+      "score_components": {
+        "base_tier_score": 650,
+        "specificity_bonus": 100,
+        "witness_bonus": 86,
+        "common_word_penalty": 6,
+        "number_coincidence_penalty": 0,
+        "orthographic_penalty": 0,
+        "final_score": 901
+      },
+      "r12_metadata": {
+        "score_version": "r12-ranker-v2",
+        "K": 0.95,
+        "C": 0.861654,
+        "endpoint_epistemic_status": "DIRECT_ENDPOINT_WITNESS",
+        "endpoint_support_group_count": 5,
+        "direct_endpoint_witnesses": [
+          "Genesis 9:11",
+          "Genesis 15:18",
+          "Genesis 17:14",
+          "Genesis 21:27"
+        ],
+        "steps": [
+          {
+            "source_dataset": "CATSS/Swete LXX",
+            "witness_refs": [],
+            "relation_type": "lxx_translation_bridge"
+          },
+          {
+            "source_dataset": "STEPBible Lexicon",
+            "witness_refs": [
+              "Matthew 26:28",
+              "Mark 14:24"
+            ],
+            "relation_type": "lex_shares_root"
+          },
+          {
+            "source_dataset": "CATSS/Swete LXX",
+            "witness_refs": [],
+            "relation_type": "lxx_translation_bridge"
+          }
+        ]
+      },
+      "passage_details": [
+        {
+          "ref": "Genesis 9:11",
+          "english_text": "I will establish my covenant with you: All flesh will not be cut off any more by the waters of the flood. There will never again be a flood to destroy the earth.”",
+          "highlights": [
+            {
+              "s": "H1285",
+              "gloss": "covenant my"
+            },
+            {
+              "s": "H3772",
+              "gloss": "it.will.be.cut.off"
+            }
+          ]
+        },
+        {
+          "ref": "Genesis 15:18",
+          "english_text": "In that day the LORD made a covenant with Abram, saying, “I have given this land to your offspring, from the river of Egypt to the great river, the river Euphrates:",
+          "highlights": [
+            {
+              "s": "H3772",
+              "gloss": "he.made"
+            },
+            {
+              "s": "H1285",
+              "gloss": "a.covenant"
+            }
+          ]
+        },
+        {
+          "ref": "Genesis 17:14",
+          "english_text": "The uncircumcised male who is not circumcised in the flesh of his foreskin, that soul shall be cut off from his people. He has broken my covenant.”",
+          "highlights": [
+            {
+              "s": "H3772",
+              "gloss": "and it.will.be.cut.off"
+            },
+            {
+              "s": "H1285",
+              "gloss": "covenant my"
+            }
+          ]
+        },
+        {
+          "ref": "Genesis 21:27",
+          "english_text": "Abraham took sheep and cattle, and gave them to Abimelech. Those two made a covenant.",
+          "highlights": [
+            {
+              "s": "H3772",
+              "gloss": "and they.made"
+            },
+            {
+              "s": "H1285",
+              "gloss": "a.covenant"
+            }
+          ]
+        },
+        {
+          "ref": "Matthew 26:28",
+          "english_text": "for this is my blood of the new covenant, which is poured out for many for the remission of sins.",
+          "highlights": []
+        },
+        {
+          "ref": "Mark 14:24",
+          "english_text": "He said to them, “This is my blood of the new covenant, which is poured out for many.",
+          "highlights": []
+        }
+      ],
+      "coverage": {
+        "state": "available",
+        "missing_assets": []
+      }
+    },
+    {
+      "evidence_id": "r10:wordplay:adam_adamah_gen2_7",
+      "status": "ok",
+      "release": "r12-discovery-2",
+      "title": "Stronger biblical wordplay: Genesis 2:5–7 juxtaposes אָדָם (adam H0120) and אֲדָמָה (adamah H0127, ground) sharing consonants א-ד-ם",
+      "summary": "Genesis 2:5–7 exhibits direct biblical paronomasia: there was no human (אָדָם) to work the ground (אֲדָמָה), and God formed the human (הָאָדָם) of dust from the ground (מִן־הָאֲדָמָה, Gen 2:7; cf. Gen 3:19). Unlike אָדָם/דָּם, both share the full triliteral sequence א-ד-ם and are juxtaposed explicitly in the Hebrew narrative.",
+      "epistemic_class": "documented_lexical_relationship",
+      "predicate": "orthographic_wordplay",
+      "evidence_tier": 3,
+      "limitations": [
+        "Gen 2:7 establishes אָדָם ↔ אֲדָמָה (human ↔ ground), contrasting sharply with the weaker modern/midrashic אָדָם ↔ דָּם pairing."
+      ],
+      "provenance": {
+        "source_dataset": "BibleResearch lexical_connections + MACULA Hebrew Gen 2:5-7",
+        "source_record_ids": [
+          "lexical_connections:1",
+          "o01002007"
+        ],
+        "license": "CC BY 4.0",
+        "derivation_method": "source_text_juxtaposition_and_triliteral_match"
+      },
+      "r12_metadata": null,
+      "passage_details": [
+        {
+          "ref": "Genesis 2:7",
+          "english_text": "The LORD God formed man from the dust of the ground, and breathed into his nostrils the breath of life; and man became a living soul.",
+          "highlights": [
+            {
+              "s": "H0120",
+              "gloss": "the man"
+            },
+            {
+              "s": "H6083",
+              "gloss": "dust"
+            },
+            {
+              "s": "H0127",
+              "gloss": "the ground"
+            },
+            {
+              "s": "H0120",
+              "gloss": "the man"
+            }
+          ]
+        },
+        {
+          "ref": "Genesis 2:5",
+          "english_text": "No plant of the field was yet on the earth, and no herb of the field had yet sprung up; for the LORD God had not caused it to rain on the earth. There was not a man to till the ground,",
+          "highlights": [
+            {
+              "s": "H0120",
+              "gloss": "and a.human"
+            },
+            {
+              "s": "H0127",
+              "gloss": "the ground"
+            }
+          ]
+        },
+        {
+          "ref": "Genesis 3:19",
+          "english_text": "You will eat bread by the sweat of your face until you return to the ground, for you were taken out of it. For you are dust, and you shall return to dust.”",
+          "highlights": [
+            {
+              "s": "H0127",
+              "gloss": "the ground"
+            },
+            {
+              "s": "H6083",
+              "gloss": "[are].dust"
+            },
+            {
+              "s": "H6083",
+              "gloss": "dust"
+            }
+          ]
+        }
+      ],
+      "coverage": {
+        "state": "available",
+        "missing_assets": []
+      }
+    },
+    {
+      "evidence_id": "r10:corresp:gen1_to_rev4_rev21_creation_spirits",
+      "status": "ok",
+      "release": "r12-discovery-2",
+      "title": "Genesis 1 creation (Spirit over waters, light, sevenfold completion) and Revelation 4–5 & 21–22 (throne of Creator, seven Spirits, new creation)",
+      "summary": "Genesis 1 opens with God creating heavens/earth, the Spirit/wind (רוּחַ אֱלֹהִים) hovering over the waters (v.2), light out of darkness (v.3), and sevenfold completion (Gen 2:1–3). Revelation 4:5–11 explicitly worships the Creator (\"you created all things\" v.11) before the seven Spirits/lamps (v.5), while Revelation 21:1,5 & 22:1–5 announce the \"new heaven and new earth\" with light, throne, river of water of life, and tree of life.",
+      "epistemic_class": "verified_cross_reference",
+      "predicate": "literary_correspondence",
+      "evidence_tier": 4,
+      "limitations": [
+        "Rev 4:11 and Rev 21–22 explicitly recall Creation theology and Eden motifs, whereas connecting Gen 1:2’s singular Spirit directly to Rev 4:5’s \"seven Spirits\" passes through Isa 11:2 / Zech 4:2–10 rather than an explicit Gen 1 citation inside Rev 4:5."
+      ],
+      "provenance": {
+        "source_dataset": "MACULA + CrossReferences.org + Theographic events",
+        "source_record_ids": [
+          "xref:rev4:11->gen1:1",
+          "xref:rev21:1->gen1:1",
+          "xref:rev22:1->gen2:9"
+        ],
+        "license": "CC BY 4.0",
+        "derivation_method": "xref_creation_to_revelation_chain"
+      },
+      "r12_metadata": null,
+      "passage_details": [
+        {
+          "ref": "Genesis 1:1",
+          "english_text": "In the beginning, God created the heavens and the earth.",
+          "highlights": [
+            {
+              "s": "H1254",
+              "gloss": "he.created"
+            }
+          ]
+        },
+        {
+          "ref": "Genesis 1:2",
+          "english_text": "The earth was formless and empty. Darkness was on the surface of the deep and God’s Spirit was hovering over the surface of the waters.",
+          "highlights": [
+            {
+              "s": "H7307",
+              "gloss": "and the.spirit"
+            },
+            {
+              "s": "H4325",
+              "gloss": "of the.waters"
+            }
+          ]
+        },
+        {
+          "ref": "Genesis 2:2",
+          "english_text": "On the seventh day God finished his work which he had done; and he rested on the seventh day from all his work which he had done.",
+          "highlights": []
+        },
+        {
+          "ref": "Revelation 4:5",
+          "english_text": "Out of the throne proceed lightnings, sounds, and thunders. There were seven lamps of fire burning before his throne, which are the seven Spirits of God.",
+          "highlights": [
+            {
+              "s": "G2033",
+              "gloss": "[there were] seven"
+            },
+            {
+              "s": "G2033",
+              "gloss": "seven"
+            },
+            {
+              "s": "G4151",
+              "gloss": "Spirits"
+            }
+          ]
+        },
+        {
+          "ref": "Revelation 4:11",
+          "english_text": "“Worthy are you, our Lord and God, the Holy One, to receive the glory, the honor, and the power, for you created all things, and because of your desire they existed and were created!”",
+          "highlights": [
+            {
+              "s": "G2936",
+              "gloss": "created"
+            },
+            {
+              "s": "G2936",
+              "gloss": "were created"
+            }
+          ]
+        },
+        {
+          "ref": "Revelation 21:1",
+          "english_text": "I saw a new heaven and a new earth, for the first heaven and the first earth have passed away, and the sea is no more.",
+          "highlights": []
+        }
+      ],
+      "coverage": {
+        "state": "available",
+        "missing_assets": []
+      }
+    }
+  ]
+}
