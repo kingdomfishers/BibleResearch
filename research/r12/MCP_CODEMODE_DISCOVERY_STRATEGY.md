@@ -1,216 +1,196 @@
-# BibleResearch — Discovery-First MCP and Code-Mode Strategy
+# BibleResearch — Compact MCP Discovery Strategy (v2, seven functions)
 
-**Date:** 2026-11-19  
-**Status:** Authoritative proposed AI-facing interface design; no code or deployment changed by publication.  
-**Repository:** kingdomfishers/BibleResearch  
-**Relationship to prior documents:** Refines and supersedes the *default tool-count/interface recommendation* in [MCP_AI_DISCOVERY_REQUIREMENTS.md](MCP_AI_DISCOVERY_REQUIREMENTS.md), while retaining that document's detailed requirements for evidence quality, DLM, prophetic interpretation, source provenance, and safety. Does not supersede corpus contracts or RELATIONSHIP_ARCHITECTURE.md.
+**Updated:** 2026-11-19  
+**Status:** Authoritative proposed AI-facing MCP contract. Documentation only; no MCP implementation or deployment is implied.  
+**Replaces:** The previous three-read-tool proposal in this file and the earlier eight-read-tool recommendation in [MCP_AI_DISCOVERY_REQUIREMENTS.md](MCP_AI_DISCOVERY_REQUIREMENTS.md). Preserve that report's detailed evidence/DLM/prophecy and evaluation research, not its superseded tool inventory.  
+**Implementation brief:** [NEON_MCP_CODEMODE_IMPLEMENTATION_PROMPT.md](NEON_MCP_CODEMODE_IMPLEMENTATION_PROMPT.md).
 
-## 1. Fundamental goal
+## 1. Objective and design rule
 
-Make ChatGPT, Gemini, and comparable models dramatically better at finding **surprising, meaningful, demonstrable biblical relationships** and investigating them autonomously. A model should open an ordinary Bible passage and immediately see the linguistic, grammatical, symbolic, narrative, historical, spatial, and cross-book clues that make deeper research productive — not have to guess Strong's IDs or invoke twenty tools just to obtain context.
+Give ChatGPT, Gemini and other AIs a **small, predictable research interface** that reveals non-obvious but genuine biblical patterns without flooding the model with unrelated data. A model must be able to read the actual Scripture, see each original-language word with just enough linguistic/biblical context to notice a connection, request deeper evidence *only when interested*, and follow a research path across the whole Bible.
 
-**Design principle: supply a rich, trustworthy *research context*, then let the model perform the interpretation.** The corpus/index/server retrieves and verifies; the AI notices, compares, proposes, asks further questions, challenges, and explains. Never present a graph score, gematria match, physical analogy, note, or speculative typology as a revealed textual fact.
+**Primary calls:** \`get_Passage()\` and \`get_Word()\`. These return **hierarchical, readable, source-grounded packets**; they are not verbose automatically generated theological essays.
 
-## 2. Why Code Mode, and what to build on the existing free-tier architecture
+**Supporting calls:** \`get_Connection()\`, \`follow_connectionchain()\`, \`research()\`, \`get_prompt()\`, and the existing authorized \`write_Note()\` behavior.
 
-Code Mode is a real MCP pattern: an LLM writes code calling a typed API; an isolated executor invokes multiple low-level operations and returns a selected, compact result. This can avoid repeated client/model turns and huge intermediate messages.
+**Seven public operations in total:** two everyday retrieval functions; one targeted comparison; one stateful traversal; one powerful composite query; one prompt guide; one explicitly authorized note write. This is a deliberately limited front door, **not** a proposal to delete underlying 46 legacy tools or data.
 
-Cloudflare documents a codeMcpServer wrapper and isolated DynamicWorkerExecutor:
-- https://developers.cloudflare.com/agents/model-context-protocol/guides/build-codemode-mcp-server/
-- https://developers.cloudflare.com/dynamic-workers/examples/codemode/
-- https://developers.cloudflare.com/dynamic-workers/pricing/
+The ideal progression is:
 
-**As documented on 2026-11-19, Dynamic Workers require the Workers Paid plan.** Do not silently require a paid Cloudflare plan, paid model, new DB, or billing changes. Also do not execute AI-written JavaScript inside the Supabase Edge Function or ordinary corpus Worker without a genuine security boundary.
+> Read passage/word → notice a surprising relation → compare its exact witnesses → follow a chain or run targeted analysis → test other explanations → optionally save a note.
 
-**Two-stage architecture:**
+## 2. Exact public tool contracts
 
-**Stage A (implement now, no paid infrastructure):** Three simple MCP read tools: **get_passage**, **get_word**, and **research**. The third accepts a strictly validated, declarative **research plan** (typed operations, arguments, dependencies, joins/aggregations/filters and output projection) rather than unrestricted JavaScript. The server is an interpreter of allowlisted read-only operations; the AI can orchestrate several operations in one call. A single plan can compare multiple passages, calculate word distributions, search location-indexed passages, traverse relationship graphs, compute specified gematria values, and return only the findings selected by the AI. This is *code-like composition*, not arbitrary code execution. It offers much of the tool-call/context benefit without a sandbox service.
+Names/capitalization below deliberately preserve the owner's requested interface. Prefer named, typed JSON arguments over fragile positional parsing in actual MCP; publish the equivalent positional examples in documentation. Parameters with defaults may be omitted.
 
-**Stage B (optional future):** When a properly isolated execution environment is available, add an alternative **research_code** tool that executes bounded model-written JavaScript/TypeScript against the *same typed, read-only research operations*. Its executor must isolate untrusted code, deny ambient secrets/network/file access, limit CPU/time/memory/concurrency/output, proxy only allowlisted operations, and log calls. Keep Stage A available as a predictable fallback. Never market Stage A as actual JS execution.
+### 2.1 \`get_Passage(PASSAGE, Depth=z, WordDepth=x, show_etymology=y, show_realworld=0)\`
 
-**Architecture:** MCP facade in existing Supabase Edge Function -> reusable typed research service -> existing Cloudflare corpus shards/graph/fast verse indexes + selected source-controlled Supabase read RPCs. Deterministic computation and caching reside as close to immutable data as sensible. Supabase keeps dynamic/reviewed notes and related state. No new large immutable PostgreSQL tables; no large live corpus scans.
+**Inputs**
 
-## 3. Default public interface: two reading tools plus one research orchestrator
+- \`passage\`: canonical reference or **inclusive cross-chapter range** such as \`1COR12:10-1COR13:4\`; accept canonical \`book/chapter/verse\` objects and a bounded array of ranges. Normalize a display reference and retain source identity, Psalm heading verse 0 and versification caveats.
+- \`depth\` (\`z\`, default small, e.g. **3**, min 0): at most **z passage-level connections AND z for EACH verse**, ranked separately. \`0\` disables these connection arrays, not original verses.
+- \`word_depth\` (\`x\`, default **0**, min 0): at most **x connections for EACH word**. \`0\` means the word's core lexical/grammar capsule still appears but its connection list is omitted.
+- \`show_etymology\` (\`y\`, default **0**): \`0\` omits optional etymology/orthographic exploration; \`y>0\` includes documented derivation/root evidence **plus at most y separately labeled *unverified spelling/letter-similarity candidates*** when available. Never call those candidates proven etymology.
+- \`show_realworld\` (\`0|1\`, default **0**): attach a short, source-attributed physical/world concept definition and related properties only when available, never as evidence of biblical authorial intent.
+- \`include_notes\` (default true): compact, attributed note summaries and IDs when authorized; source type always \`commentary\`.
+- Optional \`focus\` (reorder potentially useful connections for user's question), \`edition\`, \`english_translation\`, \`max_output_tokens\`, \`cursor\`, and \`include[]\` for targeted extra sections. Never require the model to specify these for an ordinary passage.
+- Optional \`chronology_model\` for dates; \`time_axis=event|composition|audience\` when needed. Missing chronology is unknown, not a chosen date.
 
-Expose these three as the **default read-only ChatGPT/Gemini MCP tools** after compatibility is verified. Preserve existing 46 tools and any authorized note writers in a legacy/expert endpoint or compatible profile until callers, documentation and tests migrate. Do not remove note-writing authorization, history, or data; a separate explicit write tool may remain available only for approved writes.
+**Example (owner's intended short call):**
+\`get_Passage("1COR12:10-1COR13:4", 10, 0, 0)\` — omits \`show_realworld\`, which defaults to 0. Return up to ten passage connections, ten per-verse connections, all requested verses and core word data, **zero per-word connections**, **zero optional etymology matches**, and no real-world overlay. This can be large; compact individual connection records and paginate if a hard budget is reached **without silently losing verses**.
 
-### A. get_passage — most frequent call
+**Output structure (normative hierarchy; exact casing/JSON contract to be finalized in implementation):**
 
-**Input** (proposed):
-- **reference:** one verse, contiguous range, several bounded ranges, or canonical book/chapter/verse coordinates; Psalm verse 0 supported.
-- **profile:** quick | study | discovery | prophetic | deep. Defaults to **discovery** for passage study; quick for simple quoting when intent warrants.
-- **focus:** optional question, word, image, theological motif, time/location filter, or requested relationship. Focus influences ranking, not the underlying verse evidence.
-- **include:** optional subset of text, lexical, grammar, symbols, intertexts, events, numeric, chronology, geography, LXX, notes, DLM, alternatives, etc.
-- **level:** summary | balanced | expanded; **budgets:** max_output_tokens, max_connections_per_word, max_passage_connections, max_verses and explicit pagination, subject to hard caps.
-- **edition/translation:** precise supported edition and permitted translation; no silent replacement.
-- **cursor/reference IDs:** continue/expand without repeating original packet.
-
-**Always return** complete requested readable verse texts (unless explicitly requesting a summary) + original ordered words; Hebrew/Aramaic/Greek token and transliteration; selective gloss; stable occurrence identity; grammatical form/function where sourced; and coverage/release markers. **Do not force the model to work from Strong's IDs, original script alone, or verse numbers alone.**
-
-**Discovery profile additionally returns:**
-1. One context outline for the entire requested unit: speaker, narrative event, agents, actions, objects, imagery, local explicit explanations, genre, key recurring word/scene relationships and near context.
-2. **Compact high-signal word capsules** for significant tokens: observed sense in context (if source-supported), alternative senses/homographs, attested roots and compounds, notable translation choices, morphology, clauses/roles, key biblical uses and uncommon meaningful associations.
-3. **Word-pair/scene capsules** for combinations in the actual passage, such as "seven eyes + run through whole earth"; "lampstand + oil + Spirit"; "ark + pitch/coating". Prefer combinations, predicates and verse-based identity over isolated lexical neighbors.
-4. **Ranked passage-level connections**: explicit self-interpretation, same-book reuse, quotations, well-supported allusions/structural transformations, exploratory motif connections, then statistical/orthographic candidates. Return both passages' actual texts, limited original-language anchors, why relevant, support class, reason for ranking and next evidence ID.
-5. Compact **interesting clues** and **next questions**, not answers that presuppose doctrinal conclusions. Show 2–5 contrasting routes (linguistic, visual, literary, historical, physical, numeric) as available and justified.
-6. Relevance- and quality-scoped DLM cards, clearly labeled as commentary, not canon. No DLM note found is not equivalent to no DLM interpretation possible.
-
-**Selection budget:** Prioritize meaning-bearing words and relationships. Do not attach top-seven spelling candidates to every article, conjunction or common verb by default. Group repeated lexical metadata and reference by ID; have selective full expansion. Omitted for budget must not be confused with absent from corpus.
-
-### B. get_word — lexical/conceptual exploration
-
-**Input:** exact word occurrence (book/chapter/verse/position/edition), lemma/Strong's/extended Strong's, source-script form, transliteration, or English concept; optional sense selection; local context; profile, include layers, corpus slice, result cap and cursor.
-
-**Return** source-resolved candidates instead of silently choosing an English-sense or homograph:
-- Original, transliteration, readable English sense labels and contextual gloss; morphosyntax and morpheme boundaries when attested.
-- Documented root/formation and compound components vs literary wordplay vs merely similar consonants (**distinct evidence classes**).
-- Exact total occurrences and denominators with sampled book-diverse verses; switch to paginated exhaustive collection on explicit request.
-- Contextual/grammatical partners: subject, object, modifiers, possessive/construct, same clause and proximity — measured distinctly; show roles and actual witness verses.
-- Lexical links, LXX translations and translation-direction/edition caveats; related symbols and literary uses.
-- **Most fruitful connections** from different relation families; offer expandable evidence IDs and why interesting, not just ranked proximity.
-- Optional physical properties, chronology distributions, geographical usages and DLM commentary with explicit source boundaries.
-- Clear ambiguity, source status, absence-of-data and counterexample prompts.
-
-The AI should learn from the packet, for example that the Hebrew family surrounding Noah's ark coating in Genesis 6:14 deserves comparison with other *kaphar/kopher* uses involving covering or ransom. That is a **research lead**; a root relationship alone does not prove a claim that ark pitch is explicitly "redemption."
-
-### C. research — one-call composable read-only analysis
-
-**Input:** a *declarative research plan*, with a short goal/focus and array of allowlisted operations. Upstream tools/corpus APIs remain internal.
-
-Suggested operation registry (each independently typed and tested):
-- **resolve**: resolve references, exact word/lemma/sense/entity IDs, including ambiguous alternatives.
-- **read_passage / read_word / inspect_evidence**: obtain exact underlying records.
-- **find_verses / find_occurrences / find_collocations**: bounded lexical/phrase/motif searches with witness sets.
-- **find_relations / expand_graph / find_paths / compare_passages**: typed graph retrieval, grammatical roles, R8/R10/R12 structural and intertextual comparisons, counterexamples and evidence checks.
-- **analyze_structure**: repetitions, narrative actions, entity/number predicates, image configurations, optional chiasmus candidates with falsification checks.
-- **compute_gematria**: explicitly named mapping (e.g. standard Hebrew), grapheme normalization, spelled text vs lemma selection, edition/orthography and independent controls. Never infer authorial intent from equal sums.
-- **temporal_distribution**: count words/phrases/events across **explicitly named** chronology model and date buckets, with event versus composition dating, undated counts, model disagreement, true corpus denominator and uncertainty.
-- **geographic_query**: passages/events located in a named region, polygon or bounded radius (if sourced), **distinguish event setting from place merely mentioned and symbolic/unknown geography**.
-- **compare_lxx / inspect_syntax / lexical_formation / physical_properties / notes_read**: source-specific drilldowns with provenance.
-- **aggregate / intersect / union / difference / group_by / sort / slice / project**: bounded server-side transformations over previously returned indexed result sets, without arbitrary SQL or script evaluation.
-
-**Execution rules:** hard maximum operations, depth, fanout, source scans, rows, CPU and output size; allow only well-typed read operations; no arbitrary HTTP, SQL, file access or note writes. Give each step an ID and explicit dependency; validate graph acyclic, references typed, deduplicate subcalls, parallelize independent steps within bounded concurrency, cache immutable results by dataset release, and return per-step status/coverage/errors. Support atomic partial results with a report of missing steps. Client-requested projection controls final payload; evidence IDs remain accessible. Operator grammar and limits must be documented for AI-generated plans.
-
-**Illustrative plan (proposal, not currently deployed):**
-
+\`\`\`json
+{
+  "passage": "1 Corinthians 12:10–13:4",
+  "passage_connections": [
+    {"id":"...", "target_ref":"...", "why":"...", "type":"...", "evidence_level":"...", "witness_excerpt":"..."}
+  ],
+  "geography": [
+    {"place":"Corinth", "role":"recipient_city", "latitude":null, "longitude":null,
+     "confidence":null, "source":"...", "resolution_status":"..."}
+  ],
+  "chronology": {
+    "model":"...", "time_axis":"composition", "date_or_range":null,
+    "confidence":null, "alternative_models":[], "coverage_status":"..."
+  },
+  "verses": [
     {
-      "goal": "Compare seven eyes and seven lamps with vision interpretations",
-      "steps": [
-        {"id": "z", "op": "read_passage", "args": {"reference": "Zechariah 4:1-14", "profile": "discovery"}},
-        {"id": "v", "op": "find_verses", "args": {"concepts": ["seven eyes", "seven lamps"], "scope": "bible", "limit": 30}},
-        {"id": "x", "op": "compare_passages", "depends_on": ["z", "v"], "args": {"source": {"ref": "z"}, "candidates": {"ref": "v"}, "mode": "vision", "limit": 8}}
-      ],
-      "output": {"select": ["z.context", "x.connections", "x.witnesses", "x.alternatives"], "max_tokens": 5000}
+      "reference":"1 Corinthians 12:10", "verse_id":"...",
+      "original":"ἄλλῳ δὲ ...", "english":"[complete licensed verse text]",
+      "verse_connections":[{"id":"...", "target_ref":"...", "why":"...", "type":"..."}],
+      "words":[
+        {
+          "surface":"ἄλλῳ", "lemma":"ἄλλος",
+          "transliteration":"allō", "english":"to another",
+          "senses":["other", "another"], "grammar":"A-DSM",
+          "grammar_explained":"adjective, dative, masculine, singular",
+          "strongs":"...", "occurrence_id":"...", "position":1,
+          "lxx":{"status":"no_attested_alignment_for_this_occurrence"},
+          "etymology":null, "notes":[],
+          "connections":[], "realworld":null
+        }
+      ]
     }
+  ],
+  "coverage":{"verse_text":"...", "lexical":"...", "lxx":"...", "notes":"..."},
+  "release":{"corpus":"...", "graph":"...", "mcp":"..."},
+  "paging":{"truncated":false, "cursor":null}
+}
+\`\`\`
 
-The server must validate the *actual* parser shape and reject malformed plans; the example is a design, not a published contract.
+**Example strings/IDs are illustrative only**, not verified data. Do not write literal placeholders into live results. \`original\` and \`english\` must contain **the complete requested verse** where the selected text is available and licensed; do not make the AI infer a whole verse from glosses or mere references. Each \`word\` is a source-token occurrence; morphological grammar belongs to the actual inflected token, not indiscriminately to the lemma.
 
-**Optional real code mode** could write familiar JS/TS such as a Promise.all over read operations, then run grouped counts and return a concise packet. Provide generated type definitions and examples only *after* a secure isolated executor is available.
+**Nested behavior:** \`passage_connections\` selected for the whole range, \`verse_connections\` selected for each verse, \`word.connections\` only if \`word_depth>0\`. Do not repeat huge witness details under each repeated word: reuse short IDs, tiny snippets and shared dictionary records; deep witnesses are fetched via \`get_Connection\` or \`research\`. Keep exact ordered original tokens (including distinct morpheme parts) in the word array.
 
-## 4. Discovery Context Packet: the core innovation
+**LXX field:** For Hebrew Bible tokens, include *attested* LXX translation candidates and witness counts/source when indexed. A Greek NT word is **not automatically an LXX translation occurrence**; show attested correspondences only if real evidence exists, otherwise \`not_applicable\`/\`not_covered\`. For Greek/NT, Hebrew equivalents from LXX are lexical research *candidates*, not identities.
 
-This is the main deliverable. An AI should see an **interconnected local knowledge graph** in a compact readable representation, not a disorganized JSON dump.
+**Geography:** Distinguish where a passage happened, where a letter was written, where its recipients lived, locations mentioned, and symbolic locations. Coordinates require real source/role/confidence; never infer Corinth's coordinates or composition place from a letter's recipient. **Chronology:** Do not unconditionally return \`59 AD\` or \`year 4029\`; such values are model-dependent and may be disputed/unknown. Return date model, axis, range and alternatives if available.
 
-### 4.1 Stable layers, in presentation order
+### 2.2 \`get_Word(WORD, x, y)\`
 
-**Layer 0 — passage context.** Requested actual verses with adjacent setting, speaker, scene, key actions, explicit interpretations, covered source versions.
+**Inputs:** A word expressed in English, Hebrew/Aramaic, Greek, transliteration, source surface, extended Strong's/lemma ID, or exact \`verse_id + word_position + edition\`; \`x\` (default **10**) is max distinct connections, \`y\` (default **0**) max optional spelling candidates/etymology switch as above. Optional \`show_realworld=0|1\` (default 1 for word concepts where supported, omit if missing), \`include_notes\`, \`context\`, \`sense_id\`, \`limit\`, \`cursor\`, and \`max_output_tokens\`.
 
-**Layer 1 — ordered tokens.** Exact original word, transliteration, gloss, lemma/occurrence anchor, morphology, syntactic role; full ordered sequence for every requested verse.
+**Output — same word object** used in \`get_Passage\`, expanded to show \`senses\`, morphology/grammatical *forms* (or occurrence-specific code when anchored), LXX evidence, documented etymology/root and separate spelling candidates (when \`y>0\`), **gematria**, compact notes, top \`x\` diverse connections, real-world definition/relations when sourced, occurrence statistics, contextual verse witnesses, provenance and disambiguation candidates. When an English/transliteration query maps to multiple original words or senses, return explicit candidates and request sense/occurrence selection before making definitive claims; do not silently collapse homographs.
 
-**Layer 2 — lexical enrichment.** For relevant words, contextual senses and alternatives, compounds/roots, wordplay, spelling candidates (clearly separated), LXX bridging, counts, sample occurrences, common constructions and selective notes.
+**Example:** \`get_Word("Ruach", 30, 10)\`.
 
-**Layer 3 — relational structure.** Clause/participant relations, motif/number/object inventory, interactions and repeated configurations; e.g. "7 eyes ↔ run through earth ↔ LORD" or "two olive trees ↔ lampstand ↔ oil ↔ Spirit". Subject/object is not automatically semantic agent/patient.
+**Gematria:** Provide the applicable Hebrew gematria or Greek isopsephy only with **named alphabet/value system, normalization, input spelling, letter-by-letter values and result**. Lemma vs inflected surface may differ; treatment of diacritics, matres lectionis, final forms, and iota subscript changes sums. Do **not** hardcode the example number 861 for \`ἄλλῳ\` without a specified scheme and verification. Equality of sums is a numerical observation, not semantic/prophetic evidence.
 
-**Layer 4 — corpus bridges.** Meaningful passage-to-passage links by explicitly labeled mechanism: source self-interpretation, quotation, probable allusion, narrative analogy, symbol transformation, grammatical relation, lexical comparison, numerical observation, and exploratory external property. Include actual verses on both ends and precise witness/source IDs.
+**Etymology warning:** Historical root and derivation are a different field from morphological segmentation, literary pun and shared consonants. Maintain source/evidence distinctions.
 
-**Layer 5 — exploration controls.** Alternative interpretations, negative controls, weak-support flags, source gap markers, next research nodes/cursors and concise reasons each candidate matters.
+### 2.3 \`get_Connection(...ITEMS, x)\`
 
-**Layer 6 — interpretive DLM overlay (optional).** Explicit Scripture observations, textual comparisons, *independent empirical physical claims*, and hypothesis-layer mapping as **separate entities**, not promoted proof. Source the exact DLM layer 0–7 taxonomy from authoritative project materials; do not invent layer definitions.
+**Inputs:** Two or more word/passage/concept/occurrence references (recommended 2–8 bounded), max \`x\` returned meaningful connections and optional \`types\`, \`focus\`, \`max_hops\`, \`include_counterexamples\`, \`cursor\` and budget. Mixed words and passages allowed.
 
-### 4.2 What makes a connection "interesting"
+**Output:** \`inputs\` (resolved with ambiguity), \`connections\` up to x with **actual witness excerpts, direct/indirect proof paths, exact word/verse references, ranking reason, mechanism, evidence level, alternatives and expandable evidence IDs**.
 
-Assign a **discovery priority** separately from evidence strength:
-- Passage relevance and explanatory fit.
-- Distinctiveness / rarity of *composite motifs*, not only words.
-- Independence and specificity of biblical witnesses.
-- Meaningful transformations (same image, changed role/number/action/setting).
-- Interpretive leverage: explains multiple observed details together.
-- Surprise and capacity to generate a testable next question.
-- Diversity across evidence families (linguistic, structure, narrative, symbol, historical, geography/physical, numbers).
+**Expansion rules the user requested:**
+- When an input is a **word**, include the *complete get_Word-shaped lexical object* for each selected input word (bounded/paged where necessary), not only its lemma ID.
+- When an input is a **passage**, show the passage text/context and **up to x passage-level connections only**; **do not expand every word of the passage**.
+- Do not assume a chain of individually true edges proves a connection between endpoints. Separate direct evidence, interpretive comparison and research hypothesis. Return a valid \`chain_candidate\`/node for deliberate continuation.
 
-**Never use surprise, semantic similarity, shared consonants, gematria or co-occurrence as a substitute for textual support.** An interpretation's confidence is determined by its underlying warrant, scope and alternatives, not just score.
+### 2.4 \`follow_connectionchain(chain_id?, next_node?, ...)\`
 
-### 4.3 Examples the new packets should enable
+The server should **remember the investigative path** so the AI can continue one node at a time without re-sending previous evidence.
 
-**Noah's ark, Genesis 6:14:** Show the precise Hebrew coating/pitch tokens, documented lexical family distinctions, source-sense contexts, relevant occurrences (e.g. uses of ransom/atonement language where attested), and the actual verses. Present possible theological resonance as a *testable literary analogy*, not automatic etymology or authorial claim.
+**Inputs:** \`chain_id\` optional on start; \`start\` (word/passage/connection) when new; \`next_node\` or \`connection_id\` for append; \`action=start|follow|branch|back|inspect|reset\`, optional \`focus\`, \`x\`, \`cursor\`.
 
-**Zechariah 4 and sevenfold imagery:** Supply seven lamps/eyes, olive trees, oil, Spirit, Zerubbabel and the explicit explanation in v.6 and v.10–14. Offer Ezekiel 1/10, Revelation 1/4/5/11 and Matthew 6:22 as differently classified research routes; **do not identify seven eyes with seven spatial directions unless a textual witness supports it**. Distinguish lamp as eye metaphor from a direct interpretation of the tabernacle menorah.
+**Output:** stable \`chain_id\`, version/revision, prior node summaries, current node, proposed next connections (brief), evidence for the newly joined edge, exact source references, endpoint proof status, alternative branches, per-chain limits and continuation token. Returns compact *delta* + short breadcrumb rather than redownloading all prior packets.
 
-**Ezekiel 1:** Visions of creatures, wheels, spirit, glory and throne; highlight Ezekiel 10's identification of living creatures as cherubim and compare Revelation 4 with similarities/differences.
+**Persistence and security:** A read-only research action may maintain **ephemeral workflow state**, but cannot write canonical research claims or user notes. Use a Supabase-backed TTL store or another existing suitable free-tier persistence mechanism **only when authorized and appropriately scoped**. Avoid trusting caller-supplied chain IDs as authorization: bind state to authenticated client/user/session, or use cryptographically unguessable high-entropy per-chain capability tokens and expiration; prevent cross-user reads/overwrites; allow expiry/reset. Scope storage/retention and disclose it. Test concurrency/revision conflicts, expiration, pagination and rollback. No permanent note persistence without \`write_Note\`.
 
-**Revelation 13:** Prioritize Daniel 7's distinctive sea-beast, lion/bear/leopard, horn/kingdom combination, not generic head/corner or horn roots. Preserve Revelation 12 dragon identification, alternative theological readings and later Revelation context.
+### 2.5 \`research(query_or_plan)\`
 
-## 5. AI-optimized output contract
+One flexible entry point for **advanced research**, not an excuse to dump the entire corpus or expose all low-level tools.
 
-All public responses must be readable by models and humans while minimizing repeated tokens.
+**Input:** \`query\` (ordinary-language description and available typed filters) **or** \`plan\` (validated declarative operations), optional \`output\` projection, source/edition/chronology model, budgets. When no internal model is available, the server may support deterministic natural-language patterns or respond with a suggested plan/clarifying capability; **do not pretend arbitrary freeform questions are automatically solved by an LLM inside the server**.
 
-**Mandatory top-level fields:** status; schema_version; normalized_query; corpus/graph/lexicon releases; source edition(s); english_translation license; actual requested passage text; coverage by dataset; completeness/is_exhaustive; payload_budget; errors/warnings; continuation_cursor; evidence IDs and expansion hints.
+**Allowlisted operations accessible through this tool:** exact word/verse search, original-language occurrences and co-occurrence by clause/verse, morphology/grammar and syntax, semantic/lexical relationships, passage-passage comparisons, graph paths/expansion, LXX alignment, gematria with explicit schemes, numeric/text patterns, geography queries (event vs mentioned vs symbolic), chronology distributions (event vs composition axes/model/denominator), real-world properties with source, negative controls, note reads and bounded joins/aggregations/projection.
 
-**Per selected word:** canonical verse/position/part, original and transliteration, short gloss, lemma ID + ambiguity, morphology and source attribution; groups of relationships tagged lexical/grammatical/contextual/intertextual/hypothesis.
+**Composability:** The AI may request multiple independent operations at once, or a dependency-ordered DAG of typed operations, with server-side filtering and compact result projection. Each step reports complete/partial/not-covered/ambiguous/unavailable and can be expanded by evidence IDs. Enforce hard time/CPU/rows/operations/depth/output limits. **No arbitrary SQL/JS/eval/HTTP/file access, no note writing** in this read tool.
 
-**Per connection:** both canonical witnesses in readable English (or explicit restricted status), relevant original tokens and transliteration; exact mechanism and scope; direct versus indirect endpoint evidence; independent source groups; strength and alternative explanations; why-interesting sentence; evidence_id; stable exploration node.
+**Code Mode:** True model-authored JavaScript is optional for a *future isolated sandbox*; Cloudflare Dynamic Workers paid-plan requirement may be relevant, so do not enable paid billing. A declarative executor is **not** advertised as executing arbitrary code.
 
-**Response profiles:** quick small, discovery moderately compact, deep explicitly requested. Hard byte/token limits must be verified. Don't make the default large passage hydration explode linearly by attaching seven full occurrence lists to every word. Group shared lexical info once and use references; select high-signal words but always preserve ordered original words. Distinguish "not in selected summary" from "not found"; avoid confusing sampled results with exhaustive corpus scans.
+### 2.6 \`write_Note()\` — keep existing note behavior
 
-**Failure and completeness states:** ambiguous, not_covered, not_found, restricted_by_license, incomplete_due_to_budget, transient_upstream_failure; no silent fallback to an inaccurate edition or fabricated metadata. Reports of missing data may include a reliable alternate lookup path.
+Preserve present note creation/update/deletion and DLM card semantics, canonical word/verse anchors, review status, author attribution, idempotency, provenance, security and authorization. Expose one user-facing entry or compatible alias that routes to verified existing authorized note operations. **Do not weaken existing write permissions or silently authorize writes from any public read-only client.** User instruction controls saving; never write canonical source claims from AI observations.
 
-## 6. Security, correctness and compatibility
+### 2.7 \`get_prompt()\`
 
-1. Preserve exact identity across STEP, Macula, morphology and LXX; respect Psalm headings, versification shifts, per-word occurrence position, edition variants, cross-verse syntax and historical releases. Do not reconstruct unseen source relations or restricted semantic frames.
-2. Use existing release-pinned read-only Worker endpoints; retain source license gates and scientific citations.
-3. **Public read calls may not inherit note-write privileges.** Keep existing authenticated writes separate, explicitly authorized, auditable, rate-limited and reviewed.
-4. Research plans must be AST/JSON validated, allowlisted, bound to quotas and protected from injection; no arbitrary SQL, JS execution, shell, eval, Function, fetch or unrestricted loops in Stage A.
-5. No model-generated "verified" textual edge should enter immutable corpus. Model interpretation and user notes stay separate and labeled.
-6. Maintain previous MCP endpoint and legacy clients until tool discovery and app usage are verified; introduce a separately identifiable *core connection/profile* instead of abruptly deleting 46 functions. Host/client schema refresh may be required.
-7. Avoid paid dependencies; check Worker free-tier CPU limits and stage heavy indexing offline. Add runtime budgets and graceful partial responses; never perform an unbounded long-running request.
-8. Source docs may disagree about deployed versions (MCP_SETUP.md vs the recent R12 handoff). Discover actual versions before release, capture rollback references and test production only with bounded calls.
+Read the concise current BibleResearch usage guidance, available functions/arguments, citation/coverage classes, distinction between fact and hypothesis, short workflows and examples. Optionally choose \`general|prophecy|word_study|dlm|challenge|chain\`. Do not require this call before ordinary \`get_Passage\`/\`get_Word\` usage; keep server tool descriptions sufficient for common tasks.
 
-## 7. Build order and acceptance checks
+## 3. Output selection: **minimal information, maximum discoverability**
 
-**Phase 0 — Baseline inventory:** inspect AGENTS.md, TASKS.md, actual deployment, source and tool list, [MCP_AI_DISCOVERY_REQUIREMENTS.md](MCP_AI_DISCOVERY_REQUIREMENTS.md), R12 diagnosis/handoff and workflow contracts. Verify existing data availability and failover routes (the live word-lens/verse-hydration spot tests showed availability problems in some queries even though the light passage lens worked). Confirm requirements from the current DLM framework rather than guessing.
+The default should be *far smaller* than a complete verse hydration dump of every possible root, occurrence, candidate, note, physical property, and relation.
 
-**Phase 1 — Packet and selection engine:** define typed Discovery Context Packet schema, source integrity, hierarchy and compact selection; implement a deterministic source-driven composer using existing APIs. Add tests for multi-verse range handling, original tokens, provenance, useful notes, pagination and source gaps.
+**Always include:** requested complete verse(s), original language and readable translation, each token's original/lemma/transliteration/gloss, a concise sense list and grammar notation, concise LXX information if truly applicable, notes IDs/summaries when available, context geography/chronology when sourced, and the precisely requested connection counts.
 
-**Phase 2 — get_passage:** implement quick/discovery/prophetic/deep profiles and nested evidence; optimize meaningful compound imagery and explicit in-text explanations. Validate against Genesis 6:14, Zechariah 4, Ezekiel 1, Revelation 13, and ordinary narrative/poetry.
+**Conditionally include:** optional per-word top x connections, optional detailed roots and up to y **unverified spelling suggestions**, real-world properties, full witness chains, exhaustive occurrences, complex grammar trees, statistical distributions and DLM overlays.
 
-**Phase 3 — get_word:** add robust resolution, morphology, contextual uses, lexical formations, total counts, grammar, cross-language, graph evidence and paginated deeper exploration. Test homographs and missing data, same-spelling-not-root controls.
+**Connection record must be compact:** \`id, target, type, why, evidence_level, one_short_witness, follow_id\`; deep proof and full other verse text are available through \`get_Connection\`/\`research\`. The model should see **why each connection might matter**, not just a Strong's number or opaque score.
 
-**Phase 4 — research declarative plan:** implement a minimal safe operation registry first (read, occurrences, graph, comparison, aggregation), then extend to gematria, chronological occurrences and geographical passage searches using existing indexed corpus. Add cross-operation referential checks, budgets, negative controls and accurate coverage. Write AI-facing plan examples.
+**Importance weighting (inside requested x/z slots):** explicit interpretations, unique image combinations, narrative/grammatical roles, meaningful textual contrasts, cross-book reuse, documented linguistic connections, and surprising but testable parallels. Downrank generic grammatical hubs, ubiquitous co-occurrence and unrelated spelling overlaps without hiding requested types. Rank *interest* separately from *proof* and label both.
 
-**Phase 5 — Core MCP catalog:** register three user-facing read tools with concise descriptions, optional expert mode/legacy endpoint. Update MCP prompts, scripts, skill references, plugin manifests and docs; do not drop compatibility endpoints or writes.
+**Budget and paging:** \`depth\` and \`word_depth\` define *maximum per scope*, never an obligation to fabricate weak connections. Response cost can grow as \`verse_count × z + word_count × x\`: enforce hard resource limits and deterministic priority. If requested content cannot fit, return explicit \`truncated\`, \`omitted_sections\`, \`next_cursor\`, and **retrievable continuation**, not false "complete" claims. Test the cross-chapter 1 Corinthians example, including word_depth=0. Favor compact summaries and deduplication over reducing the whole verse text.
 
-**Phase 6 — Smoke tests and deployment:** inspect only a handful of representative calls per feature; no complete 239-case ChatGPT benchmark in the agent budget. Build/tests, security/provenance checks, live version verification and rollback; deploy according to project procedures and publish handoff for independent ChatGPT retest.
+## 4. Important evidence distinctions
 
-**Definition of success:**
-- ChatGPT can call get_passage once for Zechariah 4 and see **all verse texts, ordered original language words and meaningful links** to Revelation 11:4, plus relevant alternatives and explicit symbol interpretation with source evidence or clearly marked coverage gap.
-- A question about Genesis 6:14 presents the kaphar/kopher covering family in an accurately qualified form, without saying etymology proves redemption.
-- A question on Revelation 13 surfaces Daniel 7's composite imagery above generic grammatical neighbors in the top contextual discoveries.
-- A model can perform in one research plan a **bounded** multi-passage comparison, an exact-parameter gematria check, a chronology-model-specific distribution, and a geography query where sources exist, returning only selected supported evidence. Each operation independently reports coverage.
-- No uncontrolled code execution, no write-privilege escalation, no source identity corruption and no requirement to purchase a Cloudflare plan.
-- AI-facing tool count and average round-trips improve *without sacrificing truth*, with readable English plus original text/transliteration always available.
-- Full legacy MCP tools remain functional until intentionally retired with a tested migration.
+1. **Noah's ark covering:** Distinguish *kaphar* (cover/coat) and *kopher* (pitch/ransom usages) with actual Genesis 6:14 Hebrew and other attested verses. A resonance with atonement/redemption is a *candidate interpretation*, not the verse's literal gloss or automatic root-based proof.
+2. **Zechariah 4:** Show text-internal "not by might ... but by my Spirit" (v.6), seven eyes (v.10), olive trees/branches (vv.11–14), their contextual roles and Revelation 11:4; support contrasts with Revelation 1:20, 4:5, 5:6, Matthew 6:22 and tabernacle menorah. "Seven directions" is a hypothesis until the relevant textual interpretation is demonstrated.
+3. **Ezekiel 1:** Whole-scene creatures, wheels, movement, spirit, throne/glory; high-priority Ezekiel 10 explicit cherub identification; possible Revelation 4 comparisons.
+4. **Revelation 13:** Whole-scene composite sea beast imagery and Daniel 7; retain alternatives and historical context; do not let generic head/sea or horn etymologies dominate.
+5. **DLM:** Keep primary biblical text, textual comparisons, empirical mechanisms with external citations, and layer hypotheses in *four different epistemic records*. Do not invent DLM 0–7 layer meanings; use actual authoritative framework. Notes are untrusted commentary, never source instructions.
+6. **Source truth:** STEP Hebrew/Greek identities, source edition, morphology/grammatical source, Macula license-gated semantics, LXX versification and historical/chronological models must remain visible where consequential. Place coordinates and scientific definitions require independent evidence. Keep user's explicit uncertainty visible.
 
-## 8. Orchestrator instructions and related docs
+## 5. Implementation and acceptance
 
-Implementation handoff: [NEON_MCP_CODEMODE_IMPLEMENTATION_PROMPT.md](NEON_MCP_CODEMODE_IMPLEMENTATION_PROMPT.md). Neon should integrate verified tasks into **TASKS.md only**, delegate bounded tasks to low-cost subagents, use live tests sparingly, and finish with a deployed version plus an explicit independent-ChatGPT handoff.
+**First:** inspect actual local repo, MCP tool registry and running Supabase/Worker versions. Then write focused, testable tasks in **TASKS.md only**. Preserve legacy endpoints and note writers until the new client surface is verified.
 
-Existing foundation:
-- [AI discovery architecture and prophetic/DLM evaluation](MCP_AI_DISCOVERY_REQUIREMENTS.md)
-- [R12 algorithm improvement handoff](R12_ALGORITHM_IMPROVEMENTS_HANDOFF.md)
-- [R12 benchmark diagnosis](R12_BENCHMARK_DIAGNOSIS.md)
-- [Relationship architecture](../../RELATIONSHIP_ARCHITECTURE.md)
-- [MCP tool catalog and server registration](../../supabase/functions/bible-mcp/catalog.ts)
-- [MCP workflow contracts](../../supabase/functions/bible-mcp/workflow-contract.ts)
-- [Current MCP setup notes](../../MCP_SETUP.md)
+**Deliver in order:** (1) canonical nested word & verse schemas plus robust exact source identity; (2) \`get_Passage\` with bounded z/x/y and cross-chapter ranges; (3) \`get_Word\` with matching word object, resolution, optional gematria; (4) \`get_Connection\`; (5) persistent \`follow_connectionchain\`; (6) \`research\` with safe operation registry; (7) \`get_prompt\` plus write_Note compatibility; (8) compact core MCP catalog and deploy/rollback. Delegate independent code/test/document tasks to inexpensive agents after the interfaces are agreed.
 
-**Core success principle:** A better tool is not one that returns *more data*; it is one that presents more **truthful, interpretable, unexpected and testable relationships** per model token and allows the model to follow them naturally.
+**Small acceptance fixtures:**
+- \`get_Passage("1COR12:10-1COR13:4",10,0,0)\`: inclusive cross-chapter range, no per-word connections or optional etymology/real-world; text+source tokens complete or explicit cursor/truncation, z max separately for passage and per verse.
+- \`get_Word("Ruach",30,10)\`: ambiguity handled, roots vs spelling suggestions separate, meaningful varied connections, gematria scheme given, actual witnesses.
+- \`get_Connection(["Zechariah 4","Revelation 11:4"],10)\`: passages receive comparison, **not all nested passage words**, explicit textual witness and differences.
+- \`follow_connectionchain\`: start→follow→branch→inspect, preserved independent calls/clients, secure TTL/identity, invalid/expired token and conflicting writes rejected; proof status never laundered.
+- \`research\`: two dependent operations, safe filtering and minimal projection; chronology distribution by explicit model; geographical event-vs-mentioned query; gematria with deterministic normalization.
+- \`write_Note\`: authorized mutation works, unauthorized reader cannot write; no silent AI note creation.
+- \`get_prompt\`: short accurate routing guide.
+- Regression: Genesis 6:14, Ezekiel 1/10, Zechariah 4/Revelation 11, Revelation 13/Daniel 7, LXX and homographs, error/coverage cases, bounded performance.
+
+**Final deliverable:** live new MCP version + source/tests/updated TASKS.md + \`research/r12/MCP_CODEMODE_IMPLEMENTATION_HANDOFF.md\` (versions, deployment evidence, tool schema, old-tool compatibility, cursor budgets, source issues, chain persistence, rollback, and exact independent ChatGPT test instructions). Run focused agent smoke tests only; ChatGPT performs the large independent benchmark later.
+
+**No paid infrastructure, destructive migrations, security weakening, or removal of unique data without explicit permission.**
+
+## 6. Related documentation
+
+- [Detailed AI discovery/DLM/prophetic evidence requirements](MCP_AI_DISCOVERY_REQUIREMENTS.md) — evidence and evaluation only; older tool-count design is superseded.
+- [Neon implementation prompt](NEON_MCP_CODEMODE_IMPLEMENTATION_PROMPT.md)
+- [R12 deployment and algorithm handoff](R12_ALGORITHM_IMPROVEMENTS_HANDOFF.md)
+- [R12 diagnosis](R12_BENCHMARK_DIAGNOSIS.md)
+- [Current MCP catalog](../../supabase/functions/bible-mcp/catalog.ts)
+- [MCP configuration](../../MCP_SETUP.md)
+
+**Final principle:** Do not force the AI to request everything, but make *something truly worth investigating* visible the moment it opens a passage or word.
