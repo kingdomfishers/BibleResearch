@@ -1,25 +1,61 @@
 /**
- * Offline acquisition script for BibleResearch R12 external semantic & physical pilot.
+ * Offline/online acquisition script for BibleResearch R12 external semantic & physical pilot.
  * Reads locally cached OEWN 2025 JSON (.artifacts-r12/external-cache/oewn-2025)
- * and fetches a compact pinned Wikidata entity extract (< 40 non-geographic concepts)
- * via wbgetentities, writing scripts/fixtures/r12-external-pilot.json.
+ * and either rebuilds deterministically from pinned Wikidata claims in
+ * scripts/fixtures/r12-external-pilot.json (--from-pinned, zero network requests)
+ * or fetches the compact pinned Wikidata entity extract via wbgetentities.
  */
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { fileURLToPath } from 'node:url';
 
-const oewnZipPath = '.artifacts-r12/external-cache/english-wordnet-2025-json.zip';
-const oewnDir = '.artifacts-r12/external-cache/oewn-2025';
-if (!fs.existsSync(oewnZipPath) || !fs.existsSync(oewnDir)) {
-  throw new Error('Missing OEWN 2025 archive in .artifacts-r12/external-cache/');
-}
+const WD_PROP_RE = /^wd:P\d+$/;
+const WD_GUID_RE = /^[Qq]\d+\$[0-9a-fA-F-]+$/;
 
-const oewnZipSha256 = crypto.createHash('sha256').update(fs.readFileSync(oewnZipPath)).digest('hex');
-
-const synsets = {};
-for (const f of fs.readdirSync(oewnDir)) {
-  if (!f.startsWith('noun.') || !f.endsWith('.json')) continue;
-  Object.assign(synsets, JSON.parse(fs.readFileSync(path.join(oewnDir, f), 'utf8')));
+export function validateExternalAssertions(assertions) {
+  if (!Array.isArray(assertions)) {
+    throw new TypeError('Expected property_assertions array');
+  }
+  for (const a of assertions) {
+    if (!a || typeof a !== 'object') {
+      throw new TypeError('Invalid assertion entry');
+    }
+    if (a.provider === 'Wikidata') {
+      if (typeof a.property_key !== 'string' || !WD_PROP_RE.test(a.property_key)) {
+        throw new Error(`Invalid Wikidata property_key: ${a.property_key}`);
+      }
+      if (typeof a.source_id !== 'string' || !WD_GUID_RE.test(a.source_id)) {
+        throw new Error(`Invalid Wikidata statement GUID source_id: ${a.source_id}`);
+      }
+      if (a.assertion_origin !== 'ORIGINAL_WIKIDATA_STATEMENT') {
+        throw new Error(`Wikidata assertion missing ORIGINAL_WIKIDATA_STATEMENT origin: ${a.source_id}`);
+      }
+    } else if (a.provider === 'OpenEnglishWordNet') {
+      if (
+        a.assertion_origin !== 'ORIGINAL_OEWN_RELATION' &&
+        a.assertion_origin !== 'DERIVED_OEWN_HYPERNYM_L2'
+      ) {
+        throw new Error(`Invalid OEWN assertion_origin: ${a.assertion_origin}`);
+      }
+      if (a.assertion_origin === 'DERIVED_OEWN_HYPERNYM_L2') {
+        if (a.claim_status !== 'candidate' || !a.derivation_basis) {
+          throw new Error(`DERIVED_OEWN_HYPERNYM_L2 must be candidate with derivation_basis: ${a.source_id}`);
+        }
+      }
+    } else if (a.assertion_origin === 'DERIVED_PHYSICAL_ASSERTION') {
+      if (a.provider === 'Wikidata' || a.claim_status !== 'candidate') {
+        throw new Error(`DERIVED_PHYSICAL_ASSERTION must not claim Wikidata/sourced status: ${a.source_id}`);
+      }
+      if (typeof a.property_key === 'string' && a.property_key.startsWith('wd:')) {
+        throw new Error(`DERIVED_PHYSICAL_ASSERTION must not use wd:* predicate: ${a.property_key}`);
+      }
+      if (typeof a.source_id === 'string' && WD_GUID_RE.test(a.source_id)) {
+        throw new Error(`DERIVED_PHYSICAL_ASSERTION must not use Wikidata GUID: ${a.source_id}`);
+      }
+    }
+  }
+  return true;
 }
 
 // Target Wikidata QIDs (all non-geographic physical objects, materials, sensory organs, natural phenomena)
@@ -63,67 +99,9 @@ const TARGET_QIDS = [
   'Q1058795',   // body fluid
 ];
 
-const wdUrl =
-  `https://www.wikidata.org/w/api.php?action=wbgetentities&ids=${TARGET_QIDS.join('|')}&props=labels|descriptions|claims|info&languages=en&format=json`;
-const res = await fetch(wdUrl, {
-  headers: { 'User-Agent': 'BibleResearchBot/1.0 (https://bibleresearch.kingdomfishers-custom.workers.dev)' },
-});
-if (!res.ok) throw new Error(`Wikidata API failed: ${res.status}`);
-const wdRaw = await res.json();
-const wdExtractSha256 = crypto.createHash('sha256').update(JSON.stringify(wdRaw)).digest('hex');
-
 const ALLOWED_WD_PROPS = new Set(['P31', 'P279', 'P361', 'P527', 'P186', 'P1552']);
-const externalConcepts = {};
-const wdClaims = [];
 
-// Resolve labels for referenced value QIDs if needed
-const referencedQids = new Set();
-for (const qid of TARGET_QIDS) {
-  const ent = wdRaw.entities?.[qid];
-  if (!ent || ent.missing !== undefined) continue;
-  externalConcepts[`wd:${qid}`] = {
-    external_id: `wd:${qid}`,
-    provider: 'Wikidata',
-    lastrevid: ent.lastrevid,
-    label: ent.labels?.en?.value || qid,
-    description: ent.descriptions?.en?.value || '',
-    license: 'CC0 1.0',
-    source_ref: `https://www.wikidata.org/wiki/${qid}`,
-  };
-  for (const prop of ALLOWED_WD_PROPS) {
-    for (const c of ent.claims?.[prop] || []) {
-      if (c.rank === 'deprecated') continue;
-      const valQid = c.mainsnak?.datavalue?.value?.id;
-      if (!valQid || typeof valQid !== 'string' || !valQid.startsWith('Q')) continue;
-      referencedQids.add(valQid);
-      wdClaims.push({
-        subject_qid: qid,
-        property_id: prop,
-        value_qid: valQid,
-        statement_id: c.id,
-        rank: c.rank || 'normal',
-        lastrevid: ent.lastrevid,
-      });
-    }
-  }
-}
-
-// Fetch labels for referenced target QIDs not already in TARGET_QIDS
-const missingLabelQids = [...referencedQids].filter((q) => !externalConcepts[`wd:${q}`]);
-const refLabels = {};
-for (let i = 0; i < missingLabelQids.length; i += 45) {
-  const batch = missingLabelQids.slice(i, i + 45);
-  const lres = await fetch(
-    `https://www.wikidata.org/w/api.php?action=wbgetentities&ids=${batch.join('|')}&props=labels|descriptions&languages=en&format=json`,
-    { headers: { 'User-Agent': 'BibleResearchBot/1.0 (https://bibleresearch.kingdomfishers-custom.workers.dev)' } },
-  );
-  const lj = await lres.json();
-  for (const [q, ent] of Object.entries(lj.entities || {})) {
-    if (ent.labels?.en?.value) refLabels[q] = ent.labels.en.value;
-  }
-}
-
-// Pinned OEWN 2025 synsets mapped to biblical concepts/lemmas
+// Pinned OEWN 2025 synsets mapped to biblical concepts/lemmas (verified against .artifacts-r12/external-cache/oewn-2025/)
 const OEWN_SELECTED_SYNSETS = [
   '03641539-n', // lamp (artificial source of visible illumination)
   '03751646-n', // menorah (seven-branched candelabrum)
@@ -155,36 +133,26 @@ const OEWN_SELECTED_SYNSETS = [
   '00836693-n', // breath (breathing process)
   '14865940-n', // breath (inhaled/exhaled air)
   '02415086-n', // lamb (young sheep)
+  // Expanded core physical biblical nouns (OEWN 2025 CC BY 4.0)
+  '13578096-n', // smoke (hot vapor containing carbon particles from combustion)
+  '11528510-n', // smoke, fume (cloud of fine particles suspended in gas)
+  '14679133-n', // silver (Ag, precious metallic element)
+  '14666595-n', // iron (Fe, heavy ductile magnetic metallic element)
+  '07829083-n', // table salt / common salt
+  '07819521-n', // wheat, wheat berry (grain)
+  '07819069-n', // barley, barleycorn (grain)
+  '13165571-n', // grape, grapevine (Vitis woody vine)
+  '13121436-n', // vine (climbing/twining plant)
+  '12422189-n', // fig, common fig tree (Ficus carica)
+  '07769089-n', // fig (edible fruit)
+  '09473603-n', // sun (star around which planetary system revolves)
+  '15128784-n', // wool (animal fiber sheared for weaving)
+  '14958169-n', // leaven, leavening (substance producing fermentation)
+  '07699909-n', // matzo / unleavened bread
+  '14837352-n', // clay (fine-grained plastic soil)
+  '09426302-n', // rainbow (arc of colored light in sky)
+  '02882960-n', // bow (weapon for shooting arrows)
 ];
-
-const oewnConcepts = {};
-const oewnRelations = [];
-for (const sid of OEWN_SELECTED_SYNSETS) {
-  const s = synsets[sid];
-  if (!s) throw new Error(`OEWN synset not found in local archive: ${sid}`);
-  oewnConcepts[`oewn:${sid}`] = {
-    external_id: `oewn:${sid}`,
-    provider: 'OpenEnglishWordNet',
-    release: 'oewn-2025',
-    members: s.members || [],
-    definition: s.definition?.[0] || '',
-    ili: s.ili || null,
-    license: 'CC BY 4.0 (incorporating Princeton WordNet attribution)',
-    source_ref: `https://en-word.net/id/oewn-${sid}`,
-  };
-  for (const rel of ['hypernym', 'part_meronym', 'substance_meronym', 'member_meronym']) {
-    for (const targetSid of s[rel] || []) {
-      const targetSyn = synsets[targetSid];
-      oewnRelations.push({
-        from_synset: `oewn:${sid}`,
-        relation: rel,
-        to_synset: `oewn:${targetSid}`,
-        to_label: targetSyn?.members?.[0] || targetSid,
-        to_definition: targetSyn?.definition?.[0] || '',
-      });
-    }
-  }
-}
 
 // Explicit biblical lemma/sense -> external concept crosswalk (competing polysemous senses preserved distinct)
 const externalMappings = [
@@ -599,56 +567,305 @@ const externalMappings = [
     competing_external_ids: [],
     notes: 'Greek lithos: stone.',
   },
+  // Expanded core physical biblical nouns (OEWN 2025 CC BY 4.0)
+  {
+    mapping_id: 'map:H0784:fire',
+    anchor_id: 'lemma:H0784',
+    sense_id: 'H0784_fire',
+    sense_gloss: 'fire',
+    oewn_id: 'oewn:13502051-n',
+    wikidata_id: 'wd:Q3196',
+    mapping_status: 'verified',
+    competing_external_ids: [],
+    notes: 'Hebrew esh: physical fire / combustion.',
+  },
+  {
+    mapping_id: 'map:H6227:smoke',
+    anchor_id: 'lemma:H6227',
+    sense_id: 'H6227_smoke',
+    sense_gloss: 'smoke',
+    oewn_id: 'oewn:13578096-n',
+    wikidata_id: null,
+    mapping_status: 'verified',
+    competing_external_ids: ['oewn:11528510-n'],
+    notes: 'Hebrew ashan: smoke produced by fire/combustion.',
+  },
+  {
+    mapping_id: 'map:H3701:silver',
+    anchor_id: 'lemma:H3701',
+    sense_id: 'H3701_silver',
+    sense_gloss: 'silver (metal / currency)',
+    oewn_id: 'oewn:14679133-n',
+    wikidata_id: null,
+    mapping_status: 'candidate',
+    competing_external_ids: ['oewn:13393039-n'],
+    notes: 'Hebrew keseph denotes both silver metal and silver money/shekels.',
+  },
+  {
+    mapping_id: 'map:H1270:iron',
+    anchor_id: 'lemma:H1270',
+    sense_id: 'H1270_iron',
+    sense_gloss: 'iron',
+    oewn_id: 'oewn:14666595-n',
+    wikidata_id: null,
+    mapping_status: 'verified',
+    competing_external_ids: [],
+    notes: 'Hebrew barzel: metallic iron.',
+  },
+  {
+    mapping_id: 'map:H4417:salt',
+    anchor_id: 'lemma:H4417',
+    sense_id: 'H4417_salt',
+    sense_gloss: 'salt',
+    oewn_id: 'oewn:07829083-n',
+    wikidata_id: null,
+    mapping_status: 'verified',
+    competing_external_ids: [],
+    notes: 'Hebrew melach: mineral/table salt (used in covenantal offerings and Salt Sea names).',
+  },
+  {
+    mapping_id: 'map:G0217:salt',
+    anchor_id: 'lemma:G0217',
+    sense_id: 'G0217_salt',
+    sense_gloss: 'salt',
+    oewn_id: 'oewn:07829083-n',
+    wikidata_id: null,
+    mapping_status: 'verified',
+    competing_external_ids: [],
+    notes: 'Greek halas: salt (Matt 5:13, Mark 9:50, Col 4:6).',
+  },
+  {
+    mapping_id: 'map:H2406:wheat',
+    anchor_id: 'lemma:H2406',
+    sense_id: 'H2406_wheat',
+    sense_gloss: 'wheat',
+    oewn_id: 'oewn:07819521-n',
+    wikidata_id: null,
+    mapping_status: 'verified',
+    competing_external_ids: ['oewn:12162602-n'],
+    notes: 'Hebrew chittah: wheat grain (and standing wheat crop).',
+  },
+  {
+    mapping_id: 'map:G4621:wheat',
+    anchor_id: 'lemma:G4621',
+    sense_id: 'G4621_wheat',
+    sense_gloss: 'wheat / grain',
+    oewn_id: 'oewn:07819521-n',
+    wikidata_id: null,
+    mapping_status: 'candidate',
+    competing_external_ids: ['oewn:12162602-n'],
+    notes: 'Greek sitos: wheat or cereal grain (Matt 13:25, John 12:24).',
+  },
+  {
+    mapping_id: 'map:H8184:barley',
+    anchor_id: 'lemma:H8184',
+    sense_id: 'H8184_barley',
+    sense_gloss: 'barley',
+    oewn_id: 'oewn:07819069-n',
+    wikidata_id: null,
+    mapping_status: 'verified',
+    competing_external_ids: ['oewn:12143761-n'],
+    notes: 'Hebrew seorah: barley grain.',
+  },
+  {
+    mapping_id: 'map:G2916:barley',
+    anchor_id: 'lemma:G2916',
+    sense_id: 'G2916_barley',
+    sense_gloss: 'made of barley (barley loaves)',
+    oewn_id: 'oewn:07819069-n',
+    wikidata_id: null,
+    mapping_status: 'candidate',
+    competing_external_ids: ['oewn:12143761-n'],
+    notes: 'Greek krithinos: adjective denoting barley-grain composition (John 6:9, 6:13).',
+  },
+  {
+    mapping_id: 'map:H1612:vine',
+    anchor_id: 'lemma:H1612',
+    sense_id: 'H1612_vine',
+    sense_gloss: 'grapevine',
+    oewn_id: 'oewn:13165571-n',
+    wikidata_id: null,
+    mapping_status: 'verified',
+    competing_external_ids: ['oewn:13121436-n'],
+    notes: 'Hebrew gephen: grapevine (Vitis).',
+  },
+  {
+    mapping_id: 'map:G0288:vine',
+    anchor_id: 'lemma:G0288',
+    sense_id: 'G0288_vine',
+    sense_gloss: 'grapevine',
+    oewn_id: 'oewn:13165571-n',
+    wikidata_id: null,
+    mapping_status: 'verified',
+    competing_external_ids: ['oewn:13121436-n'],
+    notes: 'Greek ampelos: grapevine (John 15:1-5).',
+  },
+  {
+    mapping_id: 'map:H8384:fig',
+    anchor_id: 'lemma:H8384',
+    sense_id: 'H8384_fig',
+    sense_gloss: 'fig tree / fig',
+    oewn_id: 'oewn:12422189-n',
+    wikidata_id: null,
+    mapping_status: 'candidate',
+    competing_external_ids: ['oewn:07769089-n'],
+    notes: 'Hebrew teenah denotes both fig tree and fig fruit.',
+  },
+  {
+    mapping_id: 'map:G4808:fig_tree',
+    anchor_id: 'lemma:G4808',
+    sense_id: 'G4808_fig_tree',
+    sense_gloss: 'fig tree',
+    oewn_id: 'oewn:12422189-n',
+    wikidata_id: null,
+    mapping_status: 'verified',
+    competing_external_ids: ['oewn:07769089-n'],
+    notes: 'Greek suke: fig tree (Matt 21:19, Luke 13:6).',
+  },
+  {
+    mapping_id: 'map:H8121:sun',
+    anchor_id: 'lemma:H8121',
+    sense_id: 'H8121_sun',
+    sense_gloss: 'sun',
+    oewn_id: 'oewn:09473603-n',
+    wikidata_id: null,
+    mapping_status: 'verified',
+    competing_external_ids: ['oewn:11505767-n'],
+    notes: 'Hebrew shemesh: sun.',
+  },
+  {
+    mapping_id: 'map:G2246:sun',
+    anchor_id: 'lemma:G2246',
+    sense_id: 'G2246_sun',
+    sense_gloss: 'sun',
+    oewn_id: 'oewn:09473603-n',
+    wikidata_id: null,
+    mapping_status: 'verified',
+    competing_external_ids: ['oewn:11505767-n'],
+    notes: 'Greek helios: sun.',
+  },
+  {
+    mapping_id: 'map:H6785:wool',
+    anchor_id: 'lemma:H6785',
+    sense_id: 'H6785_wool',
+    sense_gloss: 'wool',
+    oewn_id: 'oewn:15128784-n',
+    wikidata_id: null,
+    mapping_status: 'verified',
+    competing_external_ids: [],
+    notes: 'Hebrew tsemer: sheep wool fiber.',
+  },
+  {
+    mapping_id: 'map:G2053:wool',
+    anchor_id: 'lemma:G2053',
+    sense_id: 'G2053_wool',
+    sense_gloss: 'wool',
+    oewn_id: 'oewn:15128784-n',
+    wikidata_id: null,
+    mapping_status: 'verified',
+    competing_external_ids: [],
+    notes: 'Greek erion: wool (Heb 9:19, Rev 1:14).',
+  },
+  {
+    mapping_id: 'map:H2557:leaven',
+    anchor_id: 'lemma:H2557',
+    sense_id: 'H2557_leaven',
+    sense_gloss: 'leaven / leavened dough',
+    oewn_id: 'oewn:14958169-n',
+    wikidata_id: null,
+    mapping_status: 'candidate',
+    competing_external_ids: ['oewn:07695101-n'],
+    notes: 'Hebrew chamets covers fermenting leaven and leavened food.',
+  },
+  {
+    mapping_id: 'map:H7603:leaven',
+    anchor_id: 'lemma:H7603',
+    sense_id: 'H7603_leaven',
+    sense_gloss: 'leaven / sourdough starter',
+    oewn_id: 'oewn:14958169-n',
+    wikidata_id: null,
+    mapping_status: 'verified',
+    competing_external_ids: [],
+    notes: 'Hebrew seor: fermenting leaven / sourdough starter.',
+  },
+  {
+    mapping_id: 'map:G2219:leaven',
+    anchor_id: 'lemma:G2219',
+    sense_id: 'G2219_leaven',
+    sense_gloss: 'leaven / yeast',
+    oewn_id: 'oewn:14958169-n',
+    wikidata_id: null,
+    mapping_status: 'candidate',
+    competing_external_ids: [],
+    notes: 'Greek zume: physical leaven (Matt 13:33) and metaphorical teaching/influence (Matt 16:6).',
+  },
+  {
+    mapping_id: 'map:H4682:unleavened_bread',
+    anchor_id: 'lemma:H4682',
+    sense_id: 'H4682_unleavened_bread',
+    sense_gloss: 'unleavened bread',
+    oewn_id: 'oewn:07699909-n',
+    wikidata_id: null,
+    mapping_status: 'verified',
+    competing_external_ids: [],
+    notes: 'Hebrew matstsah: unleavened bread.',
+  },
+  {
+    mapping_id: 'map:G0106:unleavened_bread',
+    anchor_id: 'lemma:G0106',
+    sense_id: 'G0106_unleavened_bread',
+    sense_gloss: 'unleavened / unleavened bread',
+    oewn_id: 'oewn:07699909-n',
+    wikidata_id: null,
+    mapping_status: 'candidate',
+    competing_external_ids: [],
+    notes: 'Greek azumos: unleavened bread or Festival of Unleavened Bread.',
+  },
+  {
+    mapping_id: 'map:H2563:clay',
+    anchor_id: 'lemma:H2563',
+    sense_id: 'H2563_clay',
+    sense_gloss: 'clay / mortar',
+    oewn_id: 'oewn:14837352-n',
+    wikidata_id: null,
+    mapping_status: 'verified',
+    competing_external_ids: [],
+    notes: 'Hebrew chomer: potter clay or mud mortar.',
+  },
+  {
+    mapping_id: 'map:G4081:clay',
+    anchor_id: 'lemma:G4081',
+    sense_id: 'G4081_clay',
+    sense_gloss: 'clay / mud',
+    oewn_id: 'oewn:14837352-n',
+    wikidata_id: null,
+    mapping_status: 'verified',
+    competing_external_ids: [],
+    notes: 'Greek pelos: potter clay or wet clay/mud (John 9:6, Rom 9:21).',
+  },
+  {
+    mapping_id: 'map:H7198:bow',
+    anchor_id: 'lemma:H7198',
+    sense_id: 'H7198_bow',
+    sense_gloss: 'bow (archery weapon)',
+    oewn_id: 'oewn:02882960-n',
+    wikidata_id: null,
+    mapping_status: 'candidate',
+    competing_external_ids: ['oewn:09426302-n'],
+    notes: 'Polysemous lemma H7198 qeshet: archery bow (most frequent) vs rainbow (Gen 9:13).',
+  },
+  {
+    mapping_id: 'map:H7198:rainbow',
+    anchor_id: 'lemma:H7198',
+    sense_id: 'H7198_rainbow',
+    sense_gloss: 'rainbow (sky arc)',
+    oewn_id: 'oewn:09426302-n',
+    wikidata_id: null,
+    mapping_status: 'candidate',
+    competing_external_ids: ['oewn:02882960-n'],
+    notes: 'Polysemous lemma H7198 qeshet: rainbow sense in Gen 9:13-16 and Ezek 1:28.',
+  },
 ];
-
-// Build property-bridges.mjs compatible assertion rows strictly from verified OEWN 2025 + Wikidata statements
-// (plus controlled domain assertions citing exact Wikidata/OEWN external IDs where oil lamp/menorah/oil/water connect cleanly)
-const propertyAssertions = [];
-const pushWdAssertion = (mapRow, propKey, valueId, valueLabel, statementId, sourceRef, extra = {}) => {
-  propertyAssertions.push({
-    anchor_id: mapRow.anchor_id,
-    sense_id: mapRow.sense_id,
-    sense_gloss: mapRow.sense_gloss,
-    property_key: propKey,
-    value_id: valueId,
-    value_label: valueLabel,
-    source_id: statementId,
-    source_ref: sourceRef,
-    provider: 'Wikidata',
-    release: `wikidata-wbgetentities-rev-${wdClaims.find((c) => c.statement_id === statementId)?.lastrevid || 'pinned'}`,
-    license: 'CC0 1.0',
-    rights_status: 'approved',
-    claim_status: 'sourced',
-    mapping_status: mapRow.mapping_status,
-    epistemic_layer: 'EXTERNAL_WORLD',
-    external_id: mapRow.wikidata_id,
-    competing_external_ids: mapRow.competing_external_ids,
-    ...extra,
-  });
-};
-
-const pushOewnAssertion = (mapRow, propKey, valueId, valueLabel) => {
-  const sidRaw = mapRow.oewn_id.replace('oewn:', '');
-  propertyAssertions.push({
-    anchor_id: mapRow.anchor_id,
-    sense_id: mapRow.sense_id,
-    sense_gloss: mapRow.sense_gloss,
-    property_key: propKey,
-    value_id: valueId,
-    value_label: valueLabel,
-    source_id: `oewn-2025:${sidRaw}:${propKey}->${valueId}`,
-    source_ref: `https://en-word.net/id/oewn-${sidRaw}`,
-    provider: 'OpenEnglishWordNet',
-    release: 'oewn-2025',
-    license: 'CC BY 4.0 (incorporating Princeton WordNet attribution)',
-    rights_status: 'approved',
-    claim_status: 'sourced',
-    mapping_status: mapRow.mapping_status,
-    epistemic_layer: 'EXTERNAL_WORLD',
-    external_id: mapRow.oewn_id,
-    competing_external_ids: mapRow.competing_external_ids,
-  });
-};
 
 const GENERIC_WD_METACLASSES = new Set([
   'Q223557',     // physical object
@@ -673,136 +890,446 @@ const GENERIC_WD_METACLASSES = new Set([
   'Q11992872',   // useful plant
 ]);
 
-for (const mapRow of externalMappings) {
-  const qid = mapRow.wikidata_id.replace('wd:', '');
-  const itemClaims = wdClaims.filter((c) => c.subject_qid === qid);
-  for (const c of itemClaims) {
-    // Skip generic ontology meta-classes / geographic-like superclasses that act as hub noise
-    if (GENERIC_WD_METACLASSES.has(c.value_qid)) continue;
-    const label = externalConcepts[`wd:${c.value_qid}`]?.label || refLabels[c.value_qid] || c.value_qid;
-    pushWdAssertion(
-      mapRow,
-      `wd:${c.property_id}`,
-      `wd:${c.value_qid}`,
-      label,
-      c.statement_id,
-      `https://www.wikidata.org/wiki/${qid}#${c.statement_id.replace('$', '%24')}`,
-      { statement_rank: c.rank },
-    );
+const GENERIC_OEWN_TOP_SYNSETS = new Set([
+  '00001740-n', // entity
+  '00001930-n', // physical entity
+  '00002684-n', // object
+  '00003553-n', // whole
+  '00021007-n', // matter
+  '00022119-n', // artifact
+]);
+
+function normalizeQualifiers(rawQualifiers) {
+  if (!rawQualifiers) return [];
+  if (Array.isArray(rawQualifiers)) return rawQualifiers;
+  const out = [];
+  for (const [prop, snaks] of Object.entries(rawQualifiers)) {
+    for (const s of snaks || []) {
+      out.push({
+        property: prop,
+        datatype: s.datatype || null,
+        datavalue: s.datavalue?.value ?? null,
+      });
+    }
   }
-  const synRaw = mapRow.oewn_id.replace('oewn:', '');
-  const rels = oewnRelations.filter((r) => r.from_synset === mapRow.oewn_id);
-  for (const r of rels) {
-    pushOewnAssertion(mapRow, `oewn:${r.relation}`, r.to_synset, r.to_label);
-  }
-  // Connect OEWN hypernyms that bridge siblings cleanly: e.g. oil lamp -> Q1138737 lamp -> Q1146001 light source, spring -> water source (Q10713454), well -> water source (Q10713454)
+  return out;
 }
 
-// Also enrich shared physical-world functional assertions directly grounded in Wikidata entity claims / OEWN definitions
-const addDerivedObjectLink = (anchorId, wikidataTargetQid, propKey, valId, valLabel) => {
-  const mapRow = externalMappings.find((m) => m.anchor_id === anchorId && m.wikidata_id === `wd:${wikidataTargetQid}`);
-  if (!mapRow) return;
-  // Find matching statement on target QID or its direct superclass
-  const claim = wdClaims.find((c) => c.subject_qid === wikidataTargetQid && c.value_qid === valId.replace('wd:', ''));
-  if (claim) return; // already emitted above
-};
+async function loadWikidataSource({ fromPinned, pinnedPath }) {
+  if (fromPinned) {
+    if (!fs.existsSync(pinnedPath)) {
+      throw new Error(`Missing pinned fixture for --from-pinned: ${pinnedPath}`);
+    }
+    const pinned = JSON.parse(fs.readFileSync(pinnedPath, 'utf8'));
+    const wdSource = (pinned.sources || []).find((s) => s.id === 'wikidata-wbgetentities');
+    const externalConcepts = { ...(pinned.wikidata_concepts || {}) };
+    const wdClaims = [];
+    const refLabels = {};
+    const seenClaims = new Set();
 
-// Map oil lamp (Q821952 P279 -> Q1138737 lamp) and torch (Q327954 P279 -> Q20087093 portable light source)
-// and olive oil (Q93165) <-> oil lamp / menorah via verified OEWN/Wikidata structured descriptions:
-// Check real Wikidata claims on Q1138737 & Q20087093 so transitive class membership is 100% genuine!
-const inheritedClassLinks = [
-  ['wd:Q821952', 'wd:Q1138737'],    // oil lamp subclassOf lamp
-  ['wd:Q170476', 'wd:Q1146001'],    // menorah is a multi-lamp light-holder / candelabra -> lampstand
-  ['wd:Q327954', 'wd:Q1146001'],    // torch subclassOf portable light source -> light source
-  ['wd:Q124714', 'wd:Q283'],        // spring hydrological discharge of water
-  ['wd:Q43483', 'wd:Q283'],         // water well accesses groundwater / water
-  ['wd:Q283', 'wd:Q10713454'],      // water supplied by water sources (spring/well)
-  ['wd:Q897', 'wd:Q11426'],         // gold -> metallic material/metal
-  ['wd:Q34095', 'wd:Q11426'],       // bronze (copper alloy) -> metallic material/metal
-];
-for (const [subjId, targetId] of inheritedClassLinks) {
-  const subjQ = subjId.replace('wd:', '');
-  const targQ = targetId.replace('wd:', '');
-  // Find if any claim connects subjQ to intermediate or directly cite the pinned Wikidata entity revision
-  const directClaim = wdClaims.find((c) => c.subject_qid === subjQ);
-  if (!directClaim) continue;
-  for (const mapRow of externalMappings.filter((m) => m.wikidata_id === subjId)) {
-    const tLabel = externalConcepts[targetId]?.label || refLabels[targQ] || targQ;
-    pushWdAssertion(
-      mapRow,
-      'wd:related_physical_class',
-      targetId,
-      tLabel,
-      `${directClaim.statement_id}:class:${targQ}`,
-      `https://www.wikidata.org/wiki/${subjQ}`,
-      { statement_rank: directClaim.rank, via_statement_id: directClaim.statement_id },
-    );
+    for (const [k, v] of Object.entries(externalConcepts)) {
+      if (v?.label) refLabels[k.replace('wd:', '')] = v.label;
+    }
+
+    const sourceClaims = Array.isArray(pinned.wikidata_claims) ? pinned.wikidata_claims : null;
+    if (sourceClaims) {
+      for (const c of sourceClaims) {
+        if (!c.statement_id || !WD_GUID_RE.test(c.statement_id)) continue;
+        const dedup = `${c.subject_qid}|${c.property_id}|${c.value_qid}|${c.statement_id}`;
+        if (seenClaims.has(dedup)) continue;
+        seenClaims.add(dedup);
+        wdClaims.push({ ...c, qualifiers: c.qualifiers || [] });
+      }
+    } else {
+      for (const a of pinned.property_assertions || []) {
+        if (a.provider !== 'Wikidata') continue;
+        if (!WD_PROP_RE.test(a.property_key || '') || !WD_GUID_RE.test(a.source_id || '')) continue;
+        const subjectQid = (a.external_id || '').replace('wd:', '');
+        const propId = a.property_key.replace('wd:', '');
+        const valueQid = (a.value_id || '').replace('wd:', '');
+        if (!subjectQid || !propId || !valueQid) continue;
+        if (a.value_label) refLabels[valueQid] = a.value_label;
+        const revMatch = /^wikidata-wbgetentities-rev-(\d+)$/.exec(a.release || '');
+        const lastrevid = revMatch
+          ? Number(revMatch[1])
+          : externalConcepts[a.external_id]?.lastrevid || 'pinned';
+        const dedup = `${subjectQid}|${propId}|${valueQid}|${a.source_id}`;
+        if (seenClaims.has(dedup)) continue;
+        seenClaims.add(dedup);
+        wdClaims.push({
+          subject_qid: subjectQid,
+          property_id: propId,
+          value_qid: valueQid,
+          statement_id: a.source_id,
+          rank: a.statement_rank || 'normal',
+          lastrevid,
+          qualifiers: Array.isArray(a.qualifiers) ? a.qualifiers : [],
+        });
+      }
+    }
+
+    return {
+      wdExtractSha256: wdSource?.extract_sha256 || 'pinned',
+      wdRelease: wdSource?.release || '2026-11-18-wbgetentities-pinned',
+      externalConcepts,
+      wdClaims,
+      refLabels,
+      generatedAt: pinned.generated_at || new Date().toISOString(),
+    };
   }
-}
 
-// Connect oil lamp / lampstand to olive oil & wick as documented archaeological fuel/component properties in Wikidata Q821952 description
-const lampFuelMappings = [
-  ['lemma:H5216', 'H5216_lamp', 'wd:Q93165', 'olive oil', 'wd:Q821952', 'oewn:03641539-n'],
-  ['lemma:G3088', 'G3088_lamp', 'wd:Q93165', 'olive oil', 'wd:Q821952', 'oewn:03641539-n'],
-  ['lemma:H8081', 'H8081_oil', 'wd:Q93165', 'olive oil', 'wd:Q93165', 'oewn:07689142-n'],
-  ['lemma:H4501', 'H4501_menorah', 'wd:Q93165', 'olive oil', 'wd:Q170476', 'oewn:03751646-n'],
-  ['lemma:G2985', 'G2985_torch', 'wd:Q93165', 'olive oil', 'wd:Q327954', 'oewn:04463386-n'],
-];
-for (const [anchorId, senseId, valId, valLabel, entityWdId, entityOewnId] of lampFuelMappings) {
-  const mapRow = externalMappings.find((m) => m.anchor_id === anchorId && m.sense_id === senseId);
-  if (!mapRow) continue;
-  const rev = externalConcepts[entityWdId]?.lastrevid || 'pinned';
-  pushWdAssertion(
-    mapRow,
-    'wd:combustion_fuel_agent',
-    valId,
-    valLabel,
-    `wd-rev-${rev}:${entityWdId.replace('wd:', '')}:fuel:${valId.replace('wd:', '')}`,
-    `https://www.wikidata.org/wiki/${entityWdId.replace('wd:', '')}`,
-    { derived_from_entity_description: true, oewn_ref: entityOewnId },
-  );
-}
+  const wdUrl =
+    `https://www.wikidata.org/w/api.php?action=wbgetentities&ids=${TARGET_QIDS.join('|')}&props=labels|descriptions|claims|info&languages=en&format=json`;
+  const res = await fetch(wdUrl, {
+    headers: { 'User-Agent': 'BibleResearchBot/1.0 (https://bibleresearch.kingdomfishers-custom.workers.dev)' },
+  });
+  if (!res.ok) throw new Error(`Wikidata API failed: ${res.status}`);
+  const wdRaw = await res.json();
+  const wdExtractSha256 = crypto.createHash('sha256').update(JSON.stringify(wdRaw)).digest('hex');
 
-const output = {
-  schema_version: 1,
-  generated_at: new Date().toISOString(),
-  sources: [
-    {
-      id: 'oewn-2025',
-      provider: 'OpenEnglishWordNet',
-      release: '2025',
-      license: 'CC BY 4.0 (incorporating Princeton WordNet attribution)',
-      publisher: 'https://en-word.net/downloads',
-      download: 'https://en-word.net/static/english-wordnet-2025-json.zip',
-      archive_sha256: oewnZipSha256,
-      synset_count: Object.keys(oewnConcepts).length,
-      relation_count: oewnRelations.length,
-    },
-    {
-      id: 'wikidata-wbgetentities',
+  const externalConcepts = {};
+  const wdClaims = [];
+  const referencedQids = new Set();
+
+  for (const qid of TARGET_QIDS) {
+    const ent = wdRaw.entities?.[qid];
+    if (!ent || ent.missing !== undefined) continue;
+    externalConcepts[`wd:${qid}`] = {
+      external_id: `wd:${qid}`,
       provider: 'Wikidata',
-      release: '2026-11-18-wbgetentities-pinned',
-      license: 'CC0 1.0 (structured namespace data)',
-      publisher: 'https://www.wikidata.org/wiki/Wikidata:Licensing',
-      api_endpoint: 'https://www.wikidata.org/w/api.php?action=wbgetentities',
-      extract_sha256: wdExtractSha256,
-      concept_count: Object.keys(externalConcepts).length,
-      claim_count: wdClaims.length,
-    },
-  ],
-  wikidata_concepts: externalConcepts,
-  oewn_concepts: oewnConcepts,
-  external_mappings: externalMappings,
-  property_assertions: propertyAssertions,
-};
+      lastrevid: ent.lastrevid,
+      label: ent.labels?.en?.value || qid,
+      description: ent.descriptions?.en?.value || '',
+      license: 'CC0 1.0',
+      source_ref: `https://www.wikidata.org/wiki/${qid}`,
+    };
+    for (const prop of ALLOWED_WD_PROPS) {
+      for (const c of ent.claims?.[prop] || []) {
+        if (c.rank === 'deprecated') continue;
+        const valQid = c.mainsnak?.datavalue?.value?.id;
+        if (!valQid || typeof valQid !== 'string' || !valQid.startsWith('Q')) continue;
+        referencedQids.add(valQid);
+        wdClaims.push({
+          subject_qid: qid,
+          property_id: prop,
+          value_qid: valQid,
+          statement_id: c.id,
+          rank: c.rank || 'normal',
+          lastrevid: ent.lastrevid,
+          qualifiers: normalizeQualifiers(c.qualifiers),
+        });
+      }
+    }
+  }
 
-fs.mkdirSync('scripts/fixtures', { recursive: true });
-fs.writeFileSync('scripts/fixtures/r12-external-pilot.json', JSON.stringify(output, null, 2));
-console.log({
-  oewn_concepts: Object.keys(oewnConcepts).length,
-  wikidata_concepts: Object.keys(externalConcepts).length,
-  external_mappings: externalMappings.length,
-  property_assertions: propertyAssertions.length,
-  oewn_sha256: oewnZipSha256.slice(0, 16),
-  wd_sha256: wdExtractSha256.slice(0, 16),
-});
+  const missingLabelQids = [...referencedQids].filter((q) => !externalConcepts[`wd:${q}`]);
+  const refLabels = {};
+  for (let i = 0; i < missingLabelQids.length; i += 45) {
+    const batch = missingLabelQids.slice(i, i + 45);
+    const lres = await fetch(
+      `https://www.wikidata.org/w/api.php?action=wbgetentities&ids=${batch.join('|')}&props=labels|descriptions&languages=en&format=json`,
+      { headers: { 'User-Agent': 'BibleResearchBot/1.0 (https://bibleresearch.kingdomfishers-custom.workers.dev)' } },
+    );
+    const lj = await lres.json();
+    for (const [q, ent] of Object.entries(lj.entities || {})) {
+      if (ent.labels?.en?.value) refLabels[q] = ent.labels.en.value;
+    }
+  }
+
+  return {
+    wdExtractSha256,
+    wdRelease: '2026-11-18-wbgetentities-pinned',
+    externalConcepts,
+    wdClaims,
+    refLabels,
+    generatedAt: new Date().toISOString(),
+  };
+}
+
+export async function acquireExternalPilot({ fromPinned = false } = {}) {
+  const oewnZipPath = '.artifacts-r12/external-cache/english-wordnet-2025-json.zip';
+  const oewnDir = '.artifacts-r12/external-cache/oewn-2025';
+  const pinnedPath = 'scripts/fixtures/r12-external-pilot.json';
+  if (!fs.existsSync(oewnZipPath) || !fs.existsSync(oewnDir)) {
+    throw new Error('Missing OEWN 2025 archive in .artifacts-r12/external-cache/');
+  }
+
+  const oewnZipSha256 = crypto.createHash('sha256').update(fs.readFileSync(oewnZipPath)).digest('hex');
+
+  const synsets = {};
+  for (const f of fs.readdirSync(oewnDir)) {
+    if (!f.startsWith('noun.') || !f.endsWith('.json')) continue;
+    Object.assign(synsets, JSON.parse(fs.readFileSync(path.join(oewnDir, f), 'utf8')));
+  }
+
+  const {
+    wdExtractSha256,
+    wdRelease,
+    externalConcepts,
+    wdClaims,
+    refLabels,
+    generatedAt,
+  } = await loadWikidataSource({ fromPinned, pinnedPath });
+
+  const oewnConcepts = {};
+  const oewnRelations = [];
+  const oewnHypernymL2 = [];
+
+  for (const sid of OEWN_SELECTED_SYNSETS) {
+    const s = synsets[sid];
+    if (!s) throw new Error(`OEWN synset not found in local archive: ${sid}`);
+    oewnConcepts[`oewn:${sid}`] = {
+      external_id: `oewn:${sid}`,
+      provider: 'OpenEnglishWordNet',
+      release: 'oewn-2025',
+      members: s.members || [],
+      definition: s.definition?.[0] || '',
+      ili: s.ili || null,
+      license: 'CC BY 4.0 (incorporating Princeton WordNet attribution)',
+      source_ref: `https://en-word.net/id/oewn-${sid}`,
+    };
+    for (const rel of ['hypernym', 'part_meronym', 'substance_meronym', 'member_meronym']) {
+      for (const targetSid of s[rel] || []) {
+        const targetSyn = synsets[targetSid];
+        oewnRelations.push({
+          from_synset: `oewn:${sid}`,
+          relation: rel,
+          to_synset: `oewn:${targetSid}`,
+          to_label: targetSyn?.members?.[0] || targetSid,
+          to_definition: targetSyn?.definition?.[0] || '',
+        });
+      }
+    }
+    for (const midSid of s.hypernym || []) {
+      const midSyn = synsets[midSid];
+      for (const l2Sid of midSyn?.hypernym || []) {
+        if (GENERIC_OEWN_TOP_SYNSETS.has(l2Sid)) continue;
+        const l2Syn = synsets[l2Sid];
+        oewnHypernymL2.push({
+          from_synset: `oewn:${sid}`,
+          relation: 'hypernym_l2',
+          to_synset: `oewn:${l2Sid}`,
+          to_label: l2Syn?.members?.[0] || l2Sid,
+          derivation_basis: `oewn:${midSid}`,
+        });
+      }
+    }
+  }
+
+  const propertyAssertions = [];
+  const pushWdAssertion = (mapRow, propKey, valueId, valueLabel, statementId, sourceRef, extra = {}) => {
+    propertyAssertions.push({
+      anchor_id: mapRow.anchor_id,
+      sense_id: mapRow.sense_id,
+      sense_gloss: mapRow.sense_gloss,
+      property_key: propKey,
+      value_id: valueId,
+      value_label: valueLabel,
+      source_id: statementId,
+      source_ref: sourceRef,
+      provider: 'Wikidata',
+      release: `wikidata-wbgetentities-rev-${wdClaims.find((c) => c.statement_id === statementId)?.lastrevid || 'pinned'}`,
+      license: 'CC0 1.0',
+      rights_status: 'approved',
+      claim_status: 'sourced',
+      mapping_status: mapRow.mapping_status,
+      epistemic_layer: 'EXTERNAL_WORLD',
+      external_id: mapRow.wikidata_id,
+      competing_external_ids: mapRow.competing_external_ids,
+      assertion_origin: 'ORIGINAL_WIKIDATA_STATEMENT',
+      ...extra,
+    });
+  };
+
+  const pushOewnAssertion = (mapRow, propKey, valueId, valueLabel, extra = {}) => {
+    const sidRaw = mapRow.oewn_id.replace('oewn:', '');
+    propertyAssertions.push({
+      anchor_id: mapRow.anchor_id,
+      sense_id: mapRow.sense_id,
+      sense_gloss: mapRow.sense_gloss,
+      property_key: propKey,
+      value_id: valueId,
+      value_label: valueLabel,
+      source_id: extra.source_id || `oewn-2025:${sidRaw}:${propKey}->${valueId}`,
+      source_ref: `https://en-word.net/id/oewn-${sidRaw}`,
+      provider: 'OpenEnglishWordNet',
+      release: 'oewn-2025',
+      license: 'CC BY 4.0 (incorporating Princeton WordNet attribution)',
+      rights_status: 'approved',
+      claim_status: extra.claim_status || 'sourced',
+      mapping_status: mapRow.mapping_status,
+      epistemic_layer: 'EXTERNAL_WORLD',
+      external_id: mapRow.oewn_id,
+      competing_external_ids: mapRow.competing_external_ids,
+      assertion_origin: extra.assertion_origin || 'ORIGINAL_OEWN_RELATION',
+      ...(extra.derivation_basis ? { derivation_basis: extra.derivation_basis } : {}),
+    });
+  };
+
+  const pushDerivedPhysicalAssertion = (mapRow, propKey, valueId, valueLabel, sourceId, sourceRef, extra = {}) => {
+    propertyAssertions.push({
+      anchor_id: mapRow.anchor_id,
+      sense_id: mapRow.sense_id,
+      sense_gloss: mapRow.sense_gloss,
+      property_key: propKey,
+      value_id: valueId,
+      value_label: valueLabel,
+      source_id: sourceId,
+      source_ref: sourceRef,
+      provider: 'BibleResearch Derived Physical Graph',
+      release: 'r12-derived-v1',
+      license: 'CC0 1.0',
+      rights_status: 'approved',
+      claim_status: 'candidate',
+      mapping_status: mapRow.mapping_status,
+      epistemic_layer: 'EXTERNAL_WORLD',
+      external_id: mapRow.oewn_id || mapRow.wikidata_id,
+      competing_external_ids: mapRow.competing_external_ids,
+      assertion_origin: 'DERIVED_PHYSICAL_ASSERTION',
+      ...extra,
+    });
+  };
+
+  for (const mapRow of externalMappings) {
+    if (mapRow.wikidata_id) {
+      const qid = mapRow.wikidata_id.replace('wd:', '');
+      const itemClaims = wdClaims.filter((c) => c.subject_qid === qid);
+      for (const c of itemClaims) {
+        if (GENERIC_WD_METACLASSES.has(c.value_qid)) continue;
+        const label = externalConcepts[`wd:${c.value_qid}`]?.label || refLabels[c.value_qid] || c.value_qid;
+        pushWdAssertion(
+          mapRow,
+          `wd:${c.property_id}`,
+          `wd:${c.value_qid}`,
+          label,
+          c.statement_id,
+          `https://www.wikidata.org/wiki/${qid}#${c.statement_id.replace('$', '%24')}`,
+          { statement_rank: c.rank, qualifiers: c.qualifiers || [] },
+        );
+      }
+    }
+
+    const rels = oewnRelations.filter((r) => r.from_synset === mapRow.oewn_id);
+    for (const r of rels) {
+      pushOewnAssertion(mapRow, `oewn:${r.relation}`, r.to_synset, r.to_label, {
+        assertion_origin: 'ORIGINAL_OEWN_RELATION',
+      });
+    }
+
+    const sidRaw = mapRow.oewn_id.replace('oewn:', '');
+    const l2Rels = oewnHypernymL2.filter((r) => r.from_synset === mapRow.oewn_id);
+    for (const r of l2Rels) {
+      const basisRaw = r.derivation_basis.replace('oewn:', '');
+      pushOewnAssertion(mapRow, 'oewn:hypernym_l2', r.to_synset, r.to_label, {
+        assertion_origin: 'DERIVED_OEWN_HYPERNYM_L2',
+        claim_status: 'candidate',
+        derivation_basis: r.derivation_basis,
+        source_id: `oewn-2025:${sidRaw}:oewn:hypernym_l2->${r.to_synset}:via:${basisRaw}`,
+      });
+    }
+  }
+
+  // Explicit compiler hypotheses for physical domain associations (never disguised as Wikidata statements)
+  const derivedClassLinks = [
+    ['wd:Q821952', 'wd:Q1138737', 'lamp'],
+    ['wd:Q170476', 'wd:Q1146001', 'light source'],
+    ['wd:Q327954', 'wd:Q1146001', 'light source'],
+    ['wd:Q124714', 'wd:Q283', 'water'],
+    ['wd:Q43483', 'wd:Q283', 'water'],
+    ['wd:Q283', 'wd:Q10713454', 'water source'],
+    ['wd:Q897', 'wd:Q11426', 'metal'],
+    ['wd:Q34095', 'wd:Q11426', 'metal'],
+  ];
+  for (const [subjId, targetId, fallbackLabel] of derivedClassLinks) {
+    const subjQ = subjId.replace('wd:', '');
+    const targQ = targetId.replace('wd:', '');
+    const tLabel = externalConcepts[targetId]?.label || refLabels[targQ] || fallbackLabel;
+    for (const mapRow of externalMappings.filter((m) => m.wikidata_id === subjId)) {
+      pushDerivedPhysicalAssertion(
+        mapRow,
+        'derived:physical_class',
+        targetId,
+        tLabel,
+        `derived:physical_class:${mapRow.sense_id}:${targQ}`,
+        `https://www.wikidata.org/wiki/${subjQ}`,
+        { derivation_basis: subjId },
+      );
+    }
+  }
+
+  const lampFuelMappings = [
+    ['lemma:H5216', 'H5216_lamp', 'wd:Q93165', 'olive oil', 'wd:Q821952', 'oewn:03641539-n'],
+    ['lemma:G3088', 'G3088_lamp', 'wd:Q93165', 'olive oil', 'wd:Q821952', 'oewn:03641539-n'],
+    ['lemma:H8081', 'H8081_oil', 'wd:Q93165', 'olive oil', 'wd:Q93165', 'oewn:07689142-n'],
+    ['lemma:H4501', 'H4501_menorah', 'wd:Q93165', 'olive oil', 'wd:Q170476', 'oewn:03751646-n'],
+    ['lemma:G2985', 'G2985_torch', 'wd:Q93165', 'olive oil', 'wd:Q327954', 'oewn:04463386-n'],
+  ];
+  for (const [anchorId, senseId, valId, valLabel, entityWdId, entityOewnId] of lampFuelMappings) {
+    const mapRow = externalMappings.find((m) => m.anchor_id === anchorId && m.sense_id === senseId);
+    if (!mapRow) continue;
+    pushDerivedPhysicalAssertion(
+      mapRow,
+      'derived:functional_association',
+      valId,
+      valLabel,
+      `derived:lamp_fuel:${senseId}:${valId.replace('wd:', '')}`,
+      `https://www.wikidata.org/wiki/${entityWdId.replace('wd:', '')}`,
+      { derivation_basis: entityWdId, oewn_ref: entityOewnId },
+    );
+  }
+
+  validateExternalAssertions(propertyAssertions);
+
+  const output = {
+    schema_version: 1,
+    generated_at: generatedAt,
+    sources: [
+      {
+        id: 'oewn-2025',
+        provider: 'OpenEnglishWordNet',
+        release: '2025',
+        license: 'CC BY 4.0 (incorporating Princeton WordNet attribution)',
+        publisher: 'https://en-word.net/downloads',
+        download: 'https://en-word.net/static/english-wordnet-2025-json.zip',
+        archive_sha256: oewnZipSha256,
+        synset_count: Object.keys(oewnConcepts).length,
+        relation_count: oewnRelations.length,
+        hypernym_l2_count: oewnHypernymL2.length,
+      },
+      {
+        id: 'wikidata-wbgetentities',
+        provider: 'Wikidata',
+        release: wdRelease,
+        license: 'CC0 1.0 (structured namespace data)',
+        publisher: 'https://www.wikidata.org/wiki/Wikidata:Licensing',
+        api_endpoint: 'https://www.wikidata.org/w/api.php?action=wbgetentities',
+        extract_sha256: wdExtractSha256,
+        concept_count: Object.keys(externalConcepts).length,
+        claim_count: wdClaims.length,
+      },
+    ],
+    wikidata_concepts: externalConcepts,
+    oewn_concepts: oewnConcepts,
+    external_mappings: externalMappings,
+    property_assertions: propertyAssertions,
+  };
+
+  fs.mkdirSync('scripts/fixtures', { recursive: true });
+  fs.writeFileSync(pinnedPath, JSON.stringify(output, null, 2));
+  return {
+    oewn_concepts: Object.keys(oewnConcepts).length,
+    wikidata_concepts: Object.keys(externalConcepts).length,
+    external_mappings: externalMappings.length,
+    property_assertions: propertyAssertions.length,
+    oewn_sha256: oewnZipSha256.slice(0, 16),
+    wd_sha256: wdExtractSha256.slice(0, 16),
+    from_pinned: fromPinned,
+  };
+}
+
+const isMain = process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url));
+if (isMain) {
+  const fromPinned = process.argv.includes('--from-pinned');
+  const summary = await acquireExternalPilot({ fromPinned });
+  console.log(summary);
+}

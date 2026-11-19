@@ -113,8 +113,8 @@ console.log(`Loaded ${orthMap.size} orthographic entries with homographs.`);
 
 console.log('Loading and compacting r12-pilot.json.gz...');
 const pilot = readGzJson(path.join(r10Dir, 'r12-pilot.json.gz'));
-assert.equal(pilot.pilot_anchors?.length, 48, `Expected 48 pilot_anchors`);
-assert.equal(Object.keys(pilot.anchors || {}).length, 48, `Expected 48 anchors in pilot.anchors`);
+assert.ok((pilot.pilot_anchors?.length || 0) >= 48, `Expected >= 48 pilot_anchors`);
+assert.equal(Object.keys(pilot.anchors || {}).length, pilot.pilot_anchors.length, `Expected all pilot_anchors in pilot.anchors`);
 
 function compactPilotAnchor(a) {
   return {
@@ -125,6 +125,7 @@ function compactPilotAnchor(a) {
     gl: a.gl,
     total_verses: a.total_verses,
     multihop: {
+      pruned_incoherent_count: a.multihop?.pruned_incoherent_count || 0,
       unreturned_destinations: a.multihop?.unreturned_destinations || 0,
       recommendations: (a.multihop?.recommendations || []).map((rec) => {
         const best = rec.best_path || {};
@@ -139,16 +140,27 @@ function compactPilotAnchor(a) {
           interest: rec.interest,
           mmr_score: rec.mmr_score,
           Q: rec.Q,
+          K: rec.K,
+          endpoint_coherence: rec.endpoint_coherence,
+          endpoint_epistemic_status: rec.endpoint_epistemic_status,
           C: rec.C,
           D: rec.D,
           T: rec.T,
           hub_penalty: rec.hub_penalty,
+          step_support_group_count: rec.step_support_group_count,
+          endpoint_support_group_count: rec.endpoint_support_group_count,
           independent_group_count: rec.independent_group_count,
           independent_evidence_groups: rec.independent_evidence_groups,
+          direct_endpoint_witnesses: rec.direct_endpoint_witnesses || [],
+          endpoint_bridge_witnesses: rec.endpoint_bridge_witnesses || [],
           limitation: rec.limitation,
           best_path: {
             meaningful_hops: best.meaningful_hops,
             physical_hops: best.physical_hops,
+            K: best.K,
+            endpoint_coherence: best.endpoint_coherence,
+            endpoint_epistemic_status: best.endpoint_epistemic_status,
+            score_parts: best.score_parts,
             target_word: best.target_word,
             steps: (best.steps || []).map((s) => ({
               edge_id: s.edge_id,
@@ -169,6 +181,7 @@ function compactPilotAnchor(a) {
           alternative_paths: (rec.alternative_paths || []).slice(0, 3).map((ap) => ({
             path_id: ap.path_id,
             partial_interest: ap.partial_interest,
+            K: ap.K,
             steps: (ap.steps || []).map((s) => ({
               edge_id: s.edge_id,
               from_id: s.from_id,
@@ -256,7 +269,7 @@ function projectMultihop(anchorData, rec) {
       final_score: finalScore,
     },
     r12_metadata: {
-      score_version: rec.score_version || 'r12-ranker-v1',
+      score_version: rec.score_version || 'r12-ranker-v2',
       epistemic_layer: rec.epistemic_layer || 'LINGUISTIC',
       epistemic_status: rec.evidence_status === 'SUPPORTED_STEPS_NOT_ENDPOINT_INTERPRETATION'
         ? 'SUPPORTED_STEPS_NOT_ENDPOINT_INTERPRETATION'
@@ -264,12 +277,19 @@ function projectMultihop(anchorData, rec) {
       meaningful_hops: hops,
       physical_hops: best.physical_hops ?? steps.length,
       Q: rec.Q ?? 0,
+      K: rec.K ?? best.K ?? rec.endpoint_coherence ?? 1,
+      endpoint_coherence: rec.endpoint_coherence ?? rec.K ?? 1,
+      endpoint_epistemic_status: rec.endpoint_epistemic_status,
       C: rec.C ?? 0,
       D: rec.D ?? 0,
       T: rec.T ?? 0,
       hub_penalty: rec.hub_penalty ?? 0,
       interest: rec.interest ?? 0,
       mmr_score: rec.mmr_score,
+      step_support_group_count: rec.step_support_group_count ?? rec.independent_group_count ?? 0,
+      endpoint_support_group_count: rec.endpoint_support_group_count ?? 0,
+      direct_endpoint_witnesses: rec.direct_endpoint_witnesses || [],
+      endpoint_bridge_witnesses: rec.endpoint_bridge_witnesses || [],
       independent_group_count: rec.independent_group_count ?? 0,
       independent_evidence_groups: rec.independent_evidence_groups || [],
       alternative_path_count: (rec.alternative_paths || []).length,
@@ -381,6 +401,10 @@ function projectPropertyBridge(anchorData, b) {
         property_key: b.property_key,
         value_id: b.value_id,
         value_label: b.value_label,
+        bridge_kind: b.bridge_kind || 'shared_external_property',
+        assertion_origin: b.assertion_origin || 'EXTERNAL_ASSERTION',
+        left_sense_id: b.anchor_sense_id,
+        right_sense_id: b.target_sense_id,
         mapping_status: b.mapping_status === 'verified' ? 'verified' : 'candidate',
         claim_status: b.claim_status === 'sourced' ? 'sourced' : 'candidate',
         independent_biblical_support: 0,
@@ -449,6 +473,7 @@ function projectStructural(anchorData, s) {
       alternative_path_count: 0,
       structural_match: {
         weighted_jaccard: s.weighted_jaccard,
+        shared_feature_families: s.shared_feature_families || [],
         shared_features: s.distinctive_shared_features || [],
         anchor_witness_ids: s.anchor_witness_ids || [],
         candidate_witness_ids: s.candidate_witness_ids || [],
@@ -513,6 +538,8 @@ function projectOrthographic(anchorData, o) {
       T: 0.25,
       hub_penalty: 0,
       interest: Number(((o.score || 0.5) * 0.5).toFixed(4)),
+      raw_orthographic_score: o.raw_orthographic_score,
+      cooccurrence_verses: o.cooccurrence_verses || 0,
       independent_group_count: 0,
       independent_evidence_groups: [],
       alternative_path_count: 0,
@@ -538,7 +565,7 @@ for (const bs of pilot.pilot_anchors) {
   assert.equal(compacted.multihop.unreturned_destinations, orig.multihop?.unreturned_destinations || 0);
 
   const origRecs = orig.multihop?.recommendations || [];
-  assert.equal(origRecs.length, 24, `Expected 24 multihop recommendations for ${bs}, got ${origRecs.length}`);
+  assert.ok(origRecs.length <= 24, `Expected <= 24 multihop recommendations for ${bs}, got ${origRecs.length}`);
   assert.equal(compacted.multihop.recommendations.length, origRecs.length);
   for (let i = 0; i < origRecs.length; i++) {
     assert.deepEqual(projectMultihop(compacted, compacted.multihop.recommendations[i]), projectMultihop(orig, origRecs[i]));
@@ -593,6 +620,7 @@ let enrichedCount = 0;
 let orthAttachedCount = 0;
 let pilotAttachedCount = 0;
 const seenProfileKeys = new Set();
+const baseProfByBs = new Map();
 
 for (const f of lemmaProfFiles) {
   const d = readGzJson(path.join(lemmaProfDir, f));
@@ -603,6 +631,7 @@ for (const f of lemmaProfFiles) {
     assert.equal(key, prof.bs, `Key mismatch in lemma-profiles: ${key} !== ${prof.bs}`);
     assert.ok(!seenProfileKeys.has(prof.bs), `Duplicate profile ${prof.bs}`);
     seenProfileKeys.add(prof.bs);
+    baseProfByBs.set(prof.bs, prof);
 
     const firstOccPassages = [];
     for (const vid of (prof.all_vids || []).slice(0, 25)) {
@@ -651,10 +680,10 @@ for (const f of lemmaProfFiles) {
 }
 assert.equal(enrichedCount, 19566, `Expected 19566 profiles, got ${enrichedCount}`);
 assert.equal(orthAttachedCount, orthMap.size, `Expected all ${orthMap.size} orth entries attached, got ${orthAttachedCount}`);
-assert.equal(pilotAttachedCount, 48, `Expected 48 pilot anchors attached, got ${pilotAttachedCount}`);
+assert.equal(pilotAttachedCount, pilot.pilot_anchors.length, `Expected ${pilot.pilot_anchors.length} pilot anchors attached, got ${pilotAttachedCount}`);
 console.log(`Enriched ${enrichedCount} profiles (orth: ${orthAttachedCount}, pilot: ${pilotAttachedCount}).`);
 
-// 4. Load lemma-lookup and route all 456,129 entries into the same 1,024 buckets + 16 sub-buckets
+// 4. Load lemma-lookup and route entries into the 1,024 buckets + 16 sub-buckets
 console.log('Loading & routing lemma-lookup entries...');
 const lookupDir = path.join(r10Dir, 'lemma-lookup');
 const lookupFiles = fs.readdirSync(lookupDir).filter((f) => f.endsWith('.json.gz')).sort();
@@ -689,7 +718,120 @@ for (let i = 0; i < lookupFiles.length; i++) {
     console.log(`  lemma-lookup shards unpacked: ${i + 1}/${lookupFiles.length} (${lookupCount} entries)`);
   }
 }
-assert.equal(lookupCount, 456129, `Expected 456129 lookup entries, got ${lookupCount}`);
+assert.ok(lookupCount >= 456129, `Expected >= 456129 lookup entries, got ${lookupCount}`);
+
+// Enrich lookup sub-buckets with biblical English synonyms & key phrases using loaded profiles
+const SYNONYM_AND_PHRASE_MAPPINGS = {
+  yeast: ['H2557', 'H7603', 'G2219'],
+  leaven: ['H2557', 'H7603', 'G2219'],
+  unleavened: ['H4682', 'G0106'],
+  resurrect: ['G0386', 'G1453', 'H2421'],
+  resurrection: ['G0386', 'G1453', 'H2421'],
+  rainbow: ['H7198', 'G2463'],
+  crimson: ['H8144', 'H8438', 'G2847'],
+  scarlet: ['H8144', 'H8438', 'G2847'],
+  passover: ['H6453', 'G3957'],
+  shepherd: ['H7462', 'G4166'],
+  crucify: ['G4717', 'G4957', 'H8518'],
+  crucifixion: ['G4717', 'G4957'],
+  cross: ['G4716'],
+  baptism: ['G0908', 'G0907'],
+  baptize: ['G0907'],
+  atonement: ['H3722', 'H3725', 'G2435', 'G2643'],
+  propitiation: ['G2434', 'G2435', 'H3727'],
+  incense: ['H7004', 'H3828', 'G2368'],
+  tabernacle: ['H4908', 'H0168', 'G4633'],
+  covenant: ['H1285', 'G1242'],
+  scroll: ['H4039', 'H5612', 'G0975'],
+  circumcision: ['H4135', 'G4061'],
+  messiah: ['H4899', 'G5547', 'G3323'],
+  anointed: ['H4899', 'H4886', 'G5547'],
+  gospel: ['G2098', 'H1319'],
+  parable: ['H4912', 'G3850'],
+  serpent: ['H5175', 'H8314', 'G3789'],
+  snake: ['H5175', 'G3789'],
+  wilderness: ['H4057', 'G2048'],
+  desert: ['H4057', 'H6160', 'G2048'],
+  vineyard: ['H3754', 'G0290'],
+  olive: ['H2132', 'G1636'],
+  pomegranate: ['H7416'],
+  hyssop: ['H0231', 'G5301'],
+  cedar: ['H0730'],
+  manna: ['H4478', 'G3131'],
+  sabbath: ['H7676', 'G4521'],
+  jubilee: ['H3104'],
+  firstfruits: ['H1061', 'H7225', 'G0536'],
+  morningstar: ['G5459', 'G4407', 'H1966'],
+  daystar: ['G5459'],
+  lightbearer: ['G5459', 'G5458'],
+  lampstand: ['H4501', 'G3087'],
+  menorah: ['H4501'],
+  frankincense: ['H3828', 'G3030'],
+  myrrh: ['H4753', 'G4666'],
+  bronze: ['H5178', 'G5475'],
+  brass: ['H5178', 'G5475'],
+  'unleavened bread': ['H4682', 'G0106'],
+  'fig tree': ['H8384', 'G4808'],
+  'red sea': ['H5488', 'H3220'],
+  'mercy seat': ['H3727', 'G2435'],
+  'morning star': ['G5459', 'G4407', 'H1966'],
+  'light bearer': ['G5459', 'G5458'],
+  'living water': ['H4325', 'H2416', 'G5204', 'G2198'],
+  'tree of life': ['H6086', 'H2416', 'G3586', 'G2222'],
+  'son of man': ['H1121', 'H0120', 'G5207', 'G0444'],
+  'lamb of god': ['H3532', 'H7716', 'G0286', 'G2316'],
+  'holy spirit': ['H7307', 'H6944', 'G4151', 'G0040'],
+  'burnt offering': ['H5930', 'G3646'],
+  'high priest': ['H3548', 'H1419', 'G0749'],
+  'ark of the covenant': ['H0727', 'H1285', 'G2787', 'G1242'],
+  'bronze serpent': ['H5175', 'H5178'],
+  'pillar of cloud': ['H5982', 'H6051'],
+  'pillar of fire': ['H5982', 'H0784'],
+  'third day': ['H7992', 'H3117', 'G5154', 'G2250'],
+  'three days': ['H7969', 'H3117', 'G5140', 'G2250'],
+  'bread of life': ['H3899', 'H2416', 'G0740', 'G2222'],
+  'good shepherd': ['H7462', 'G4166', 'G2570'],
+  'new covenant': ['H1285', 'H2319', 'G1242', 'G2537'],
+  'day of atonement': ['H3117', 'H3725'],
+  'burning bush': ['H5572', 'G0942'],
+  'valley of dry bones': ['H1237', 'H6106', 'H3002'],
+};
+
+let addedSynonymKeys = 0;
+let addedSynonymEntries = 0;
+for (const [term, bsList] of Object.entries(SYNONYM_AND_PHRASE_MAPPINGS)) {
+  const normKey = term.toLowerCase().trim();
+  const bucketHex = computeBucketHex('fnv1a64_mod1024', 1024, normKey);
+  const subIdxNum = Number((BigInt('0x' + fnv1a64Hex(normKey)) >> 10n) & 15n);
+  const bucket = bucketByHex.get(bucketHex);
+  if (!bucket) continue;
+  const subMap = bucket.subLookup[subIdxNum];
+  const existing = Array.isArray(subMap[normKey]) ? subMap[normKey] : [];
+  const existingBs = new Set(existing.map((c) => c.bs));
+  if (existing.length === 0) addedSynonymKeys++;
+  const merged = [...existing];
+  for (const bs of bsList) {
+    if (existingBs.has(bs)) continue;
+    const p = baseProfByBs.get(bs);
+    if (!p) continue;
+    merged.push({
+      bs: p.bs,
+      lk: p.lk || `lemma:${p.bs}`,
+      lang: p.lang || (p.bs.startsWith('G') ? 'grc' : 'hbo'),
+      sc: p.sc || '',
+      tr: p.tr || '',
+      gl: p.gl || '',
+      cnt: p.total_verses || 0,
+      is_prop: Boolean(p.entity_kind === 'proper_name' || /-P$|--T$/.test(p.pos || '')),
+      vs: (p.all_vids || []).slice(0, 12),
+      match_rank: normKey.includes(' ') ? 96 : 90,
+    });
+    existingBs.add(bs);
+    addedSynonymEntries++;
+  }
+  if (merged.length > 0) subMap[normKey] = merged;
+}
+console.log(`Enriched lookup with ${addedSynonymKeys} new synonym/phrase keys (+${addedSynonymEntries} lemma entries).`);
 
 // 5. Rewrite existing 1,024 fast-profiles/shard-000..3ff.json.gz
 console.log('Writing 1,024 fast-profiles shards...');
@@ -725,19 +867,183 @@ for (const bucket of profileBuckets) {
 }
 console.log(`Wrote 1,024 fast-profiles shards (${totalSubBuckets} non-empty sub-buckets, max outer=${maxFastProfileOuterBytes} B [${maxFastProfileShard}], max raw=${maxFastProfileRawBytes} B).`);
 
-// 6. Rewrite existing 488 fast-verses/chunk-000..1e7.json.gz
-console.log('Writing 488 fast-verses chunks...');
-const verseChunks = Array.from({ length: 488 }, () => ({ summaries: {}, verses: {} }));
+// 6. Load xrefs/book-01..66 and motifs/events chronologically, then embed into 488 fast-verses/chunk-*.json.gz
+console.log('Indexing xrefs and events for fast-verses chunks...');
+const xrefsDir = path.join(r10Dir, 'xrefs');
+const xrefFiles = fs.readdirSync(xrefsDir).filter((f) => f.endsWith('.json.gz')).sort();
+assert.equal(xrefFiles.length, 66, `Expected 66 xrefs book files, found ${xrefFiles.length}`);
+
+const outSetByVid = new Map();
+const rawByVid = new Map();
+const vidDegree = new Map();
+for (const xf of xrefFiles) {
+  const xd = readGzJson(path.join(xrefsDir, xf));
+  for (const [vidStr, entry] of Object.entries(xd.by_verse || {})) {
+    const vid = Number(vidStr);
+    rawByVid.set(vid, entry);
+    const outTargets = new Set();
+    let total = 0;
+    for (const o of entry.out || []) {
+      for (const t of o.targets || []) {
+        outTargets.add(t.to_vid);
+        total++;
+      }
+    }
+    outSetByVid.set(vid, outTargets);
+    total += (entry.in || []).length;
+    vidDegree.set(vid, total);
+  }
+}
+
+const embeddedXrefsByVid = new Map();
+let totalEmbeddedXrefs = 0;
+for (const [vid, entry] of rawByVid) {
+  const v = verseMap.get(vid);
+  const fromBook = v?.book || 1;
+  const fromTestament = fromBook <= 39;
+  const candByTarget = new Map();
+  for (const o of entry.out || []) {
+    const phrase = String(o.phrase || '').slice(0, 60);
+    for (const t of o.targets || []) {
+      const toVid = Number(t.to_vid);
+      if (!toVid || toVid === vid) continue;
+      const reciprocal = Boolean(outSetByVid.get(toVid)?.has(vid));
+      const crossTestament = fromTestament !== (Number(t.to_b) <= 39);
+      const flags = (reciprocal ? 1 : 0) | (crossTestament ? 2 : 0);
+      const targetDeg = vidDegree.get(toVid) || 1;
+      const score = ((reciprocal ? 3 : 1) * (crossTestament ? 1.8 : 1.0)) / Math.log2(2 + targetDeg);
+      const prev = candByTarget.get(toVid);
+      if (!prev || score > prev.score || (score === prev.score && phrase.length > prev.phrase.length)) {
+        candByTarget.set(toVid, { toVid, toRef: t.to_ref, phrase, flags, score });
+      }
+    }
+  }
+  for (const inc of entry.in || []) {
+    const toVid = Number(inc.from_vid);
+    if (!toVid || toVid === vid) continue;
+    const reciprocal = Boolean(outSetByVid.get(vid)?.has(toVid));
+    const crossTestament = fromTestament !== (Number(inc.from_b) <= 39);
+    const existing = candByTarget.get(toVid);
+    if (existing) {
+      existing.flags |= 1; // mutual link
+      existing.score = Math.max(
+        existing.score,
+        (3 * (crossTestament ? 1.8 : 1.0)) / Math.log2(2 + (vidDegree.get(toVid) || 1)),
+      );
+      continue;
+    }
+    const flags = (reciprocal ? 1 : 0) | (crossTestament ? 2 : 0) | 4;
+    const targetDeg = vidDegree.get(toVid) || 1;
+    const score = ((reciprocal ? 3 : 1) * (crossTestament ? 1.8 : 1.0)) / Math.log2(2 + targetDeg);
+    candByTarget.set(toVid, {
+      toVid,
+      toRef: inc.from_ref,
+      phrase: String(inc.phrase || '').slice(0, 60),
+      flags,
+      score,
+    });
+  }
+  if (candByTarget.size > 0) {
+    const top20 = [...candByTarget.values()]
+      .sort((a, b) => b.score - a.score || a.toVid - b.toVid)
+      .slice(0, 20)
+      .map((x) => [x.toVid, x.toRef, x.phrase, x.flags]);
+    embeddedXrefsByVid.set(vid, top20);
+    totalEmbeddedXrefs += top20.length;
+  }
+}
+console.log(`Indexed top-20 xrefs across ${embeddedXrefsByVid.size} verses (${totalEmbeddedXrefs} links).`);
+
+const expPath = path.join(r10Dir, 'explicit-and-typology.json.gz');
+const expBackupPath = path.join(backupDir, 'explicit-and-typology.json.gz');
+const expSrc = readGzJson(fs.existsSync(expBackupPath) ? expBackupPath : expPath);
+
+const mpPath = path.join(r10Dir, 'motifs-and-patterns.json.gz');
+const mpBackupPath = path.join(backupDir, 'motifs-and-patterns.json.gz');
+const mpRaw = readGzJson(fs.existsSync(mpBackupPath) ? mpBackupPath : mpPath);
+const mp = mpRaw.schema_version === 'r10-lazy-motifs-1'
+  ? {
+      motifs: mpRaw.motifs,
+      motif_pairs: decodeB64Gz(mpRaw.motif_pairs_b64gz),
+      events: decodeB64Gz(mpRaw.events_b64gz),
+    }
+  : mpRaw;
+
+function parseEventStartYear(ev) {
+  const m = String(ev?.start_date || '').match(/-?\d+/);
+  return m ? parseInt(m[0], 10) : 999999;
+}
+const sortedEvents = [...(mp.events || [])].sort((a, b) => {
+  const ya = parseEventStartYear(a);
+  const yb = parseEventStartYear(b);
+  if (ya !== yb) return ya - yb;
+  const va = a.passages?.[0]?.verse_id ?? 999999;
+  const vb = b.passages?.[0]?.verse_id ?? 999999;
+  return va - vb || String(a.event_id).localeCompare(String(b.event_id));
+});
+
+const eventSeq = {};
+const eventsByExactVid = new Map();
+const eventsByChapter = new Map();
+for (let i = 0; i < sortedEvents.length; i++) {
+  const ev = sortedEvents[i];
+  eventSeq[ev.event_id] = {
+    prev: i > 0 ? sortedEvents[i - 1].event_id : null,
+    next: i + 1 < sortedEvents.length ? sortedEvents[i + 1].event_id : null,
+    title: ev.title,
+    start_date: ev.start_date || null,
+    sample_vids: (ev.passages || []).slice(0, 4).map((p) => p.verse_id),
+  };
+  for (const p of ev.passages || []) {
+    if (p.verse_id) {
+      let arr = eventsByExactVid.get(p.verse_id);
+      if (!arr) { arr = []; eventsByExactVid.set(p.verse_id, arr); }
+      if (!arr.includes(ev.event_id)) arr.push(ev.event_id);
+    }
+    if (p.book && p.chapter) {
+      const ck = `${p.book}:${p.chapter}`;
+      let arr = eventsByChapter.get(ck);
+      if (!arr) { arr = []; eventsByChapter.set(ck, arr); }
+      if (!arr.includes(ev.event_id)) arr.push(ev.event_id);
+    }
+  }
+}
+
+console.log('Writing 488 fast-verses chunks (with embedded xrefs + event IDs)...');
+const verseChunks = Array.from({ length: 488 }, () => ({ summaries: {}, verses: {}, xrefs: {}, events: {} }));
 let versesAssigned = 0;
+let versesWithXrefs = 0;
+let versesWithEvents = 0;
 for (const [vid, v] of verseMap) {
   const chunkIdx = Math.floor((vid - 1) / 64);
   assert.ok(chunkIdx >= 0 && chunkIdx < 488, `Chunk index out of bounds: ${chunkIdx} for vid=${vid}`);
   const chunk = verseChunks[chunkIdx];
   chunk.summaries[vid] = [v.book, v.chapter, v.verse, v.ref, v.en || '', v.mt_ref ?? null];
   chunk.verses[vid] = encodeB64Gz(v);
+  const xrList = embeddedXrefsByVid.get(vid);
+  if (xrList?.length) {
+    chunk.xrefs[vid] = xrList;
+    versesWithXrefs++;
+  }
+  const evList = [];
+  for (const eid of eventsByExactVid.get(vid) || []) {
+    if (!evList.includes(eid)) evList.push(eid);
+    if (evList.length >= 3) break;
+  }
+  if (evList.length < 3) {
+    for (const eid of eventsByChapter.get(`${v.book}:${v.chapter}`) || []) {
+      if (!evList.includes(eid)) evList.push(eid);
+      if (evList.length >= 3) break;
+    }
+  }
+  if (evList.length > 0) {
+    chunk.events[vid] = evList;
+    versesWithEvents++;
+  }
   versesAssigned++;
 }
 assert.equal(versesAssigned, 31203, `Expected 31203 verses assigned, got ${versesAssigned}`);
+console.log(`Attached xrefs to ${versesWithXrefs} verses and events to ${versesWithEvents} verses.`);
 
 let maxFastVerseOuterBytes = 0;
 let maxFastVerseRawBytes = 0;
@@ -747,12 +1053,14 @@ for (let c = 0; c < 488; c++) {
   const hex = c.toString(16).padStart(3, '0');
   const chunkPath = path.join(verseDir, `chunk-${hex}.json.gz`);
   assert.ok(fs.existsSync(chunkPath), `Missing existing fast-verses chunk: ${chunkPath}`);
-  const { summaries, verses } = verseChunks[c];
+  const { summaries, verses, xrefs, events } = verseChunks[c];
   writtenVerses += Object.keys(verses).length;
   const { rawBytes, gzBytes } = writeGzJsonAtomic(chunkPath, {
     schema_version: 'r10-b64gz-1',
     summaries,
     verses,
+    xrefs,
+    events,
   }, 1);
   if (gzBytes > maxFastVerseOuterBytes) {
     maxFastVerseOuterBytes = gzBytes;
@@ -820,9 +1128,6 @@ assert.equal(evBookVersesTotal, 31203, `Expected 31203 book index entries across
 console.log(`Wrote 66 evidence-passages book indexes (${evBookVersesTotal} coordinates).`);
 
 // 8. Optimize explicit-and-typology.json.gz and motifs-and-patterns.json.gz
-const expPath = path.join(r10Dir, 'explicit-and-typology.json.gz');
-const expBackupPath = path.join(backupDir, 'explicit-and-typology.json.gz');
-const expSrc = readGzJson(fs.existsSync(expBackupPath) ? expBackupPath : expPath);
 const filteredRecords = (expSrc.records || []).filter((r) => !r.evidence_id?.startsWith('r10:ident:auto:'));
 assert.equal(filteredRecords.length, 24, `Expected 24 filtered explicit records, got ${filteredRecords.length}`);
 const expSizes = writeGzJsonAtomic(expPath, {
@@ -830,23 +1135,15 @@ const expSizes = writeGzJsonAtomic(expPath, {
   records: filteredRecords,
 }, 1);
 
-const mpPath = path.join(r10Dir, 'motifs-and-patterns.json.gz');
-const mpBackupPath = path.join(backupDir, 'motifs-and-patterns.json.gz');
-const mpRaw = readGzJson(fs.existsSync(mpBackupPath) ? mpBackupPath : mpPath);
-const mp = mpRaw.schema_version === 'r10-lazy-motifs-1'
-  ? {
-      motifs: mpRaw.motifs,
-      motif_pairs: decodeB64Gz(mpRaw.motif_pairs_b64gz),
-      events: decodeB64Gz(mpRaw.events_b64gz),
-    }
-  : mpRaw;
 const eventKeywords = [...new Set((mp.events || []).flatMap((e) => e.keywords || []).map((k) => String(k).toLowerCase()))];
 const mpSizes = writeGzJsonAtomic(mpPath, {
   schema_version: 'r10-lazy-motifs-1',
   motifs: mp.motifs,
   event_keywords: eventKeywords,
+  event_seq: eventSeq,
+  event_by_chapter: Object.fromEntries(eventsByChapter),
   motif_pairs_b64gz: encodeB64Gz(mp.motif_pairs || {}),
-  events_b64gz: encodeB64Gz(mp.events || []),
+  events_b64gz: encodeB64Gz(sortedEvents),
 }, 1);
 
 // 9. Update fast-manifest.json.gz
@@ -860,11 +1157,13 @@ const fastManifestObj = {
   direct_b64gz: true,
   strongs_lookup_upper_bucket: true,
   motifs_event_keywords: eventKeywords,
+  verse_xrefs_embedded: true,
+  verse_events_embedded: true,
   witness_version: 'r12-witnesses-1',
   r12_pilot: 'r12-pilot.json.gz',
   r12_pilot_embedded: true,
-  r12_version: 'r12-discovery-1',
-  r12_score_version: pilot.score_version || 'r12-ranker-v1',
+  r12_version: 'r12-discovery-2',
+  r12_score_version: pilot.score_version || 'r12-ranker-v2',
   r12_pilot_anchors: pilot.pilot_anchors.length,
   r12_pilot_anchors_list: pilot.pilot_anchors,
   r12_external_sources: pilot.external_sources || [],
@@ -899,7 +1198,7 @@ for (let i = 0; i < 1024; i++) {
     assert.ok(Array.isArray(prof.first_occ_passages));
     assert.equal(prof.first_occ_passages.length, Math.min(25, (prof.all_vids || []).length));
     if (prof.r12_pilot_anchor) {
-      assert.equal(prof.r12_pilot_anchor.multihop.recommendations.length, 24);
+      assert.ok((prof.r12_pilot_anchor.multihop?.recommendations?.length || 0) <= 24);
       verifiedPilotProfiles++;
     }
     if (prof.orth_entry) {
@@ -919,11 +1218,12 @@ for (let i = 0; i < 1024; i++) {
   }
 }
 assert.equal(verifiedProfiles, 19566);
-assert.equal(verifiedLookup, 456129);
-assert.equal(verifiedPilotProfiles, 48);
+assert.ok(verifiedLookup >= 456129 + addedSynonymKeys);
+assert.equal(verifiedPilotProfiles, pilot.pilot_anchors.length);
 assert.equal(verifiedOrthProfiles, orthMap.size);
 
 let verifiedVerses = 0;
+let verifiedXrefVerses = 0;
 for (let c = 0; c < 488; c++) {
   const hex = c.toString(16).padStart(3, '0');
   const d = readGzJson(path.join(verseDir, `chunk-${hex}.json.gz`));
@@ -934,8 +1234,10 @@ for (let c = 0; c < 488; c++) {
     assert.deepEqual(sum, [v.book, v.chapter, v.verse, v.ref, v.en || '', v.mt_ref ?? null]);
     verifiedVerses++;
   }
+  verifiedXrefVerses += Object.keys(d.xrefs || {}).length;
 }
 assert.equal(verifiedVerses, 31203);
+assert.ok(verifiedXrefVerses > 20000, `Expected embedded xrefs across chunks, got ${verifiedXrefVerses}`);
 
 let verifiedEvCoords = 0;
 for (let b = 1; b <= 66; b++) {
@@ -972,7 +1274,7 @@ for (const p of files.sort()) {
 const assetSha256 = digest.digest('hex');
 
 const summary = {
-  release: 'r12-discovery-1',
+  release: 'r12-discovery-2',
   staging_root: root,
   total_files: files.length,
   max_individual_file_bytes: maxIndividualFileBytes,
@@ -980,9 +1282,13 @@ const summary = {
   profiles_enriched: enrichedCount,
   orth_entries_attached: orthAttachedCount,
   pilot_anchors_attached: pilotAttachedCount,
-  lookup_entries_routed: lookupCount,
+  lookup_entries_routed: verifiedLookup,
+  synonym_keys_added: addedSynonymKeys,
+  synonym_entries_added: addedSynonymEntries,
   lookup_non_empty_sub_buckets: totalSubBuckets,
   verses_written: writtenVerses,
+  verses_with_embedded_xrefs: versesWithXrefs,
+  verses_with_embedded_events: versesWithEvents,
   evidence_book_coords_written: evBookVersesTotal,
   fast_profiles_max_outer_bytes: maxFastProfileOuterBytes,
   fast_profiles_max_raw_bytes: maxFastProfileRawBytes,

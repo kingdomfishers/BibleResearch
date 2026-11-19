@@ -177,6 +177,19 @@ export interface SearchLimits {
 
 export type R12EpistemicLayer = 'TEXTUAL' | 'LINGUISTIC' | 'EXTERNAL_WORLD' | 'HYPOTHESIS' | 'RECEPTION';
 
+export type R12EndpointEpistemicStatus =
+  | 'DIRECT_ENDPOINT_WITNESS'
+  | 'COHERENT_MULTIHOP_LEAD'
+  | 'EXPLORATORY_STEP_CHAIN';
+
+export interface R12EndpointContext {
+  direct_cooccurrence_refs?: string[];
+  lxx_bridge_cooccurrence_refs?: string[];
+  same_chapter_overlap?: boolean;
+  intermediate_is_proper?: boolean[];
+  intermediate_verse_counts?: number[];
+}
+
 export interface R12ProofStepInput {
   edge_id: string;
   from_id?: string;
@@ -192,7 +205,18 @@ export interface R12ProofStepInput {
   passage_ids: string[];
   feature_idf?: number;
   intermediate_degree?: number;
+  proper_entity?: boolean;
+  source_verse_count?: number;
   source_dataset?: string;
+  endpoint_context?: R12EndpointContext;
+}
+
+export interface R12PathInput {
+  path_id?: string;
+  anchor_id: string;
+  target_id: string;
+  steps: R12ProofStepInput[];
+  endpoint_context?: R12EndpointContext;
 }
 
 export interface R12ScoredPath {
@@ -205,6 +229,8 @@ export interface R12ScoredPath {
   meaningful_hops: number;
   physical_hops: number;
   Q: number;
+  K: number;
+  endpoint_coherence: number;
   D: number;
   T: number;
   hub_penalty: number;
@@ -213,12 +239,16 @@ export interface R12ScoredPath {
   interest?: number;
   mmr_score?: number;
   independent_evidence_groups: string[];
+  step_support_group_count: number;
+  endpoint_support_group_count: number;
   edge_ids: string[];
   passage_ids: string[];
   relation_types: string[];
   epistemic_status: 'EXPLORATORY' | 'SUPPORTED_STEPS_NOT_ENDPOINT_INTERPRETATION';
+  endpoint_epistemic_status: R12EndpointEpistemicStatus;
   score_parts: {
     Q: number;
+    K?: number;
     C?: number;
     D: number;
     T: number;
@@ -231,17 +261,22 @@ export interface R12DestinationRecommendation {
   target_id: string;
   score_version: string;
   best_path_quality: number;
+  K?: number;
+  endpoint_coherence: number;
   interest: number;
   C: number;
   convergence: number;
   independent_group_count: number;
   support_group_count: number;
+  step_support_group_count: number;
+  endpoint_support_group_count: number;
   independent_evidence_groups: string[];
   best_path: R12ScoredPath;
   alternative_paths: R12ScoredPath[];
   paths: R12ScoredPath[];
   mmr_score?: number;
   evidence_status: 'MIXED_OR_EXPLORATORY' | 'SUPPORTED_STEPS_NOT_ENDPOINT_INTERPRETATION';
+  endpoint_epistemic_status: R12EndpointEpistemicStatus;
   limitation: string;
 }
 
@@ -398,6 +433,7 @@ export interface MultiHopResult {
     score_version: string;
     coverage: 'ranked_top_n' | 'complete_candidate_pool';
     unreturned_destinations: number;
+    pruned_incoherent_count?: number;
   };
   pagination: MultiHopPagination;
   coverage: SearchCoverageMetadata;

@@ -11,7 +11,9 @@ import type {
   PathExplanation,
   PathStep,
   R12DestinationRecommendation,
+  R12EndpointEpistemicStatus,
   R12EpistemicLayer,
+  R12PathInput,
   R12ProofStepInput,
   R12ScoredPath,
   RankingFactors,
@@ -366,7 +368,397 @@ export function compareMultiHopPaths(a: MultiHopPath, b: MultiHopPath): number {
  * Authoritative TypeScript integration of research/r12/proof-ranker.mjs.
  * Scores are heuristic discovery priorities, NEVER theological probabilities.
  */
-export const R12_SCORE_VERSION = 'r12-ranker-v1';
+export const R12_SCORE_VERSION = 'r12-ranker-v2';
+
+const CANONICAL_BOOK_ALIASES: Record<string, number> = {
+  genesis: 1, gen: 1, ge: 1, gn: 1,
+  exodus: 2, exod: 2, exo: 2, ex: 2,
+  leviticus: 3, lev: 3, le: 3, lv: 3,
+  numbers: 4, num: 4, nu: 4, nm: 4, nb: 4,
+  deuteronomy: 5, deut: 5, deu: 5, dt: 5,
+  joshua: 6, josh: 6, jos: 6, jsh: 6,
+  judges: 7, judg: 7, jdg: 7, jg: 7, jdgs: 7,
+  ruth: 8, rth: 8, ru: 8,
+  '1samuel': 9, '1sam': 9, '1sa': 9, '1sm': 9, isamuel: 9, isam: 9,
+  '2samuel': 10, '2sam': 10, '2sa': 10, '2sm': 10, iisamuel: 10, iisam: 10,
+  '1kings': 11, '1kgs': 11, '1ki': 11, '1kg': 11, '1k': 11, ikings: 11, ikgs: 11,
+  '2kings': 12, '2kgs': 12, '2ki': 12, '2kg': 12, '2k': 12, iikings: 12, iikgs: 12,
+  '1chronicles': 13, '1chron': 13, '1chr': 13, '1ch': 13, ichronicles: 13, ichr: 13,
+  '2chronicles': 14, '2chron': 14, '2chr': 14, '2ch': 14, iichronicles: 14, iichr: 14,
+  ezra: 15, ezr: 15,
+  nehemiah: 16, neh: 16, ne: 16,
+  esther: 17, esth: 17, est: 17, es: 17,
+  job: 18, jb: 18,
+  psalms: 19, psalm: 19, psa: 19, psm: 19, pss: 19, ps: 19,
+  proverbs: 20, prov: 20, pro: 20, prv: 20, pr: 20,
+  ecclesiastes: 21, eccles: 21, eccl: 21, ecc: 21, ec: 21, qoh: 21, qoheleth: 21,
+  songofsolomon: 22, songofsongs: 22, song: 22, sos: 22, sng: 22, sg: 22, cant: 22, canticles: 22,
+  isaiah: 23, isa: 23, is: 23,
+  jeremiah: 24, jer: 24, je: 24, jr: 24,
+  lamentations: 25, lam: 25, la: 25,
+  ezekiel: 26, ezek: 26, eze: 26, ezk: 26,
+  daniel: 27, dan: 27, da: 27, dn: 27,
+  hosea: 28, hos: 28, ho: 28,
+  joel: 29, joe: 29, jl: 29,
+  amos: 30, amo: 30, am: 30,
+  obadiah: 31, obad: 31, ob: 31,
+  jonah: 32, jon: 32, jnh: 32,
+  micah: 33, mic: 33, mc: 33,
+  nahum: 34, nah: 34, na: 34,
+  habakkuk: 35, hab: 35, hb: 35,
+  zephaniah: 36, zeph: 36, zep: 36, zp: 36,
+  haggai: 37, hag: 37, hg: 37,
+  zechariah: 38, zech: 38, zec: 38, zc: 38,
+  malachi: 39, mal: 39, ml: 39,
+  matthew: 40, matt: 40, mat: 40, mt: 40,
+  mark: 41, mrk: 41, mar: 41, mk: 41, mr: 41,
+  luke: 42, luk: 42, lk: 42,
+  john: 43, joh: 43, jhn: 43, jn: 43,
+  acts: 44, act: 44, ac: 44,
+  romans: 45, rom: 45, ro: 45, rm: 45,
+  '1corinthians': 46, '1cor': 46, '1co': 46, icorinthians: 46, icor: 46,
+  '2corinthians': 47, '2cor': 47, '2co': 47, iicorinthians: 47, iicor: 47,
+  galatians: 48, gal: 48, ga: 48,
+  ephesians: 49, eph: 49, ep: 49,
+  philippians: 50, phil: 50, php: 50, pp: 50,
+  colossians: 51, col: 51, co: 51,
+  '1thessalonians': 52, '1thess': 52, '1thes': 52, '1th': 52, ithessalonians: 52, ithess: 52,
+  '2thessalonians': 53, '2thess': 53, '2thes': 53, '2th': 53, iithessalonians: 53, iithess: 53,
+  '1timothy': 54, '1tim': 54, '1ti': 54, '1tm': 54, itimothy: 54, itim: 54,
+  '2timothy': 55, '2tim': 55, '2ti': 55, '2tm': 55, iitimothy: 55, iitim: 55,
+  titus: 56, tit: 56, ti: 56,
+  philemon: 57, philem: 57, phlm: 57, phm: 57, pm: 57,
+  hebrews: 58, heb: 58, he: 58,
+  james: 59, jas: 59, jam: 59, jm: 59,
+  '1peter': 60, '1pet': 60, '1pe': 60, '1pt': 60, '1p': 60, ipeter: 60, ipet: 60,
+  '2peter': 61, '2pet': 61, '2pe': 61, '2pt': 61, '2p': 61, iipeter: 61, iipet: 61,
+  '1john': 62, '1joh': 62, '1jhn': 62, '1jn': 62, '1jo': 62, ijohn: 62, ijn: 62,
+  '2john': 63, '2joh': 63, '2jhn': 63, '2jn': 63, '2jo': 63, iijohn: 63, iijn: 63,
+  '3john': 64, '3joh': 64, '3jhn': 64, '3jn': 64, '3jo': 64, iiijohn: 64, iiijn: 64,
+  jude: 65, jud: 65, jd: 65,
+  revelation: 66, revelations: 66, rev: 66, re: 66, rv: 66, apoc: 66,
+};
+
+interface ParsedPassageRef {
+  bookKey: string;
+  chapterKey: string;
+  verseKeys: string[];
+}
+
+function parsePassageRef(raw: string): ParsedPassageRef | null {
+  const cleaned = String(raw || '')
+    .trim()
+    .replace(/_/g, ' ')
+    .replace(/[–—]/g, '-');
+  if (!cleaned) return null;
+
+  const numericMatch = /^(\d{1,2})\s*:\s*(\d{1,3})(?:\s*:\s*(\d{1,3})(?:\s*-\s*(\d{1,3}))?)?$/.exec(cleaned);
+  if (numericMatch) {
+    const bookKey = String(Number(numericMatch[1]));
+    const chapter = Number(numericMatch[2]);
+    const chapterKey = `${bookKey}:${chapter}`;
+    const verseKeys: string[] = [];
+    if (numericMatch[3] !== undefined) {
+      const startV = Number(numericMatch[3]);
+      const endV = numericMatch[4] !== undefined ? Number(numericMatch[4]) : startV;
+      if (endV >= startV && endV - startV <= 20) {
+        for (let v = startV; v <= endV; v++) verseKeys.push(`${chapterKey}:${v}`);
+      } else {
+        verseKeys.push(`${chapterKey}:${startV}`);
+      }
+    }
+    return { bookKey, chapterKey, verseKeys };
+  }
+
+  const m = /^([1-3]?\s*[A-Za-z][A-Za-z.\s]*?)\s*(\d{1,3})(?:\s*[:.]\s*(\d{1,3})(?:\s*[-,]\s*(\d{1,3}))?)?(?:\s*\|.*)?$/.exec(cleaned);
+  if (!m) return null;
+
+  const bookNorm = m[1].toLowerCase().replace(/[^a-z0-9]+/g, '');
+  const canonicalBook = CANONICAL_BOOK_ALIASES[bookNorm];
+  const bookKey = canonicalBook ? String(canonicalBook) : bookNorm;
+  if (!bookKey) return null;
+
+  const chapter = Number(m[2]);
+  const chapterKey = `${bookKey}:${chapter}`;
+  const verseKeys: string[] = [];
+  if (m[3] !== undefined) {
+    const startV = Number(m[3]);
+    const endV = m[4] !== undefined ? Number(m[4]) : startV;
+    if (endV >= startV && endV - startV <= 20) {
+      for (let v = startV; v <= endV; v++) verseKeys.push(`${chapterKey}:${v}`);
+    } else {
+      verseKeys.push(`${chapterKey}:${startV}`);
+    }
+  }
+  return { bookKey, chapterKey, verseKeys };
+}
+
+function normalizeRefToChapterKey(raw: string): string {
+  const parsed = parsePassageRef(raw);
+  return parsed ? parsed.chapterKey : String(raw || '').trim().toLowerCase();
+}
+
+interface StepPassageSets {
+  books: Set<string>;
+  chapters: Set<string>;
+  verses: Set<string>;
+}
+
+function collectStepPassages(passageIds: string[] | undefined): StepPassageSets {
+  const books = new Set<string>();
+  const chapters = new Set<string>();
+  const verses = new Set<string>();
+  if (!Array.isArray(passageIds)) return { books, chapters, verses };
+  for (const raw of passageIds) {
+    const parsed = parsePassageRef(raw);
+    if (parsed) {
+      books.add(parsed.bookKey);
+      chapters.add(parsed.chapterKey);
+      for (const v of parsed.verseKeys) verses.add(v);
+    } else {
+      const trimmed = String(raw || '').trim().toLowerCase();
+      if (trimmed) verses.add(trimmed);
+    }
+  }
+  return { books, chapters, verses };
+}
+
+function setsOverlap(a: Set<string>, b: Set<string>): boolean {
+  if (a.size === 0 || b.size === 0) return false;
+  for (const x of a) if (b.has(x)) return true;
+  return false;
+}
+
+interface MergedEndpointContext {
+  direct_cooccurrence_refs: string[];
+  lxx_bridge_cooccurrence_refs: string[];
+  same_chapter_overlap: boolean;
+  intermediate_is_proper?: boolean[];
+  intermediate_verse_counts?: number[];
+}
+
+function extractEndpointContext(path: R12PathInput): MergedEndpointContext {
+  const direct = uniqueSorted([
+    ...(path.endpoint_context?.direct_cooccurrence_refs ?? []),
+    ...path.steps.flatMap((s) => s.endpoint_context?.direct_cooccurrence_refs ?? []),
+  ]);
+  const lxx = uniqueSorted([
+    ...(path.endpoint_context?.lxx_bridge_cooccurrence_refs ?? []),
+    ...path.steps.flatMap((s) => s.endpoint_context?.lxx_bridge_cooccurrence_refs ?? []),
+  ]);
+  const sameChapterOverlap = Boolean(
+    path.endpoint_context?.same_chapter_overlap ||
+      path.steps.some((s) => s.endpoint_context?.same_chapter_overlap),
+  );
+  const stepWithProper = path.steps.find((s) => s.endpoint_context?.intermediate_is_proper);
+  const stepWithCounts = path.steps.find((s) => s.endpoint_context?.intermediate_verse_counts);
+  return {
+    direct_cooccurrence_refs: direct,
+    lxx_bridge_cooccurrence_refs: lxx,
+    same_chapter_overlap: sameChapterOverlap,
+    intermediate_is_proper:
+      path.endpoint_context?.intermediate_is_proper ?? stepWithProper?.endpoint_context?.intermediate_is_proper,
+    intermediate_verse_counts:
+      path.endpoint_context?.intermediate_verse_counts ?? stepWithCounts?.endpoint_context?.intermediate_verse_counts,
+  };
+}
+
+function isEventStep(s: R12ProofStepInput): boolean {
+  return (
+    s.epistemic_layer === 'TEXTUAL' ||
+    s.relation_type.startsWith('gram_') ||
+    s.relation_type === 'contextual_collocation' ||
+    s.relation_type === 'CO_OCCURS_WITH'
+  );
+}
+
+function isGrammaticalStep(s: R12ProofStepInput): boolean {
+  return (
+    s.relation_type.startsWith('gram_') ||
+    s.relation_type in GRAMMATICAL_SPECIFICITY ||
+    (s.epistemic_layer === 'TEXTUAL' &&
+      s.relation_type !== 'contextual_collocation' &&
+      s.relation_type !== 'CO_OCCURS_WITH')
+  );
+}
+
+function normalizedStepDirection(s: R12ProofStepInput): 'forward' | 'reverse' | undefined {
+  if (s.direction === 'forward') return s.reversed ? 'reverse' : 'forward';
+  if (s.direction === 'reverse') return 'reverse';
+  if (s.reversed === true) return 'reverse';
+  return undefined;
+}
+
+function isUnwitnessedLxxStep(s: R12ProofStepInput): boolean {
+  return (
+    (s.relation_type === 'lxx_translation_bridge' || s.relation_type === 'TRANSLATED_AS') &&
+    (!Array.isArray(s.passage_ids) || s.passage_ids.length === 0)
+  );
+}
+
+function resolveIntermediateDegree(
+  semantic: R12ProofStepInput[],
+  idx: number,
+  endpointCtx: MergedEndpointContext,
+): number {
+  return Math.max(
+    0,
+    endpointCtx.intermediate_verse_counts?.[idx] ??
+      semantic[idx]?.intermediate_degree ??
+      semantic[idx + 1]?.source_verse_count ??
+      0,
+  );
+}
+
+function resolveIntermediateIsProper(
+  semantic: R12ProofStepInput[],
+  idx: number,
+  endpointCtx: MergedEndpointContext,
+): boolean {
+  if (endpointCtx.intermediate_is_proper?.[idx] !== undefined) {
+    return Boolean(endpointCtx.intermediate_is_proper[idx]);
+  }
+  if (semantic[idx]?.proper_entity !== undefined) {
+    return Boolean(semantic[idx].proper_entity);
+  }
+  if (
+    semantic[idx]?.intermediate_degree === undefined &&
+    semantic[idx + 1]?.source_verse_count !== undefined &&
+    semantic[idx + 1]?.proper_entity !== undefined
+  ) {
+    return Boolean(semantic[idx + 1].proper_entity);
+  }
+  return false;
+}
+
+function computePathCoherenceK(
+  semantic: R12ProofStepInput[],
+  endpointCtx: MergedEndpointContext,
+  hasExternalWorld: boolean,
+): number {
+  let k = 1.0;
+  const eventIndices: number[] = [];
+  for (let i = 0; i < semantic.length; i++) {
+    if (isEventStep(semantic[i])) eventIndices.push(i);
+  }
+
+  for (let p = 0; p < eventIndices.length - 1; p++) {
+    const idxA = eventIndices[p];
+    const idxB = eventIndices[p + 1];
+    const stepA = semantic[idxA];
+    const stepB = semantic[idxB];
+    const passA = collectStepPassages(stepA.passage_ids);
+    const passB = collectStepPassages(stepB.passage_ids);
+
+    const sharedVerse = setsOverlap(passA.verses, passB.verses);
+    const sharedChapter = sharedVerse || setsOverlap(passA.chapters, passB.chapters);
+    const sharedBook = sharedChapter || setsOverlap(passA.books, passB.books);
+
+    if (sharedVerse) {
+      k *= 1.0;
+    } else if (sharedChapter) {
+      k *= 0.86;
+    } else if (sharedBook) {
+      k *= 0.65;
+    } else {
+      k *= 0.28;
+    }
+
+    if (!sharedVerse) {
+      let hasGenericHubBetween = false;
+      for (let m = idxA; m < idxB; m++) {
+        const deg = resolveIntermediateDegree(semantic, m, endpointCtx);
+        const isProper = resolveIntermediateIsProper(semantic, m, endpointCtx);
+        if (deg >= 25 && !isProper) {
+          hasGenericHubBetween = true;
+          break;
+        }
+      }
+      if (hasGenericHubBetween) {
+        k *= 0.5;
+      }
+
+      if (isGrammaticalStep(stepA) && isGrammaticalStep(stepB)) {
+        const dirA = normalizedStepDirection(stepA);
+        const dirB = normalizedStepDirection(stepB);
+        if (dirA && dirB && dirA !== dirB) {
+          k *= 0.75;
+        }
+      }
+    }
+
+    if (!sharedChapter && isGrammaticalStep(stepA) && isGrammaticalStep(stepB)) {
+      let hasUnwitnessedLxx = false;
+      for (let m = idxA + 1; m < idxB; m++) {
+        if (isUnwitnessedLxxStep(semantic[m])) {
+          hasUnwitnessedLxx = true;
+          break;
+        }
+      }
+      if (hasUnwitnessedLxx) {
+        k *= 0.5;
+      }
+    }
+  }
+
+  // Consecutive semantic steps outside already-scored event-to-event spans (lexical, LXX, external bridges)
+  const firstEvent = eventIndices.length > 0 ? eventIndices[0] : -1;
+  const lastEvent = eventIndices.length > 0 ? eventIndices[eventIndices.length - 1] : -1;
+  for (let i = 0; i < semantic.length - 1; i++) {
+    if (firstEvent >= 0 && lastEvent > firstEvent && i >= firstEvent && i < lastEvent) {
+      continue;
+    }
+    const stepA = semantic[i];
+    const stepB = semantic[i + 1];
+    if (
+      stepA.epistemic_layer === 'EXTERNAL_WORLD' ||
+      stepB.epistemic_layer === 'EXTERNAL_WORLD' ||
+      stepA.epistemic_layer === 'HYPOTHESIS' ||
+      stepB.epistemic_layer === 'HYPOTHESIS'
+    ) {
+      k *= 0.75;
+    } else {
+      const passA = collectStepPassages(stepA.passage_ids);
+      const passB = collectStepPassages(stepB.passage_ids);
+      k *= setsOverlap(passA.verses, passB.verses) ? 0.92 : 0.78;
+    }
+  }
+
+  if (semantic.length === 1 && hasExternalWorld) {
+    k *= 0.75;
+  }
+
+  if (semantic.some((s) => s.relation_type === 'contextual_collocation' || s.relation_type === 'CO_OCCURS_WITH')) {
+    k *= 0.85;
+  }
+
+  if (endpointCtx.direct_cooccurrence_refs.length > 0) {
+    k = Math.max(k, 0.95);
+  } else if (endpointCtx.lxx_bridge_cooccurrence_refs.length > 0) {
+    k = Math.max(k, 0.85);
+  } else if (endpointCtx.same_chapter_overlap) {
+    k = Math.max(k, 0.72);
+  } else if (eventIndices.length <= 1) {
+    k = Math.max(k, hasExternalWorld ? 0.75 : 0.78);
+  }
+
+  return Math.max(0.04, Math.min(1.0, k));
+}
+
+function computeIntermediateHubPenaltyR12(
+  semantic: R12ProofStepInput[],
+  endpointCtx: MergedEndpointContext,
+  maxGraphDegree: number,
+): number {
+  const intermediateSteps = semantic.slice(0, -1);
+  if (intermediateSteps.length === 0) return 0;
+  let sum = 0;
+  for (let i = 0; i < intermediateSteps.length; i++) {
+    const deg = resolveIntermediateDegree(semantic, i, endpointCtx);
+    sum += Math.min(1, Math.log1p(deg) / Math.log1p(maxGraphDegree));
+  }
+  return (0.18 * sum) / intermediateSteps.length;
+}
 
 const R12_EPISTEMIC_LAYERS = new Set<R12EpistemicLayer>([
   'TEXTUAL',
@@ -573,12 +965,7 @@ function buildR12PathKey(steps: R12ProofStepInput[]): string {
 }
 
 export function scoreR12Path(
-  path: {
-    path_id?: string;
-    anchor_id: string;
-    target_id: string;
-    steps: R12ProofStepInput[];
-  },
+  path: R12PathInput,
   opts: {
     maxGraphDegree?: number;
     allowReception?: boolean;
@@ -617,14 +1004,16 @@ export function scoreR12Path(
     }
   }
 
-  const Q = geometricMean(semantic.map((s) => s.quality_weight)) * Math.pow(0.95, Math.max(0, semantic.length - 2));
+  const endpointCtx = extractEndpointContext(path);
+  const hasExternalWorld = semantic.some((s) => s.epistemic_layer === 'EXTERNAL_WORLD');
+  const K = round6(computePathCoherenceK(semantic, endpointCtx, hasExternalWorld));
+
+  const Q = geometricMean(semantic.map((s) => s.quality_weight)) * Math.pow(0.90, Math.max(0, semantic.length - 2));
   const freq = semantic.map((s) => clamp01(((s.feature_idf ?? 1) - 1) / 5));
   const D = freq.reduce((a, b) => a + b, 0) / freq.length;
   const types = uniqueSorted(semantic.map((s) => s.relation_type));
   const T = Math.min(1, types.length / 4);
-  const hubDegree = semantic.map((s) => Math.max(0, s.intermediate_degree ?? 0));
-  const penalty =
-    (0.10 * hubDegree.reduce((a, n) => a + Math.min(1, Math.log1p(n) / Math.log1p(MAX)), 0)) / hubDegree.length;
+  const penalty = computeIntermediateHubPenaltyR12(semantic, endpointCtx, MAX);
 
   // External-world claims must never add independent biblical attestation groups
   const groups = uniqueSorted(
@@ -639,7 +1028,18 @@ export function scoreR12Path(
       s.epistemic_layer === 'EXTERNAL_WORLD' ||
       s.mapping_status === 'candidate',
   );
-  const priority = clamp01(0.45 * Q + 0.15 * D + 0.10 * T - penalty);
+  const priority = clamp01(K * (0.45 * Q + 0.15 * D + 0.15 * T) - penalty);
+
+  const directChapters = new Set(endpointCtx.direct_cooccurrence_refs.map(normalizeRefToChapterKey));
+  const lxxChapters = new Set(endpointCtx.lxx_bridge_cooccurrence_refs.map(normalizeRefToChapterKey));
+  const endpointSupportGroupCount = directChapters.size + lxxChapters.size;
+  const endpointEpistemicStatus: R12EndpointEpistemicStatus =
+    !hypothesis && endpointCtx.direct_cooccurrence_refs.length > 0
+      ? 'DIRECT_ENDPOINT_WITNESS'
+      : K >= 0.45 && !hypothesis
+        ? 'COHERENT_MULTIHOP_LEAD'
+        : 'EXPLORATORY_STEP_CHAIN';
+
   const pathKey = buildR12PathKey(path.steps);
   const pathId = path.path_id || `r12p:${fnv1a64Hex(`${path.anchor_id}|${path.target_id}|${pathKey}`).slice(0, 16)}`;
 
@@ -653,17 +1053,23 @@ export function scoreR12Path(
     meaningful_hops: semantic.length,
     physical_hops: path.steps.length,
     Q: round6(Q),
+    K,
+    endpoint_coherence: K,
     D: round6(D),
     T: round6(T),
     hub_penalty: round6(penalty),
     partial_interest: round6(priority),
     independent_evidence_groups: groups,
+    step_support_group_count: groups.length,
+    endpoint_support_group_count: endpointSupportGroupCount,
     edge_ids: uniqueSorted(path.steps.map((s) => s.edge_id)),
     passage_ids: uniqueSorted(path.steps.flatMap((s) => (Array.isArray(s.passage_ids) ? s.passage_ids : []))),
     relation_types: types,
     epistemic_status: hypothesis ? 'EXPLORATORY' : 'SUPPORTED_STEPS_NOT_ENDPOINT_INTERPRETATION',
+    endpoint_epistemic_status: endpointEpistemicStatus,
     score_parts: {
       Q: round6(Q),
+      K,
       D: round6(D),
       T: round6(T),
       hub_penalty: round6(penalty),
@@ -681,12 +1087,7 @@ function r12PathOverlap(a: R12ScoredPath, b: R12ScoredPath): number {
 }
 
 export function rankR12DiscoveryDestinations(
-  paths: Array<{
-    path_id?: string;
-    anchor_id: string;
-    target_id: string;
-    steps: R12ProofStepInput[];
-  }>,
+  paths: R12PathInput[],
   opts: {
     top_n?: number;
     limit?: number;
@@ -694,6 +1095,7 @@ export function rankR12DiscoveryDestinations(
     max_alternatives?: number;
     maxGraphDegree?: number;
     allowReception?: boolean;
+    includeIncoherent?: boolean;
     max_hops?: number;
     max_physical_hops?: number;
     score_version?: string;
@@ -705,40 +1107,72 @@ export function rankR12DiscoveryDestinations(
   score_version: string;
   coverage: 'ranked_top_n' | 'complete_candidate_pool';
   unreturned_destinations: number;
+  pruned_incoherent_count: number;
 } {
   const selectedMax = opts.top_n ?? opts.limit ?? 24;
   const mmrPenalty = opts.mmrPenalty ?? 0.35;
   const maxAlts = opts.max_alternatives ?? 3;
   const scoreVersion = opts.score_version ?? R12_SCORE_VERSION;
 
-  const scored = paths.map((p) => scoreR12Path(p, { ...opts, score_version: scoreVersion }));
-  const grouped = new Map<string, R12ScoredPath[]>();
-  for (const path of scored) {
+  const scoredEntries = paths.map((p) => ({
+    scored: scoreR12Path(p, { ...opts, score_version: scoreVersion }),
+    endpointCtx: extractEndpointContext(p),
+  }));
+
+  const grouped = new Map<
+    string,
+    { paths: R12ScoredPath[]; directRefs: Set<string>; lxxRefs: Set<string> }
+  >();
+  for (const { scored: path, endpointCtx } of scoredEntries) {
     if (!path.anchor_id || !path.target_id) {
       throw new TypeError('Path needs canonical anchor and target');
     }
     if (path.anchor_id === path.target_id) continue;
     const key = `${path.anchor_id}\u001f${path.target_id}`;
-    const bucket = grouped.get(key) || [];
-    if (!bucket.some((existing) => existing.path_key === path.path_key)) {
-      bucket.push(path);
+    let bucket = grouped.get(key);
+    if (!bucket) {
+      bucket = { paths: [], directRefs: new Set(), lxxRefs: new Set() };
       grouped.set(key, bucket);
+    }
+    for (const ref of endpointCtx.direct_cooccurrence_refs) {
+      bucket.directRefs.add(normalizeRefToChapterKey(ref));
+    }
+    for (const ref of endpointCtx.lxx_bridge_cooccurrence_refs) {
+      bucket.lxxRefs.add(normalizeRefToChapterKey(ref));
+    }
+    if (!bucket.paths.some((existing) => existing.path_key === path.path_key)) {
+      bucket.paths.push(path);
     }
   }
 
+  let prunedIncoherentCount = 0;
   const pool: R12DestinationRecommendation[] = [];
-  for (const group of grouped.values()) {
-    group.sort((a, b) => b.partial_interest - a.partial_interest || a.path_key.localeCompare(b.path_key));
+  for (const { paths: group, directRefs, lxxRefs } of grouped.values()) {
+    group.sort((a, b) => b.partial_interest - a.partial_interest || b.K - a.K || a.path_key.localeCompare(b.path_key));
     const attestations = uniqueSorted(group.flatMap((p) => p.independent_evidence_groups));
     const g = attestations.length;
-    const C = round6(Math.min(1, Math.log2(Math.max(1, g)) / 3));
+    const coherentRoutes = group.filter(
+      (p) =>
+        p.K >= 0.45 &&
+        !p.steps.some((s) => s.epistemic_layer === 'EXTERNAL_WORLD' || s.epistemic_layer === 'HYPOTHESIS'),
+    );
+    const coherentRouteBonus = coherentRoutes.length >= 2 ? Math.min(3, coherentRoutes.length - 1) : 0;
+    const endpointSupportGroupCount = directRefs.size + lxxRefs.size + coherentRouteBonus;
+    const C = round6(Math.min(1, Math.log2(1 + endpointSupportGroupCount) / 3));
+
     const best = group[0];
-    const interest = round6(clamp01(best.partial_interest + 0.30 * C));
+    if (!opts.includeIncoherent && best.K < 0.25 && endpointSupportGroupCount === 0) {
+      prunedIncoherentCount += 1;
+      continue;
+    }
+
+    const interest = round6(clamp01(best.K * (0.45 * best.Q + 0.25 * C + 0.15 * best.D + 0.15 * best.T) - best.hub_penalty));
     const exploratory = group.some((p) => p.epistemic_status === 'EXPLORATORY');
     const enrichedGroup = group.map((p) => ({
       ...p,
       C,
       interest,
+      endpoint_support_group_count: endpointSupportGroupCount,
       score_parts: { ...p.score_parts, C },
     }));
     const bestEnriched = enrichedGroup[0];
@@ -747,22 +1181,30 @@ export function rankR12DiscoveryDestinations(
       target_id: bestEnriched.target_id,
       score_version: scoreVersion,
       best_path_quality: bestEnriched.Q,
+      K: bestEnriched.K,
+      endpoint_coherence: bestEnriched.endpoint_coherence,
       interest,
       C,
       convergence: C,
       independent_group_count: g,
       support_group_count: g,
+      step_support_group_count: g,
+      endpoint_support_group_count: endpointSupportGroupCount,
       independent_evidence_groups: attestations,
       best_path: bestEnriched,
       alternative_paths: enrichedGroup.slice(1, 1 + maxAlts),
       paths: enrichedGroup,
-      evidence_status: exploratory ? 'MIXED_OR_EXPLORATORY' : 'SUPPORTED_STEPS_NOT_ENDPOINT_INTERPRETATION',
+      evidence_status:
+        exploratory || bestEnriched.endpoint_epistemic_status === 'EXPLORATORY_STEP_CHAIN'
+          ? 'MIXED_OR_EXPLORATORY'
+          : 'SUPPORTED_STEPS_NOT_ENDPOINT_INTERPRETATION',
+      endpoint_epistemic_status: bestEnriched.endpoint_epistemic_status,
       limitation: 'A graph path does not by itself establish that its endpoints symbolize or equal one another.',
     });
   }
 
   // Deterministic initial sort so MMR ties break stably by target_id
-  pool.sort((a, b) => b.interest - a.interest || a.target_id.localeCompare(b.target_id));
+  pool.sort((a, b) => b.interest - a.interest || b.endpoint_coherence - a.endpoint_coherence || a.target_id.localeCompare(b.target_id));
 
   const selected: R12DestinationRecommendation[] = [];
   while (pool.length > 0 && selected.length < selectedMax) {
@@ -797,5 +1239,6 @@ export function rankR12DiscoveryDestinations(
     score_version: scoreVersion,
     coverage: pool.length > 0 ? 'ranked_top_n' : 'complete_candidate_pool',
     unreturned_destinations: pool.length,
+    pruned_incoherent_count: prunedIncoherentCount,
   };
 }

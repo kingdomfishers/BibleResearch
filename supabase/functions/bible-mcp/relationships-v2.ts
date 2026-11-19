@@ -632,7 +632,7 @@ export function registerRelationshipV2Tools(server: McpServer, read: DatabaseRea
   server.registerTool('discover_biblical_connections_v2', {
     title: 'Discover & Explore Universal Biblical Connections (R12)',
     description:
-      'Universal corpus-wide biblical discovery and multi-mode exploration with R12 2-5 hop beam proof paths, Q/C/D/T/MMR ranking, Open English WordNet 2025 (CC BY 4.0) & Wikidata (CC0) physical-property bridges, R8 structural scene parallels, and orthographic candidates. Handles ANY biblical concept, English word, Hebrew/Greek lemma or surface form, Strong\'s ID, exact occurrence anchor {word_id, book, chapter, verse, position, edition_key?}, number, passage (including Psalm verse 0 headings), or multi-concept question across all 31,203 verses.',
+      'Universal corpus-wide biblical discovery and multi-mode exploration (r12-discovery-2 / r12-ranker-v2) with endpoint-coherence K-gated 2-5 hop proof paths, Q/K/C/D/T/MMR ranking, Open English WordNet 2025 (CC BY 4.0) & Wikidata (CC0) sense-aware bridges, multi-family R8 structural scene parallels, orthographic candidates, embedded bidirectional passage cross-references, and chronological event links across all 31,203 verses.',
     inputSchema: z.strictObject({
       query: z.string().trim().min(1).max(400).optional().describe('Natural language question, English concept/word (e.g. lily, hyssop, pomegranate), passage reference (including Psalm headings verse 0), transliteration, Strong\'s ID, or comma-separated concepts.'),
       concepts: z.array(z.string().trim().min(1).max(64)).max(16).optional().describe('Optional explicit list of concepts to analyze alongside query.'),

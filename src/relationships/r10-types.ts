@@ -45,6 +45,8 @@ export type R10EpistemicClass =
   | 'direct_textual_evidence'
   | 'authorial_typology_or_quote'
   | 'documented_lexical_relationship'
+  | 'documented_collocation_or_cooccurrence'
+  | 'documented_cross_language_bridge'
   | 'verified_cross_reference'
   | 'shared_motif_evidence'
   | 'candidate_literary_pattern'
@@ -136,14 +138,23 @@ export interface R12EvidenceMetadata {
   meaningful_hops: number;
   physical_hops: number;
   Q: number;
+  K?: number;
+  endpoint_coherence?: number;
+  endpoint_epistemic_status?: 'DIRECT_ENDPOINT_WITNESS' | 'COHERENT_MULTIHOP_LEAD' | 'BRIDGE_SUPPORTED_PATH' | 'EXPLORATORY_STEP_CHAIN';
   C: number;
   D: number;
   T: number;
   hub_penalty: number;
   interest: number;
   mmr_score?: number;
+  raw_orthographic_score?: number;
+  cooccurrence_verses?: number;
+  step_support_group_count?: number;
+  endpoint_support_group_count?: number;
   independent_group_count: number;
   independent_evidence_groups: string[];
+  direct_endpoint_witnesses?: Array<Record<string, any>>;
+  endpoint_bridge_witnesses?: Array<Record<string, any>>;
   alternative_path_count: number;
   steps?: Array<{
     edge_id: string;
@@ -179,6 +190,10 @@ export interface R12EvidenceMetadata {
     property_key: string;
     value_id: string;
     value_label: string;
+    bridge_kind?: 'shared_external_property' | 'external_concept_equivalence';
+    assertion_origin?: string;
+    left_sense_id?: string;
+    right_sense_id?: string;
     mapping_status: 'verified' | 'candidate';
     claim_status: 'sourced' | 'candidate';
     independent_biblical_support: 0;
@@ -188,6 +203,7 @@ export interface R12EvidenceMetadata {
   };
   structural_match?: {
     weighted_jaccard: number;
+    shared_feature_families?: string[];
     shared_features: Array<{ role: string; value: string }>;
     anchor_witness_ids: string[];
     candidate_witness_ids: string[];

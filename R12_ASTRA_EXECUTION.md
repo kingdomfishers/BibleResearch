@@ -1,3 +1,5 @@
+> **Superseded 2026-11-19:** `TASKS.md` is now the single authoritative task queue; `R12TASKS.md` and its dual-file synchronization rule were retired in R12 Phase 2. See [TASKS.md](TASKS.md) and [R12 Benchmark Diagnosis](research/r12/R12_BENCHMARK_DIAGNOSIS.md).
+
 # BibleResearch — Astra execution directive: R12 discovery-first plan and immediate implementation
 
 **Date:** 2026-11-17  

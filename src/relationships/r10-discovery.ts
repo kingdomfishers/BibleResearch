@@ -145,6 +145,58 @@ function getSingularForm(word: string): string | null {
   return null;
 }
 
+const PRONOUN_OR_FUNC_STRONGS = new Set([
+  'H0853', 'H0854', 'H4480', 'H0413', 'H5921', 'H0518', 'H3588', 'H0834',
+  'H1931', 'H0859', 'H0589', 'H0595', 'H2088', 'H2063', 'H0428',
+  'G3588', 'G2532', 'G1161', 'G0846', 'G1722', 'G1519', 'G3754', 'G1473',
+  'G4771', 'G3778', 'G3739', 'G5100', 'G5101', 'G1438',
+]);
+
+const GENERIC_LIGHT_VERB_STRONGS = new Set([
+  'H0559', 'H1696', 'H6213', 'H1961', 'H0935', 'H5414', 'H1980', 'H7200', 'H3947', 'H3318',
+  'G3004', 'G1096', 'G4160', 'G2192', 'G2064', 'G1510', 'G2036',
+]);
+
+const COMPOUND_MAGNITUDE_STRONGS = new Set([
+  'H3967', 'H0505', 'H6240', 'H7239', 'G1540', 'G5507',
+]);
+
+const SMALL_NUMERAL_STRONGS = new Set([
+  'H0259', 'H8147', 'H7969', 'H0702', 'H2568', 'H8337', 'H7651', 'H8083', 'H8672', 'H6235',
+  'G1520', 'G1417', 'G5140', 'G5064', 'G4002', 'G1803', 'G2033', 'G1176', 'G1427',
+]);
+
+const QUERY_FALLBACK_ALIAS_MAP: Record<string, string[]> = {
+  yeast: ['leaven'],
+  resurrection: ['resurrect', 'rise', 'raise'],
+  resurrected: ['resurrect', 'rise'],
+  resurrecting: ['resurrect', 'rise'],
+  menorah: ['lampstand'],
+  redemption: ['redeem'],
+  atonement: ['atone'],
+  propitiation: ['mercy seat'],
+};
+
+function getMorphStems(word: string): string[] {
+  const w = word.toLowerCase();
+  const out: string[] = [];
+  if (w.endsWith('ing') && w.length > 5) {
+    const base = w.slice(0, -3);
+    out.push(base, base + 'e');
+  } else if (w.endsWith('ed') && w.length > 4) {
+    const base = w.slice(0, -2);
+    out.push(base, base + 'e');
+  } else if (w.endsWith('ation') && w.length > 7) {
+    const base = w.slice(0, -5);
+    out.push(base, base + 'e');
+  } else if (w.endsWith('er') && w.length > 4) {
+    out.push(w.slice(0, -2));
+  } else if (w.endsWith('ly') && w.length > 4) {
+    out.push(w.slice(0, -2));
+  }
+  return out.filter((s) => s.length >= 3);
+}
+
 function confidenceFromRecord(r: R10EvidenceRecord): R10ConnectionSummary['confidence_label'] {
   if (r.predicate === 'explicit_identification' || r.predicate === 'explicit_comparison' || r.predicate === 'typological_interpretation' || r.predicate === 'direct_quotation' || r.predicate === 'authorial_interpretation') {
     return r.evidence_tier <= 2 ? 'explicit_textual' : 'strong_correspondence';
@@ -251,6 +303,8 @@ interface FastManifest {
   r12_external_mappings?: Array<Record<string, any>>;
   strongs_lookup_upper_bucket?: boolean;
   motifs_event_keywords?: string[];
+  verse_xrefs_embedded?: boolean;
+  verse_events_embedded?: boolean;
 }
 type ReadBudget = { used: number; max: number; missing?: string[]; pages?: Map<string, Promise<any>>; b64Cache?: Map<string, any> };
 
@@ -262,6 +316,8 @@ interface MotifsData {
   events?: any[];
   events_b64gz?: string;
   event_keywords?: string[];
+  event_seq?: Record<string, { prev: string | null; next: string | null; title: string; start_date?: string | null; sample_vids?: number[] }>;
+  event_by_chapter?: Record<string, string[]>;
 }
 
 interface R12PilotBundle {
@@ -290,22 +346,26 @@ function r12MultihopRecToRecord(anchorData: any, rec: any): R10EvidenceRecord {
   const tWord = rec.target_word || best.target_word;
   const passages: R10PassageRef[] = [];
   const seenVid = new Set<number>();
+  const pushPassage = (p: any) => {
+    if (!p?.ref) return;
+    const vid = Number(p.verse_id || 0);
+    if (vid && seenVid.has(vid)) return;
+    seenVid.add(vid || passages.length + 1);
+    passages.push({
+      verse_id: vid,
+      ref: p.ref,
+      mt_ref: p.mt_ref,
+      book: Number(p.book || 1),
+      chapter: Number(p.chapter || 1),
+      verse: Number(p.verse || 1),
+      testament: Number(p.book || 1) <= 39 ? 'OT' : 'NT',
+      snippet: p.snippet,
+    });
+  };
+  for (const p of rec.direct_endpoint_witnesses || []) pushPassage(p);
+  for (const p of rec.endpoint_bridge_witnesses || []) pushPassage(p);
   for (const st of steps) {
-    for (const p of st.witness_passages || []) {
-      if (p?.ref && !seenVid.has(p.verse_id || 0)) {
-        seenVid.add(p.verse_id || passages.length + 1);
-        passages.push({
-          verse_id: Number(p.verse_id || 0),
-          ref: p.ref,
-          mt_ref: p.mt_ref,
-          book: Number(p.book || 1),
-          chapter: Number(p.chapter || 1),
-          verse: Number(p.verse || 1),
-          testament: Number(p.book || 1) <= 39 ? 'OT' : 'NT',
-          snippet: p.snippet,
-        });
-      }
-    }
+    for (const p of st.witness_passages || []) pushPassage(p);
   }
   const origWords: R10OriginalWordRef[] = [
     {
@@ -328,9 +388,25 @@ function r12MultihopRecToRecord(anchorData: any, rec: any): R10EvidenceRecord {
   const hops = best.meaningful_hops ?? steps.length;
   const chainStr = steps.map((s: any) => `${s.from_label} --[${s.relation_type}]--> ${s.to_label}`).join(' ; ');
   const isHypothesis = rec.epistemic_layer === 'HYPOTHESIS' || rec.evidence_status === 'MIXED_OR_EXPLORATORY';
-  const tier: R10EvidenceTier = isHypothesis ? 5 : 3;
-  const finalScore = Math.round(700 + (rec.interest || 0) * 260);
-  const epistClass: R10EpistemicClass = isHypothesis ? 'candidate_literary_pattern' : 'documented_lexical_relationship';
+  const epStatus: 'DIRECT_ENDPOINT_WITNESS' | 'COHERENT_MULTIHOP_LEAD' | 'BRIDGE_SUPPORTED_PATH' | 'EXPLORATORY_STEP_CHAIN' =
+    rec.endpoint_epistemic_status || (isHypothesis ? 'EXPLORATORY_STEP_CHAIN' : 'BRIDGE_SUPPORTED_PATH');
+
+  let tier: R10EvidenceTier = 5;
+  let epistClass: R10EpistemicClass = 'documented_cross_language_bridge';
+  let finalScore = Math.round(580 + (rec.interest || 0) * 200);
+  if (epStatus === 'DIRECT_ENDPOINT_WITNESS') {
+    tier = 4;
+    epistClass = 'documented_collocation_or_cooccurrence';
+    finalScore = Math.round(780 + (rec.interest || 0) * 170);
+  } else if (isHypothesis || epStatus === 'EXPLORATORY_STEP_CHAIN') {
+    tier = 6;
+    epistClass = 'candidate_literary_pattern';
+    finalScore = Math.round(420 + (rec.interest || 0) * 180);
+  } else if (epStatus === 'COHERENT_MULTIHOP_LEAD') {
+    tier = 5;
+    epistClass = 'documented_cross_language_bridge';
+    finalScore = Math.round(660 + (rec.interest || 0) * 180);
+  }
 
   return {
     evidence_id: rec.evidence_id,
@@ -338,7 +414,7 @@ function r12MultihopRecToRecord(anchorData: any, rec: any): R10EvidenceRecord {
     evidence_tier: tier,
     epistemic_class: epistClass,
     title: `R12 ${hops}-hop discovery: ${anchorData.sc} (${anchorData.bs}) → ${tWord ? `${tWord.script} ("${tWord.gloss}", ${tWord.strongs})` : rec.target_id}`,
-    summary: `${hops}-hop source-backed discovery path (${rec.independent_group_count} independent biblical support group(s); interest=${rec.interest}, Q=${rec.Q}, C=${rec.C}, D=${rec.D}, T=${rec.T}): ${chainStr}`,
+    summary: `${hops}-hop source-backed discovery path (${epStatus.replace(/_/g, ' ').toLowerCase()}, K=${rec.K ?? rec.endpoint_coherence ?? 1}, endpoint_groups=${rec.endpoint_support_group_count ?? 0}, step_groups=${rec.step_support_group_count ?? rec.independent_group_count}; interest=${rec.interest}): ${chainStr}`,
     source_node_id: rec.anchor_id,
     target_node_id: rec.target_id,
     passages: passages.slice(0, 6),
@@ -351,7 +427,7 @@ function r12MultihopRecToRecord(anchorData: any, rec: any): R10EvidenceRecord {
       source_dataset: [...new Set(steps.map((s: any) => s.source_dataset).filter(Boolean))].join(' + ') || 'MACULA + STEPBible + CATSS/Swete',
       source_record_ids: (rec.independent_evidence_groups || []).slice(0, 8),
       license: 'CC BY 4.0',
-      derivation_method: 'r12_offline_beam_proof_ranker_v1',
+      derivation_method: 'r12_offline_beam_proof_ranker_v2',
     },
     score_components: {
       base_tier_score: TIER_BASE_SCORE[tier],
@@ -363,7 +439,7 @@ function r12MultihopRecToRecord(anchorData: any, rec: any): R10EvidenceRecord {
       final_score: finalScore,
     },
     r12_metadata: {
-      score_version: rec.score_version || 'r12-ranker-v1',
+      score_version: rec.score_version || 'r12-ranker-v2',
       epistemic_layer: rec.epistemic_layer || 'LINGUISTIC',
       epistemic_status: rec.evidence_status === 'SUPPORTED_STEPS_NOT_ENDPOINT_INTERPRETATION'
         ? 'SUPPORTED_STEPS_NOT_ENDPOINT_INTERPRETATION'
@@ -371,14 +447,21 @@ function r12MultihopRecToRecord(anchorData: any, rec: any): R10EvidenceRecord {
       meaningful_hops: hops,
       physical_hops: best.physical_hops ?? steps.length,
       Q: rec.Q ?? 0,
+      K: rec.K ?? rec.endpoint_coherence,
+      endpoint_coherence: rec.endpoint_coherence ?? rec.K,
+      endpoint_epistemic_status: epStatus,
       C: rec.C ?? 0,
       D: rec.D ?? 0,
       T: rec.T ?? 0,
       hub_penalty: rec.hub_penalty ?? 0,
       interest: rec.interest ?? 0,
       mmr_score: rec.mmr_score,
+      step_support_group_count: rec.step_support_group_count ?? rec.independent_group_count ?? 0,
+      endpoint_support_group_count: rec.endpoint_support_group_count ?? 0,
       independent_group_count: rec.independent_group_count ?? 0,
       independent_evidence_groups: rec.independent_evidence_groups || [],
+      direct_endpoint_witnesses: rec.direct_endpoint_witnesses || [],
+      endpoint_bridge_witnesses: rec.endpoint_bridge_witnesses || [],
       alternative_path_count: (rec.alternative_paths || []).length,
       steps: steps.map((s: any) => ({
         edge_id: s.edge_id,
@@ -419,7 +502,8 @@ function r12PropertyBridgeToRecord(anchorData: any, b: any): R10EvidenceRecord {
   const leftRef = topFeat?.left?.[0];
   const rightRef = topFeat?.right?.[0];
   const tier: R10EvidenceTier = 5;
-  const finalScore = Math.round(680 + (b.score || 0) * 160);
+  const isEquiv = b.bridge_kind === 'external_concept_equivalence';
+  const finalScore = isEquiv ? Math.round(620 + (b.score || 0) * 80) : Math.round(765 + (b.score || 0) * 80);
   const origWords: R10OriginalWordRef[] = [
     {
       strongs: anchorData.bs,
@@ -450,8 +534,10 @@ function r12PropertyBridgeToRecord(anchorData: any, b: any): R10EvidenceRecord {
     predicate: 'shared_external_property',
     evidence_tier: tier,
     epistemic_class: 'external_world_bridge',
-    title: `Physical/semantic bridge: ${anchorData.sc} (${anchorData.gl}) ↔ ${tWord ? `${tWord.script} ("${tWord.gloss}")` : b.target_id} via "${b.value_label}"`,
-    summary: `External concept bridge (${b.mapping_status} mapping; ${leftRef?.provider || 'OEWN/Wikidata'}) linking ${anchorData.bs} (${b.left_mapping?.sense_gloss || anchorData.gl}) and ${tWord?.strongs || b.target_id} (${b.right_mapping?.sense_gloss || tWord?.gloss || ''}) via shared property ${b.property_key}=${b.value_label}. Independent biblical support=0 (exploratory hypothesis).`,
+    title: isEquiv
+      ? `External concept equivalence: ${anchorData.sc} (${anchorData.gl}) ↔ ${tWord ? `${tWord.script} ("${tWord.gloss}")` : b.target_id} via "${b.value_label}"`
+      : `Physical/semantic bridge: ${anchorData.sc} (${anchorData.gl}) ↔ ${tWord ? `${tWord.script} ("${tWord.gloss}")` : b.target_id} via "${b.value_label}"`,
+    summary: `External ${isEquiv ? 'concept equivalence' : 'property bridge'} (${b.mapping_status} mapping; ${leftRef?.provider || 'OEWN/Wikidata'}) linking ${anchorData.bs} (${b.left_mapping?.sense_gloss || anchorData.gl}) and ${tWord?.strongs || b.target_id} (${b.right_mapping?.sense_gloss || tWord?.gloss || ''}) via shared property ${b.property_key}=${b.value_label}. Independent biblical support=0 (exploratory hypothesis).`,
     source_node_id: b.anchor_id,
     target_node_id: b.target_id,
     passages: (b.passages || []).slice(0, 6).map((p: any) => ({
@@ -471,7 +557,11 @@ function r12PropertyBridgeToRecord(anchorData: any, b: any): R10EvidenceRecord {
       ...(b.mapping_status === 'candidate' ? ['Lexical-to-external synset/QID mapping is candidate-grade due to polysemy; context determines which biblical sense applies.'] : []),
     ],
     provenance: {
-      source_dataset: [...new Set([leftRef?.provider, rightRef?.provider].filter(Boolean))].join(' + ') || 'OpenEnglishWordNet 2025 + Wikidata',
+      source_dataset: (() => {
+        const rawProviders = [...new Set([leftRef?.provider, rightRef?.provider].filter(Boolean))];
+        if (rawProviders.some((p) => /WordNet|Wikidata/i.test(p))) return rawProviders.join(' + ');
+        return `${rawProviders.join(' + ') || 'BibleResearch Derived Physical Graph'} (derived from Wikidata / OpenEnglishWordNet 2025)`;
+      })(),
       source_record_ids: [...new Set(sourceIds)].slice(0, 8),
       license: [...new Set([leftRef?.license, rightRef?.license].filter(Boolean))].join(' ; ') || 'CC BY 4.0 / CC0 1.0',
       derivation_method: 'r12_external_property_bridge',
@@ -486,7 +576,7 @@ function r12PropertyBridgeToRecord(anchorData: any, b: any): R10EvidenceRecord {
       final_score: finalScore,
     },
     r12_metadata: {
-      score_version: 'r12-ranker-v1',
+      score_version: 'r12-ranker-v2',
       epistemic_layer: 'EXTERNAL_WORLD',
       epistemic_status: 'EXPLORATORY',
       meaningful_hops: 2,
@@ -504,6 +594,10 @@ function r12PropertyBridgeToRecord(anchorData: any, b: any): R10EvidenceRecord {
         property_key: b.property_key,
         value_id: b.value_id,
         value_label: b.value_label,
+        bridge_kind: b.bridge_kind || 'shared_external_property',
+        assertion_origin: b.assertion_origin,
+        left_sense_id: b.anchor_sense_id,
+        right_sense_id: b.target_sense_id,
         mapping_status: b.mapping_status === 'verified' ? 'verified' : 'candidate',
         claim_status: b.claim_status === 'sourced' ? 'sourced' : 'candidate',
         independent_biblical_support: 0,
@@ -562,7 +656,7 @@ function r12StructuralToRecord(anchorData: any, s: any): R10EvidenceRecord {
       final_score: finalScore,
     },
     r12_metadata: {
-      score_version: 'r12-ranker-v1',
+      score_version: 'r12-ranker-v2',
       epistemic_layer: 'HYPOTHESIS',
       epistemic_status: 'EXPLORATORY',
       meaningful_hops: 2,
@@ -578,6 +672,7 @@ function r12StructuralToRecord(anchorData: any, s: any): R10EvidenceRecord {
       alternative_path_count: 0,
       structural_match: {
         weighted_jaccard: s.weighted_jaccard,
+        shared_feature_families: s.shared_feature_families || [],
         shared_features: s.distinctive_shared_features || [],
         anchor_witness_ids: s.anchor_witness_ids || [],
         candidate_witness_ids: s.candidate_witness_ids || [],
@@ -588,15 +683,18 @@ function r12StructuralToRecord(anchorData: any, s: any): R10EvidenceRecord {
 
 function r12OrthographicToRecord(anchorData: any, o: any): R10EvidenceRecord {
   const tWord = o.target_word;
-  const tier: R10EvidenceTier = 7;
-  const finalScore = Math.round(480 + (o.score || 0) * 100);
+  const coocc = Number(o.cooccurrence_verses || 0);
+  const tier: R10EvidenceTier = coocc > 0 ? 6 : 7;
+  const finalScore = coocc > 0
+    ? Math.round(620 + (o.score || 0) * 180)
+    : Math.round(430 + (o.score || 0) * 120);
   return {
     evidence_id: o.evidence_id,
     predicate: 'orthographic_overlap',
     evidence_tier: tier,
     epistemic_class: 'orthographic_similarity_only',
     title: `Orthographic similarity: ${o.anchor_original} (${anchorData.bs}) ↔ ${o.target_form} (${tWord?.strongs || o.target_id}, matched "${o.matched_normalized_text}")`,
-    summary: `Unpointed/unaccented script similarity (${o.normalization}, score=${o.score}, shared segment "${o.matched_normalized_text}"). ${o.limitation}`,
+    summary: `Unpointed/unaccented script similarity (${o.normalization}, score=${o.score}, shared segment "${o.matched_normalized_text}"${coocc > 0 ? `, co-occurs in ${coocc} canonical verse(s)` : ''}). ${o.limitation}`,
     source_node_id: o.anchor_id,
     target_node_id: o.target_id,
     passages: (o.passages || []).slice(0, 4).map((p: any) => ({
@@ -631,7 +729,7 @@ function r12OrthographicToRecord(anchorData: any, o: any): R10EvidenceRecord {
       final_score: finalScore,
     },
     r12_metadata: {
-      score_version: 'r12-ranker-v1',
+      score_version: 'r12-ranker-v2',
       epistemic_layer: 'HYPOTHESIS',
       epistemic_status: 'EXPLORATORY',
       meaningful_hops: 1,
@@ -642,6 +740,8 @@ function r12OrthographicToRecord(anchorData: any, o: any): R10EvidenceRecord {
       T: 0.25,
       hub_penalty: 0,
       interest: Number(((o.score || 0.5) * 0.5).toFixed(4)),
+      raw_orthographic_score: o.raw_orthographic_score,
+      cooccurrence_verses: coocc,
       independent_group_count: 0,
       independent_evidence_groups: [],
       alternative_path_count: 0,
@@ -845,6 +945,7 @@ function createPassageHydrator(
 ) {
   const fastVerseCache = new Map<number, any>();
   const bookCache = new Map<number, any>();
+  const chunkMetaCache = new Map<number, { xrefs?: any[]; events?: string[] }>();
   async function loadBookData(bookId: number): Promise<any> {
     if (bookCache.has(bookId)) return bookCache.get(bookId);
     const pad = String(bookId).padStart(2, '0');
@@ -869,7 +970,15 @@ function createPassageHydrator(
         const chunk = await readR10Json<{
           summaries?: Record<string, [number, number, number, string, string, string | null | undefined]>;
           verses?: Record<string, string>;
+          xrefs?: Record<string, any[]>;
+          events?: Record<string, string[]>;
         }>(reader, releaseId, `fast-verses/chunk-${chunkHex}.json.gz`, budget);
+        if (chunk?.xrefs?.[String(vid)] || chunk?.events?.[String(vid)]) {
+          chunkMetaCache.set(vid, {
+            xrefs: chunk.xrefs?.[String(vid)],
+            events: chunk.events?.[String(vid)],
+          });
+        }
         if (!needToks && chunk?.summaries?.[String(vid)]) {
           const [sBook, sChapter, sVerse, sRef, sEn, sMtRef] = chunk.summaries[String(vid)];
           return {
@@ -923,7 +1032,7 @@ function createPassageHydrator(
     };
   }
 
-  return { bookCache, loadBookData, hydratePassageByVid };
+  return { bookCache, chunkMetaCache, loadBookData, hydratePassageByVid };
 }
 
 export async function discoverBiblicalConnections(
@@ -987,7 +1096,7 @@ export async function discoverBiblicalConnections(
   const controls: R10ControlOrWarning[] = [];
 
   // Passage hydration helper
-  const { bookCache, loadBookData, hydratePassageByVid } = createPassageHydrator(
+  const { bookCache, chunkMetaCache, loadBookData, hydratePassageByVid } = createPassageHydrator(
     reader, releaseId, fastManifest, budget, false,
   );
 
@@ -1007,7 +1116,10 @@ export async function discoverBiblicalConnections(
     }
   }
 
-  // Hydrate explicit passage references
+  // Hydrate explicit passage references and capture embedded verse xrefs/events
+  const explicitPassageMeta: Array<{ ep: R10PassageRef; xrefs: any[]; eventIds: string[] }> = [];
+  const passageContentStrongs: string[] = [];
+  const passageOtherStrongs: string[] = [];
   for (const ep of explicitPassages) {
     let verses;
     if (fastManifest?.direct_b64gz) {
@@ -1039,9 +1151,20 @@ export async function discoverBiblicalConnections(
           ep.verse_id = Number(vKey);
           ep.snippet = vVal.en;
           ep.mt_ref = vVal.mt_ref;
+          const meta = chunkMetaCache.get(ep.verse_id);
+          explicitPassageMeta.push({
+            ep,
+            xrefs: meta?.xrefs || [],
+            eventIds: meta?.events || [],
+          });
           for (const t of vVal.toks || []) {
-            if (t.s && !['H0853', 'H0854', 'H4480', 'H0413', 'H5921', 'H0518', 'H3588'].includes(t.s)) {
-              matchedStrongs.add(t.s);
+            if (!t.s || PRONOUN_OR_FUNC_STRONGS.has(t.s)) continue;
+            const cls = String(t.cl || '').toLowerCase();
+            const isFuncClass = ['conjunction', 'preposition', 'article', 'particle', 'pronoun'].includes(cls);
+            if (!isFuncClass && !GENERIC_LIGHT_VERB_STRONGS.has(t.s) && !SMALL_NUMERAL_STRONGS.has(t.s)) {
+              if (!passageContentStrongs.includes(t.s)) passageContentStrongs.push(t.s);
+            } else if (!passageOtherStrongs.includes(t.s)) {
+              passageOtherStrongs.push(t.s);
             }
           }
           break;
@@ -1049,6 +1172,7 @@ export async function discoverBiblicalConnections(
       }
     }
   }
+  for (const s of [...passageContentStrongs, ...passageOtherStrongs]) matchedStrongs.add(s);
 
   // Sharded lemma-lookup loader with caching
   const shardMemo = new Map<string, Map<string, any[]>>();
@@ -1094,8 +1218,18 @@ export async function discoverBiblicalConnections(
     let hits = await fetchShard(rawKey);
     if (hits.length === 0) {
       const sing = getSingularForm(rawKey);
-      if (sing && sing !== rawKey) {
-        hits = await fetchShard(sing);
+      if (sing && sing !== rawKey) hits = await fetchShard(sing);
+    }
+    if (hits.length === 0) {
+      for (const stem of getMorphStems(rawKey)) {
+        hits = await fetchShard(stem);
+        if (hits.length > 0) break;
+      }
+    }
+    if (hits.length === 0 && QUERY_FALLBACK_ALIAS_MAP[rawKey]) {
+      for (const fb of QUERY_FALLBACK_ALIAS_MAP[rawKey]) {
+        hits = await fetchShard(fb);
+        if (hits.length > 0) break;
       }
     }
     return hits;
@@ -1108,8 +1242,36 @@ export async function discoverBiblicalConnections(
     ? new Set(eventKeywordList)
     : null;
 
-  // Stage 1: Resolve concepts via aliases + sharded lemma-lookup
-  for (const term of extractedTerms) {
+  // Stage 1: Resolve multi-word phrases (3-gram, 2-gram) then remaining terms
+  const phraseConsumedTerms = new Set<string>();
+  const phraseResolvedTerms: string[] = [];
+  const rawQueryTokens = extractedTerms.filter((t) => !/^[HG]\d{4}$/i.test(t) && !refTokensToIgnore.has(t));
+  if (rawQueryTokens.length >= 2) {
+    for (const n of [3, 2]) {
+      for (let i = 0; i + n <= rawQueryTokens.length; i++) {
+        const span = rawQueryTokens.slice(i, i + n);
+        if (span.some((t) => phraseConsumedTerms.has(t.toLowerCase()))) continue;
+        const phrase = span.map((t) => t.toLowerCase()).join(' ');
+        const hits = conceptIdx.aliases[phrase] ? [] : await fetchShard(phrase);
+        if (conceptIdx.aliases[phrase] || hits.length > 0) {
+          phraseResolvedTerms.push(phrase);
+          for (const t of span) {
+            const tl = t.toLowerCase();
+            if (!(tl in NUMBER_WORDS) && !(tl in SMALL_NUMBERS)) {
+              phraseConsumedTerms.add(tl);
+            }
+          }
+        }
+      }
+    }
+  }
+  const stage1Terms = [
+    ...phraseResolvedTerms,
+    ...extractedTerms.filter((t) => !phraseConsumedTerms.has(t.toLowerCase())),
+  ];
+
+  // Resolve concepts via aliases + sharded lemma-lookup
+  for (const term of stage1Terms) {
     if (/^\d+$/.test(term) && refTokensToIgnore.has(term) && !NUMBER_WORDS[term]) continue;
     const lower = term.toLowerCase();
     const alias = conceptIdx.aliases[lower];
@@ -1303,12 +1465,16 @@ export async function discoverBiblicalConnections(
       if (strongs) prioritized.add(strongs);
     }
   }
-  const profileStrongsToLoad = [...new Set([...prioritized, ...matchedStrongs])].slice(0, 6);
+  const profileSliceLimit = explicitPassages.length > 0 && extractedTerms.length === 0 ? 8 : 6;
+  const profileStrongsToLoad = [...new Set([...prioritized, ...matchedStrongs])].slice(0, profileSliceLimit);
   const loadedProfiles: LemmaProfile[] = [];
   const profileByStrongs = new Map<string, LemmaProfile>();
   for (const bs of profileStrongsToLoad) {
     const prof = await readProfile(reader, releaseId, fastManifest, bs, budget);
     if (prof) { loadedProfiles.push(prof); profileByStrongs.set(bs, prof); }
+  }
+  if (explicitPassages.length > 0 && extractedTerms.length === 0 && loadedProfiles.length > 1) {
+    loadedProfiles.sort((a, b) => (a.total_verses || 99999) - (b.total_verses || 99999));
   }
 
   // Enrich resolved concepts with profile details
@@ -1450,7 +1616,7 @@ export async function discoverBiblicalConnections(
       const baseScore = TIER_BASE_SCORE[tier];
       const witnessBonus = Math.min(80, cl.vids.length * 6);
       const specificityBonus = idfBonus + (cl.has_simile ? 30 : 0);
-      const finalScore = Math.max(10, baseScore + specificityBonus + witnessBonus - hubPenalty);
+      const finalScore = Math.max(10, baseScore + specificityBonus + witnessBonus - hubPenalty - 130);
 
       const clusterVids = new Set(cl.vids);
       const matchingForms = (prof.forms || []).filter(f => f.vid && clusterVids.has(f.vid));
@@ -1570,9 +1736,11 @@ export async function discoverBiblicalConnections(
       }
     }
 
-    // B. Direct Grammatical Relations
+    // B. Direct Grammatical Relations (filter out pronouns/particles; demote generic light verbs)
     const nonFuncGram = (prof.grammatical_relations || []).filter(gr =>
-      gr.occurrences >= 1 && (gr.witnesses === undefined || gr.witnesses.length > 0) && !['H0853', 'H0854', 'H4480', 'H0413', 'H5921', 'H0518', 'H3588'].includes(gr.related_strongs)
+      gr.occurrences >= 1 &&
+      (gr.witnesses === undefined || gr.witnesses.length > 0) &&
+      !PRONOUN_OR_FUNC_STRONGS.has(gr.related_strongs)
     ).slice(0, 5);
 
     for (const gr of nonFuncGram) {
@@ -1580,6 +1748,7 @@ export async function discoverBiblicalConnections(
       const gBase = TIER_BASE_SCORE[gTier];
       const gSpec = idfBonus + 25;
       const gWit = Math.min(40, (gr.independent_witness_count ?? gr.occurrences) * 8);
+      const lightVerbPen = (GENERIC_LIGHT_VERB_STRONGS.has(gr.related_strongs) || GENERIC_LIGHT_VERB_STRONGS.has(prof.bs)) ? 140 : 0;
       allCandidates.push({
         evidence_id: `r11:gram:${prof.bs}:${gr.predicate}:${gr.related_strongs}`,
         predicate: 'verified_lexical_grammatical',
@@ -1606,10 +1775,10 @@ export async function discoverBiblicalConnections(
           base_tier_score: gBase,
           specificity_bonus: gSpec,
           witness_bonus: gWit,
-          common_word_penalty: hubPenalty,
+          common_word_penalty: hubPenalty + lightVerbPen,
           number_coincidence_penalty: 0,
           orthographic_penalty: 0,
-          final_score: Math.max(10, gBase + gSpec + gWit - hubPenalty),
+          final_score: Math.max(10, gBase + gSpec + gWit - hubPenalty - lightVerbPen),
         },
       });
     }
@@ -1660,12 +1829,12 @@ export async function discoverBiblicalConnections(
         },
         score_components: {
           base_tier_score: TIER_BASE_SCORE[3],
-          specificity_bonus: idfBonus + 20,
+          specificity_bonus: idfBonus + 90,
           witness_bonus: Math.min(30, (rel.count || 1) * 5),
           common_word_penalty: hubPenalty,
           number_coincidence_penalty: 0,
           orthographic_penalty: 0,
-          final_score: Math.max(10, TIER_BASE_SCORE[3] + idfBonus + 20 + Math.min(30, (rel.count || 1) * 5) - hubPenalty),
+          final_score: Math.max(10, TIER_BASE_SCORE[3] + idfBonus + 90 + Math.min(30, (rel.count || 1) * 5) - hubPenalty),
         },
       });
     }
@@ -1697,14 +1866,183 @@ export async function discoverBiblicalConnections(
         },
         score_components: {
           base_tier_score: TIER_BASE_SCORE[3],
-          specificity_bonus: idfBonus + 15,
+          specificity_bonus: idfBonus + 80,
           witness_bonus: 20,
           common_word_penalty: hubPenalty,
           number_coincidence_penalty: 0,
           orthographic_penalty: 0,
-          final_score: Math.max(10, TIER_BASE_SCORE[3] + idfBonus + 15 + 20 - hubPenalty),
+          final_score: Math.max(10, TIER_BASE_SCORE[3] + idfBonus + 80 + 20 - hubPenalty),
         },
       });
+    }
+
+    // D2. Direct Collocated Vocabulary (top non-stop-hub collocations from attested cluster contexts)
+    const seenCollocTargets = new Set<string>();
+    const clForColloc = prof.clusters?.[0];
+    if (clForColloc) {
+      const samplePassages = (clForColloc.sample_passages || []).slice(0, 3).map(p => ({
+        verse_id: p.verse_id,
+        ref: p.ref,
+        mt_ref: p.mt_ref,
+        book: p.book,
+        chapter: p.chapter,
+        verse: p.verse,
+        testament: p.testament,
+        snippet: p.snippet,
+        is_psalm_heading: p.book === 19 && p.verse === 0,
+      }));
+      for (const cw of clForColloc.collocated_words || []) {
+        if (!cw.bs || cw.bs === prof.bs || seenCollocTargets.has(cw.bs)) continue;
+        if (PRONOUN_OR_FUNC_STRONGS.has(cw.bs) || GENERIC_LIGHT_VERB_STRONGS.has(cw.bs)) continue;
+        seenCollocTargets.add(cw.bs);
+        const collocScore = Math.min(750, Math.max(660, 660 + Math.round((cw.score || 0) * 60 + Math.log2(1 + (cw.hits || 1)) * 18)));
+        allCandidates.push({
+          evidence_id: `r11:colloc:${prof.bs}:${cw.bs}`,
+          predicate: 'verified_lexical_grammatical',
+          evidence_tier: 4,
+          epistemic_class: 'documented_collocation_or_cooccurrence',
+          title: `Direct collocation: ${prof.sc} ("${prof.gl}") ↔ ${cw.sc} ("${cw.gl}", ${cw.hits}×)`,
+          summary: `Corpus co-occurrence links ${prof.sc} (${prof.bs}, "${prof.gl}") with ${cw.sc} (${cw.bs}, "${cw.gl}") across ${cw.hits} shared contexts (${samplePassages.map(p => p.ref).join(', ')}).`,
+          source_node_id: `lemma:${prof.bs}`,
+          target_node_id: `lemma:${cw.bs}`,
+          passages: samplePassages,
+          original_words: [
+            { lemma_key: prof.lk, strongs: prof.bs, language: prof.lang, lemma_script: prof.sc, transliteration: prof.tr, gloss: prof.gl },
+            { strongs: cw.bs, language: prof.lang, lemma_script: cw.sc, transliteration: cw.tr || '', gloss: cw.gl },
+          ],
+          matched_terms: [prof.gl, cw.gl, prof.bs, cw.bs],
+          limitations: ['Co-occurring vocabulary in shared contexts; inspect surrounding verses for syntactic or thematic relation.'],
+          provenance: {
+            source_dataset: 'MACULA Hebrew & Greek + STEPBible',
+            source_record_ids: samplePassages.map(p => p.ref),
+            license: 'CC BY 4.0',
+            derivation_method: 'direct_cluster_collocation',
+          },
+          score_components: {
+            base_tier_score: TIER_BASE_SCORE[4],
+            specificity_bonus: collocScore - TIER_BASE_SCORE[4],
+            witness_bonus: 0,
+            common_word_penalty: 0,
+            number_coincidence_penalty: 0,
+            orthographic_penalty: 0,
+            final_score: collocScore,
+          },
+        });
+        if (seenCollocTargets.size >= 3) break;
+      }
+    }
+  }
+
+  // E2. Passage-level Embedded Cross-References & Chronological Events
+  if (explicitPassageMeta.length > 0) {
+    const needEventsMd = explicitPassageMeta.some(m => m.eventIds.length > 0);
+    const mdForEvents = needEventsMd ? await ensureMotifsData() : null;
+    for (const { ep, xrefs, eventIds } of explicitPassageMeta) {
+      let hydratedTargetCount = 0;
+      for (const xr of (xrefs || []).slice(0, 8)) {
+        const [toVid, toRef, phrase, flags] = xr;
+        const isReciprocal = (Number(flags) & 1) !== 0;
+        const isCrossTest = (Number(flags) & 2) !== 0;
+        const toBook = bookForVid(Number(toVid));
+        const toPassage: R10PassageRef = (hydratedTargetCount < 4
+          ? await hydratePassageByVid(Number(toVid), false)
+          : null) || {
+          verse_id: Number(toVid),
+          ref: String(toRef),
+          book: toBook,
+          chapter: 1,
+          verse: 1,
+          testament: toBook <= 39 ? 'OT' : 'NT',
+        };
+        if (hydratedTargetCount < 4) hydratedTargetCount++;
+        crossReferencesOut.push({
+          from_ref: ep.ref,
+          to_ref: String(toRef),
+          anchor_phrase: String(phrase || ''),
+          from_passage: ep,
+          to_passage: toPassage,
+        });
+        const xrTier: R10EvidenceTier = isReciprocal ? 2 : 3;
+        const xrScore = isReciprocal && isCrossTest ? 915 : isReciprocal ? 845 : isCrossTest ? 785 : 720;
+        allCandidates.push({
+          evidence_id: `r11:xref:${ep.verse_id}:${toVid}`,
+          predicate: 'cross_reference_witness',
+          evidence_tier: xrTier,
+          epistemic_class: 'verified_cross_reference',
+          title: `${isReciprocal ? 'Reciprocal cross-reference' : 'Cross-reference'}${isCrossTest ? ' (OT↔NT)' : ''}: ${ep.ref} ↔ ${toRef}`,
+          summary: `${isReciprocal ? 'Bidirectional canonical cross-reference' : 'Canonical cross-reference'} links ${ep.ref} and ${toRef}${phrase ? ` via "${phrase}"` : ''}.`,
+          source_node_id: `passage:${ep.ref}`,
+          target_node_id: `passage:${toRef}`,
+          passages: [ep, toPassage],
+          original_words: [],
+          matched_terms: [ep.ref, String(toRef), String(phrase || '')].filter(Boolean),
+          limitations: ['Canonical cross-reference witnesses historical intertextual links; check both contexts to evaluate verbal or thematic dependence.'],
+          provenance: {
+            source_dataset: 'CrossReferences.org / OpenBible',
+            source_record_ids: [ep.ref, String(toRef)],
+            license: 'CC BY 4.0',
+            derivation_method: 'embedded_bidirectional_cross_reference',
+          },
+          score_components: {
+            base_tier_score: TIER_BASE_SCORE[xrTier],
+            specificity_bonus: xrScore - TIER_BASE_SCORE[xrTier],
+            witness_bonus: isReciprocal ? 45 : 15,
+            common_word_penalty: 0,
+            number_coincidence_penalty: 0,
+            orthographic_penalty: 0,
+            final_score: xrScore,
+          },
+        });
+      }
+
+      if (mdForEvents?.event_seq && eventIds.length > 0) {
+        const seenEvIds = new Set<string>();
+        for (const evId of eventIds.slice(0, 2)) {
+          if (!seenEvIds.has(evId)) seenEvIds.add(evId);
+          const evInfo = mdForEvents.event_seq[evId];
+          if (!evInfo) continue;
+          const nextEvId = evInfo.next;
+          const nextInfo = nextEvId ? mdForEvents.event_seq[nextEvId] : null;
+          const nextVid = nextInfo?.sample_vids?.[0];
+          const nextPassage = nextVid ? await hydratePassageByVid(Number(nextVid), false) : null;
+          const evPassages = [ep, ...(nextPassage ? [nextPassage] : [])];
+          allCandidates.push({
+            evidence_id: `r12:event:${ep.verse_id}:${evId}`,
+            predicate: 'biblical_event',
+            evidence_tier: 3,
+            epistemic_class: 'direct_textual_evidence',
+            title: `Biblical narrative sequence: ${evInfo.title}${nextInfo ? ` → ${nextInfo.title}` : ''} (${ep.ref})`,
+            summary: `${ep.ref} belongs to Biblical event "${evInfo.title}"${evInfo.start_date ? ` (${evInfo.start_date})` : ''}${nextInfo ? `, directly followed in canonical sequence by "${nextInfo.title}" (${nextPassage?.ref || ''})` : ''}.`,
+            source_node_id: `passage:${ep.ref}`,
+            target_node_id: nextEvId || evId,
+            passages: evPassages,
+            original_words: [],
+            matched_terms: [ep.ref, evInfo.title, nextInfo?.title || ''].filter(Boolean),
+            limitations: ['Narrative chronology sequence groups adjacent canonical episodes; dating models reflect Theographic reference chronology.'],
+            provenance: {
+              source_dataset: 'Theographic Bible Data',
+              source_record_ids: [evId, ...(nextEvId ? [nextEvId] : [])],
+              license: 'CC BY-SA 4.0',
+              derivation_method: 'chronological_event_adjacency',
+            },
+            score_components: {
+              base_tier_score: TIER_BASE_SCORE[3],
+              specificity_bonus: 110,
+              witness_bonus: 15,
+              common_word_penalty: 0,
+              number_coincidence_penalty: 0,
+              orthographic_penalty: 0,
+              final_score: 885,
+            },
+          });
+          matchedEvents.push({
+            event_id: evId,
+            title: evInfo.title,
+            start_date: evInfo.start_date,
+            passages: evPassages,
+          });
+        }
+      }
     }
   }
 
@@ -1731,15 +2069,45 @@ export async function discoverBiblicalConnections(
         const gB = conceptGroups[j];
         const sharedVids = [...gA.vids].filter(v => gB.vids.has(v));
 
-        // 1. Same-verse intersections
+        // 1. Same-verse intersections (with compound numeral guard & proximity ranking)
         if (sharedVids.length > 0) {
-          for (const vid of sharedVids.slice(0, 6)) {
+          const involvesNumeral =
+            matchedNumbers.size > 0 ||
+            gA.profiles.some(p => SMALL_NUMERAL_STRONGS.has(p.bs)) ||
+            gB.profiles.some(p => SMALL_NUMERAL_STRONGS.has(p.bs));
+          const inspectSlice = sharedVids.slice(0, involvesNumeral ? 18 : 10);
+          const candidateVids: Array<{ vid: number; p: R10PassageRef; pA: LemmaProfile; pB: LemmaProfile; toks: any[]; minDist: number }> = [];
+          const aSet = new Set(gA.profiles.map(pr => pr.bs));
+          const bSet = new Set(gB.profiles.map(pr => pr.bs));
+          for (const vid of inspectSlice) {
             const p = await hydratePassageByVid(vid, true);
             if (!p) continue;
-            const pA = gA.profiles.find(pr => pr.all_vids.includes(vid))!;
-            const pB = gB.profiles.find(pr => pr.all_vids.includes(vid))!;
+            const pA = gA.profiles.find(pr => pr.all_vids.includes(vid));
+            const pB = gB.profiles.find(pr => pr.all_vids.includes(vid));
+            if (!pA || !pB) continue;
             const vData = bookCache.get(p.book)?.[String(vid)];
             const toks: any[] = vData?.toks || [];
+
+            if (involvesNumeral) {
+              const numToks = toks.filter(t => SMALL_NUMERAL_STRONGS.has(t.s) && (aSet.has(t.s) || bSet.has(t.s)));
+              const hasCompoundMagnitudeAdjacent = numToks.some(nt =>
+                toks.some(mt => COMPOUND_MAGNITUDE_STRONGS.has(mt.s) && Math.abs((nt.wn || 0) - (mt.wn || 0)) <= 2)
+              );
+              if (hasCompoundMagnitudeAdjacent) continue;
+            }
+            const aWns = toks.filter(t => aSet.has(t.s)).map(t => Number(t.wn || 0));
+            const bWns = toks.filter(t => bSet.has(t.s)).map(t => Number(t.wn || 0));
+            let minDist = 999;
+            for (const wa of aWns) {
+              for (const wb of bWns) minDist = Math.min(minDist, Math.abs(wa - wb));
+            }
+            candidateVids.push({ vid, p, pA, pB, toks, minDist });
+          }
+          candidateVids.sort((x, y) =>
+            Number(y.minDist <= 6) - Number(x.minDist <= 6) || x.minDist - y.minDist || x.vid - y.vid
+          );
+
+          for (const { vid, p, pA, pB, toks, minDist } of candidateVids.slice(0, 6)) {
 
             if (pA.bs === pB.bs) {
               const seenWn = new Set<number>();
@@ -1818,6 +2186,7 @@ export async function discoverBiblicalConnections(
             }
 
             const evId = `r11:intersect:verse:${pA.bs}:${pB.bs}:${vid}`;
+            const proxBonus = minDist <= 4 ? 20 : 0;
             allCandidates.push({
               evidence_id: evId,
               predicate: 'verified_lexical_grammatical',
@@ -1842,12 +2211,12 @@ export async function discoverBiblicalConnections(
               },
               score_components: {
                 base_tier_score: TIER_BASE_SCORE[2],
-                specificity_bonus: 180,
+                specificity_bonus: 180 + proxBonus,
                 witness_bonus: Math.min(50, sharedVids.length * 6),
                 common_word_penalty: 0,
                 number_coincidence_penalty: 0,
                 orthographic_penalty: 0,
-                final_score: TIER_BASE_SCORE[2] + 180 + Math.min(50, sharedVids.length * 6),
+                final_score: TIER_BASE_SCORE[2] + 180 + proxBonus + Math.min(50, sharedVids.length * 6),
               },
             });
           }
@@ -1976,6 +2345,7 @@ export async function discoverBiblicalConnections(
 
     const totalHits = matchedQueryTerms.length + Math.min(2, strongsOverlap) + passageOverlap * 2;
     if (totalHits === 0) continue;
+    if (explicitPassages.length > 0 && stage1Terms.length === 0 && passageOverlap === 0 && strongsOverlap < 2) continue;
     if (multiConcept && matchedQueryTerms.length < 1 && strongsOverlap < 1 && passageOverlap === 0) continue;
     if (rec.evidence_id?.startsWith('r10:ident:auto:') && multiConcept && matchedQueryTerms.length < 2 && passageOverlap === 0) continue;
 
@@ -2191,7 +2561,7 @@ export async function discoverBiblicalConnections(
       r12AnchorsMatched.push(bs);
 
       const recs: any[] = anchorData.multihop?.recommendations || [];
-      const takeRecs = (query.mode === 'expand' || query.focus_lemma === bs) ? recs.slice(0, 12) : recs.slice(0, 6);
+      const takeRecs = (query.mode === 'expand' || query.focus_lemma === bs) ? recs.slice(0, 12) : recs.slice(0, 8);
       for (const rec of takeRecs) {
         allCandidates.push(r12MultihopRecToRecord(anchorData, rec));
         r12MultihopCount++;
@@ -2212,8 +2582,10 @@ export async function discoverBiblicalConnections(
         r12StructuralCount++;
       }
 
-      const orths: any[] = anchorData.orthographic_candidates || [];
-      for (const o of orths.slice(0, 2)) {
+      const orths: any[] = [...(anchorData.orthographic_candidates || [])].sort(
+        (a, b) => Number((b.cooccurrence_verses || 0) > 0) - Number((a.cooccurrence_verses || 0) > 0) || (b.score || 0) - (a.score || 0)
+      );
+      for (const o of orths.slice(0, 5)) {
         allCandidates.push(r12OrthographicToRecord(anchorData, o));
         r12OrthographicCount++;
       }
@@ -2231,6 +2603,28 @@ export async function discoverBiblicalConnections(
     if (filters.testaments?.length && !c.passages.some(p => filters.testaments!.includes(p.testament))) return false;
     return true;
   });
+
+  // Apply bridge-mode weighting before sorting
+  if (query.mode === 'bridge') {
+    filtered = filtered.map((rec) => {
+      const id = rec.evidence_id || '';
+      const isCrossTest = rec.passages.some(p => p.testament === 'OT') && rec.passages.some(p => p.testament === 'NT');
+      const isBridgeCand =
+        id.startsWith('r11:lxx:') ||
+        id.startsWith('r11:xref:') ||
+        id.startsWith('r12:prop:') ||
+        (id.startsWith('r12:path:') && isCrossTest);
+      if (!isBridgeCand) return rec;
+      return {
+        ...rec,
+        score_components: {
+          ...rec.score_components,
+          specificity_bonus: rec.score_components.specificity_bonus + 130,
+          final_score: rec.score_components.final_score + 130,
+        },
+      };
+    });
+  }
 
   const sharedWitnesses = (record: R10EvidenceRecord) => conceptGroups.length >= 2
     ? record.passages.filter(p => conceptGroups.every(g => g.vids.has(p.verse_id))) : [];
@@ -2251,7 +2645,25 @@ export async function discoverBiblicalConnections(
   for (const item of filtered) {
     if (!uniqueMap.has(item.evidence_id)) uniqueMap.set(item.evidence_id, item);
   }
-  const rankedAll = [...uniqueMap.values()];
+  const dedupedList = [...uniqueMap.values()];
+  const familyCounts = new Map<string, number>();
+  const rankedAll = dedupedList.map((item) => {
+    const family = item.evidence_id.split(':').slice(0, 2).join(':');
+    const seen = (familyCounts.get(family) || 0) + 1;
+    familyCounts.set(family, seen);
+    const grace = family === 'r12:path' ? 5 : 2;
+    if (seen <= grace) return item;
+    const pen = (seen - grace) * 55;
+    return {
+      ...item,
+      score_components: {
+        ...item.score_components,
+        final_score: Math.max(10, item.score_components.final_score - pen),
+      },
+    };
+  });
+  rankedAll.sort((a, b) => supportRank[supportClass(b)] - supportRank[supportClass(a)] ||
+    b.score_components.final_score - a.score_components.final_score || a.evidence_tier - b.evidence_tier);
 
   // G. Complete Occurrence Pagination
   const focusProf = (query.focus_lemma ? profileByStrongs.get(query.focus_lemma) : null) ||
@@ -2649,7 +3061,7 @@ export async function discoverBiblicalConnections(
       ? {
           r12_discovery: {
             schema_version: 1,
-            release_id: 'r12-discovery-1',
+            release_id: fastManifest?.r12_version || 'r12-discovery-2',
             score_version: r12ScoreVersion,
             pilot_anchors_matched: [...new Set(r12AnchorsMatched)],
             multihop_recommendations_count: r12MultihopCount,
@@ -2674,7 +3086,7 @@ export async function getConnectionEvidence(
   let record: R10EvidenceRecord | null = null;
   const targetStrongs = new Set<string>();
 
-  const { bookCache, loadBookData, hydratePassageByVid } = createPassageHydrator(
+  const { bookCache, chunkMetaCache, loadBookData, hydratePassageByVid } = createPassageHydrator(
     reader, releaseId, fastManifest, budget, true,
   );
 
@@ -2944,6 +3356,55 @@ export async function getConnectionEvidence(
     const rel = prof?.lxx_relations?.[Number(idxStr)];
     if (prof && rel) {
       if (rel.target_strongs) targetStrongs.add(rel.target_strongs);
+      const sampleRefs = (rel.sample_refs || (rel.ref ? [rel.ref] : [])).slice(0, 4);
+      const refSet = new Set(sampleRefs);
+      const pool: any[] = [
+        ...(prof.first_occ_passages || []),
+        ...((prof.clusters || []).flatMap((c: any) => c.sample_passages || [])),
+      ];
+      const lxxPassages: R10PassageRef[] = [];
+      const seenVid = new Set<number>();
+      for (const p of pool) {
+        if (p?.ref && refSet.has(p.ref) && !seenVid.has(p.verse_id || 0)) {
+          seenVid.add(p.verse_id || lxxPassages.length + 1);
+          lxxPassages.push({
+            verse_id: Number(p.verse_id || 0),
+            ref: p.ref,
+            mt_ref: p.mt_ref,
+            book: Number(p.book || 1),
+            chapter: Number(p.chapter || 1),
+            verse: Number(p.verse || 1),
+            testament: Number(p.book || 1) <= 39 ? 'OT' : 'NT',
+            snippet: p.snippet,
+            is_psalm_heading: Number(p.book || 1) === 19 && Number(p.verse || 1) === 0,
+          });
+        }
+      }
+      if (lxxPassages.length === 0) {
+        for (const p of pool) {
+          if (p?.ref && !seenVid.has(p.verse_id || 0)) {
+            seenVid.add(p.verse_id || lxxPassages.length + 1);
+            lxxPassages.push({
+              verse_id: Number(p.verse_id || 0),
+              ref: p.ref,
+              mt_ref: p.mt_ref,
+              book: Number(p.book || 1),
+              chapter: Number(p.chapter || 1),
+              verse: Number(p.verse || 1),
+              testament: Number(p.book || 1) <= 39 ? 'OT' : 'NT',
+              snippet: p.snippet,
+              is_psalm_heading: Number(p.book || 1) === 19 && Number(p.verse || 1) === 0,
+            });
+            if (lxxPassages.length >= 3) break;
+          }
+        }
+      }
+      if (lxxPassages.length === 0) {
+        for (const vid of (prof.all_vids || []).slice(0, 3)) {
+          const hp = await hydratePassageByVid(vid);
+          if (hp) lxxPassages.push(hp);
+        }
+      }
       record = {
         evidence_id: evidenceId,
         predicate: 'cross_language_bridge',
@@ -2953,7 +3414,7 @@ export async function getConnectionEvidence(
         summary: rel.type === 'lxx_heading_witness' ? `In ${rel.ref}, the Septuagint renders the Hebrew title containing ${prof.sc} as: "${rel.lxx_text}".` : `Septuagint translates Hebrew ${prof.sc} as Greek ${rel.script} across ${rel.count || 1} passages.`,
         source_node_id: `lemma:${prof.bs}`,
         target_node_id: rel.target_strongs ? `lemma:${rel.target_strongs}` : `concept:lxx:${prof.bs}`,
-        passages: [],
+        passages: lxxPassages.slice(0, 4),
         original_words: [
           { lemma_key: prof.lk, strongs: prof.bs, language: prof.lang, lemma_script: prof.sc, transliteration: prof.tr, gloss: prof.gl },
         ],
@@ -2980,37 +3441,128 @@ export async function getConnectionEvidence(
     const [, , fVidStr, tVidStr] = evidenceId.split(':');
     const fVid = Number(fVidStr);
     const tVid = Number(tVidStr);
-    const p1 = await hydratePassageByVid(fVid);
-    const p2 = await hydratePassageByVid(tVid);
+    const p1 = await hydratePassageByVid(fVid, true);
+    const p2 = await hydratePassageByVid(tVid, false);
     if (p1 && p2) {
+      const xrEntry = (chunkMetaCache.get(fVid)?.xrefs || []).find((x: any[]) => Number(x[0]) === tVid);
+      const phrase = xrEntry ? String(xrEntry[2] || '') : '';
+      const flags = xrEntry ? Number(xrEntry[3] || 0) : 0;
+      const isReciprocal = (flags & 1) !== 0;
+      const isCrossTest = (flags & 2) !== 0;
+      const xrTier: R10EvidenceTier = isReciprocal ? 2 : 4;
+      const xrScore = isReciprocal && isCrossTest ? 915 : isReciprocal ? 845 : 720;
       record = {
         evidence_id: evidenceId,
         predicate: 'cross_reference_witness',
-        evidence_tier: 4,
+        evidence_tier: xrTier,
         epistemic_class: 'verified_cross_reference',
-        title: `Cross-reference witness: ${p1.ref} → ${p2.ref}`,
-        summary: `Canonical cross-reference connects ${p1.ref} and ${p2.ref}.`,
+        title: `${isReciprocal ? 'Reciprocal cross-reference' : 'Cross-reference witness'}${isCrossTest ? ' (OT↔NT)' : ''}: ${p1.ref} → ${p2.ref}`,
+        summary: `${isReciprocal ? 'Bidirectional canonical cross-reference' : 'Canonical cross-reference'} connects ${p1.ref} and ${p2.ref}${phrase ? ` via "${phrase}"` : ''}.`,
         source_node_id: `passage:${p1.ref}`,
         target_node_id: `passage:${p2.ref}`,
         passages: [p1, p2],
         original_words: [],
-        matched_terms: [p1.ref, p2.ref],
+        matched_terms: [p1.ref, p2.ref, phrase].filter(Boolean),
         limitations: ['Cross-reference witness documents ancient editorial or intertextual connection.'],
         provenance: {
           source_dataset: 'CrossReferences.org / OpenBible',
           source_record_ids: [p1.ref, p2.ref],
           license: 'CC BY 4.0',
-          derivation_method: 'canonical_cross_reference_graph',
+          derivation_method: xrEntry ? 'embedded_bidirectional_cross_reference' : 'canonical_cross_reference_graph',
         },
         score_components: {
-          base_tier_score: 650,
+          base_tier_score: TIER_BASE_SCORE[xrTier],
           specificity_bonus: 40,
-          witness_bonus: 20,
+          witness_bonus: isReciprocal ? 45 : 20,
           common_word_penalty: 0,
           number_coincidence_penalty: 0,
           orthographic_penalty: 0,
-          final_score: 710,
+          final_score: xrScore,
         },
+      };
+    }
+  } else if (evidenceId.startsWith('r11:colloc:')) {
+    const [, , bsA, bsB] = evidenceId.split(':');
+    if (bsA && bsB) {
+      targetStrongs.add(bsA);
+      targetStrongs.add(bsB);
+      const [profA, profB] = await Promise.all([
+        readProfile(reader, releaseId, fastManifest, bsA, budget),
+        readProfile(reader, releaseId, fastManifest, bsB, budget),
+      ]);
+      const cw = (profA?.clusters?.[0]?.collocated_words || []).find((x: any) => x.bs === bsB);
+      const samplePassages: R10PassageRef[] = (profA?.clusters?.[0]?.sample_passages || []).slice(0, 4).map((p: any) => ({
+        verse_id: p.verse_id,
+        ref: p.ref,
+        mt_ref: p.mt_ref,
+        book: p.book,
+        chapter: p.chapter,
+        verse: p.verse,
+        testament: p.testament,
+        snippet: p.snippet,
+        is_psalm_heading: p.book === 19 && p.verse === 0,
+      }));
+      if (profA && cw) {
+        record = {
+          evidence_id: evidenceId,
+          predicate: 'verified_lexical_grammatical',
+          evidence_tier: 4,
+          epistemic_class: 'documented_collocation_or_cooccurrence',
+          title: `Direct collocation: ${profA.sc} ("${profA.gl}") ↔ ${cw.sc} ("${cw.gl}", ${cw.hits}×)`,
+          summary: `Corpus co-occurrence links ${profA.sc} (${profA.bs}, "${profA.gl}") with ${cw.sc} (${cw.bs}, "${cw.gl}") across ${cw.hits} shared contexts.`,
+          source_node_id: `lemma:${profA.bs}`,
+          target_node_id: `lemma:${cw.bs}`,
+          passages: samplePassages,
+          original_words: [
+            { lemma_key: profA.lk, strongs: profA.bs, language: profA.lang, lemma_script: profA.sc, transliteration: profA.tr, gloss: profA.gl },
+            ...(profB ? [{ lemma_key: profB.lk, strongs: profB.bs, language: profB.lang, lemma_script: profB.sc, transliteration: profB.tr, gloss: profB.gl }] : []),
+          ],
+          matched_terms: [profA.gl, cw.gl, profA.bs, cw.bs],
+          limitations: ['Co-occurring vocabulary in shared contexts; inspect surrounding verses for syntactic or thematic relation.'],
+          provenance: {
+            source_dataset: 'MACULA Hebrew & Greek + STEPBible',
+            source_record_ids: samplePassages.map(p => p.ref),
+            license: 'CC BY 4.0',
+            derivation_method: 'direct_cluster_collocation',
+          },
+          score_components: { base_tier_score: TIER_BASE_SCORE[4], specificity_bonus: 50, witness_bonus: 20, common_word_penalty: 0, number_coincidence_penalty: 0, orthographic_penalty: 0, final_score: 720 },
+        };
+      }
+    }
+  } else if (evidenceId.startsWith('r12:event:')) {
+    const rest = evidenceId.slice('r12:event:'.length);
+    const sepIdx = rest.indexOf(':');
+    const vid = Number(sepIdx >= 0 ? rest.slice(0, sepIdx) : rest);
+    const evId = sepIdx >= 0 ? rest.slice(sepIdx + 1) : '';
+    const p1 = vid ? await hydratePassageByVid(vid, true) : null;
+    const motifsData = await readR10Json<MotifsData>(reader, releaseId, 'motifs-and-patterns.json.gz', budget);
+    const evInfo = motifsData?.event_seq?.[evId];
+    if (p1 && evInfo) {
+      const nextEvId = evInfo.next;
+      const nextInfo = nextEvId ? motifsData?.event_seq?.[nextEvId] : null;
+      const nextVid = nextInfo?.sample_vids?.[0];
+      const nextPassage = nextVid ? await hydratePassageByVid(Number(nextVid), false) : null;
+      const evPassages = [p1, ...(nextPassage ? [nextPassage] : [])];
+      record = {
+        evidence_id: evidenceId,
+        predicate: 'biblical_event',
+        evidence_tier: 3,
+        epistemic_class: 'direct_textual_evidence',
+        title: `Biblical narrative sequence: ${evInfo.title}${nextInfo ? ` → ${nextInfo.title}` : ''} (${p1.ref})`,
+        summary: `${p1.ref} belongs to Biblical event "${evInfo.title}"${evInfo.start_date ? ` (${evInfo.start_date})` : ''}${nextInfo ? `, directly followed in canonical sequence by "${nextInfo.title}" (${nextPassage?.ref || ''})` : ''}.`,
+        source_node_id: `passage:${p1.ref}`,
+        target_node_id: nextEvId || evId,
+        passages: evPassages,
+        original_words: [],
+        matched_terms: [p1.ref, evInfo.title, nextInfo?.title || ''].filter(Boolean),
+        limitations: ['Narrative chronology sequence groups adjacent canonical episodes; dating models reflect Theographic reference chronology.'],
+        provenance: {
+          source_dataset: 'Theographic Bible Data',
+          source_record_ids: [evId, ...(nextEvId ? [nextEvId] : [])],
+          license: 'CC BY-SA 4.0',
+          derivation_method: 'chronological_event_adjacency',
+        },
+        score_components: { base_tier_score: TIER_BASE_SCORE[3], specificity_bonus: 110, witness_bonus: 15, common_word_penalty: 0, number_coincidence_penalty: 0, orthographic_penalty: 0, final_score: 885 },
       };
     }
   } else if (evidenceId.startsWith('r11:intersect:pericope:')) {
