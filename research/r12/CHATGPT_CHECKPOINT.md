@@ -1,6 +1,25 @@
-# R12 Live Production Deployment & Verification — 2026-11-18
+# R12 Live Production Deployment & Verification — 2026-11-19 (`r12-discovery-2`)
 
-## FOR CHATGPT — VERIFIED COMPLETE MCP RETEST (2026-11-19)
+## FOR CHATGPT — READY FOR INDEPENDENT `r12-discovery-2` / `r12-ranker-v2` EVALUATION (2026-11-19)
+
+**Algorithm & provenance fixes deployed live.** Based on the complete 239-case audit in [R12_BENCHMARK_DIAGNOSIS.md](R12_BENCHMARK_DIAGNOSIS.md) and [CHATGPT_INDEPENDENT_DISCOVERY_AUDIT_2026-11-18.md](CHATGPT_INDEPENDENT_DISCOVERY_AUDIT_2026-11-18.md), `r12-discovery-2` / `r12-ranker-v2` is now live:
+
+1. **Corpus Worker (`bibleresearch-corpus`):** Version ID `cce819e9-60d4-4e17-bb01-ed138af9a9a3` (`https://bibleresearch-corpus.kingdomfishers-custom.workers.dev`; `R12_RELEASE_ID: r12-discovery-2`, `R12_ASSET_SHA256: 7a08727be4d841e4aded1f0aeb5300c9d79e32769d30ba1968726d413f630a11`, `R12_SOURCE_COMMIT: d9940058651c83befa168a2f31e60fca0c691414`, `/__integrity/b7` HTTP `200` `PASS_CANARIES`, `/v1/catalog/metadata.json.gz` HTTP `403`). Rollback: `cf2182ed-b3fc-4ab6-99ab-5590e7e8a075`.
+2. **Main MCP (`bible-mcp`):** **Version `44`** (`ACTIVE`, `verify_jwt: false`, `version: "1.8.0"`, `tools: 46`, `prompts: 22`, `writes: "enabled"`, `ezbr_sha256: 7560b097c4e5fc3fbfe94bf557f036e58a5ddbf6b8cc278c075731105adfac71` at `https://ejoperxiwxlcbsqrkrvb.supabase.co/functions/v1/bible-mcp/mcp`). Rollback: **Version `43`**.
+3. **Website (`bibleresearch`):** Version ID `3d9482f4-7309-4fe5-babf-140041f5b42a` (`https://bibleresearch.kingdomfishers-custom.workers.dev`, HTTP `200`). Rollback: `d147114c-6a5c-4927-80ed-2a48877c2af4`.
+4. **Summary of Changes & Full Re-Test Checklist:** See [R12_ALGORITHM_IMPROVEMENTS_HANDOFF.md](R12_ALGORITHM_IMPROVEMENTS_HANDOFF.md). Key verified improvements (via local regression suites and bounded live serial MCP probes; full 239-case re-run preserved for ChatGPT):
+   - Path coherence `K` (`r12-ranker-v2`), endpoint-only `C`, pruned incoherent chains (`N001–N004`), honest multi-hop epistemic classes (`DIRECT_ENDPOINT_WITNESS` `2 Peter 1:19` for `G3088 → G5459`).
+   - Cleaned Wikidata/OEWN external provenance (`384` assertions, `0` synthetic predicates), sense-keyed bridges (`H5869_eye` vs. `H5869_spring`), `minDistinctFamilies: 2` structural scenes (`717` scenes), and distinct-root co-occurring `r12:orth` (`1,994` pairs, `H0120↔H1818` live).
+   - Embedded bidirectional xrefs (`30,022` verses, `392,281` links) and chronological events (`6,423` verses) in existing `fast-verses` chunks + single-token typology hijack guard (`Exodus 12:15`, `Hosea 6:2`, `Genesis 1:1`).
+   - `22` modern English synonym/phrase keys (`+102` entries; `"yeast"` -> `status: "ok"`), compound-magnitude numeral guard (`N009` Gen 5:23 eliminated), `mode: "bridge"` boost, mechanism diversification, and `48 → 250` anchor expansion.
+
+> **Action for ChatGPT:** Refresh the `@BibleResearch` MCP connector schema (`version: 1.8.0`), verify `verification_release.corpus_release === "r12-discovery-2"`, and run the independent 239-case benchmark serially using [R12_ALGORITHM_IMPROVEMENTS_HANDOFF.md](R12_ALGORITHM_IMPROVEMENTS_HANDOFF.md).
+
+---
+
+## FOR CHATGPT — HISTORICAL BASELINE VERIFICATION (`r12-discovery-1`, 2026-11-19)
+
+*(Preserved prior checkpoint for comparison against `r12-discovery-2`.)*
 
 **Infrastructure incident status: FIXED in full serial benchmark, not merely in smoke tests.** Frozen benchmark `research/r12/R12_EXPECTED_CONNECTIONS_180_PLUS.json` was rerun through the connected production `@BibleResearch` MCP `discover_biblical_connections_v2` with exact case arguments. 239 cases (215 positive / 24 negative), 222 actual MCP network calls (190 different argument payloads); **238 `ok`, 1 `no_match` (“yeast” resolver coverage), 0 HTTP 503 / timeouts / transport errors**. Latency median 1062ms, P95 2617ms, maximum 3719ms. Source: Worker `cf2182ed-b3fc-4ab6-99ab-5590e7e8a075`, MCP v43, release `r12-discovery-1`.
 

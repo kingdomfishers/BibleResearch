@@ -97,78 +97,65 @@ Policy: Direct Live Development Policy remains active (implement, run focused te
 
 ### Milestone P0 — Evidence Integrity, Path Coherence & Clean External Provenance
 
-- [ ] **R12-P0-1 Path-Level Semantic Coherence `K`, Endpoint Convergence `C`, and Honest Epistemic Classification (`r12-ranker-v2`).**
+- [x] **R12-P0-1 Path-Level Semantic Coherence `K`, Endpoint Convergence `C`, and Honest Epistemic Classification (`r12-ranker-v2`).**
   - **Addresses:** `RC-1`, `RC-2` (`N001–N004`, `N021–N022`, `L027`, `L052`, `L053`).
-  - **Dependencies:** None.
   - **Ownership / Files:** `src/relationships/path-ranker.ts`, `src/relationships/multihop-types.ts`, `research/r12/proof-ranker.mjs`, `research/r12/proof-ranker.test.mjs`.
-  - **Requirements:** Introduce path-level coherence `K ∈ [0.04, 1.0]` over consecutive event-step passage overlap, generic non-proper intermediate hubs, role reversals, unwitnessed LXX steps, and direct/LXX endpoint co-occurrences (`2 Pet 1:19` for `G3088→G5459`, `Heb 9:19` for `H0231→G2053`). Separate step-local groups from endpoint-level convergence `C`; disconnected chains get `C=0` and `K<0.25` and are pruned from top-24 recommendations. Never label multi-hop chains as `documented_lexical_relationship`. Make `research/r12/proof-ranker.mjs` delegate to `src/relationships/path-ranker.ts`.
-  - **Tests / Done:** `node --test research/r12/proof-ranker.test.mjs`; `N001–N004` demoted/pruned with `C=0`; `G3088→G5459` cites `2 Pet 1:19` with `K>=0.95`.
+  - **Completed & Verified (`d994005`):** Unified `research/r12/proof-ranker.mjs` over `src/relationships/path-ranker.ts` (`R12_SCORE_VERSION = 'r12-ranker-v2'`). Added `computePathCoherenceK` over consecutive event-step passage overlap, intermediate-only hub penalty, role reversals, unwitnessed LXX steps, and direct/LXX endpoint witnesses (`DIRECT_ENDPOINT_WITNESS`, `COHERENT_MULTIHOP_LEAD`, `EXPLORATORY_STEP_CHAIN`), separating `C` to endpoint support groups and pruning `K < 0.25 && endpoint_support_group_count === 0`. `node --test research/r12/proof-ranker.test.mjs` and `scripts/verify-r12-algorithm-v2.mjs` (`N001–N004` absent, `G3088→G5459` `2 Peter 1:19` `DIRECT_ENDPOINT_WITNESS`) pass.
 
-- [ ] **R12-P0-2 External Physical Provenance Repair & Sense-Keyed Bridges.**
+- [x] **R12-P0-2 External Physical Provenance Repair & Sense-Keyed Bridges.**
   - **Addresses:** `RC-5` (`N017`, `N023`, `N006`, `W001–W040`).
-  - **Dependencies:** None (parallel with `R12-P0-1`).
   - **Ownership / Files:** `scripts/acquire-r12-external-pilot.mjs`, `scripts/fixtures/r12-external-pilot.json`, `research/r12/property-bridges.mjs`, `research/r12/property-bridges.test.mjs`.
-  - **Requirements:** Eliminate fabricated Wikidata predicates (`wd:related_physical_class`, `wd:combustion_fuel_agent`) and synthetic GUIDs (`:class:...`, `wd-rev-...:fuel:...`); validate `provider === 'Wikidata'` claims strictly against `/^wd:P\d+$/` and `/^Q\d+\$[0-9a-fA-F-]+$/`; isolate derived claims under `DERIVED_PHYSICAL_ASSERTION` (`claim_status: 'candidate'`). Index `property-bridges.mjs` by `sense_id` so `H5869_eye` and `H5869_spring` never mix; label identical external QID/synset mappings as `external_concept_equivalence`. Expand clean OEWN 2025 coverage for core physical biblical nouns.
-  - **Tests / Done:** `node --test research/r12/property-bridges.test.mjs` passes negative provenance and sense-isolation tests; `0` synthetic Wikidata GUIDs in `scripts/fixtures/r12-external-pilot.json`.
+  - **Completed & Verified (`d994005`):** Added `--from-pinned`, eliminated fabricated `wd:related_physical_class` & `wd:combustion_fuel_agent` predicates, enforced strict `/^wd:P\d+$/` + `/^Q\d+\$[0-9a-fA-F-]+$/` Wikidata validation, isolated derived assertions with `assertion_origin` (`384` assertions, `0` legacy synthetic, `64` mappings), indexed `property-bridges.mjs` by `sense_id` (`bySense`), and distinguished `external_concept_equivalence` vs `shared_external_property`. `node --test research/r12/property-bridges.test.mjs` passes.
 
-- [ ] **R12-P0-3 Independent Structural Feature Families & Distinct-Root Orthographic Refinement.**
+- [x] **R12-P0-3 Independent Structural Feature Families & Distinct-Root Orthographic Refinement.**
   - **Addresses:** `RC-7`, `RC-4` (`N024`, `L002`).
-  - **Dependencies:** None (parallel with `R12-P0-1`, `R12-P0-2`).
   - **Ownership / Files:** `research/r12/structural-candidates.mjs`, `research/r12/structural-candidates.test.mjs`, `research/r12/orthographic-candidates.mjs`, `research/r12/orthographic-candidates.test.mjs`.
-  - **Requirements:** Require `>= 2` independent feature families (`action_rel`, `co_participant`, `quantity`, `discourse`) in `structural-candidates.mjs` so correlated encodings of one grammatical edge fail cleanly. Support `excludeIds` (same-root cognates) and `cooccurrenceCounts` in `orthographic-candidates.mjs`, keeping strict `HYPOTHESIS` non-etymology labeling.
-  - **Tests / Done:** `node --test research/r12/structural-candidates.test.mjs research/r12/orthographic-candidates.test.mjs` pass.
+  - **Completed & Verified (`d994005`):** Enforced `minDistinctFamilies: 2` across independent feature families in `structural-candidates.mjs` (`717` multi-family structural scenes built) and added `excludeIds` + `cooccurrenceCounts` promotion with preserved non-etymology `HYPOTHESIS` status in `orthographic-candidates.mjs` (`1,994` candidates built). Unit tests pass (`4/4` `research/r12/*.test.mjs`).
 
 ---
 
 ### Milestone P1 — Passage Intertext, Chronology, Concept Resolution & Ranking Calibration
 
-- [ ] **R12-P1-1 Embedded Bidirectional CrossReferences & Chronological Event Sequences in `fast-verses`.**
+- [x] **R12-P1-1 Embedded Bidirectional CrossReferences & Chronological Event Sequences in `fast-verses`.**
   - **Addresses:** `RC-3`, `RC-8` (`D001–D055`, `S001–S065`, `S018`, `W007`, `W040`).
-  - **Dependencies:** `R12-P0-1..3` (packed together in `R12-P2-1`).
   - **Ownership / Files:** `scripts/pack-r12-cpu-safe-assets.mjs`, `src/relationships/r10-discovery.ts`.
-  - **Requirements:** Embed top scored bidirectional `r10/xrefs` (`out`+`in`, favoring reciprocal & cross-testament links with target in-degree IDF) and Theographic chronological `events` + sequential links directly inside existing `fast-verses/chunk-*.json.gz` and `motifs-and-patterns.json.gz` (zero new files!). Surface them on passage-anchored queries with honest `verified_cross_reference` / `shared_motif_evidence` classifications and explicit chronological/typological limitations. Stop single coincidental Strong's matches from triggering unrelated Tier-1 `explicit-and-typology` records on passage queries.
-  - **Tests / Done:** `D001` (`Gen 1:1 → John 1:1`), `S018` (`Hos 6:2 → 1 Cor 15:4`), and `S001` (`Exod 12:15 → Exod 12:39 / Exod 14`) surface in top-10 without Rev 5:6 hijack.
+  - **Completed & Verified (`d994005`):** Embedded top-20 bidirectional `xrefs` across `30,022` verses (`392,281` links) & `events` across `6,423` verses into existing `488` `fast-verses/chunk-*.json.gz` files, added `event_seq` / `event_by_chapter` into `motifs-and-patterns.json.gz`, and guarded `explicit-and-typology` against single coincidental Strong's matches on passage queries. Verified locally and live (`Genesis 1:1`, `Exodus 12:15`, `Hosea 6:2` surface `1 Cor 15:4` / `r11:xref:22286:28823`, `1 Cor 5:7` `r11:xref:1832:29274`, and `r12:event:1832:event:74` / `event:125` without `rev5_6` or `1cor10_1_2` hijacks).
 
-- [ ] **R12-P1-2 Concept Resolution Synonyms, Phrases, Multi-Concept Routing & Quantity–Noun Guard.**
+- [x] **R12-P1-2 Concept Resolution Synonyms, Phrases, Multi-Concept Routing & Quantity–Noun Guard.**
   - **Addresses:** `RC-6` (`W025`, `W023`, `W015`, `W020`, `W031`, `N009`).
-  - **Dependencies:** None (integrates with `R12-P1-1` / `R12-P2-1`).
   - **Ownership / Files:** `scripts/pack-r12-cpu-safe-assets.mjs`, `src/relationships/r10-discovery.ts`.
-  - **Requirements:** Add modern English biblical synonym/phrase/stem normalization (`yeast → H2557/H7603/G2219`, `fig tree`, `unleavened bread`, `resurrect`, etc.) in both `fast-profiles` lookup and runtime `lookupShardToken`. Guard `r11:intersect:verse` numeral+noun intersections against compound magnitudes (`365 years` in `Gen 5:23`, `N009`) and prioritize 3rd-concept relevance before capping shared verses.
-  - **Tests / Done:** `yeast` returns `status: "ok"` with `H2557/H7603/G2219`; `three days resurrection` excludes `Gen 5:23` from top-10.
+  - **Completed & Verified (`d994005`):** Packed `22` modern English synonym/phrase lookup keys (`+102` entries) into `fast-profiles`, added Stage-1 3-gram/2-gram phrase + stem/alias lookup, guarded `r11:intersect:verse` against compound-magnitude numerals, and prioritized multi-concept overlap. Verified locally and live: `"yeast"` -> `status: "ok"` with `G2219`/`H2557`/`H7603`; `"three days resurrection"` -> Gen 5:23 / `365 years` excluded.
 
-- [ ] **R12-P1-3 Runtime Score Calibration, Direct Witnesses, Orthographic Co-Occurrence, `mode: "bridge"` & UI/MCP Surfacing.**
+- [x] **R12-P1-3 Runtime Score Calibration, Direct Witnesses, Orthographic Co-Occurrence, `mode: "bridge"` & UI/MCP Surfacing.**
   - **Addresses:** `RC-1`, `RC-4` (`L002`, `L003`, `L006`, `L015–L017`, `L027`, `L029`, `L036`, `L040`, `L041`, `W001–W039`).
-  - **Dependencies:** `R12-P0-1..3`, `R12-P1-1..2`.
-  - **Ownership / Files:** `src/relationships/r10-types.ts`, `src/relationships/r10-discovery.ts`, `src/ui/components/DiscoverConnections.ts`, `supabase/functions/bible-mcp/relationships-v2.ts`, `supabase/functions/bible-mcp/index.ts`.
-  - **Requirements:** Recalibrate `r12MultihopRecToRecord` scores and epistemic classes; demote generic `r11:cluster` and ultra-generic `r11:gram` hubs; elevate primary `r11:lxx`, `r11:lex`, direct `r11:colloc` collocations, and distinct-root co-occurring `r12:orth` (`H0120↔H1818`, removing `.slice(0,2)` blind truncation); implement real scoring differentiation in `mode: "bridge"`; add gentle mechanism-family diminishing-returns diversification; render `K` and honest epistemic labels in UI and update MCP metadata (`v1.8.0`, keeping 46 tools & 22 prompts).
-  - **Tests / Done:** Targeted diagnostic suite passes with zero restricted-key leaks and preserved `L001` / `P08` / `P11` positives.
+  - **Ownership / Files:** `src/relationships/r10-types.ts`, `src/relationships/r10-discovery.ts`, `src/ui/components/DiscoverConnections.ts`, `supabase/functions/bible-mcp/relationships-v2.ts`, `supabase/functions/bible-mcp/index.ts`, `integrations/plugin.json`, `supabase/functions/bible-mcp/research-workflow.ts`.
+  - **Completed & Verified (`d994005`):** Recalibrated `r12:path` (`DIRECT_ENDPOINT_WITNESS` Tier 4 checked before `isHypothesis`), `r12:prop` (`shared_external_property` vs `external_concept_equivalence` + upstream OEWN/Wikidata attribution), co-occurring `r12:orth` (`H0120↔H1818` surfaced at #11), `r11:gram` pronoun/auxiliary filtering, `r11:lxx`/`r11:lex`/`r11:colloc` elevation, `mode === 'bridge'` bonus, mechanism-family diversity, UI badges (`K`, `endpoint_epistemic_status`, `bridge_kind`), and MCP v1.8.0 contract sync (`46` tools, `22` prompts).
 
 ---
 
 ### Milestone P2 — Unified Compiler, Expanded Coverage, Determinism & Bounded Performance
 
-- [ ] **R12-P2-1 Unified Offline Compiler & Systematic Anchor Expansion (`r12-discovery-2`).**
+- [x] **R12-P2-1 Unified Offline Compiler & Systematic Anchor Expansion (`r12-discovery-2`).**
   - **Addresses:** `RC-8` (48-anchor ceiling, duplicate ranker, branch reproducibility).
-  - **Dependencies:** `R12-P0-1..3`.
   - **Ownership / Files:** `scripts/build-r12-pilot.mjs`, `scripts/pack-r12-cpu-safe-assets.mjs`.
-  - **Requirements:** Call `src/relationships/path-ranker.ts` directly from `build-r12-pilot.mjs`; expand systematic anchor coverage from 48 to ~220+ high-connectivity Hebrew/Greek lemmas; expand intermediate `STOP_HUB_STRONGS`; downgrade contextual edges in beam graph to `HYPOTHESIS`; attach `endpoint_context` (`direct_cooccurrence_refs`, `lxx_bridge_cooccurrence_refs`); pack cleanly inside `20,000` files and safe chunk/shard byte sizes; track `research/r12/*.mjs` on `feat/r12-qa-fixes`.
-  - **Tests / Done:** Deterministic rebuild verified; `total_staging_files <= 20000`, zero fabricated claims, safe compressed shard sizes.
+  - **Completed & Verified (`d994005`):** Built `r12-discovery-2` importing `src/relationships/path-ranker.ts` directly across `250` systematic anchors (`48` core + `202` expanded), fixed `endpointCtxCache.get(pairKey)` & `r10-b64gz-1` decoding, packed inside exactly `20,000` staging files (`pilot_compaction_parity: PASS`, `fast_profiles_max_outer_bytes: 234003`, `fast_verses_max_outer_bytes: 79889`, `asset_sha256: 7a08727be4d841e4aded1f0aeb5300c9d79e32769d30ba1968726d413f630a11`).
 
-- [ ] **R12-P2-2 Local Integration, Regression & Security Suite.**
-  - **Dependencies:** `R12-P1-1..3`, `R12-P2-1`.
+- [x] **R12-P2-2 Local Integration, Regression & Security Suite.**
   - **Ownership / Files:** `scripts/verify-r12-algorithm-v2.mjs`.
-  - **Requirements:** Verify all 10+ diagnostic anchors (`H1904`, `H5869`, `G3056`, `H1285`, `H0231`, `G3088`, `H0120`, `Exodus 12:15`, `Hosea 6:2`, `yeast`, `three days resurrection`, `Genesis 1:1`, `H2091`, `spirit wind`), before/after score components, full `getConnectionEvidence` hydration across all prefixes (`r12:path`, `r12:prop`, `r12:orth`, `r11:xref`, `r11:colloc`, `r12:event`), zero restricted-field leakage, `npm.cmd run check:types`, `npm.cmd run build`, and existing R11/R12 regressions (`verify-r12-smoke`, `verify-r12-packed-loading`, `verify-r11-discovery`, `verify-r11-benchmark`).
+  - **Completed & Verified:** `npm.cmd run check:types` (`tsc --noEmit`), `npm.cmd run build` (`vite build`), `node --test research/r12/*.test.mjs` (`4/4` pass), `node scripts/verify-r12-smoke.mjs` (`5/5` pass), `node scripts/verify-r12-packed-loading.mjs` (`PASS`), `node scripts/verify-r11-discovery.mjs` (`14/14` pass), `node scripts/verify-r11-benchmark.mjs` (`30` lemmas `recall: 1`, `15` pairs `unsupported: 0`), and `node scripts/verify-r12-algorithm-v2.mjs` (`ALL_V2_ALGORITHM_CHECKS_PASSED`, zero restricted keys) all exited `0`.
 
 ---
 
 ### Milestone P3 — Live Deployment, End-to-End Verification & Handoff
 
-- [ ] **R12-P3-1 Deploy & Live-Verify Corpus Worker, Website & Supabase MCP.**
-  - **Dependencies:** `R12-P2-2`.
+- [x] **R12-P3-1 Deploy & Live-Verify Corpus Worker, Website & Supabase MCP.**
   - **Ownership / Files:** `wrangler.corpus.jsonc`, live services (`bibleresearch-corpus`, `bibleresearch`, `bible-mcp`).
-  - **Requirements:** Deploy updated Workers and `bible-mcp` preserving all 46 tools, 22 prompts, `writes: "enabled"`, and notes compatibility; verify live endpoints directly via HTTP and bounded serial MCP smoke requests (`0` HTTP 503/500s).
+  - **Completed & Verified (2026-11-19):**
+    - `bibleresearch-corpus` -> `cce819e9-60d4-4e17-bb01-ed138af9a9a3` (`R12_RELEASE_ID=r12-discovery-2`, `R12_ASSET_SHA256=7a08727be4d841e4aded1f0aeb5300c9d79e32769d30ba1968726d413f630a11`, `R12_SOURCE_COMMIT=d9940058651c83befa168a2f31e60fca0c691414`); `/__integrity/b7` HTTP 200 (`PASS_CANARIES`), `/v1/catalog/metadata.json.gz` HTTP 403.
+    - `bibleresearch` (Website) -> `3d9482f4-7309-4fe5-babf-140041f5b42a` (HTTP 200).
+    - `bible-mcp` -> Supabase Edge Function `v44` (`ACTIVE`, `verify_jwt: false`, `version: "1.8.0"`, `tools: 46`, `prompts: 22`, `writes: "enabled"`, `ezbr_sha256: 7560b097c4e5fc3fbfe94bf557f036e58a5ddbf6b8cc278c075731105adfac71`).
+    - Bounded serial live MCP checks (`14` discovery probes, `6` `get_connection_evidence_v1` checks, Genesis `1:2` `get_verse_research` regression) passed with `0` HTTP 500/503s and `0` restricted keys.
 
-- [ ] **R12-P3-2 Record Release Provenance, Handoff & Push Branch.**
-  - **Dependencies:** `R12-P3-1`.
+- [x] **R12-P3-2 Record Release Provenance, Handoff & Push Branch.**
   - **Ownership / Files:** `research/r12/R12_ALGORITHM_IMPROVEMENTS_HANDOFF.md`, `research/r12/CHATGPT_CHECKPOINT.md`, `TASKS.md`.
-  - **Requirements:** Document root causes, code/ranking changes, before/after observations, limitations, live version IDs, rollback references, and exact MCP instructions for ChatGPT's independent 239-case re-evaluation; commit explicit paths and push `feat/r12-qa-fixes`.
+  - **Completed:** Recorded root causes, algorithm/ranking changes, local + bounded live before/after verification, rollback targets (`cf2182ed-b3fc-4ab6-99ab-5590e7e8a075`, `d147114c-6a5c-4927-80ed-2a48877c2af4`, `bible-mcp` `v43`), and focused ChatGPT re-evaluation probes in [R12_ALGORITHM_IMPROVEMENTS_HANDOFF.md](research/r12/R12_ALGORITHM_IMPROVEMENTS_HANDOFF.md) and [CHATGPT_CHECKPOINT.md](research/r12/CHATGPT_CHECKPOINT.md).
