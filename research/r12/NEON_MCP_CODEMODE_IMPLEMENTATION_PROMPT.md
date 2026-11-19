@@ -1,89 +1,134 @@
-# Neon orchestrator prompt — AI-first BibleResearch MCP, three-tool discovery interface
+# Neon implementation prompt — Seven-tool compact BibleResearch MCP (v2)
 
-**Role:** Neon, lead orchestrator/architect, integration and deployment owner. Use parallel low-cost subagents for independent bounded implementation work; use stronger reasoning only for source-integrity, tool contracts and cross-cutting design decisions.
+**Role:** Neon, lead orchestrator / technical architect / integration and deployment owner. Delegate independent, well-defined implementation and test tasks to low-cost subagents; use stronger reasoning only for tricky architecture, source integrity, chain/session security and evaluation.
 
-**Mission:** Turn BibleResearch's existing MCP into a discovery instrument that lets ChatGPT, Gemini and other AIs **see unexpected, evidence-supported biblical connections without knowing in advance which specialized tool to call**. The two routine operations must be **get_passage()** and **get_word()**, with a third **research()** that combines advanced corpus operations in a single, safe, read-only plan. Make ordinary verse research rich, readable and useful; enable optional deeper queries into grammar, LXX, connections, gematria, chronology, geography, recurring image configurations, DLM hypotheses and negative controls.
+## Non-negotiable mission
 
-**Primary specification (read first):** research/r12/MCP_CODEMODE_DISCOVERY_STRATEGY.md. Also consult research/r12/MCP_AI_DISCOVERY_REQUIREMENTS.md, research/r12/R12_ALGORITHM_IMPROVEMENTS_HANDOFF.md, RELATIONSHIP_ARCHITECTURE.md, ARCHITECTURE.md, AGENTS.md, PROJECTMAP.md and the pertinent open sections of TASKS.md. Local workspace remains authoritative; GitHub is not a substitute for checking actual source/deploy state.
+Implement the owner's **exact seven-function AI-facing model** rather than the earlier proposed 3-tool or 8-tool interface. The two frequent functions are **\`get_Passage()\` and \`get_Word()\`**. They must return **just enough compact evidence to make surprising, genuinely useful hidden patterns visible to an AI without requiring it to request every connection explicitly**. The AI follows the interesting ones using \`get_Connection()\`, \`follow_connectionchain()\` and \`research()\`.
 
-## Non-negotiable product goal
+**Primary authoritative specification:** \`research/r12/MCP_CODEMODE_DISCOVERY_STRATEGY.md\` (updated v2). The older \`MCP_AI_DISCOVERY_REQUIREMENTS.md\` remains a source for evidence/DLM/prophetic constraints **but its eight-tool proposal is superseded**. Follow \`AGENTS.md\`, \`ARCHITECTURE.md\`, \`RELATIONSHIP_ARCHITECTURE.md\`, the real local workspace, \`PROJECTMAP.md\`, \`TASKS.md\` and the latest R12 deployment handoff. Local source is authoritative; inspect live versions and Git status before changing code.
 
-A question about Zechariah 4 should return the **actual passage in readable English**, ordered Hebrew with transliteration/gloss/grammar, the relationships *among* its eyes, lamps, trees, oil and Spirit, the vision's own explanatory statements, meaningful connections to Revelation 11, and clear avenues for further investigation. A request for Genesis 6:14 should expose the source-grounded kaphar/kopher family and relevant uses without asserting that a root connection proves a redemption interpretation. Revelation 13 should surface the distinctive Daniel 7 image-combination before generic horn or head word associations.
+**Do not stop after planning.** Implement, test, deploy and publish the new MCP interface with a factual handoff.
 
-**Do not optimize for raw quantity of facts. Optimize for meaningful discovery per model token, precise evidence, source transparency, reusable follow-up IDs and exploration flow.**
+## 0. Inventory and single-source task plan
 
-## Phase 0 — Inventory and small architecture plan
+1. Inspect all existing registered MCP tools, annotations/schemas, Edge Function/Worker routing, corpus release, source/edition/license constraints, source integrity, website clients and notes security.
+2. Preserve the existing 46-tool legacy surface until an explicit, tested compatibility migration is ready. Do not remove dataset access, change existing source evidence, or weaken write protection.
+3. Identify reusable internals for \`get_verse_research\`, \`get_verse_hydrated\`, \`research_passage_lens\`, lexical lens, R9B relationships, R10/R12 discovery, LXX, Macula grammar/syntax, chronology, geography, DLM and notes.
+4. Examine actual current failures/fallbacks, especially compact word lens and verse research. Distinguish transient unavailable from missing coverage; do not claim a prior failure persists without reproducing it.
+5. Add an efficient, dependency-ordered implementation plan with owners/tests **to TASKS.md only**. Do not introduce competing trackers or duplicate architecture proposals. Assign non-overlapping subagent file ownership.
 
-1. Inspect Git status, deployed MCP/corpus version, existing registered 46 tools, source code and free-plan constraints. Check for local uncommitted changes and preserve them.
-2. Map legacy functions from catalog.ts, research-lenses.ts, verse-hydrated.ts, relationships-v2.ts, syntax-research.ts, notes-tools.ts and dlm-notes.ts to underlying read operations. Identify which compose reliably and which currently fail. Verify actual Worker/Supabase routing before designing anything.
-3. Confirm current source/edition constraints, release IDs, migration/rollback, note authorization and existing DLM taxonomy. Never invent DLM 0–7 meanings.
-4. Record a concise design and actionable dependency tasks **in TASKS.md (single source of truth)**; create no second task tracker. Divide tasks by owned files so subagents can run simultaneously.
+## 1. Exact seven user-facing MCP tools
 
-## Phase 1 — Discovery Context Packet (shared foundation)
+Implement and expose these names (case-sensitive), with concise MCP descriptions and validated named JSON arguments. Provide short positional examples in documentation.
 
-Implement a reusable versioned, typed packet builder over existing validated corpus evidence. Required:
-- Full requested actual verses in legally renderable English, ordered original tokens, transliteration, short gloss, exact occurrence identity, edition, morphology and available syntactic function.
-- Compact, source-grounded lexical capsules for **significant words**, including alternative senses/homographs, documented formation/root, measured occurrences and diverse representative witness verses; do not hydrate every stopword with a huge connection list.
-- A *passage scene and relationship summary*: speaker, images, actors, objects, actions, number-noun pairs, grammatical relations, repeated multiword motifs and local **explicit** explanations.
-- Ranked, diverse **passage-level** and word-level connections with both readable witness texts, original anchors, mechanism, an explanation of why the comparison matters, evidence ID, source/provenance, epistemic class and follow-up node. Prioritize explicit local interpretations and distinctive multiword intertexts over generic lexical associations.
-- Counterexamples, unresolved alternatives, honest negative/missing-data results, DLM notes clearly marked as untrusted commentary, coverage/release/version flags, cursor, and budget/truncation metadata.
-- Presets quick | discovery | prophetic | deep, include filters and hard size/fanout limits. A compact response must still retain the full words of each *requested* verse unless the request explicitly opts for summarization; if range exceeds bounds return an actionable partial/continuation rather than fake completeness.
-- Deduplicate shared lexical data and support selective follow-up retrieval by stable occurrence/evidence IDs.
+### A. get_Passage(passage, depth=z, word_depth=x, show_etymology=y, show_realworld=0)
 
-Build source-unit tests before large implementation changes; use existing corpus snapshots and releases.
+This is the default study tool. Accept canonical book/chapter/verse and **inclusive cross-chapter ranges**; support \`1COR12:10-1COR13:4\`, Psalm verse 0 where present and bounded multiple selections.
 
-## Phase 2 — Implement get_passage()
+- **depth (z)** = max z connections for the **complete passage** AND max z for **each verse**, separately.
+- **word_depth (x)** = max x connections for **each word**. x=0 means return full **basic word capsule**, but **no word connections**.
+- **show_etymology (y)** = 0 suppresses optional etymology/similarity. y>0 includes documented roots/derivations **plus max y orthographic/spelling candidates in a separate unverified field**. Never assert consonant similarity is historical etymology.
+- **show_realworld (0/1)** = 0 omit, 1 include sourced physical/world definitions and linked concepts. No automatic theological proof.
+- Default small depth, word_depth 0, etymology 0, realworld 0; compact notes summaries if authorized.
+- Optional focused filters, source edition, date model, input budget, expansion cursors and evidence type selectors. Do not require configuration for normal usage.
 
-Support one verse, contiguous ranges and bounded multiple passages, optional focus and evidence-layer flags; distinguish source edition, symbolic/historical interpretation and whole-passage narrative context. Default to a **discovery** profile, not a dictionary dump.
+Return **exact requested hierarchy**:
+\`passage { passage_connections[top z], geography[{place,role,coordinates,confidence,source}], chronology{model,axis,date_or_range,alternatives,status}, verses:[ {ref, verse_id, complete_original, complete_english, verse_connections[top z], words:[ {original, lemma, transliteration, English gloss, senses, grammar code + explanation, lxx, optional etymology, notes, word_connections[top x], optional realworld} ] } ], coverage, release, cursor }\`.
 
-Ensure explicit text-internal explanation and meaningful *composite* imagery are surfaced by the default ranker for prophetic inputs. Require both-side actual Bible verse texts and transcriptions/transliterations in important comparisons. Use existing indexed R10/R12 data and graph classes; do **not** create a new uncontrolled AI-inferred graph or hardcode benchmark answers.
+Word order and verse range must be correct. Show actual readable complete verse texts and token glosses/transliteration, not just reference numbers and Strong IDs. Canonical word identity and morphology must be anchored to **the token occurrence**. Greek NT occurrence is not automatically an LXX alignment. The time/date and geography of a passage must not be invented (for example, a letter's recipient city is not its composition location; a model-specific 'year 4029' is not a universal date).
 
-## Phase 3 — Implement get_word()
+**Key acceptance call:** \`get_Passage("1COR12:10-1COR13:4",10,0,0)\`. The omitted fifth positional realworld argument defaults to 0. All 26 inclusive requested verses must remain readable via first response plus explicit continuation when a strict output cap requires it; z applies per passage and per verse, x=0 omits word connections, y=0 omits optional spelling/etymology, realworld off. Do not silently truncate, hallucinate or omit the words.
 
-Accept a canonical token occurrence, Strongs/extended Strongs, Hebrew/Greek lemma or surface, transliteration, or English concept with candidate senses. Return rich contextual lexical evidence, documented roots/formations separated from wordplay and spelling candidates, occurrences with source scope, grammar/partners, LXX bridges, relationship types, geography/temporal usages if requested, and diverse actual verses/next links.
+### B. get_Word(word, x, y)
 
-Use accurate count denominators. A shared spelling is not a shared sense; a shared root is not a synonym; a Hebrew↔Greek correspondence is not automatic equivalence. On an unavailable backend, return a clear component status and validated fallback rather than a silent gap.
+Resolve English/Hebrew/Greek/transliteration/Strong's/lemma/exact occurrence. Preserve all relevant homographs and sense candidates; disambiguate rather than blindly selecting a single sense.
 
-## Phase 4 — Implement research() — free-tier composable analysis
+Return the *same canonical word object as get_Passage* enriched with grammatical form(s), attested senses in usage, LXX mappings with proper source direction, documented roots and separate spelling candidates (y), **gematria with named system/normalization and letter values**, attributed notes, up to x diverse connections with verses/evidence IDs, physical/real-world definition and connected concepts when available, and occurrence statistics with sample verses. Show exact Greek/Hebrew form and English/transliteration.
 
-**Implement Stage A, not arbitrary JS execution.** Accept a typed *declarative plan* with allowlisted operations, named results/dependencies, bounded filtering/aggregation, output projection and per-step status. Support at least:
-- passage/word/evidence reads and exact reference resolution;
-- lexical occurrence, shared passage and relational path searches;
-- multi-passage comparison, grammar and structural motif evidence;
-- deterministic aggregation/intersection/grouping over bounded results;
-- specified gematria systems with orthography rules and no theological proof leap;
-- **time-series occurrences** using named competing chronology models and distinct event vs composition axes, undated counts/denominators;
-- **geographic passage/event search** by supported place/region/bounding geometry, respecting event setting versus merely mentioned/symbolic places;
-- LXX alignment and counterexample/disconfirmation searches where existing data supports them.
+**Key acceptance call:** \`get_Word("Ruach",30,10)\`. Implement sane limits/cursors for large x and no fabricated data. Gematria varies by surface, normalization and Greek/Hebrew convention; do not copy an unverified hardcoded sum for \`ἄλλῳ\`.
 
-No arbitrary SQL, eval, Function, unrestricted loops, external fetch, shell or note writing. Validate plan schema, steps/dependencies, authorization, source access, CPU/operation/row/byte limits and retry/error behavior. Batch/parallelize independent reads with bounded concurrency. Return only the AI-requested projected evidence and stable IDs, plus coverage and omitted-step notices. If a source capability is missing, mark it unavailable rather than simulating results.
+### C. write_Note()
 
-**Real code mode** is optional later (research_code() only in a securely isolated sandbox). Cloudflare Dynamic Workers currently require the Paid plan; do not purchase, enable billing or turn on a paid dependency. Do not advertise Stage A as executing JavaScript.
+**Keep current authorized behavior**: saving/editing notes and DLM cards with exact verse/word anchors, provenance, author/review/visibility, explicit user authorization and rate/ownership checks. Expose compatible route/alias, not an insecure public write API. No automatic write from read or chain operations.
 
-## Phase 5 — Interface and compatibility
+### D. get_Connection(items, x)
 
-Make the **default** MCP read-only catalog show get_passage, get_word and research with small, precise descriptions, schemas and use-case examples. Offer legacy/expert tools via a separately identifiable compatible profile/endpoint or a proven client-safe mechanism. Do not remove or break the existing 46 tool names, website RPC clients or authorized note-writer functions. Keep read and write security boundaries distinct.
+Accept **two or more words, concepts, or passages** (mixed allowed), return up to x typed, ranked meaningful connections, with *actual supporting biblical witnesses*, original-language anchors, graph route, alternatives, evidence class and next links.
 
-Update existing skill/tool-reference descriptions, client manifests, MCP docs, WORKFLOW routes and automated verification to point to the new default behavior. A user should not need to call get_research_prompt just to do an ordinary verse study. Document how ChatGPT/Gemini refresh schemas. Preserve edition/rights restrictions.
+**For word inputs** return their complete get_Word-shaped objects (within explicit bounds/continuations); **for passage inputs** return the passage's text/context and up to x connections, **not every word JSON**. Deduplicate where inputs overlap. Do not promote transitive edges into documented endpoint claims.
 
-## Phase 6 — Small tests, integration and deployment
+### E. research(query_or_plan)
 
-Build through **file-separated subagents**. Neon owns shared types/interfaces, TASKS.md, integration, release verification and deployment. Give inexpensive agents exact files and deterministic acceptance criteria; request only necessary context and review before merge.
+One flexible interface for the AI to ask for advanced research, mixing search/compare/aggregate operations into one bounded response:
+- lexical words/occurrences and co-occurrences (same verse vs clause vs nearby);
+- typed grammar and syntax relations, passage-passage comparison, graph traversal, proof paths, LXX;
+- gematria and numeric patterns with exact method/source;
+- word-occurrence distributions by *named chronology model* and event/composition axis with undated denominator;
+- places and events within supported geography, differentiating location role/uncertainty;
+- real-world physical properties with source, DLM read and counterexamples;
+- bounded aggregate/intersect/filter/project operations.
 
-Run *focused* unit tests and representative live checks after each step, not the full 239-case benchmark. At minimum test:
-- Genesis 6:14 / H3722–H3724 coating and ransom lexical family, with no claimed theological proof.
-- Zechariah 4:1–14, explicit Spirit explanation, seven eyes and the Revelation 11:4 reuse, original languages and readable verses.
-- Ezekiel 1 and explicit later cherub identification in Ezekiel 10.
-- Revelation 13 and composite Daniel 7 beasts, avoiding high-score generic horn/head distractions.
-- Homograph/sense, LXX source and Greek/Hebrew morphology controls.
-- One gematria parameterization, one historical-timeline distribution, one geography setting-vs-mentioned-place query, malformed-plan/security tests, CPU/rate limits, sparse-source/coverage cases, 503 retry/fallback and no-note-write-in-read tests.
+Support \`query\` (common deterministically recognizable natural-language requests, or supported-plan suggestion if too broad) or typed \`plan\` with operation DAG/allowlist and per-step coverage/error status. Never pretend the server runs an LLM on arbitrary prompts without a model. Prefer deterministic preindexed corpus methods and compact projected results.
 
-Do not rewrite the frozen historical benchmark. Do not claim independent success from cherry-picked tests. ChatGPT will run the large independent benchmark after deployment.
+**Do not run arbitrary AI-generated JavaScript inside Supabase or a normal Worker**. True Code Mode requires a properly isolated runtime, which may involve a paid Cloudflare option; free-tier-first Stage A declarative research must work without paid services.
 
-After passing tests, publish a **new verified MCP release** following existing project deployment rules. Check actual live tools/list, response schemas, corpus release and successful small end-to-end calls. Keep a rollback version. Git commit/push all source and updated TASKS.md, maintain existing history, and create:
+### F. follow_connectionchain()
 
-**research/r12/MCP_CODEMODE_IMPLEMENTATION_HANDOFF.md**
+Remember a path across separate MCP calls: **start → follow → inspect → branch/back → reset**. Expose \`chain_id\`, revision, current node, short breadcrumb, new-edge evidence, concise next options, optional context, expiry and partial status.
 
-Include new default endpoint/how to refresh, exact version and release IDs, Git SHA, actual implementation scope, operations, fallback/limits, focused test outputs, security/provenance checks, deferred code-execution features, known gaps, and clear independent ChatGPT benchmark instructions.
+Use server-side **ephemeral state** with a documented TTL, bounded size and optimistic concurrency; no permanent research-note claims. Authentication or unguessable scoped capability tokens must prevent cross-user access, enumeration and overwrites, including with today's unauthenticated public read endpoint. Keep chain IDs/tokens out of logs and public URLs. Return delta rather than full history. Verify that graph chains are still *hypotheses until endpoint evidence exists*.
 
-**Do not stop at writing a plan. Implement, integrate, verify, deploy and provide links.** Never perform destructive SQL, delete unique data, weaken authorization, or enable paid features without explicit separate approval.
+### G. get_prompt()
+
+Return a compact BibleResearch research workflow and tool usage guide, with optional subject profile (general, prophecy, DLM, word study, chain, challenge). Include when to use each function, counts/flags, what "complete" means, how to inspect witnesses and distinguish Bible facts vs interpretation. Ordinary get_Passage/get_Word should work without a preceding get_prompt.
+
+## 2. Evidence/selection architecture
+
+Implement one shared **compact structured word object** and one **nested passage object** rather than seven inconsistent payload styles. Ordinary passage response should expose interesting linguistic/biblical clues *through ranked passage/verse/word connection summaries* and local text structure; never flood with seven occurrences and letter matches for every stopword when x/y are zero.
+
+For each connection: brief why-interesting reason + what is connected + relation/evidence type + relevance/strength category + *at least one* readable witness snippet + stable evidence/next-node ID. Inspect full witnesses on demand.
+
+Ensure the most meaningful patterns — uncommon multiword or number/role/image combinations, explicit interpretations, strong intertextual reuse, contrasts, and sourced grammatical/lexical relationships — can rank above generic word pairs. Surprise is discovery priority, not proof.
+
+Enforce deterministic z/x/y bounds and global output/CPU/fanout limits. Give explicit \`truncated\`, \`omitted\`, \`next_cursor\`, source coverage, license/edition/release, ambiguity and missing-upstream status; no silent incomplete answer. Group repeated lexical dictionaries and witness metadata to save tokens without breaking readability.
+
+DLM entries, user notes, empirical science and model hypotheses must remain **separate epistemic classes**. Reuse existing note/security and provenance contracts. Do not invent missing DLM layer 0–7 definitions.
+
+## 3. Parallel implementation strategy
+
+Neon coordinates coherent interfaces first, then subagents by **non-overlapping source files**:
+1. Passage/word packet and selection implementation.
+2. Concept resolution, lexical details, LXX and gematria.
+3. Connection evidence and ranking/graph adapters.
+4. Secure server-side chain persistence.
+5. Declarative research-plan executor with chronology/geography.
+6. Test fixtures, MCP registration compatibility, skill/docs and prompts.
+
+Use cheap implementation agents on exact, well-specified tasks and stronger review only where necessary. Integrate independently passing commits incrementally. Protect user's existing local changes and source datasets. If a task requires new paid services, irreversible migrations, deletion or lowering security, mark it blocked and continue safely rather than silently proceeding.
+
+## 4. Focused acceptance tests; no expensive full benchmark
+
+**Calls/expected shape:**
+- \`get_Passage("1COR12:10-1COR13:4",10,0,0)\`: cross-chapter accuracy; complete original/English verse sequence, basic word structure, no per-word connections, no orthographic flood, no realworld, proper time/place statuses.
+- \`get_Passage("Zechariah 4:1-14",5,0,0)\`: return meaningful top connections, including relevant Zech 4 self-explanation and Revelation 11 relationship, not mostly unrelated grammar; readable Hebrew and English.
+- \`get_Word("Ruach",30,10)\`: original/transliteration, ambiguity, source-attested relatives vs speculative spelling, actual sample verses and defined gematria.
+- \`get_Word("H3722",10,0)\` and \`get_Passage("Genesis 6:14",5,2,1)\`: expose relevant covering/pitch family and label a possible redemption analogy as non-explicit, with truthful realworld evidence.
+- \`get_Connection(["Zechariah 4","Revelation 11:4"],10)\`: passage-level comparison without full per-word expansion; real verse witnesses and differences.
+- Ezekiel 1 ↔ Ezekiel 10, Revelation 13 ↔ Daniel 7, Matthew 6:22 ↔ eye/lamp motif: nuanced, evidence-classed comparisons; no forced universal symbol sense.
+- \`follow_connectionchain\` persists through separate requests/clients; rejects expired/forged tokens, conflicting revisions; branch/back and no source-edge laundering.
+- \`research\` handles a typed multi-step word/grammar comparison, a specified gematria calculation, an explicit chronology-model distribution and event-vs-mentioned geography query; invalid plans cannot run SQL/network/code or perform note writes.
+- \`write_Note\` preserves prior human/AI note semantics and denies unauthorized writes.
+- \`get_prompt\` is correct, brief and consistent.
+
+Run relevant unit/schema/security/build checks and **short bounded live smoke calls only**. Do not consume credits running the full 239-case benchmark; ChatGPT will later do independent comprehensive testing. Retain negative controls and regression tests.
+
+## 5. Publish the interface
+
+Register/expose seven functions at a documented **core** MCP endpoint/profile after testing while preserving the old 46-tool endpoint/profile and client compatibility. Update \`supabase/functions/bible-mcp/catalog.ts\`, related implementation modules, workflow-contract, workflow prompts, notes compatibility, appropriate manifests, skill/tool descriptions, \`MCP_SETUP.md\`, and **TASKS.md** to reflect actual deployed behavior. Avoid claiming core tool shrinkage if the client still sees 46 because of host caching; provide refresh instructions and actual \`tools/list\` response.
+
+Deploy the new release using project procedures; verify live endpoint responses, real source/routing versions, security and selected acceptance fixtures. Record release IDs, commit SHA, rollback version, practical budgets, known limitations and deferred true sandboxed JS.
+
+Create **\`research/r12/MCP_CODEMODE_IMPLEMENTATION_HANDOFF.md\`** describing what was actually implemented and how ChatGPT can independently test all seven tools. Push to GitHub. Final report: brief summary, links, verification results and clearly marked incomplete/blocked items.
+
+**Execute end to end, not just planning.**
