@@ -80,7 +80,6 @@ Simply return **the BibleResearch research guidelines prompt** explaining how an
 - What is usually noise? What can be shortened (e.g. a recognizable grammar code rather than a full sentence)?
 - Where is **more** information worthwhile (e.g. the original verse, a distinctive textual parallel, documented root components, a non-obvious relationship)?
 - Which output levels/settings genuinely help, and how should they be described to the model?
-- How should connections be balanced across lexical, grammatical, intertextual, symbolic, historical, numerical and physical evidence?
 - Which follow-up calls should immediately retrieve deeper evidence without repeating everything?
 
 Try at least: **Genesis 6:14** (covering/pitch and `kaphar` family), **Zechariah 4** (seven eyes/lamps, oil, Spirit, Revelation 11), **Ezekiel 1** (Ezekiel 10), **Revelation 13** (Daniel 7), **1 Corinthians 12:10–13:4**, and a **Ruach** word study. Judge the outputs by how many **interesting, defensible discoveries per token** they make possible—not sheer connection count.
@@ -89,6 +88,6 @@ The AI must still see direct biblical texts and meaningful source-language detai
 
 ## Implementation boundaries
 
-Build on existing STEP/Macula, LXX, relationship/discovery indexes, geography, chronology and notes; avoid duplicating large assets or changing original source evidence. Preserve existing MCP clients and note protections during migration. Prefer low-cost/free existing infrastructure, bounded outputs, and stable evidence IDs. Use the current project development contract and `TASKS.md` for work tracking.
+Build on existing STEP/Macula, LXX, relationship/discovery indexes, geography, chronology and notes; avoid duplicating large assets or changing original source evidence. Use the current project development contract and `TASKS.md` for work tracking.
 
 **Success:** A model calls get_Passage or get_Word, notices worthwhile biblical connections immediately, and can investigate the ones it finds interesting with only a few targeted follow-ups.
