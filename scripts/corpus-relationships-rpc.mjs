@@ -3153,3 +3153,782 @@ export async function handleExpandBiblicalConnectionV1(ctx, params = {}) {
   });
 }
 
+// ============================================================================
+// CPU-safe fast read-only R10/R11 RPC handlers (<5ms Cloudflare budget)
+// Backed strictly by chapter-lite, fast-verses, fast-profiles, motifs, concept-index.
+// NEVER reads /v1/chapters/b*-c*.json.gz.
+// ============================================================================
+
+const FAST_CHAPTER_LITE_BASE = '/v2/relationships/r8-v1.2';
+const FAST_R10_ASSET_BASE = '/v2/relationships/r11-v1.0/r10';
+const FAST_FUNCTION_POS_CLASSES = new Set([
+  'conjunction', 'preposition', 'article', 'particle', 'pronoun',
+  'cj', 'prep', 'ptcl', 'adv', 'rel', 'om', 'intj', 'pron', 'det', 'conj',
+]);
+const FAST_SKIP_PROFILE_STRONGS = new Set(['H0853', 'H3068']);
+
+function decodeB64GzWithCtx(ctx, b64, cacheKey) {
+  if (b64 == null) return null;
+  if (typeof b64 !== 'string') return b64;
+  if (typeof ctx.decodeB64Gz === 'function') return ctx.decodeB64Gz(b64, cacheKey);
+  if (typeof ctx.decodeB64GzJson === 'function') return ctx.decodeB64GzJson(b64, cacheKey);
+  throw new Error('decodeB64Gz helper is required in ctx.');
+}
+
+async function loadFastProfileByStrongs(ctx, bs) {
+  if (!bs) return null;
+  const bucketIdx = Number(BigInt('0x' + fnv1a64Hex(bs)) % 1024n).toString(16).padStart(3, '0');
+  const shard = await ctx.loadJsonShard(ctx.env, `${FAST_R10_ASSET_BASE}/fast-profiles/shard-${bucketIdx}.json.gz`);
+  const b64 = shard?.profiles?.[bs];
+  if (!b64) return null;
+  return decodeB64GzWithCtx(ctx, b64, `/r10/p:r11-v1.0:${bs}`);
+}
+
+function compactClusterItem(c) {
+  return {
+    cluster_id: c?.cluster_id ?? null,
+    category: c?.category ?? null,
+    label: c?.label ?? null,
+    count: c?.count ?? (Array.isArray(c?.verses) ? c.verses.length : 0),
+    ...(c?.summary ? { summary: String(c.summary).slice(0, 180) } : {}),
+  };
+}
+
+function compactGrammaticalItem(g) {
+  return {
+    predicate: g?.predicate ?? null,
+    direction: g?.direction ?? null,
+    display_label: g?.display_label ?? null,
+    related_strongs: g?.related_strongs ?? null,
+    related_script: g?.related_script ?? null,
+    related_gloss: g?.related_gloss ?? null,
+    occurrences: g?.occurrences ?? 0,
+  };
+}
+
+function compactLexicalItem(l) {
+  return {
+    type: l?.type ?? null,
+    ...(l?.root ? { root: l.root } : {}),
+    target_strongs: l?.target_strongs ?? null,
+    ...(l?.script ? { script: l.script } : {}),
+    ...(l?.gloss ? { gloss: l.gloss } : {}),
+    ...(l?.label ? { label: l.label } : {}),
+  };
+}
+
+function compactLxxItem(x) {
+  return {
+    type: x?.type ?? null,
+    target_strongs: x?.target_strongs ?? null,
+    script: x?.script ?? null,
+    gloss: x?.gloss ?? null,
+    count: x?.count ?? 0,
+  };
+}
+
+function compactOrthCandidate(c) {
+  return {
+    bs: c?.bs ?? c?.target_strongs ?? c?.strongs ?? null,
+    sc: c?.sc ?? c?.target_form ?? c?.script ?? null,
+    ...(c?.tr || c?.transliteration ? { tr: c.tr ?? c.transliteration } : {}),
+    gl: c?.gl ?? c?.target_gloss ?? c?.gloss ?? null,
+    ...(c?.cons || c?.matched_normalized_text ? { cons: c.cons ?? c.matched_normalized_text } : {}),
+    ...(c?.score !== undefined ? { score: c.score } : {}),
+  };
+}
+
+function projectCompactProfile(
+  prof,
+  { includeVids = false, includeForms = false, includeOrth = true, includePilot = false } = {},
+) {
+  const pilot = prof.r12_pilot_anchor || null;
+  const rawOrth = prof.orth_entry || null;
+  const rawOrthCands = Array.isArray(rawOrth?.candidates)
+    ? rawOrth.candidates
+    : (Array.isArray(pilot?.orthographic_candidates) ? pilot.orthographic_candidates : []);
+  const orthEntry = includeOrth
+    ? (rawOrth
+        ? {
+            bs: rawOrth.bs ?? prof.bs,
+            ...(rawOrth.cons ? { cons: rawOrth.cons } : {}),
+            ...(Array.isArray(rawOrth.homographs)
+              ? { homographs: rawOrth.homographs.slice(0, 5).map(compactOrthCandidate) }
+              : {}),
+            ...(rawOrthCands.length > 0 ? { candidates: rawOrthCands.slice(0, 5).map(compactOrthCandidate) } : {}),
+          }
+        : (rawOrthCands.length > 0 ? { candidates: rawOrthCands.slice(0, 5).map(compactOrthCandidate) } : null))
+    : undefined;
+
+  const propBridges = pilot?.property_bridges ?? prof.property_bridges ?? [];
+  const compactBridges = Array.isArray(propBridges)
+    ? propBridges.slice(0, 4).map((b) => ({
+        property_key: b?.property_key ?? null,
+        value_label: b?.value_label ?? null,
+        ...(b?.bridge_kind ? { bridge_kind: b.bridge_kind } : {}),
+        ...(b?.assertion_origin ? { assertion_origin: b.assertion_origin } : {}),
+        ...(b?.target_strongs ? { target_strongs: b.target_strongs } : {}),
+        ...(b?.target_gloss ? { target_gloss: b.target_gloss } : {}),
+        ...(b?.source ? { source: b.source } : {}),
+      }))
+    : [];
+
+  const pilotPaths = includePilot
+    ? (pilot?.multihop?.recommendations || prof.multihop?.recommendations || [])
+        .slice(0, 5)
+        .map((p) => ({
+          evidence_id: p?.evidence_id ?? null,
+          target_strongs: p?.target_strongs ?? p?.target_id ?? null,
+          target_gloss: p?.target_gloss ?? p?.target_label ?? null,
+          epistemic: p?.endpoint_epistemic_status ?? p?.epistemic_status ?? null,
+          ...(p?.K !== undefined ? { K: p.K } : {}),
+          ...(Array.isArray(p?.witness_refs) ? { witness_refs: p.witness_refs.slice(0, 2) } : {}),
+        }))
+    : undefined;
+
+  return {
+    bs: prof.bs,
+    lk: prof.lk,
+    lang: prof.lang,
+    sc: prof.sc,
+    tr: prof.tr,
+    gl: prof.gl,
+    pos: prof.pos,
+    entity_kind: prof.entity_kind,
+    senses: Array.isArray(prof.senses) ? prof.senses.slice(0, 6) : [],
+    total_verses: prof.total_verses ?? 0,
+    ...(includeVids && Array.isArray(prof.all_vids) ? { all_vids: prof.all_vids } : {}),
+    ...(includeForms && Array.isArray(prof.forms)
+      ? {
+          forms: prof.forms.slice(0, 10).map((f) => ({
+            sf: f?.sf ?? null,
+            tr: f?.tr ?? null,
+            gl: f?.gl ?? null,
+            mc: f?.mc ?? null,
+            cnt: f?.cnt ?? 0,
+          })),
+        }
+      : {}),
+    clusters: Array.isArray(prof.clusters) ? prof.clusters.slice(0, 5).map(compactClusterItem) : [],
+    grammatical_relations: Array.isArray(prof.grammatical_relations)
+      ? prof.grammatical_relations.slice(0, 6).map(compactGrammaticalItem)
+      : [],
+    lexical_relations: Array.isArray(prof.lexical_relations)
+      ? prof.lexical_relations.slice(0, 6).map(compactLexicalItem)
+      : [],
+    lxx_relations: Array.isArray(prof.lxx_relations)
+      ? prof.lxx_relations.slice(0, 6).map(compactLxxItem)
+      : [],
+    homograph_siblings: Array.isArray(prof.homograph_siblings)
+      ? prof.homograph_siblings.slice(0, 6).map((h) => ({
+          bs: h?.bs ?? null,
+          lk: h?.lk ?? null,
+          sc: h?.sc ?? null,
+          tr: h?.tr ?? null,
+          gl: h?.gl ?? null,
+        }))
+      : [],
+    ...(orthEntry !== undefined ? { orth_entry: orthEntry } : {}),
+    first_occ_passages: Array.isArray(prof.first_occ_passages)
+      ? prof.first_occ_passages.slice(0, 3).map((fp) => ({
+          ref: fp?.ref ?? null,
+          book: fp?.book ?? null,
+          chapter: fp?.chapter ?? null,
+          verse: fp?.verse ?? null,
+          ...(fp?.snippet ? { snippet: String(fp.snippet).slice(0, 140) } : {}),
+        }))
+      : [],
+    pilot_bridges: compactBridges,
+    ...(pilotPaths !== undefined ? { pilot_paths: pilotPaths } : {}),
+  };
+}
+
+function parseJsonOrArrayParam(raw) {
+  if (Array.isArray(raw)) return raw;
+  if (typeof raw === 'string' && raw.trim().startsWith('[')) {
+    try {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
+function extractStemLemmaKey(morphemes, fallbackStrongs) {
+  if (Array.isArray(morphemes)) {
+    const stem = morphemes.find(m => Array.isArray(m) && m[0] === 'stem' && m[1]);
+    if (stem) return stem[1];
+    for (let i = morphemes.length - 1; i >= 0; i--) {
+      const m = morphemes[i];
+      if (Array.isArray(m) && m[1] && !String(m[0] || '').startsWith('prefix_')) {
+        return m[1];
+      }
+    }
+  }
+  return fallbackStrongs ? `lemma:${fallbackStrongs}` : null;
+}
+
+function normalizeTokenList(liteVerse, fastVerse) {
+  const liteRows = Array.isArray(liteVerse?.t) ? liteVerse.t : [];
+  const liteByWn = new Map();
+  for (const row of liteRows) {
+    if (Array.isArray(row)) liteByWn.set(Number(row[0]), row);
+  }
+
+  const fvToks = Array.isArray(fastVerse?.toks) ? fastVerse.toks : null;
+  if (fvToks) {
+    return fvToks.map((tok) => {
+      const wn = Number(tok.wn);
+      const liteRow = liteByWn.get(wn);
+      const rawStrongs = tok.s ?? liteRow?.[3] ?? null;
+      const norm = rawStrongs ? normalizeStrongsBase(rawStrongs) : null;
+      const strongs = norm ? norm.padded : (rawStrongs || null);
+      const rawAll = Array.isArray(tok.all_s) && tok.all_s.length > 0 ? tok.all_s : (strongs ? [strongs] : []);
+      const allStrongs = [];
+      const seenS = new Set();
+      for (const item of rawAll) {
+        const padded = normalizeStrongsBase(item)?.padded || String(item || '').trim();
+        if (padded && !seenS.has(padded)) {
+          seenS.add(padded);
+          allStrongs.push(padded);
+        }
+      }
+      return {
+        position: wn,
+        word_id: liteRow ? (liteRow[1] ?? null) : null,
+        surface: tok.sf ?? liteRow?.[2] ?? null,
+        lemma: tok.lm ?? null,
+        lemma_key: extractStemLemmaKey(liteRow?.[4], strongs),
+        strongs,
+        all_strongs: allStrongs,
+        gloss: tok.g ?? null,
+        pos_class: tok.cl ?? null,
+      };
+    });
+  }
+
+  return liteRows.map((row) => {
+    const wn = Number(row[0]);
+    const rawStrongs = row[3] ?? null;
+    const strongs = rawStrongs ? (normalizeStrongsBase(rawStrongs)?.padded || rawStrongs) : null;
+    return {
+      position: wn,
+      word_id: row[1] ?? null,
+      surface: row[2] ?? null,
+      lemma: null,
+      lemma_key: extractStemLemmaKey(row[4], strongs),
+      strongs,
+      all_strongs: strongs ? [strongs] : [],
+      gloss: null,
+      pos_class: null,
+    };
+  });
+}
+
+function buildEventLookupMap(motifs, ctx) {
+  const eventById = new Map();
+  if (!motifs) return eventById;
+  const rawEvents = motifs.events_b64gz
+    ? decodeB64GzWithCtx(ctx, motifs.events_b64gz, '/r10/events:r11-v1.0')
+    : motifs.events;
+  if (Array.isArray(rawEvents)) {
+    for (const ev of rawEvents) {
+      if (ev?.event_id) eventById.set(ev.event_id, ev);
+    }
+  } else if (rawEvents && typeof rawEvents === 'object') {
+    for (const [k, ev] of Object.entries(rawEvents)) {
+      const id = ev?.event_id || k;
+      if (id && ev) eventById.set(id, ev);
+    }
+  }
+  return eventById;
+}
+
+export async function handleGetPassageCompactV1(ctx, params = {}) {
+  await ctx.ensureCatalog();
+
+  const orderedVids = [];
+  const seenVids = new Set();
+  const addVid = (vid) => {
+    const n = Number(vid);
+    if (Number.isInteger(n) && n > 0 && !seenVids.has(n)) {
+      seenVids.add(n);
+      orderedVids.push(n);
+    }
+  };
+
+  const passages = parseJsonOrArrayParam(params.passages);
+  if (passages.length > 0) {
+    for (const p of passages) {
+      if (!p || typeof p !== 'object') continue;
+      const book = Number(p.book);
+      const chapter = Number(p.chapter);
+      if (!Number.isInteger(book) || !Number.isInteger(chapter) || book <= 0 || chapter <= 0) continue;
+
+      const hasSingleVerse = p.verse !== undefined && p.verse !== null && p.verse !== '';
+      const hasRange = p.start_verse !== undefined && p.start_verse !== null && p.start_verse !== ''
+        || p.end_verse !== undefined && p.end_verse !== null && p.end_verse !== '';
+
+      if (hasSingleVerse && !hasRange) {
+        const v = Number(p.verse);
+        if (Number.isInteger(v) && v >= 0) {
+          addVid(ctx.getVerseIdByCoord(`${book}:${chapter}:${v}`));
+        }
+      } else if (hasRange) {
+        const startV = p.start_verse !== undefined && p.start_verse !== null && p.start_verse !== ''
+          ? Math.max(0, Math.floor(Number(p.start_verse)))
+          : 0;
+        const rawEnd = p.end_verse !== undefined && p.end_verse !== null && p.end_verse !== ''
+          ? Math.floor(Number(p.end_verse))
+          : startV;
+        const endV = Math.min(200, Math.max(startV, rawEnd));
+        for (let v = startV; v <= endV; v++) {
+          addVid(ctx.getVerseIdByCoord(`${book}:${chapter}:${v}`));
+        }
+      } else {
+        for (let v = 0; v <= 200; v++) {
+          addVid(ctx.getVerseIdByCoord(`${book}:${chapter}:${v}`));
+        }
+      }
+    }
+  } else {
+    const rawIds = Array.isArray(params.verse_ids)
+      ? params.verse_ids
+      : (typeof params.verse_ids === 'string' ? params.verse_ids.split(',').map(x => Number(x.trim())) : []);
+    for (const rawId of rawIds) {
+      const id = Number(rawId);
+      if (Number.isInteger(id) && id > 0 && ctx.getVerseById(id)) {
+        addVid(id);
+      }
+    }
+  }
+
+  const offset = Math.max(0, Math.floor(Number(params.offset || 0)));
+  const maxVerses = Math.min(50, Math.max(1, Math.floor(Number(params.max_verses || 30))));
+  const totalVerses = orderedVids.length;
+  const pageVids = orderedVids.slice(offset, offset + maxVerses);
+  const returned = pageVids.length;
+  const hasMore = offset + returned < totalVerses;
+  const nextOffset = hasMore ? offset + returned : null;
+
+  const chapterKeys = new Set();
+  const chunkHexes = new Set();
+  const verseMetas = [];
+  for (const vid of pageVids) {
+    const meta = ctx.getVerseById(vid);
+    if (!meta) continue;
+    verseMetas.push(meta);
+    chapterKeys.add(`${meta.book}:${meta.chapter}`);
+    chunkHexes.add(Math.floor((vid - 1) / 64).toString(16).padStart(3, '0'));
+  }
+
+  const liteByChapter = new Map();
+  const chunkByHex = new Map();
+
+  await Promise.all([
+    ...[...chapterKeys].map(async (chKey) => {
+      const chBucket = Number(BigInt('0x' + fnv1a64Hex(chKey)) % 64n).toString(16).padStart(2, '0');
+      const liteShard = await ctx.loadJsonShard(ctx.env, `${FAST_CHAPTER_LITE_BASE}/chapter-lite/shard-${chBucket}.json.gz`);
+      const liteChapter = liteShard
+        ? await packedShardEntry(liteShard, chKey, FAST_CHAPTER_LITE_BASE, p => ctx.loadJsonShard(ctx.env, p))
+        : null;
+      liteByChapter.set(chKey, liteChapter);
+    }),
+    ...[...chunkHexes].map(async (chunkHex) => {
+      const chunk = await ctx.loadJsonShard(ctx.env, `${FAST_R10_ASSET_BASE}/fast-verses/chunk-${chunkHex}.json.gz`);
+      chunkByHex.set(chunkHex, chunk);
+    }),
+  ]);
+
+  const decodedVerses = [];
+  let hasAnyEvents = false;
+  for (const meta of verseMetas) {
+    const vid = meta.id;
+    const chKey = `${meta.book}:${meta.chapter}`;
+    const chunkHex = Math.floor((vid - 1) / 64).toString(16).padStart(3, '0');
+    const chunk = chunkByHex.get(chunkHex);
+    const liteChapter = liteByChapter.get(chKey);
+    const liteV = liteChapter?.[String(meta.verse_nr)] || null;
+
+    const fvRaw = chunk?.verses?.[String(vid)];
+    const fv = fvRaw ? decodeB64GzWithCtx(ctx, fvRaw, `/r10/v:r11-v1.0:${vid}`) : null;
+
+    const rawXrefsVal = chunk?.xrefs?.[String(vid)];
+    const rawXrefs = typeof rawXrefsVal === 'string'
+      ? decodeB64GzWithCtx(ctx, rawXrefsVal, `/r10/x:r11-v1.0:${vid}`)
+      : rawXrefsVal;
+
+    const rawEventsVal = chunk?.events?.[String(vid)];
+    const rawEvents = typeof rawEventsVal === 'string'
+      ? decodeB64GzWithCtx(ctx, rawEventsVal, `/r10/e:r11-v1.0:${vid}`)
+      : rawEventsVal;
+
+    if (Array.isArray(rawEvents) && rawEvents.length > 0) hasAnyEvents = true;
+
+    decodedVerses.push({
+      meta,
+      fv,
+      liteV,
+      rawXrefs: Array.isArray(rawXrefs) ? rawXrefs : [],
+      rawEvents: Array.isArray(rawEvents) ? rawEvents : [],
+    });
+  }
+
+  let eventById = null;
+  if (hasAnyEvents) {
+    const motifs = await ctx.loadJsonShard(ctx.env, `${FAST_R10_ASSET_BASE}/motifs-and-patterns.json.gz`);
+    eventById = buildEventLookupMap(motifs, ctx);
+  }
+
+  const freqByStrongs = new Map();
+  const verses = decodedVerses.map(({ meta, fv, liteV, rawXrefs, rawEvents }) => {
+    const tokens = normalizeTokenList(liteV, fv);
+    for (const tok of tokens) {
+      if (!tok.strongs) continue;
+      const cls = String(tok.pos_class || '').toLowerCase();
+      if (FAST_FUNCTION_POS_CLASSES.has(cls)) continue;
+      if (tok.strongs.startsWith('H900') || FAST_SKIP_PROFILE_STRONGS.has(tok.strongs)) continue;
+      freqByStrongs.set(tok.strongs, (freqByStrongs.get(tok.strongs) || 0) + 1);
+    }
+
+    const normalizedXrefs = rawXrefs.map((x) => (
+      Array.isArray(x)
+        ? {
+            target_vid: Number(x[0]),
+            target_ref: x[1] ?? null,
+            phrase: x[2] ?? null,
+            votes: x[3] !== undefined && x[3] !== null ? Number(x[3]) : null,
+          }
+        : x
+    ));
+
+    const enrichedEvents = rawEvents.map((evId) => {
+      const ev = eventById?.get(evId) || null;
+      return {
+        event_id: evId,
+        title: ev?.title ?? null,
+        start_year: ev?.start_year ?? ev?.start_date ?? null,
+      };
+    });
+
+    const mtRef = fv?.mt_ref || null;
+    return {
+      verse_id: meta.id,
+      book: fv?.book ?? meta.book,
+      chapter: fv?.chapter ?? meta.chapter,
+      verse: fv?.verse ?? meta.verse_nr,
+      ref: fv?.ref ?? null,
+      ...(mtRef ? { mt_ref: mtRef } : {}),
+      web: fv?.en || liteV?.web || null,
+      xrefs: normalizedXrefs,
+      events: enrichedEvents,
+      tokens,
+    };
+  });
+
+  const includeProfiles = parseBoolParam(params.include_profiles, true);
+  const profileLimit = Math.min(30, Math.max(0, Math.floor(Number(params.profile_limit ?? 24))));
+  const profiles = {};
+
+  if (includeProfiles && profileLimit > 0 && freqByStrongs.size > 0) {
+    const candidateStrongs = [...freqByStrongs.entries()]
+      .sort((a, b) => (b[1] - a[1]) || a[0].localeCompare(b[0]))
+      .slice(0, Math.min(profileLimit + 6, 36))
+      .map(([bs]) => bs);
+
+    const decodedProfiles = await Promise.all(candidateStrongs.map(bs => loadFastProfileByStrongs(ctx, bs)));
+    const valid = [];
+    for (let i = 0; i < candidateStrongs.length; i++) {
+      const prof = decodedProfiles[i];
+      if (!prof) continue;
+      valid.push({
+        bs: candidateStrongs[i],
+        freq: freqByStrongs.get(candidateStrongs[i]) || 0,
+        totalVerses: prof.total_verses ?? Number.MAX_SAFE_INTEGER,
+        prof,
+      });
+    }
+
+    valid.sort((a, b) => (
+      (b.freq - a.freq)
+      || (a.totalVerses - b.totalVerses)
+      || a.bs.localeCompare(b.bs)
+    ));
+
+    for (const item of valid.slice(0, profileLimit)) {
+      profiles[item.bs] = projectCompactProfile(item.prof);
+    }
+  }
+
+  return {
+    status: 'ok',
+    pagination: {
+      total_verses: totalVerses,
+      returned,
+      offset,
+      has_more: hasMore,
+      next_offset: nextOffset,
+    },
+    verses,
+    profiles,
+  };
+}
+
+export async function handleGetWordProfilesBatchV1(ctx, params = {}) {
+  const rawList = Array.isArray(params.strongs)
+    ? params.strongs
+    : Array.isArray(params.strongs_list)
+      ? params.strongs_list
+      : Array.isArray(params.keys)
+        ? params.keys
+        : parseListParam(params.strongs ?? params.strongs_list ?? params.keys);
+  const includeVids = parseBoolParam(params.include_vids, false);
+  const includeForms = parseBoolParam(params.include_forms, true);
+  const includeOrth = parseBoolParam(params.include_orth, true);
+  const includePilot = parseBoolParam(params.include_pilot, false);
+
+  const uniqueStrongs = [];
+  const seen = new Set();
+  const missing = [];
+  for (const raw of rawList.slice(0, 24)) {
+    const cleaned = String(raw || '').trim().replace(/^lemma:/i, '');
+    const norm = normalizeStrongsBase(cleaned);
+    if (!norm) {
+      if (cleaned) missing.push(cleaned);
+      continue;
+    }
+    if (seen.has(norm.padded)) continue;
+    seen.add(norm.padded);
+    uniqueStrongs.push(norm.padded);
+  }
+
+  const loaded = await Promise.all(uniqueStrongs.map(bs => loadFastProfileByStrongs(ctx, bs)));
+  const profiles = {};
+  for (let i = 0; i < uniqueStrongs.length; i++) {
+    const bs = uniqueStrongs[i];
+    const prof = loaded[i];
+    if (!prof) {
+      missing.push(bs);
+      continue;
+    }
+    profiles[bs] = projectCompactProfile(prof, {
+      includeVids,
+      includeForms,
+      includeOrth,
+      includePilot,
+    });
+  }
+
+  return {
+    status: 'ok',
+    profiles,
+    missing,
+  };
+}
+
+function normalizeLookupText(s) {
+  return String(s || '')
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036F]/g, '')
+    .replace(/[\u0591-\u05C7]/g, '')
+    .replace(/[.\-']/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+}
+
+function buildMorphFallbacks(normKey) {
+  const out = [];
+  if (!normKey || !/^[a-z\s]+$/.test(normKey)) return out;
+  if (normKey.endsWith('ies') && normKey.length > 4) {
+    out.push(normKey.slice(0, -3) + 'y');
+  }
+  if (normKey.endsWith('im') && normKey.length > 4) {
+    out.push(normKey.slice(0, -2));
+  }
+  if (normKey.endsWith('es') && normKey.length > 3) {
+    out.push(normKey.slice(0, -2));
+    out.push(normKey.slice(0, -1));
+  } else if (normKey.endsWith('s') && normKey.length > 3) {
+    out.push(normKey.slice(0, -1));
+  }
+  return [...new Set(out)];
+}
+
+async function lookupFastIndexKey(ctx, normKey) {
+  if (!normKey) return [];
+  const bucketKey = /^[hg]\d{4}$/.test(normKey) ? normKey.toUpperCase() : normKey;
+  const bucket = Number(BigInt('0x' + fnv1a64Hex(bucketKey)) % 1024n).toString(16).padStart(3, '0');
+  const subIdx = Number((BigInt('0x' + fnv1a64Hex(normKey)) >> 10n) & 15n).toString(16);
+  const shard = await ctx.loadJsonShard(ctx.env, `${FAST_R10_ASSET_BASE}/fast-profiles/shard-${bucket}.json.gz`);
+  const subB64 = shard?.lookup?.[subIdx];
+  if (!subB64) return [];
+  const subMap = decodeB64GzWithCtx(ctx, subB64, `/r10/l:r11-v1.0:${bucket}:${subIdx}`);
+  const hits = subMap?.[normKey];
+  return Array.isArray(hits) ? hits : [];
+}
+
+function splitGlossSegments(gl) {
+  return String(gl || '')
+    .toLowerCase()
+    .split(/[/,;]+/)
+    .map(seg => seg.replace(/\([^)]*\)/g, '').trim())
+    .filter(Boolean);
+}
+
+function scoreFastLookupMatch(prof, rawQuery, normQuery, strongsNorm) {
+  const qTrim = rawQuery.trim();
+  const qLower = qTrim.toLowerCase();
+  const qTrNorm = qTrim.replace(/[.\-'\s]/g, '').toLowerCase();
+
+  const bs = String(prof.bs || '');
+  const lk = String(prof.lk || '');
+  const sc = String(prof.sc || '');
+  const trNorm = String(prof.tr || '').replace(/[.\-'\s]/g, '').toLowerCase();
+
+  if (
+    (strongsNorm && (bs === strongsNorm.padded || lk === `lemma:${strongsNorm.padded}${strongsNorm.suffix.toUpperCase()}` || lk === `lemma:${strongsNorm.padded}`))
+    || qLower === lk.toLowerCase()
+  ) {
+    return 1;
+  }
+
+  if (sc && (sc === qTrim || (normQuery && normalizeLookupText(sc) === normQuery))) {
+    return 2;
+  }
+
+  if (trNorm && qTrNorm && trNorm === qTrNorm) {
+    return 3;
+  }
+
+  const glSegments = splitGlossSegments(prof.gl);
+  if (normQuery && glSegments.some(seg => seg === qLower || seg === normQuery)) {
+    return 4;
+  }
+
+  return 5;
+}
+
+export async function handleResolveFastLookupV1(ctx, params = {}) {
+  const rawQuery = String(params.query || '').trim();
+  const limit = Math.min(20, Math.max(1, Math.floor(Number(params.limit || 10))));
+  if (!rawQuery) {
+    return { status: 'ok', query: rawQuery, matches: [] };
+  }
+
+  const strongsInput = rawQuery.replace(/^lemma:/i, '').trim();
+  const strongsNorm = normalizeStrongsBase(strongsInput);
+  const normQuery = normalizeLookupText(rawQuery);
+
+  const candidateMap = new Map();
+  const addHit = (bs, meta = {}) => {
+    if (!bs || candidateMap.has(bs)) return;
+    candidateMap.set(bs, {
+      bs,
+      cnt: Number(meta.cnt || 0),
+      is_prop: Boolean(meta.is_prop),
+    });
+  };
+
+  if (strongsNorm) {
+    addHit(strongsNorm.padded, { cnt: Number.MAX_SAFE_INTEGER, is_prop: false });
+    const sHits = await lookupFastIndexKey(ctx, strongsNorm.padded.toLowerCase());
+    for (const h of sHits) addHit(h.bs, h);
+  }
+
+  if (normQuery) {
+    let hits = await lookupFastIndexKey(ctx, normQuery);
+    if (hits.length === 0) {
+      const morphKeys = buildMorphFallbacks(normQuery);
+      for (const mk of morphKeys) {
+        hits = await lookupFastIndexKey(ctx, mk);
+        if (hits.length > 0) break;
+      }
+    }
+    for (const h of hits) addHit(h.bs, h);
+  }
+
+  if (candidateMap.size === 0 && normQuery) {
+    const conceptIdx = await ctx.loadJsonShard(ctx.env, `${FAST_R10_ASSET_BASE}/concept-index.json.gz`);
+    const aliases = conceptIdx?.aliases || {};
+    const keysToCheck = [normQuery, ...buildMorphFallbacks(normQuery)];
+    const words = normQuery.split(' ').filter(w => w.length >= 2);
+    for (const w of words) {
+      keysToCheck.push(w, ...buildMorphFallbacks(w));
+    }
+
+    for (const k of keysToCheck) {
+      const entry = aliases[k];
+      if (!entry) continue;
+      for (const s of entry.strongs || []) {
+        const norm = normalizeStrongsBase(s);
+        if (norm) addHit(norm.padded, { cnt: 0, is_prop: false });
+      }
+    }
+
+    if (candidateMap.size === 0 && words.length > 1) {
+      const tokenHitsList = await Promise.all(words.slice(0, 4).map(w => lookupFastIndexKey(ctx, w)));
+      for (const th of tokenHitsList) {
+        for (const h of th) addHit(h.bs, h);
+      }
+    }
+  }
+
+  const sortedCandidateKeys = [...candidateMap.values()]
+    .sort((a, b) => (Number(a.is_prop) - Number(b.is_prop)) || (b.cnt - a.cnt) || a.bs.localeCompare(b.bs))
+    .slice(0, 16)
+    .map(c => c.bs);
+
+  const loadedProfiles = await Promise.all(sortedCandidateKeys.map(bs => loadFastProfileByStrongs(ctx, bs)));
+  const ranked = [];
+  for (const prof of loadedProfiles) {
+    if (!prof) continue;
+    let tier = scoreFastLookupMatch(prof, rawQuery, normQuery, strongsNorm);
+    const totalVerses = prof.total_verses ?? 0;
+    const isProperPlace = prof.entity_kind === 'proper_place' ? 1 : 0;
+    if (tier >= 3 && tier !== 4 && (isProperPlace || /^[A-Z]/.test(String(prof.gl || ''))) && totalVerses < 10) {
+      tier = 5.5;
+    }
+    ranked.push({
+      tier,
+      prof,
+      totalVerses,
+      isProperPlace,
+    });
+  }
+
+  ranked.sort((a, b) => {
+    const aTier = a.tier >= 5 && !a.isProperPlace && a.totalVerses >= 20 ? 4.5 : a.tier;
+    const bTier = b.tier >= 5 && !b.isProperPlace && b.totalVerses >= 20 ? 4.5 : b.tier;
+    if (aTier !== bTier) return aTier - bTier;
+    if (aTier >= 5 && a.isProperPlace !== b.isProperPlace) {
+      return a.isProperPlace - b.isProperPlace;
+    }
+    if (a.totalVerses !== b.totalVerses) return b.totalVerses - a.totalVerses;
+    if (a.isProperPlace !== b.isProperPlace) return a.isProperPlace - b.isProperPlace;
+    return String(a.prof.bs || '').localeCompare(String(b.prof.bs || ''));
+  });
+
+  const matches = ranked.slice(0, limit).map(({ prof, tier }) => ({
+    bs: prof.bs,
+    lk: prof.lk,
+    lang: prof.lang,
+    sc: prof.sc,
+    tr: prof.tr,
+    gl: prof.gl,
+    pos: prof.pos,
+    entity_kind: prof.entity_kind,
+    total_verses: prof.total_verses ?? 0,
+    senses: Array.isArray(prof.senses) ? prof.senses : [],
+    match_tier: tier,
+  }));
+
+  return {
+    status: 'ok',
+    query: rawQuery,
+    matches,
+  };
+}
+

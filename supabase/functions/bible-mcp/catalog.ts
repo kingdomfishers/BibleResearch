@@ -25,12 +25,19 @@ export type RpcName =
   | 'lookup_syntax_tree_v1' | 'compare_hebrew_septuagint_passage_v1' | 'lookup_hebrew_septuagint_alignments_v1' | 'audit_evidence_coverage_v1'
   | 'query_relationships_v2' | 'resolve_research_concept_v1' | 'discover_relationship_paths_v1'
   | 'discover_biblical_connections_v1' | 'discover_biblical_connections_v2' | 'get_connection_evidence_v1' | 'expand_biblical_connection_v1'
+  | 'get_passage_compact_v1' | 'get_word_profiles_batch_v1' | 'resolve_fast_lookup_v1' | 'lookup_concept_properties_v1'
   | 'research_word_lens_v1' | 'research_word_bridge_v1' | 'research_passage_lens_v1' |
   'get_dlm_notes_for_verse_v1' | 'verify_dlm_lemma_occurrence_v1' |
   'get_notes_for_passage_v1' | 'get_notes_for_word_v1' | 'get_note_v1' | 'search_note_targets_v1' | 'list_note_connection_types_v1';
 
 export interface DatabaseQuery {
-  name: RpcName | 'get_word_details';
+  name:
+    | RpcName
+    | 'get_word_details'
+    | 'get_words_batch'
+    | 'query_words_by_gematria'
+    | 'query_places_by_name'
+    | 'query_chronology_assertions_batch';
   args: Record<string, unknown>;
   limit: number;
   offset: number;

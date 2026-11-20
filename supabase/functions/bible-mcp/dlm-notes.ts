@@ -5,7 +5,7 @@
 import { McpServer } from '@modelcontextprotocol/server';
 import * as z from 'zod';
 import type { DatabaseReader } from './catalog.ts';
-import type { NotesWriter } from './notes-write.ts';
+import type { McpToolResult, NotesWriter } from './notes-write.ts';
 import { deriveAgentIdentity, writeAnnotations } from './notes-write.ts';
 
 type RecordLike = Record<string, unknown>;
@@ -46,7 +46,7 @@ const link=z.strictObject({
  direction:z.enum(['directed','bidirectional','undirected']).default('directed'),
  explanation:z.string().trim().min(15).max(500),
 });
-const cardInput=z.strictObject({
+export const dlmCardInputSchema = z.strictObject({
  card_kind:z.enum(cardKinds),
  evidence_class:z.enum(evidenceClasses),
  title:z.string().trim().min(5).max(180),
@@ -91,14 +91,13 @@ export function registerDlmReadTools(server:McpServer,read:DatabaseReader):void{
   return {content:text(result),structuredContent:result};
  });
 }
-export function registerDlmWriteTools(server:McpServer,read:DatabaseReader,writer:NotesWriter,getHeaders?:()=>Headers|undefined):void{
- server.registerTool('save_dlm_research_note',{
-  title:'Save an evidence-classified DLM research card',
-  description:'Write one atomic DLM claim when the user EXPLICITLY requests saving. Validates exact STEP verse/word anchors and optional unambiguous lemma, distinguishes Bible from real science and model hypotheses, prevents duplicate claims and creates typed inter-anchor connections. All AI cards begin unreviewed. Never silently import the DLM model as canonical Bible truth.',
-  inputSchema:cardInput,outputSchema:z.record(z.string(),z.unknown()),
-  annotations:writeAnnotations,
- },async a=>{
-  const headers=getHeaders?.();
+export async function executeSaveDlmCard(
+  writer: NotesWriter,
+  read: DatabaseReader,
+  a: z.infer<typeof dlmCardInputSchema>,
+  clientInfo?: { name?: string; version?: string },
+  headers?: Headers,
+): Promise<McpToolResult> {
   if(!writer.checkAuth(headers))
    return {isError:true,content:text({status:'not_authorized',message:'MCP note writer not authorized.'})};
   const k=a.card_kind,c=a.evidence_class,refs=a.references;
@@ -193,7 +192,7 @@ export function registerDlmWriteTools(server:McpServer,read:DatabaseReader,write
    });
    const hash=await crypto.subtle.digest('SHA-256',enc.encode(key));
    const dedupe='dlm-v1-'+Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,'0')).join('').slice(0,40);
-   const agent=deriveAgentIdentity(server.server.getClientVersion?.(),headers?.get('user-agent'),a.model);
+   const agent=deriveAgentIdentity(clientInfo,headers?.get('user-agent'),a.model);
    const note:RecordLike={
       title:a.title,body_md:a.body_md,note_kind:noteKinds[k],language:'en',
       anchors,connections:relations,blocks:[],client_request_id:dedupe,
@@ -210,5 +209,13 @@ export function registerDlmWriteTools(server:McpServer,read:DatabaseReader,write
   }catch(e){
    return {isError:true,content:text({status:'save_unavailable',message:e instanceof Error?e.message:'Write failed'})};
   }
- });
+}
+
+export function registerDlmWriteTools(server:McpServer,read:DatabaseReader,writer:NotesWriter,getHeaders?:()=>Headers|undefined):void{
+ server.registerTool('save_dlm_research_note',{
+  title:'Save an evidence-classified DLM research card',
+  description:'Write one atomic DLM claim when the user EXPLICITLY requests saving. Validates exact STEP verse/word anchors and optional unambiguous lemma, distinguishes Bible from real science and model hypotheses, prevents duplicate claims and creates typed inter-anchor connections. All AI cards begin unreviewed. Never silently import the DLM model as canonical Bible truth.',
+  inputSchema:dlmCardInputSchema,outputSchema:z.record(z.string(),z.unknown()),
+  annotations:writeAnnotations,
+ },async a=>executeSaveDlmCard(writer,read,a,server.server.getClientVersion?.(),getHeaders?.()));
 }

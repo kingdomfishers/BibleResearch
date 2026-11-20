@@ -57,7 +57,7 @@ const app = createApp({ url: 'https://example.supabase.co', publicKey: 'sb_publi
 let id = 0;
 async function rpc(method, params = {}, extraHeaders = {}) {
   const currentId = ++id;
-  const response = await app(new Request('https://example.supabase.co/functions/v1/bible-mcp/mcp', {
+  const response = await app(new Request('https://example.supabase.co/functions/v1/bible-mcp/legacy/mcp', {
     method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json, text/event-stream',
       'MCP-Protocol-Version': '2025-11-25', ...extraHeaders },
     body: JSON.stringify({ jsonrpc: '2.0', id: currentId, method, params }),
@@ -141,7 +141,7 @@ assert.throws(() => createDatabaseReader({ url: 'https://example.supabase.co', p
 const preflight = await app(new Request('https://example/mcp', { method: 'OPTIONS' }));
 assert.equal(preflight.status, 204);
 assert.equal(preflight.headers.get('access-control-allow-origin'), '*');
-const health = await app(new Request('https://example/bible-mcp/health'));
+const health = await app(new Request('https://example/bible-mcp/legacy/health'));
 const healthJson = await health.json();
 assert.equal(healthJson.read_only, true);
 assert.equal(healthJson.tools, 41);

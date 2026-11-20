@@ -26,9 +26,12 @@ import {
   handleDiscoverRelationshipPathsV1,
   handleExpandBiblicalConnectionV1,
   handleGetConnectionEvidenceV1,
+  handleGetPassageCompactV1,
+  handleGetWordProfilesBatchV1,
   handleLookupCrossReferencesV1,
   handleLookupLexicalRelationshipsV1,
   handleQueryRelationshipsV2,
+  handleResolveFastLookupV1,
   handleResolveResearchConceptV1,
 } from './corpus-relationships-rpc.mjs';
 
@@ -2644,6 +2647,24 @@ const corpusWorker = {
         }
         if (op === 'expand_biblical_connection_v1') {
           return jsonResponse(await handleExpandBiblicalConnectionV1({ env, loadJsonShard, loadJsonShardWithBytes, decodeB64GzJson: (b64, cacheKey) => decodeB64GzJson(env, b64, cacheKey) }, params), 200, 'public, max-age=300');
+        }
+
+        if (op === 'get_passage_compact_v1' || op === 'get_word_profiles_batch_v1' || op === 'resolve_fast_lookup_v1') {
+          const fastCtx = {
+            env,
+            loadJsonShard,
+            decodeB64Gz: (b64, k) => decodeB64GzJson(env, b64, k),
+            ensureCatalog: () => ensureCatalog(env),
+            getVerseIdByCoord: coord => cachedVerseByCoord?.get(coord) ?? null,
+            getVerseById: id => cachedVerseById?.get(id) ?? null,
+          };
+          if (op === 'get_passage_compact_v1') {
+            return jsonResponse(await handleGetPassageCompactV1(fastCtx, params), 200, 'public, max-age=300');
+          }
+          if (op === 'get_word_profiles_batch_v1') {
+            return jsonResponse(await handleGetWordProfilesBatchV1(fastCtx, params), 200, 'public, max-age=300');
+          }
+          return jsonResponse(await handleResolveFastLookupV1(fastCtx, params), 200, 'public, max-age=300');
         }
 
         return jsonResponse({ error: 'unknown_rpc_operation', operation: op }, 404, 'no-store');

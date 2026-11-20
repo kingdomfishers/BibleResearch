@@ -1,5 +1,7 @@
 # BibleResearch MCP — deployed on Supabase
 
+> **v2.0.0 (current, ible-mcp v46):** the primary URL below now exposes 7 tools: get_Passage, get_Word, get_Connection, ollow_connectionchain, esearch, write_Note, get_prompt (plus the ible_research prompt). All 46 previous tools and 22 prompts remain at `https://ejoperxiwxlcbsqrkrvb.supabase.co/functions/v1/bible-mcp/legacy/mcp` (health: `/legacy/health`). After this release, **Refresh/reconnect the connector** in ChatGPT/Gemini so the new tool list loads. Rollback: redeploy ible-mcp v44. Corpus Worker e96253fd-4144-4869-a54b-72d5931c6ab6 (rollback cce819e9-60d4-4e17-bb01-ed138af9a9a3). The sections below describing 46 tools apply to /legacy/mcp.
+
 The server is deployed as the `bible-mcp` Supabase Edge Function in project `ejoperxiwxlcbsqrkrvb`.
 Deployment version **41** is active (server `1.7.0`, **46 tools** — 41 read-only corpus/notes tools + 5 note/DLM write tools — and **22 prompts**; `ezbr_sha256: 60dc5cbeeb332e3b009fe9bd60ee198a88c35d140e2527687f94e81c20d2fba7`; routed to production corpus `https://bibleresearch-corpus.kingdomfishers-custom.workers.dev` release `r12-witnesses-1` / `r9b-v1.1` / `r8-v1.2`). Rollback version: Deployment version **40**. You can connect now; no local server, additional host, or API-key entry is needed for read tools (and `writes: "enabled"` is configured via project secrets).
 

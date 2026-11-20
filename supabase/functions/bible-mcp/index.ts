@@ -12,6 +12,8 @@ import { WORKFLOW_VERSION } from './research-workflow.ts';
 import { RESEARCH_TOOL_NAMES } from './workflow-contract.ts';
 import { createNotesWriter, registerNoteWriteTools, type NotesWriter } from './notes-write.ts';
 import { registerDlmWriteTools } from './dlm-notes.ts';
+import { createChainStore } from './chain-store.ts';
+import { createDiscoveryV2Server, V2_READ_TOOL_NAMES } from './discovery-v2-tools.ts';
 
 // === @section:types ===
 export interface DatabaseConfig {
@@ -36,6 +38,9 @@ const corpusRpcs = new Set([
   'discover_biblical_connections_v2',
   'get_connection_evidence_v1',
   'expand_biblical_connection_v1',
+  'get_passage_compact_v1',
+  'get_word_profiles_batch_v1',
+  'resolve_fast_lookup_v1',
 ]);
 const allowedRpcs = new Set([
   'prompt_verse_words',
@@ -60,6 +65,10 @@ const allowedRpcs = new Set([
   'discover_biblical_connections_v2',
   'get_connection_evidence_v1',
   'expand_biblical_connection_v1',
+  'get_passage_compact_v1',
+  'get_word_profiles_batch_v1',
+  'resolve_fast_lookup_v1',
+  'lookup_concept_properties_v1',
   'get_word_formation_v1',
   'suggest_orthographic_candidates_v1',
   'get_verse_research_v2',
@@ -99,6 +108,10 @@ const singlePacketRpcs = new Set([
   'discover_biblical_connections_v2',
   'get_connection_evidence_v1',
   'expand_biblical_connection_v1',
+  'get_passage_compact_v1',
+  'get_word_profiles_batch_v1',
+  'resolve_fast_lookup_v1',
+  'lookup_concept_properties_v1',
   'get_word_formation_v1',
   'suggest_orthographic_candidates_v1',
   'get_notes_for_passage_v1',
@@ -106,6 +119,25 @@ const singlePacketRpcs = new Set([
   'get_note_v1',
   'search_note_targets_v1',
   'list_note_connection_types_v1',
+]);
+const customReadOps = new Set([
+  'get_word_details',
+  'get_words_batch',
+  'query_words_by_gematria',
+  'query_places_by_name',
+  'query_chronology_assertions_batch',
+]);
+const corpusOnlyRpcs = new Set([
+  'query_relationships_v2',
+  'resolve_research_concept_v1',
+  'discover_relationship_paths_v1',
+  'discover_biblical_connections_v1',
+  'discover_biblical_connections_v2',
+  'get_connection_evidence_v1',
+  'expand_biblical_connection_v1',
+  'get_passage_compact_v1',
+  'get_word_profiles_batch_v1',
+  'resolve_fast_lookup_v1',
 ]);
 const wordColumns = 'id,strongs_nr,original_word,transliteration,grammar_code,biblical_def,physical_def,english_translations';
 const cors = {
@@ -132,9 +164,26 @@ export function createDatabaseReader(
   if (!['https:', 'http:'].includes(base.protocol) || !isPublicKey(config.publicKey)) {
     throw new Error('BibleResearch requires a Supabase URL and public publishable/anon key.');
   }
+  async function publicRestGet(pathAndQuery: string): Promise<Record<string, unknown>[]> {
+    const url = new URL(pathAndQuery, base);
+    const req: RequestInit = {
+      method: 'GET',
+      headers: { apikey: config.publicKey, Accept: 'application/json' },
+      signal: AbortSignal.timeout(10000),
+    };
+    let res = await fetcher(url, req);
+    if ([500, 502, 503, 504].includes(res.status)) {
+      await res.body?.cancel();
+      res = await fetcher(url, req);
+    }
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data) ? (data as Record<string, unknown>[]) : [];
+  }
+
   return async ({ name, args, limit, offset }: DatabaseQuery): Promise<DatabasePage> => {
-    if (!allowedRpcs.has(name) && name !== 'get_word_details') throw new Error('Unsupported Bible operation.');
-    const single = singlePacketRpcs.has(name) || name === 'get_word_details';
+    if (!allowedRpcs.has(name) && !customReadOps.has(name)) throw new Error('Unsupported Bible operation.');
+    const single = singlePacketRpcs.has(name) || customReadOps.has(name);
     const pageLimit = single ? 1 : limit;
     const pageOffset = single ? 0 : offset;
     const corpusBase = (resolveCorpusUrl?.() || config.corpusUrl || DEFAULT_CORPUS_URL).replace(/\/+$/, '');
@@ -186,32 +235,134 @@ export function createDatabaseReader(
             };
           }
         }
-        if (
-          name === 'query_relationships_v2' ||
-          name === 'resolve_research_concept_v1' ||
-          name === 'discover_relationship_paths_v1' ||
-          name === 'discover_biblical_connections_v1' ||
-          name === 'discover_biblical_connections_v2' ||
-          name === 'get_connection_evidence_v1' ||
-          name === 'expand_biblical_connection_v1'
-        ) {
+        if (corpusOnlyRpcs.has(name)) {
           throw new Error(`Cloudflare relationship graph gateway HTTP ${corpRes.status}`);
         }
       } catch (err) {
-        if (
-          name === 'query_relationships_v2' ||
-          name === 'resolve_research_concept_v1' ||
-          name === 'discover_relationship_paths_v1' ||
-          name === 'discover_biblical_connections_v1' ||
-          name === 'discover_biblical_connections_v2' ||
-          name === 'get_connection_evidence_v1' ||
-          name === 'expand_biblical_connection_v1'
-        ) {
+        if (corpusOnlyRpcs.has(name)) {
           throw new Error(err instanceof Error ? err.message : 'Cloudflare relationship graph gateway unavailable.');
         }
         /* fall back to PostgREST RPC */
       }
     }
+
+    if (name === 'get_words_batch') {
+      const ids = Array.isArray(args.word_ids)
+        ? [...new Set(args.word_ids.map(Number).filter(n => Number.isInteger(n) && n > 0))]
+        : [];
+      const chunks: number[][] = [];
+      for (let i = 0; i < ids.length && chunks.length < 4; i += 100) {
+        chunks.push(ids.slice(i, i + 100));
+      }
+      const pages = await Promise.all(
+        chunks.map(c =>
+          publicRestGet(
+            `/rest/v1/words?id=in.(${c.join(',')})&select=${wordColumns},gematria`,
+          ),
+        ),
+      );
+      const rows = pages.flat();
+      return {
+        source: 'live',
+        rows,
+        page: { limit: rows.length || 1, offset: 0, has_more: false, next_offset: null },
+      };
+    }
+
+    if (name === 'query_words_by_gematria') {
+      const val = Number(args.gematria);
+      if (!Number.isInteger(val) || val <= 0) {
+        return { source: 'live', rows: [], page: { limit, offset, has_more: false, next_offset: null } };
+      }
+      const lim = Math.min(Math.max(1, Number(limit || 25)), 50);
+      const off = Math.max(0, Number(offset || 0));
+      const rows = await publicRestGet(
+        `/rest/v1/words?gematria=eq.${val}&select=${wordColumns},gematria&order=id.asc&limit=${lim + 1}&offset=${off}`,
+      );
+      const hasMore = rows.length > lim;
+      return {
+        source: 'live',
+        rows: rows.slice(0, lim),
+        page: { limit: lim, offset: off, has_more: hasMore, next_offset: hasMore ? off + lim : null },
+      };
+    }
+
+    if (name === 'query_places_by_name') {
+      const q = String(args.query || '').replace(/[*%()\\]/g, '').trim();
+      if (!q) {
+        return { source: 'live', rows: [{ places: [] }], page: { limit: 1, offset: 0, has_more: false, next_offset: null } };
+      }
+      const lim = Math.min(Math.max(1, Number(limit || 10)), 25);
+      const placesRaw = await publicRestGet(
+        `/rest/v1/places?published=eq.true&biblical_name=ilike.*${encodeURIComponent(q)}*&select=id,place_key,biblical_name,place_type,hebrew_name,greek_name,is_non_physical&order=id.asc&limit=${lim}`,
+      );
+      if (placesRaw.length === 0) {
+        return { source: 'live', rows: [{ places: [] }], page: { limit: 1, offset: 0, has_more: false, next_offset: null } };
+      }
+      const pids = placesRaw.map(p => Number(p.id)).filter(n => Number.isInteger(n) && n > 0);
+      const [locs, pgRows, vgRows] = await Promise.all([
+        publicRestGet(`/rest/v1/place_locations?place_id=in.(${pids.join(',')})&published=eq.true&is_alternative=eq.false&select=place_id,modern_name,latitude,longitude`),
+        publicRestGet(`/rest/v1/passage_geography?place_id=in.(${pids.join(',')})&published=eq.true&select=place_id,passage_key,title,book,start_chapter,start_verse,end_chapter,end_verse,relationship_type&limit=40`),
+        publicRestGet(`/rest/v1/verse_geography?place_id=in.(${pids.join(',')})&published=eq.true&select=place_id,verse_id,relationship_type,evidence_ref&limit=40`),
+      ]);
+      const locByPid = new Map<number, Record<string, unknown>>();
+      for (const l of locs) {
+        const pid = Number(l.place_id);
+        if (!locByPid.has(pid)) locByPid.set(pid, l);
+      }
+      const places = placesRaw.map(p => {
+        const pid = Number(p.id);
+        const loc = locByPid.get(pid);
+        const linkedPassages: string[] = [];
+        for (const pg of pgRows) {
+          if (Number(pg.place_id) !== pid) continue;
+          const ref = `${pg.book}:${pg.start_chapter}:${pg.start_verse}`;
+          linkedPassages.push(pg.title ? `${ref} (${pg.title})` : ref);
+        }
+        for (const vg of vgRows) {
+          if (Number(vg.place_id) !== pid) continue;
+          if (typeof vg.evidence_ref === 'string' && vg.evidence_ref) linkedPassages.push(vg.evidence_ref);
+        }
+        return {
+          place: p.biblical_name,
+          place_key: p.place_key,
+          place_type: p.place_type,
+          is_non_physical: Boolean(p.is_non_physical),
+          modern_name: loc?.modern_name ?? null,
+          lat: typeof loc?.latitude === 'number' ? loc.latitude : null,
+          lon: typeof loc?.longitude === 'number' ? loc.longitude : null,
+          linked_passages: [...new Set(linkedPassages)].slice(0, 12),
+        };
+      });
+      return { source: 'live', rows: [{ places }], page: { limit: 1, offset: 0, has_more: false, next_offset: null } };
+    }
+
+    if (name === 'query_chronology_assertions_batch') {
+      const vids = Array.isArray(args.verse_ids)
+        ? [...new Set(args.verse_ids.map(Number).filter(n => Number.isInteger(n) && n > 0))].slice(0, 80)
+        : [];
+      if (vids.length === 0) {
+        return { source: 'live', rows: [{ models: [], assertions: [] }], page: { limit: 1, offset: 0, has_more: false, next_offset: null } };
+      }
+      const [models, assertionsRaw] = await Promise.all([
+        publicRestGet('/rest/v1/chronology_models?published=eq.true&select=id,name,adam_year,resurrection_year'),
+        publicRestGet(`/rest/v1/chronology_assertions?published=eq.true&verse_id=in.(${vids.join(',')})&select=verse_id,model_id,axis,earliest_year,latest_year,preferred_year,precision,rationale,event_id&limit=400`),
+      ]);
+      const fmtYear = (y: number) => (y <= 0 ? `${1 - y} BC` : `AD ${y}`);
+      const assertions = assertionsRaw.map(a => {
+        const pref = typeof a.preferred_year === 'number' ? a.preferred_year : null;
+        const ear = typeof a.earliest_year === 'number' ? a.earliest_year : null;
+        const lat = typeof a.latest_year === 'number' ? a.latest_year : null;
+        const date_label = pref !== null
+          ? fmtYear(pref)
+          : ear !== null && lat !== null
+            ? (ear === lat ? fmtYear(ear) : `${fmtYear(ear)}..${fmtYear(lat)}`)
+            : ear !== null ? fmtYear(ear) : '';
+        return { ...a, date_label };
+      });
+      return { source: 'live', rows: [{ models, assertions }], page: { limit: 1, offset: 0, has_more: false, next_offset: null } };
+    }
+
     const url = new URL(name === 'get_word_details' ? '/rest/v1/words' : `/rest/v1/rpc/${name}`, base);
     if (name === 'get_word_details') {
       url.searchParams.set('id', `eq.${args.word_id}`);
@@ -271,18 +422,33 @@ export function createApp(config: DatabaseConfig, fetcher: typeof fetch = fetch)
       agentKey: config.agentKey,
     }, fetcher);
   }
-  const mcp = createMcpHandler(() => {
+  const chainStore = createChainStore(
+    config.serviceRoleKey ? { url: config.url, serviceRoleKey: config.serviceRoleKey } : null,
+    fetcher,
+  );
+  const v2Mcp = createMcpHandler(() => {
+    const reqHeaders = requestHeaders;
+    return createDiscoveryV2Server(read, writer, chainStore, () => reqHeaders);
+  }, { maxRequestBodySize: 32768 });
+  const legacyMcp = createMcpHandler(() => {
+    const reqHeaders = requestHeaders;
     const server = createResearchServer(read);
     if (writer) {
-      registerNoteWriteTools(server, writer, () => requestHeaders, read);
-      registerDlmWriteTools(server, read, writer, () => requestHeaders);
+      registerNoteWriteTools(server, writer, () => reqHeaders, read);
+      registerDlmWriteTools(server, read, writer, () => reqHeaders);
     }
     return server;
   }, { maxRequestBodySize: 32768 });
-  const paths = new Set(['/', '/mcp', '/bible-mcp', '/bible-mcp/mcp',
+  const v2Paths = new Set(['/', '/mcp', '/bible-mcp', '/bible-mcp/mcp',
     '/functions/v1/bible-mcp', '/functions/v1/bible-mcp/mcp',
     '/bible-mcp-staging', '/bible-mcp-staging/mcp',
     '/functions/v1/bible-mcp-staging', '/functions/v1/bible-mcp-staging/mcp']);
+  const legacyPaths = new Set([
+    '/legacy', '/legacy/mcp', '/bible-mcp/legacy', '/bible-mcp/legacy/mcp',
+    '/functions/v1/bible-mcp/legacy', '/functions/v1/bible-mcp/legacy/mcp',
+    '/bible-mcp-staging/legacy', '/bible-mcp-staging/legacy/mcp',
+    '/functions/v1/bible-mcp-staging/legacy', '/functions/v1/bible-mcp-staging/legacy/mcp',
+  ]);
   const withCors = (response: Response) => {
     const headers = new Headers(response.headers);
     for (const [key, value] of Object.entries(cors)) headers.set(key, value);
@@ -296,12 +462,15 @@ export function createApp(config: DatabaseConfig, fetcher: typeof fetch = fetch)
     if (request.method === 'OPTIONS') return withCors(new Response(null, { status: 204 }));
     if (request.method === 'GET' && path.endsWith('/health')) {
       const writesEnabled = Boolean(writer);
-      const totalTools = RESEARCH_TOOL_NAMES.length + (writesEnabled ? 5 : 0);
+      const isLegacyHealth = path.includes('/legacy/');
+      const legacyTools = RESEARCH_TOOL_NAMES.length + (writesEnabled ? 5 : 0);
+      const v2Tools = V2_READ_TOOL_NAMES.length + (writesEnabled ? 1 : 0);
       const corpusTarget = config.corpusUrl ? 'custom' : (path.includes('bible-mcp-staging') ? 'staging' : 'production');
       const activeCorpusUrl = config.corpusUrl || (path.includes('bible-mcp-staging') ? DEFAULT_STAGING_CORPUS_URL : DEFAULT_CORPUS_URL);
-      return withCors(Response.json({
+      return withCors(Response.json(isLegacyHealth ? {
         name: 'BibleResearch',
         version: WORKFLOW_VERSION,
+        surface: 'legacy',
         status: 'ok',
         transport: 'streamable-http',
         authentication: config.agentKey ? 'bearer' : 'none',
@@ -309,13 +478,30 @@ export function createApp(config: DatabaseConfig, fetcher: typeof fetch = fetch)
         writes: writesEnabled ? 'enabled' : 'disabled',
         corpus_target: corpusTarget,
         corpus_url: activeCorpusUrl,
-        tools: totalTools,
+        tools: legacyTools,
         prompts: Object.keys(PROMPTS).length,
+      } : {
+        name: 'BibleResearch',
+        version: WORKFLOW_VERSION,
+        surface: 'v2-discovery',
+        status: 'ok',
+        transport: 'streamable-http',
+        authentication: config.agentKey ? 'bearer' : 'none',
+        read_only: !writesEnabled,
+        writes: writesEnabled ? 'enabled' : 'disabled',
+        corpus_target: corpusTarget,
+        corpus_url: activeCorpusUrl,
+        tools: v2Tools,
+        prompts: 1,
+        legacy_endpoint: '/legacy/mcp',
+        legacy_tools: legacyTools,
+        legacy_prompts: Object.keys(PROMPTS).length,
       }));
     }
-    if (!paths.has(path)) return withCors(Response.json({ error: 'Not found' }, { status: 404 }));
+    const isLegacy = legacyPaths.has(path);
+    if (!v2Paths.has(path) && !isLegacy) return withCors(Response.json({ error: 'Not found' }, { status: 404 }));
     requestHeaders = request.headers;
-    try { return withCors(await mcp.fetch(request)); }
+    try { return withCors(await (isLegacy ? legacyMcp : v2Mcp).fetch(request)); }
     catch {
       console.error('BibleResearch MCP transport failed');
       return withCors(Response.json({ error: 'MCP temporarily unavailable' }, { status: 500 }));

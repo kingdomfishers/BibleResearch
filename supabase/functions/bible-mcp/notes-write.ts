@@ -31,6 +31,13 @@ export interface NotesWriter {
   hasAgentKey(): boolean;
 }
 
+export interface McpToolResult {
+  [key: string]: unknown;
+  isError?: boolean;
+  content: { type: 'text'; text: string }[];
+  structuredContent?: Record<string, unknown>;
+}
+
 export const writeAnnotations = {
   readOnlyHint: false,
   destructiveHint: false,
@@ -127,7 +134,7 @@ export function createNotesWriter(config: NotesWriterConfig, fetcher: typeof fet
 }
 
 // === @section:logic:tool-schemas ===
-const noteKinds = [
+export const noteKinds = [
   // Seven actual public.note_kinds entries. DLM-specific card type is in source_context.dlm_v1.
   'observation','linguistic','interpretation','question',
   'cross_reference','research_lead','citation',
@@ -167,8 +174,61 @@ export const noteBlockInputSchema = z.strictObject({
   client_key: z.string().trim().max(64).optional().describe('Optional block identifier.'),
 });
 
+export const createNoteArgsSchema = z.strictObject({
+  title: z.string().trim().max(200).optional().describe('Brief note title (optional).'),
+  body_md: z.string().trim().min(1).max(20000).describe('Markdown body of the note (max 20,000 characters).'),
+  note_kind: z.enum(noteKinds).describe('Scholarly category of note.'),
+  language: z.string().trim().max(16).optional().default('en').describe('Language code (e.g. en, he, grc).'),
+  confidence: z.number().min(0.0).max(1.0).optional().describe('Scholarly confidence (0.0 to 1.0).'),
+  anchors: z.array(noteAnchorInputSchema).min(1).max(20).describe('Target anchors. Each needs a unique client_key.'),
+  connections: z.array(noteConnectionInputSchema).max(20).optional().default([]).describe('Semantic connections between anchors.'),
+  blocks: z.array(noteBlockInputSchema).max(10).optional().default([]).describe('Structured content blocks (link or image).'),
+  source_context: z.record(z.string(), z.unknown()).optional().describe('Corpus tool calls, evidence refs, and reasoning (max 8 KB).'),
+  model: z.string().trim().max(80).optional().describe('Self-reported model identifier (e.g. claude-3-5-sonnet, gpt-4o).'),
+});
+
+export const updateNoteArgsSchema = z.strictObject({
+  note_id: z.string().regex(uuidRegex, 'Must be a valid UUID').describe('UUID of the note to update (must be authored by this agent).'),
+  expected_version: z.number().int().min(1).describe('Optimistic locking: expected current version.'),
+  title: z.string().trim().max(200).optional().describe('Updated note title.'),
+  body_md: z.string().trim().min(1).max(20000).describe('Updated markdown body.'),
+  note_kind: z.enum(noteKinds).describe('Updated category.'),
+  language: z.string().trim().max(16).optional().default('en'),
+  confidence: z.number().min(0.0).max(1.0).optional(),
+  anchors: z.array(noteAnchorInputSchema).min(1).max(20),
+  connections: z.array(noteConnectionInputSchema).max(20).optional().default([]),
+  blocks: z.array(noteBlockInputSchema).max(10).optional().default([]),
+  source_context: z.record(z.string(), z.unknown()).optional(),
+  model: z.string().trim().max(80).optional(),
+});
+
+export const deleteNoteArgsSchema = z.strictObject({
+  note_id: z.string().regex(uuidRegex, 'Must be a valid UUID').describe('UUID of the AI-authored note to delete.'),
+  model: z.string().trim().max(80).optional().describe('Self-reported model identifier (optional).'),
+});
+
+const researchNoteReferenceSchema = z.strictObject({
+  book: z.number().int().min(1).max(66),
+  chapter: z.number().int().min(1).max(150),
+  verse: z.number().int().min(0).max(176),
+  word_position: z.number().int().min(1).optional().describe('When set, anchor to this exact occurrence within the verse. Otherwise anchor to the verse.'),
+  word_id: z.number().int().positive().optional().describe('Optional assertion of STEP word identity, validated against the verse and position.'),
+  role: z.enum(['subject', 'object', 'mention', 'evidence']).default('subject').optional(),
+});
+
+export const addResearchNoteArgsSchema = z.strictObject({
+  title: z.string().trim().max(200).optional(),
+  body_md: z.string().trim().min(1).max(20000),
+  note_kind: z.enum(noteKinds).default('observation'),
+  language: z.string().trim().max(16).default('en'),
+  confidence: z.number().min(0).max(1).optional(),
+  references: z.array(researchNoteReferenceSchema).min(1).max(8).describe('Up to 8 verse references, with optional word positions.'),
+  source_context: z.record(z.string(), z.unknown()).optional(),
+  model: z.string().trim().max(80).optional(),
+});
+
 // === @section:logic:tool-create-update ===
-function handleWriteResult(result: Record<string, unknown>, action: string) {
+function handleWriteResult(result: Record<string, unknown>, action: string): McpToolResult {
   if (result.ok === false) {
     const err = result.error as { code?: string; message?: string; field?: string } | undefined;
     return {
@@ -180,159 +240,145 @@ function handleWriteResult(result: Record<string, unknown>, action: string) {
   return { content: textContent(JSON.stringify(structuredContent)), structuredContent };
 }
 
+export async function executeCreateNote(
+  writer: NotesWriter,
+  args: z.infer<typeof createNoteArgsSchema>,
+  clientInfo?: { name?: string; version?: string },
+  headers?: Headers,
+): Promise<McpToolResult> {
+  if (!writer.checkAuth(headers)) return { isError: true, content: textContent('Writing notes requires the agent key') };
+  const agent = deriveAgentIdentity(clientInfo, headers?.get('user-agent'), args.model);
+  const { model: _m, ...notePayload } = args;
+  try {
+    return handleWriteResult(await writer.saveNote(agent, notePayload), 'create note');
+  } catch { return { isError: true, content: textContent('The note writing service is temporarily unavailable.') }; }
+}
+
 function registerCreateNoteTool(server: McpServer, writer: NotesWriter, getHeaders?: () => Headers | undefined): void {
   server.registerTool('create_note', {
     title: 'Create AI study note with anchors and connections',
     description: 'Create a new study note. INSTRUCTIONS FOR AI: Add notes only when explicitly asked by the user or when providing clearly valuable, non-duplicate scholarly insight. Tag minimal, precise anchors (prefer word occurrences over whole verses when the claim targets a word). Set confidence (0.0 to 1.0). Put reasoning and corpus tool citations in source_context. NEVER cite user notes as source evidence for the biblical text.',
-    inputSchema: z.strictObject({
-      title: z.string().trim().max(200).optional().describe('Brief note title (optional).'),
-      body_md: z.string().trim().min(1).max(20000).describe('Markdown body of the note (max 20,000 characters).'),
-      note_kind: z.enum(noteKinds).describe('Scholarly category of note.'),
-      language: z.string().trim().max(16).optional().default('en').describe('Language code (e.g. en, he, grc).'),
-      confidence: z.number().min(0.0).max(1.0).optional().describe('Scholarly confidence (0.0 to 1.0).'),
-      anchors: z.array(noteAnchorInputSchema).min(1).max(20).describe('Target anchors. Each needs a unique client_key.'),
-      connections: z.array(noteConnectionInputSchema).max(20).optional().default([]).describe('Semantic connections between anchors.'),
-      blocks: z.array(noteBlockInputSchema).max(10).optional().default([]).describe('Structured content blocks (link or image).'),
-      source_context: z.record(z.string(), z.unknown()).optional().describe('Corpus tool calls, evidence refs, and reasoning (max 8 KB).'),
-      model: z.string().trim().max(80).optional().describe('Self-reported model identifier (e.g. claude-3-5-sonnet, gpt-4o).'),
-    }),
+    inputSchema: createNoteArgsSchema,
     outputSchema: z.record(z.string(), z.unknown()),
     annotations: writeAnnotations,
-  }, async args => {
-    const headers = getHeaders?.();
-    if (!writer.checkAuth(headers)) return { isError: true, content: textContent('Writing notes requires the agent key') };
-    const agent = deriveAgentIdentity(server.server.getClientVersion?.(), headers?.get('user-agent'), args.model);
-    const { model: _m, ...notePayload } = args;
-    try {
-      return handleWriteResult(await writer.saveNote(agent, notePayload), 'create note');
-    } catch { return { isError: true, content: textContent('The note writing service is temporarily unavailable.') }; }
-  });
+  }, async args => executeCreateNote(writer, args, server.server.getClientVersion?.(), getHeaders?.()));
+}
+
+export async function executeUpdateNote(
+  writer: NotesWriter,
+  args: z.infer<typeof updateNoteArgsSchema>,
+  clientInfo?: { name?: string; version?: string },
+  headers?: Headers,
+): Promise<McpToolResult> {
+  if (!writer.checkAuth(headers)) return { isError: true, content: textContent('Writing notes requires the agent key') };
+  const agent = deriveAgentIdentity(clientInfo, headers?.get('user-agent'), args.model);
+  const { model: _m, note_id, ...noteFields } = args;
+  try {
+    return handleWriteResult(await writer.saveNote(agent, { id: note_id, ...noteFields }), 'update note');
+  } catch { return { isError: true, content: textContent('The note writing service is temporarily unavailable.') }; }
 }
 
 function registerUpdateNoteTool(server: McpServer, writer: NotesWriter, getHeaders?: () => Headers | undefined): void {
   server.registerTool('update_my_note', {
     title: 'Update existing AI-authored note',
     description: 'Update an existing AI-authored note. Requires expected_version for optimistic concurrency. Only updates notes authored by this agent. INSTRUCTIONS FOR AI: Prefer updating existing notes over creating near-duplicates. Tag minimal precise anchors, set confidence, and document changes in source_context.',
-    inputSchema: z.strictObject({
-      note_id: z.string().regex(uuidRegex, 'Must be a valid UUID').describe('UUID of the note to update (must be authored by this agent).'),
-      expected_version: z.number().int().min(1).describe('Optimistic locking: expected current version.'),
-      title: z.string().trim().max(200).optional().describe('Updated note title.'),
-      body_md: z.string().trim().min(1).max(20000).describe('Updated markdown body.'),
-      note_kind: z.enum(noteKinds).describe('Updated category.'),
-      language: z.string().trim().max(16).optional().default('en'),
-      confidence: z.number().min(0.0).max(1.0).optional(),
-      anchors: z.array(noteAnchorInputSchema).min(1).max(20),
-      connections: z.array(noteConnectionInputSchema).max(20).optional().default([]),
-      blocks: z.array(noteBlockInputSchema).max(10).optional().default([]),
-      source_context: z.record(z.string(), z.unknown()).optional(),
-      model: z.string().trim().max(80).optional(),
-    }),
+    inputSchema: updateNoteArgsSchema,
     outputSchema: z.record(z.string(), z.unknown()),
     annotations: writeAnnotations,
-  }, async args => {
-    const headers = getHeaders?.();
-    if (!writer.checkAuth(headers)) return { isError: true, content: textContent('Writing notes requires the agent key') };
-    const agent = deriveAgentIdentity(server.server.getClientVersion?.(), headers?.get('user-agent'), args.model);
-    const { model: _m, note_id, ...noteFields } = args;
-    try {
-      return handleWriteResult(await writer.saveNote(agent, { id: note_id, ...noteFields }), 'update note');
-    } catch { return { isError: true, content: textContent('The note writing service is temporarily unavailable.') }; }
-  });
+  }, async args => executeUpdateNote(writer, args, server.server.getClientVersion?.(), getHeaders?.()));
 }
 
 // === @section:logic:tool-delete ===
+export async function executeDeleteNote(
+  writer: NotesWriter,
+  args: z.infer<typeof deleteNoteArgsSchema>,
+  clientInfo?: { name?: string; version?: string },
+  headers?: Headers,
+): Promise<McpToolResult> {
+  if (!writer.checkAuth(headers)) return { isError: true, content: textContent('Writing notes requires the agent key') };
+  const agent = deriveAgentIdentity(clientInfo, headers?.get('user-agent'), args.model);
+  try {
+    const res = await writer.deleteNote(agent, args.note_id);
+    return handleWriteResult(res, 'delete note');
+  } catch { return { isError: true, content: textContent('The note deletion service is temporarily unavailable.') }; }
+}
+
 function registerDeleteNoteTool(server: McpServer, writer: NotesWriter, getHeaders?: () => Headers | undefined): void {
   server.registerTool('delete_my_note', {
     title: 'Soft-delete AI-authored note',
     description: 'Soft-delete an existing AI-authored note. Only deletes notes authored by this agent; human notes and notes from other agents cannot be deleted.',
-    inputSchema: z.strictObject({
-      note_id: z.string().regex(uuidRegex, 'Must be a valid UUID').describe('UUID of the AI-authored note to delete.'),
-      model: z.string().trim().max(80).optional().describe('Self-reported model identifier (optional).'),
-    }),
+    inputSchema: deleteNoteArgsSchema,
     outputSchema: z.record(z.string(), z.unknown()),
     annotations: deleteAnnotations,
-  }, async args => {
-    const headers = getHeaders?.();
-    if (!writer.checkAuth(headers)) return { isError: true, content: textContent('Writing notes requires the agent key') };
-    const agent = deriveAgentIdentity(server.server.getClientVersion?.(), headers?.get('user-agent'), args.model);
-    try {
-      const res = await writer.deleteNote(agent, args.note_id);
-      return handleWriteResult(res, 'delete note');
-    } catch { return { isError: true, content: textContent('The note deletion service is temporarily unavailable.') }; }
-  });
+  }, async args => executeDeleteNote(writer, args, server.server.getClientVersion?.(), getHeaders?.()));
 }
 
 
 // === @section:logic:tool-add-research-note ===
 // Convenience wrapper: resolve book/chapter/verse and word positions from the authoritative
 // live verse packet. Never trust a user-supplied word ID without comparing its position.
-function registerAddResearchNoteTool(
-  server: McpServer, writer: NotesWriter, read: DatabaseReader, getHeaders?:()=>Headers|undefined,
-): void {
-  const reference = z.strictObject({
-    book:z.number().int().min(1).max(66),
-    chapter:z.number().int().min(1).max(150),
-    verse:z.number().int().min(0).max(176),
-    word_position:z.number().int().min(1).optional().describe('When set, anchor to this exact occurrence within the verse. Otherwise anchor to the verse.'),
-    word_id:z.number().int().positive().optional().describe('Optional assertion of STEP word identity, validated against the verse and position.'),
-    role:z.enum(['subject','object','mention','evidence']).default('subject').optional(),
-  });
-  server.registerTool('add_research_note',{
-    title:'Save a research note anchored to biblical verses and exact words',
-    description:'Create an AI-authored research note and link it to canonical book/chapter/verse plus optional exact word position and STEP word ID. Automatically resolves and validates verse IDs and word IDs; refuses mismatches. Notes are explicitly user/agent commentary, not biblical textual evidence. Only save when the user explicitly requests it.',
-    inputSchema:z.strictObject({
-      title:z.string().trim().max(200).optional(),
-      body_md:z.string().trim().min(1).max(20000),
-      note_kind:z.enum(noteKinds).default('observation'),
-      language:z.string().trim().max(16).default('en'),
-      confidence:z.number().min(0).max(1).optional(),
-      references:z.array(reference).min(1).max(8).describe('Up to 8 verse references, with optional word positions.'),
-      source_context:z.record(z.string(),z.unknown()).optional(),
-      model:z.string().trim().max(80).optional(),
-    }),
-    outputSchema:z.record(z.string(),z.unknown()),
-    annotations:writeAnnotations,
-  },async ({title,body_md,note_kind,language,confidence,references,source_context,model})=>{
-    const headers=getHeaders?.();
-    if(!writer.checkAuth(headers))return {isError:true,content:textContent('Writing notes requires the configured agent key.')};
-    try{
-      if(references.some(r=>r.word_id!==undefined && r.word_position===undefined))
-        return {isError:true,content:textContent('For a word occurrence, include its 1-based word_position with word_id.')};
-      const unique=[...new Map(references.map(r=>[r.book+':'+r.chapter+':'+r.verse,{book:r.book,chapter:r.chapter,verse:r.verse}])).values()];
-      const row=await read({name:'get_verse_research_v2',args:{p_request:{passages:unique,profile:'analysis',occurrences:{mode:'sample',limit:1}}},limit:1,offset:0});
-      const packet=row.rows[0];
-      if(!packet||packet.status!=='ok'||!Array.isArray(packet.verses))throw Error('Verse identification unavailable');
-      const verseMap=new Map((packet.verses as Record<string,unknown>[]).map(v=>{
-        const p=(v.passage||{}) as Record<string,unknown>;
-        return [p.book+':'+p.chapter+':'+p.verse,v];
-      }));
-      const anchors:Record<string,unknown>[]=[];
-      for(let i=0;i<references.length;i++){
-        const r=references[i],key=r.book+':'+r.chapter+':'+r.verse;
-        const v=verseMap.get(key);
-        if(!v||!Number.isInteger(Number(v.verse_id))||Number(v.verse_id)<=0)throw Error('Verse not found: '+key);
-        const info:Record<string,unknown>={client_key:'reference_'+(i+1),label:key,role:r.role||'subject',
-          verse_id:Number(v.verse_id)};
-        if(r.word_position!==undefined){
-          const words=(Array.isArray(v.words)?v.words:[]) as Record<string,unknown>[];
-          const w=words.find(x=>Number(x.word_position)===r.word_position);
-          if(!w||!Number.isInteger(Number(w.word_id))||Number(w.word_id)<=0)throw Error('Unresolved word occurrence: '+key+' position '+r.word_position);
-          if(r.word_id!==undefined && r.word_id!==Number(w.word_id))throw Error('Word ID disagrees with canonical STEP occurrence: '+key+' position '+r.word_position);
-          info.kind='word_occurrence';
-          info.word_id=Number(w.word_id);
-          info.word_position=r.word_position;
-          info.label=key+' word '+r.word_position+' '+String(w.original_word||'');
-        }else info.kind='verse';
-        anchors.push(info);
-      }
-      const agent=deriveAgentIdentity(server.server.getClientVersion?.(),headers?.get('user-agent'),model);
-      const note:Record<string,unknown>={title,body_md,note_kind,language,confidence,anchors,
-        connections:[],blocks:[],source_context:{...source_context,creation_method:'mcp_add_research_note',reference_count:references.length}};
-      return handleWriteResult(await writer.saveNote(agent,note),'add research note');
-    }catch(e){
-      return {isError:true,content:textContent('Cannot save note: '+(e instanceof Error?e.message:'validation or database failure'))};
+export async function executeAddResearchNote(
+  writer: NotesWriter,
+  read: DatabaseReader,
+  args: z.infer<typeof addResearchNoteArgsSchema>,
+  clientInfo?: { name?: string; version?: string },
+  headers?: Headers,
+): Promise<McpToolResult> {
+  const { title, body_md, note_kind, language, confidence, references, source_context, model } = args;
+  if (!writer.checkAuth(headers)) return { isError: true, content: textContent('Writing notes requires the configured agent key.') };
+  try {
+    if (references.some(r => r.word_id !== undefined && r.word_position === undefined))
+      return { isError: true, content: textContent('For a word occurrence, include its 1-based word_position with word_id.') };
+    const unique = [...new Map(references.map(r => [r.book + ':' + r.chapter + ':' + r.verse, { book: r.book, chapter: r.chapter, verse: r.verse }])).values()];
+    const row = await read({ name: 'get_verse_research_v2', args: { p_request: { passages: unique, profile: 'analysis', occurrences: { mode: 'sample', limit: 1 } } }, limit: 1, offset: 0 });
+    const packet = row.rows[0];
+    if (!packet || packet.status !== 'ok' || !Array.isArray(packet.verses)) throw Error('Verse identification unavailable');
+    const verseMap = new Map((packet.verses as Record<string, unknown>[]).map(v => {
+      const p = (v.passage || {}) as Record<string, unknown>;
+      return [p.book + ':' + p.chapter + ':' + p.verse, v];
+    }));
+    const anchors: Record<string, unknown>[] = [];
+    for (let i = 0; i < references.length; i++) {
+      const r = references[i], key = r.book + ':' + r.chapter + ':' + r.verse;
+      const v = verseMap.get(key);
+      if (!v || !Number.isInteger(Number(v.verse_id)) || Number(v.verse_id) <= 0) throw Error('Verse not found: ' + key);
+      const info: Record<string, unknown> = {
+        client_key: 'reference_' + (i + 1), label: key, role: r.role || 'subject',
+        verse_id: Number(v.verse_id),
+      };
+      if (r.word_position !== undefined) {
+        const words = (Array.isArray(v.words) ? v.words : []) as Record<string, unknown>[];
+        const w = words.find(x => Number(x.word_position) === r.word_position);
+        if (!w || !Number.isInteger(Number(w.word_id)) || Number(w.word_id) <= 0) throw Error('Unresolved word occurrence: ' + key + ' position ' + r.word_position);
+        if (r.word_id !== undefined && r.word_id !== Number(w.word_id)) throw Error('Word ID disagrees with canonical STEP occurrence: ' + key + ' position ' + r.word_position);
+        info.kind = 'word_occurrence';
+        info.word_id = Number(w.word_id);
+        info.word_position = r.word_position;
+        info.label = key + ' word ' + r.word_position + ' ' + String(w.original_word || '');
+      } else info.kind = 'verse';
+      anchors.push(info);
     }
-  });
+    const agent = deriveAgentIdentity(clientInfo, headers?.get('user-agent'), model);
+    const note: Record<string, unknown> = {
+      title, body_md, note_kind, language, confidence, anchors,
+      connections: [], blocks: [], source_context: { ...source_context, creation_method: 'mcp_add_research_note', reference_count: references.length },
+    };
+    return handleWriteResult(await writer.saveNote(agent, note), 'add research note');
+  } catch (e) {
+    return { isError: true, content: textContent('Cannot save note: ' + (e instanceof Error ? e.message : 'validation or database failure')) };
+  }
+}
+
+function registerAddResearchNoteTool(
+  server: McpServer, writer: NotesWriter, read: DatabaseReader, getHeaders?: () => Headers | undefined,
+): void {
+  server.registerTool('add_research_note', {
+    title: 'Save a research note anchored to biblical verses and exact words',
+    description: 'Create an AI-authored research note and link it to canonical book/chapter/verse plus optional exact word position and STEP word ID. Automatically resolves and validates verse IDs and word IDs; refuses mismatches. Notes are explicitly user/agent commentary, not biblical textual evidence. Only save when the user explicitly requests it.',
+    inputSchema: addResearchNoteArgsSchema,
+    outputSchema: z.record(z.string(), z.unknown()),
+    annotations: writeAnnotations,
+  }, async args => executeAddResearchNote(writer, read, args, server.server.getClientVersion?.(), getHeaders?.()));
 }
 
 // === @section:logic:register ===
