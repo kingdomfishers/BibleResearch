@@ -49,7 +49,7 @@ Live connected tools and GitHub MCP source inspected:
 6. **write_Note** — authenticated notes and DLM validation, **never call without user authorization**.
 7. **get_prompt** — guidance for AI tool use, not a reader-facing UX element.
 
-GitHub sources: research/r12/MCP_STRATEGY.md, MCP_IMPLEMENTATION_HANDOFF.md, mcp_v2_live_audit_2026-11-20/REPORT.md and ROOT_CAUSE_WORD_ID_MISMATCH.md; implementation in supabase/functions/bible-mcp/discovery-v2-tools.ts, word-model.ts, research-engine.ts, chain-store.ts.
+GitHub sources: research/r12/MCP_STRATEGY.md and MCP_IMPLEMENTATION_HANDOFF.md; implementation in supabase/functions/bible-mcp/discovery-v2-tools.ts, word-model.ts, research-engine.ts, chain-store.ts.
 
 **Critical architecture boundary:** the MCP is designed for AI and can return large/slow hydrated responses (archived cold 6–14 seconds for large ranges; 2–3.5 warm). Its shape is a **semantic model**, not necessarily the browser's efficient hover network protocol. Use existing bounded BibleRPC reader/Cloudflare endpoints for instant verse/word previews. Add only minimal batched public read-only projection endpoints if truly missing, through the existing API layer. Do not expose MCP chain capability secrets or server/service credentials to an unauthenticated browser. Browser path history can be local; reuse the MCP chain server only with a proven secure authenticated contract.
 
