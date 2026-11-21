@@ -1,8 +1,8 @@
 # BibleResearch UX Strategy — Evidence-First Discovery Explorer (Rabbit-Hole Research UX)
 
-**Revised:** 2026-11-21 (expanded, relationship-first). **Status:** implementation specification, superseding the 2026-11-05 UX refresh proposal where they differ. **Branch inspected:** feat/r12-qa-fixes. **Authority:** AGENTS.md and local workspace remain authoritative for implementation; TASKS.md is the only task queue.
+**Revised:** 2026-11-21 (relationship-first, refined for always-visible meanings and compact workspace). **Status:** implementation specification, superseding the 2026-11-05 UX refresh proposal where they differ. **Branch inspected:** feat/r12-qa-fixes. **Authority:** AGENTS.md and local workspace remain authoritative for implementation; TASKS.md is the only task queue.
 
-**IMPLEMENTATION PRIORITY UPDATE:** The primary milestone is reversible interactive relationship exploration *with* immediate readable Scripture, not a static Bible-reader refresh. **Sections 15–23 take precedence on milestone order** wherever older sections conflict. Build discovery trail + inspectable edges first; chapter/interlinear and comparison are core parts of that first working exploration loop. Maps, genealogy, feast calendars, images, and advanced structural/chiasm suggestions are later tools in the same extensible system.
+**IMPLEMENTATION PRIORITY UPDATE:** The primary milestone is reversible interactive relationship exploration *with* immediate readable Scripture, not a static Bible-reader refresh. **Sections 15–24 take precedence on milestone order** wherever older sections conflict. **Section 24 takes precedence for inline reader meanings, top research trail, drag/drop, notes and spatial layout.** Build discovery trail + inspectable edges first; chapter/interlinear and comparison are core parts of that first working exploration loop. Maps, genealogy, feast calendars, images, and advanced structural/chiasm suggestions are later tools in the same extensible system.
 
 ## 0. Product principle and measurable outcome
 
@@ -53,15 +53,11 @@ GitHub sources: research/r12/MCP_STRATEGY.md, MCP_IMPLEMENTATION_HANDOFF.md, mcp
 
 **Critical architecture boundary:** the MCP is designed for AI and can return large/slow hydrated responses (archived cold 6–14 seconds for large ranges; 2–3.5 warm). Its shape is a **semantic model**, not necessarily the browser's efficient hover network protocol. Use existing bounded BibleRPC reader/Cloudflare endpoints for instant verse/word previews. Add only minimal batched public read-only projection endpoints if truly missing, through the existing API layer. Do not expose MCP chain capability secrets or server/service credentials to an unauthenticated browser. Browser path history can be local; reuse the MCP chain server only with a proven secure authenticated contract.
 
-## 2. CRITICAL correctness gate — verified token identity (P0)
+## 2. Data reliability without disrupting the user experience
 
-**2026-11-21 live reproduction:** get_Passage Zechariah 4:2 still pairs the surface מְנוֹרַת֩ (menorah/lampstand, H4501) with word_id 59034 and transliteration za.Hav (gold), although canonical STEP identifies the lampstand as word_id **91302**. Similarly gold receives ku.Lah (all-of-it) and lamp(s) receives 'a.Lei.ha (upon-it). The 2026-11-20 audit traced the bug to src-independent Cloudflare normalizeTokenList joining Macula local word_no to STEP canonical positional indexes. This is a data-contract bug, not a cosmetic issue.
+Use source-backed original forms, word identities, glosses, and historical/lexical attributions. Keep lemma, root, alternative senses and similar spelling clearly distinguished, and label uncertain source links instead of inventing certainty. This is a general interface requirement; backend data-repair work is owned by its separate agent.
 
-**UX rule:** never attach transliteration, lemma key, grammar, precise English alignment, or evidence badges to a token until canonical occurrence and source edition identity have been verified. Do not assume identical Macula/STEP ordinal positions. In case of uncertainty render the safely sourced original English and token form separately and mark enriched alignment **unverified/unavailable**, rather than display a false word gloss. Preserve distinctions: word occurrence vs lexeme/lemma vs sense vs surface form; edition and Psalm verse 0.
-
-**Owner boundary:** UX implementer must not independently rewrite the algorithm or corpus crosswalk while Neon fixes it; add UI guards and regression fixtures, and integrate the corrected release when available. At minimum test Zech 4:2 against canonical STEP positions and controls Gen 1:1, Ezek 1:3, 1 Cor 12:10, Psalm headings and shifted Hebrew verses. Do not claim full original-language parity until corrected in live data.
-
-For geography and chronology, display model name, scope (setting / mention / audience / composition), confidence, evidence and alternatives. For example, an inferred Eden site or a 4004 BC model must never look like an established coordinates/date fact. External OEWN/Wikidata bridges remain modern exploratory concepts, not biblical proof.
+Geography and chronology show their model names, passage relation, alternative candidates and uncertainty. An inferred ancient location or one chronological model must not appear as an established historical fact.
 
 ## 3. Single exploration state and reusable evidence contract
 
@@ -82,19 +78,17 @@ The same anchor/edge should render consistently as a compact result card, hover 
 
 ## 4. Main screen hierarchy (build function first, not beauty)
 
-Desktop >=1200 px: left collapsible **Trail & Connections**, center dominant **Scripture Reader**, right **Evidence/Word Inspector**. On standard 900–1199 px use reader plus inspector with trail as drawer. On phone (320–430 px), default to **Read → Evidence → Next Connections**, with sticky compact path bar and graph in optional full-screen sheet. Do not put three tiny columns on a phone.
+Desktop >=1200 px: **one fixed/sticky compact research-trail header across the top**, below or merged with the app navigation; dominant Scripture reader + available discovery/evidence area. On 900–1199 px keep the same horizontal header but use one main reading column and a contextual inspector drawer. On phone the trail becomes a single horizontally scrollable breadcrumb rail with back/fork actions; open graph/evidence only when needed. **No collapsible left-side research-trail window.** Use space freed by the trail for actual verses and comparison.
 
 On first load show active full English verse + original/transliteration, one approachable query field (verse/word/concept), a compact **What connects to this?** set (3–6 varied results), and an explicit **Compare** control. No hero, MCP tool names or nine technical tabs between reader and evidence. Leave maps and chronology as optional expandable lanes associated with the verse.
 
 **Readable scaffold:**
 
-TOP: Search / passage selector | Back | Compare | Graph | Saved trails
-
-TRAIL: Genesis 2:7 > adam > adamah  [branch indicator]
+FIXED TOP RESEARCH HEADER (single compact rail): Back/Fork | Genesis 2:7 › adam › adamah [branches] | Compare | Graph | Note. Merge with existing navigation where possible; auto-condense labels on scroll and horizontally scroll deep trails without wrapping into several rows.
 
 READER: Genesis 2:7 (WEB full text)
-Original tokens in reading order: form / readable transliteration / contextual gloss
-Tap word → inspector; hover word → quick meaning
+Original tokens in reading order: original form / readable transliteration / observed English gloss / **1–3 short alternative meanings (and short root when supported) visible without clicking**.
+Tap word → inspector; hover word → further lemma/root/occurrence context.
 
 NEXT: 5 relationship cards [why + real short evidence excerpt + evidence type]
 [More] [Find a bridge] [Surprise me]
@@ -119,7 +113,7 @@ Preview contains:
 - short decoded grammar (e.g. noun, masculine, singular) and ambiguous-sense notice where applicable;
 - one high-value connection/occurrence with an actual verse excerpt if cached; technical Strong's in secondary detail.
 
-Click/Enter opens the persistent **Word Inspector** at the selected passage/word position, retaining the reader. More meanings, occurrences with full-verse preview, senses, LXX, roots, context/grammatical relations and data provenance live here, not in the hover tooltip. Do not perform full get_Word/MCP hydration on every pointer move. Group by proper extended lemma/sense when attested; show disambiguation instead of choosing a homograph automatically.
+Click/Enter opens the persistent **Word Inspector** at the selected passage/word position, retaining the reader. **Meaning choices and a concise root are already visible directly in each word's interlinear reader cell, without hover or click;** the inspector adds documented derivation chains, precise sourced examples, more senses, LXX and related passages, not repetitive copies of the inline summary. Do not perform full get_Word/MCP hydration on every pointer move. Group by proper extended lemma/sense when attested; show disambiguation instead of choosing a homograph automatically.
 
 ### 5.2 Verse reference hover / keyboard focus
 
@@ -254,7 +248,7 @@ Avoid new heavy graph dependencies and continuous-motion layouts. Support keyboa
 Extend scripts/verify-ux-refresh.mjs (and add small focused tests where needed). Test actual local browser/Playwright, not screenshots alone. Core acceptance:
 
 1. **Gen 2:7:** load full WEB and original text. Hover original *adam* → English, transliteration, script, contextual gloss without selecting. Click *adam* → inspector, follow documented *adamah* wordplay, read Genesis 3:19 on hover; pin and compare both verses, return to same token/scroll.
-2. **Zech 4:2 P0:** correct original token ↔ transliteration/word_id; do not render *menorat* as za.Hav. If corrected backend not yet available, evidence enrichment is marked unverified and no incorrect precise pairing appears. Compare Zech 4 with Revelation 11:4; full English in both panes, original + romanized words, inspect two-olive-tree direct/editorial links.
+2. **Zech 4 ↔ Rev 11:4:** compare complete passages side by side; show meaningful source-attested olive-tree/lampstand links, visible inline word meanings and relevant original-language spellings/transliterations.
 3. **Gen 6:14 ↔ Exod 2:3:** show WEB English for both, shared H8392 *tevah* with source evidence, do not equate other coverings automatically. Graph and list provide equivalent traversal.
 4. **2 Pet 1:19:** compare Greek *lamp* G3088 and *light-bearer* G5459 in their actual verse; no generic words overwhelm the precise source witness.
 5. **John 1:1:** repeated G3056 tokens keep distinct occurrence positions; RTL/LTR correct; hover/focus previews never change active occurrence.
@@ -519,7 +513,7 @@ One **ContextToolRegistry** with capabilities rather than one-off screens. A pro
 
 **Deliver:** shared exploration state/adapter; typed edges and evidence previews; branch/fork/return/back; initial local graph + list; consistent verse full English preview; reader verse/context/chapter transitions; readable word triads and hover; slim Word Focus; a 2-pane comparison with both English and per-word original/transliteration/gloss.
 
-**Acceptance:** Genesis 2:7 → adamah → Gen 3:19 → full chapter → branch to dust → return to earlier fork restores exact reader/selection/pins; all relevant references show full text and all mapped words have correct identity. Zech 4:2 P0 crosswalk verified or guard blocks wrong transliteration. No heavy context panel/large MCP on hover.
+**Acceptance:** Genesis 2:7 → adamah → Gen 3:19 → full chapter → branch to dust → return to earlier fork restores exact reader/selection/pins; all relevant references show full text and all mapped words have correct identity. No heavy context panel/large MCP on hover.
 
 ### P1 — deepen the discovery graph and structural comparison
 
@@ -551,7 +545,6 @@ Assign non-overlapping subagents to: (A) exploration state/graph (lead reviews s
 - **Graph navigation:** 10+ steps including branching, back-to-fork, revisits, stale result, no-path, ambiguous identity; exact source verse selection and pins restored.
 - **Reader:** switch verse↔context↔chapter for long 40+ verse chapters and Psalm verse 0; do not lose selected token or main trail; chapter pagination/virtualization keyboard and screen reader safe.
 - **Hover:** 20 rapid hovers request deduped/limited, no full hydrated MCP call; full verse available; word gloss/transliteration verified and distinguish alternative senses.
-- **Crosswalk:** Zechariah 4:2 menorah H4501 must not read za.Hav; Gen 1:1/Ezek 1:3/1 Cor 12:10 controls; mark unknown status.
 - **Compare:** A/B (verse and chapter), pin and swap, source word linked to B only with valid evidence, actual full English+original+transliteration+gloss, preserve independent scroll on mobile; differences visible.
 - **Colors:** exact lemma repeated two/three times within verse and across chapter; stopword suppression, collisions >10 groups, no conflation of homographs or unverified LXX links, grammar stroke layering not color collision.
 - **Context tool:** Genesis 10 table-of-nations vs Genesis 12 call, uncertain eastern gate, Jerusalem etymology claim status, modern calendar rule choices, source attribution and no image without licensing.
@@ -573,3 +566,93 @@ Assign non-overlapping subagents to: (A) exploration state/graph (lead reviews s
 **Do not import a source simply because it appears here.** Verify version, license, quality and mapping to existing corpus; prefer already-present data and pre-curated small assets.
 
 **North star:** Users can descend into a chain of evidence, visually notice repetitions and structures, compare texts without losing either, view place/person/object/feast context only when relevant, and return to any prior fork with their research intact.
+
+
+## 24. Refinement: visible meanings, fixed trail, drag-and-drop and intelligent use of space
+
+**This section supersedes earlier layout wording. It applies to the FIRST discovery milestone, not a future phase.** The reader should be informative **before any hover or click**, while the graph trail remains continually available and advanced features stay unobtrusive.
+
+### 24.1 Reader: show meaning ranges without any interaction
+
+Keep the existing source-driven *Here / Elsewhere* concept but make it more informative and compact. Render each word as a responsive **meaning tile** in textual reading order. Default tile:
+
+- **Original script** (Hebrew/Greek; correctly directed) at the top.
+- **Transliteration** directly under it, readable for someone who cannot read the script.
+- **Here: short English rendering** prominently.
+- **Also:** 1–3 *different attested English renderings or compact lexical senses* in smaller but readable text, e.g. **ruach — spirit · wind · breath**. Do not repeat identical variants or include a giant lexicon in each tile.
+- **Root:** a single short, meaningful source-documented root/derivation label when available (e.g. "root: …") with a clickable/hoverable path to its actual evidence; hide this row entirely if no supported root rather than writing "unknown" everywhere.
+
+**This is not merely a tooltip. The reader presents these directly and permanently, including without a selected word.** Avoid turning every word into a 12-line mini-dictionary. Suggested responsive display-density algorithm:
+
+1. Fetch word tiles from existing VerseReader/ReaderOverview source records, rendering groups and small shared lemma profiles *once per distinct lemma*. Use existing GET reader/gateway and a small batched dictionary cache; **no full get_Word/MCP for each word**.
+2. Normalize observed rendering variants, removing duplicate orthographic/punctuation differences but preserving meaning differences. Rank by occurrence frequency when available; take first 2–3 **distinct** renderings; explicitly label as lexical alternatives unless sense-specific evidence warrants stronger wording. Preserve homographs as separate possibilities.
+3. If documented root is short (e.g. one root label, not a formation tree), show it inline; otherwise present a compact clickable **Origin** cue and load detailed root family on focus/selection.
+4. Long-word/rare-word tiles get a maximum inline height and expand text within the same tile on user request. Do not truncate original spellings, lose transliteration or silently delete alternatives. The WEB English verse stays the easiest text to read.
+5. Three reader density modes: **Rich (default)** shows original / transliteration / Here / Also / root; **Compact** shows original / transliteration / Here + a small alternatives cue; **English** displays WEB with selected-word overlay. Persist preference, apply consistently to verse/chapter/compare. Rich is the default precisely because alternative meanings encourage discovery *without clicking*.
+6. On hover/focus, add lemma, pronunciation/source, detailed root/formation, contextual grammar and relevant examples; click opens Word Focus. Hover must not be required to access the inline meanings.
+7. Even in chapter mode, each verse has immediately readable WEB; Rich triads appear on expanded verses or in a viewport-bounded interlinear stream. An explicit **Show Rich for chapter** option may progressively render the entire chapter with virtualization, no huge data fetch.
+
+**Space:** use CSS grid/flex with natural RTL Hebrew token order and LTR transliteration/gloss, minimum sensible token widths, wrap into clean rows without changing language order; cap decorative whitespace and per-tile labels. Favor content density over oversized cards, but honor 200% zoom and touch sizes. No hidden automatic horizontally-scrolling Bible text just to fit more columns.
+
+### 24.2 Fixed research-trail top header, not a left accordion
+
+Replace the proposed left trail panel with a **single always-visible top header** for research navigation. The header holds:
+
+**[Back] [Fork]  Genesis 2:7 › adam › adamah › dust  [branch count]  [Compare] [Graph] [New note]**
+
+Use position:sticky at top:0 or genuinely fixed with compensating page offset (depending on existing header); do not stack two bulky fixed toolbars. Target one-line height roughly 44–56 px desktop, with optional 1-line overflow menu. On deep trails, horizontally scroll only the breadcrumb region, keep Back/Fork/actions reachable; collapsing older steps into "…3 earlier" is preferable to forcing line wraps. Tooltip on truncated crumb shows full readable label and path.
+
+Click a breadcrumb restores its exact saved reader mode/scroll/selected token/graph selection. Fork menu shows visited child branches with destination and last relevant verse, not raw UUIDs. Trail updates when following relationships or intentionally navigating, not on hover.
+
+Mobile header: fixed compact **Back | current > previous branch | Fork | Compare** with optional overflow **Graph / Note**. It must not cover the WEB verse, on-screen keyboard or the comparison tabs. Dedicated graph view remains accessible, but **the trail is never parked in a left drawer**.
+
+### 24.3 Drag and drop for comparison, evidence and notes
+
+**Intent:** a word/verse/connection can be dragged toward a screen edge to start comparing, pinning or linking without requiring menu hunting. A mouse-only HTML5 drag handler is insufficient for phones.
+
+- Add small drag handles on verse headers, occurrence labels, word tiles (only on deliberate drag gesture) and discovery cards. An object dragged carries a typed **AnchorPayload** (anchor kind, canonical IDs/reference, selected occurrence/edition, source provenance; **no private tokens**). Do not serialize raw HTML or data from untrusted source.
+- Start drag after pointer displacement >=6–8 CSS px for mouse/pen, or deliberate 300–400 ms press with ~10px movement tolerance for touch; normal scrolling and text-selection are **never captured** as drags. Cancel by Escape, pointercancel, scroll, visibility change, or leaving app.
+- While dragging, show temporary edge drop zones: **right edge = Compare B**, **left edge = Compare A**, optional **bottom shelf = Pin evidence**. First dragged item can auto-populate A and then B, but always show the result and permit Swap. If comparison is already open, show clear A/B panes as drop targets. Hover zone for ~250 ms shows a preview: "Compare Genesis 3:19 with Genesis 2:7".
+- Valid drops: verse/passage → Compare A/B; word occurrence → Compare current word's verse plus selected token (not nonsense word-only verse); connection edge → pin its source/target witnesses; person/place → graph pin, with relevant tool actions. Invalid drop zones announce reason and leave state unchanged.
+- On drop: call the **same compare/pin/follow commands** used by keyboard and button interactions, preserving source selection, trail and scroll. Add a brief reversible "Pinned as B · Undo" notification.
+- Keyboard/touch parity: every draggable item has accessible **Pin to A**, **Pin to B**, **Compare with current**, **Save note** menu actions; edge drag is progressive enhancement. Support touch scrolling and screen readers. No drop gesture should silently create a research claim or save a note.
+- Implementation: one pointer-event controller with setPointerCapture, central DragState and drop-zone registry integrated into the exploration state; visual ghost in lightweight overlay; hit-test using event clientX/Y and getBoundingClientRect; requestAnimationFrame only while dragging, no continuous graph animation. CSS must prevent accidental text selection only during a confirmed drag. Tests cover long-press vs scroll, Escape, invalid drop, keyboard path and compare replacement.
+
+### 24.4 Quick notes and manual connections in context
+
+**A note should feel like part of reading**, not a journey to an advanced editor.
+
+- A subtle **+ Note** control appears next to selected word/verse, reference preview, graph edge and selected highlighted passage. A quiet margin marker appears for existing notes; default reader remains uncluttered.
+- Click **+ Note** opens a small inline composer or anchored drawer with **exact target prefilled** (occurrence vs lemma vs verse vs passage vs graph edge, and source reference), optional selected text, and one content field. Save/Cancel visible. If user is not authenticated under current rules, show the current sign-in/permission path; no bypass.
+- **Connect to…** from a word/verse/pinned item allows choosing another existing anchor by search, graph selection or drag-and-drop. Creates a **my hypothesis** edge with two endpoints, short explanation, optional supporting verses, and explicit uncertainty; no promotion into indexed corpus until separately reviewed.
+- Save by one explicit click/keyboard shortcut and show an unobtrusive "Saved" state; undo/cancel applies to draft as permitted. Preserve existing notes ownership/review logic. Closing draft warns on unsaved changes, not every keystroke; autosave private drafts only if existing permission model permits.
+- Display note marks on the relevant reader token/verse and graph edge; selecting mark opens note next to the evidence. Avoid attaching a note to an entire Strong's group when the user selected one occurrence; selection scope visible and changeable before save.
+- Technical notes/research DLM provenance remains in More Details; simple prose-first note creation comes first.
+
+### 24.5 Intelligent information and screen-space hierarchy
+
+**High-value, above-the-fold information:** actual English Scripture, original script, transliteration, contextual gloss, alternative meanings, documented root/etymology, high-value related words/passages with *real verse evidence*, top insightful occurrences, and context tools when entity appropriate (map, image, family, feast). **Secondary information:** Strong's number, raw database IDs, morphology codes, exhaustive grammatical counts, every redundant co-occurrence, raw scoring features, gematria and technical provenance tables. Secondary is searchable/discoverable via **More / Technical details** but should not dominate.
+
+Do not hide **critical uncertainty or citations** just to shorten cards; present source/epistemic type unobtrusively adjacent to the claim, with full source on demand.
+
+Layout rules:
+1. **Main reading surface gets ~60–70% desktop width** when a contextual inspector is open; inspector gets ~30–40% and may be closed. When comparison opens it becomes the dominant wide content area (two balanced panes), inspector becomes overlay/drawer rather than a third squeezed column.
+2. **Never duplicate the selected word's entire profile** in reader tile, inspector and graph. The reader shows 1-line meanings; inspector shows richer explanation and evidence; graph shows destination/relation. Reuse a common data model, render only appropriate depth.
+3. Show **4–6 useful connection cards** before "More", grouped across different evidence mechanisms. Word Focus defaults to meaning/origin/insightful occurrences, not enormous co-occurrence listings.
+4. Inline place/icon/image affordance only where supported. Side tools stay one click away, not permanently consuming width with empty boxes.
+5. Long chapters use full-width WEB paragraph reading with optionally expanded interlinear rows. Maps and large genealogical/calendar/media visuals open an anchored popover or overlay that can be dismissed without losing location.
+6. Save space with progressive disclosure, not font shrinkage; ensure visible text >= comfortable reading size, Hebrew niqqud/Greek diacritics legible, keyboard focus clear, 200% zoom and mobile reflow.
+
+### 24.6 Updated acceptance tests
+
+Extend focused Playwright checks with the following mandatory assertions:
+- Without hover/click, Gen 1:2 **ruach** displays original script, transliteration, **spirit / wind / breath** as sourced alternative uses in the reader, plus supported root cue if available; no invented single contextual meaning. A regular verse's other words also show original/transliteration/English gloss.
+- With multiple words visible, no giant unreadable per-word boxes; Rich and Compact density controls work without changing passage, and Rich persists when switching verse ↔ chapter and back.
+- After 8+ discovery hops, **the research trail stays at top**, is readable/scrollable, Back/Fork works and selected Scripture isn't covered. No left-side trail accordion.
+- Drag Gen 3:19 reference toward right screen edge → comparison pane B opens beside pinned Gen 2:7 pane A with both full English texts; source verse and research trail unchanged. Keyboard menu produces identical result. On mobile, 350 ms long press works without hijacking ordinary scrolling.
+- Drag a word occurrence to comparison → correct verse/token focus in destination; invalid object drop doesn't mutate state; Escape cancels; undo restores previous pin.
+- Select a specific word occurrence → + Note → one-field composer targeted to that occurrence; change scope to whole lemma; save only with authorized explicit action; note marker appears in reader/graph. Create a manual A→B hypothesis and keep it distinct from source-proven edges.
+- Word Focus shows etymology, root, top interesting occurrences and connections immediately; raw Strong's/morphology/gematria only under details, and no repeated lengthy summaries.
+- At widths 320/390/768/1280/1440 with 200% zoom, fixed header and compare do not overlap readable Scripture, map/other tools do not steal space, and there is no horizontal overflow.
+
+**Use these as implementation guidance and regression tests, not as permission to change corpus data or research rankings.** Source evidence still governs every word claim and connection.
