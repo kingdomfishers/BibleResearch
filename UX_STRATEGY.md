@@ -1,433 +1,275 @@
-# Bible Research UX refresh — proposed strategy
-
-Prepared: 2026-11-05. Revised and approved for implementation: 2026-11-05.
-The approved revision makes word ranges, direct place links, and event timelines
-part of the initial verse overview. Visual acceptance remains to be verified.
-Execution queue: [TASKS.md](TASKS.md#proposed-feature-complete-ux-refresh).
-
-## 1. Product direction
-
-Make the passage the stable center of an exploration of language and meaning.
-Within the first few seconds, a reader should understand the selected word's
-available meaning, recognize the different kinds of connections, and see a
-useful next passage to investigate. Reading Hebrew or Greek must not be a
-prerequisite for discovering those connections.
-
-The overview answers **What can these words mean? Where are we? When is this
-happening?** before any word inspection. The core journey is
-**read → notice → preview → compare → follow evidence**.
-Each step adds context while preserving the reader's starting point.
-
-Primary audience: an English-speaking reader curious about original-language
-meaning. Experienced students retain access to morphology, identifiers,
-statistics, source evidence, and existing research/export tools.
-
-## 2. Current experience: findings and limits of this audit
-
-This is a source and contract audit, not a completed visual usability study.
-Reviewed: the application shell, navigation, reader, word dialog, research
-panel, relationship explorer, state, API contracts, and project design/data
-documents. Browser inspection was blocked by automatic approval review because
-the active browser window showed an unrelated personal account page.
-
-| Current behavior | Consequence for understanding |
-| --- | --- |
-| Introductory hero and instruction sections surround the study tools | Reading and discovery compete with introductory content. |
-| Word inspection opens a blocking dialog | Following a word interrupts simultaneous reading of its passage. |
-| Occurrences are reference chips; the dialog displays the first 30 | Users must navigate away to learn what a reference says; the remaining results have no continuation control there. |
-| Related-word cards emphasize frequency, distance, and score | Users see measures before an explanation of the connection. |
-| Nine research tabs expose prompt numbers, endpoints, and database terminology | Users must translate implementation concepts into study questions. |
-| Maps and chronology appear as separate sections before research tools | Useful context increases distance between the passage and lexical discovery. |
-| Base-Strong's groups retain multiple candidate lexemes and unassigned senses | A single confident meaning label would conceal real ambiguity. |
-| Current English data consists of occurrence glosses and lexical renderings | Full readable English verse previews require an additional text source. |
-
-The existing database capabilities are valuable foundations. The refresh should
-make their evidence understandable and discoverable through a coherent interface.
-
-## 3. Proposed workspace and first view
-
-Desktop uses two primary columns: a generous reading area and an adjacent word
-inspector. Connected passages sit directly below the reading area. A third
-comparison column appears only when there is enough width; otherwise comparison
-replaces the lower reading-area region while the source passage stays available.
-
-```text
-Bible Research   [Find a passage, word, or Strong's number]   Appearance
-Passage reference / previous / next             Translation / reading options
-
-READING AREA                                  WORD INSPECTOR
-Complete English verse, named translation      Original form · transliteration
-Original tokens + occurrence English           Available meaning / meaning here
-Other English renderings beneath each word     Plain-language grammar
-Transliteration; clickable place names         Rendering evidence across passages
-                                              Same word elsewhere
-CONNECTIONS FOR THE SELECTED WORD              Often appears with
-Connection type · reason · passage excerpt     Related concepts / evidence
-[Preview] [Compare] [Open passage]              Sources and deeper details
-
-VISIBLE EVENT TIMELINE                         Research / export access
-Era / selected event / linked psalms and narrative / model and uncertainty
-WHERE: clickable places → focused map; source passage remains visible
-```
-
-At a typical 1280×800 desktop viewport, show the active reference, readable
-English, original-language tokens with multiple English renderings, a short
-word summary, a visible event timeline, direct place links, and at least one
-connection with its reason without requiring a trip into a research console.
-Long verses may extend the reader; the summary remains available beside it.
-
-On first entry, suggest one informative word from the loaded passage using a
-documented deterministic rule and available data. Label it “Suggested word.”
-Prefer a content word with a definition and usable connections; do not silently
-assert a token sense or replace an existing user selection. When no suitable
-data exists, show “Choose a word to explore” with an obvious example action.
-
-Passage lookup remains available through book/chapter/verse controls. The new
-search accepts references, original words, transliterations, English concepts,
-and Strong's identifiers, with clearly labeled result types and disambiguation.
-An English concept search must never imply exact lexical equivalence. Preserve
-all existing passage links and validate actual reference/edition coverage.
-
-## 4. Help readers understand a word immediately
-
-### Verse overview: show a word's range before selection
-
-Each word shows its original form, transliteration, occurrence rendering labeled
-“Here,” and a compact visible “Elsewhere” range of two to four representative
-English renderings when supported. The range is present before hover or click;
-it is not confined to a dropdown or the inspector. Additional renderings remain
-reachable through an explicit More action. Short ranges wrap on phones. Function
-words show their available rendering or grammatical role without invented variety.
-
-Example layout for a supported occurrence of רוּחַ:
-
-```text
-רוּחַ · ruach
-Here: [the source rendering for this occurrence]
-Elsewhere: wind · spirit · breath · direction / side
-```
-
-The direction/side usage has a concrete comparison case in Ezekiel 42:16,
-where H7307 is rendered as “side” in “east side”
-([verse and word analysis](https://classic.net.bible.org/verse.php?book=Eze&chapter=42&verse=16)).
-Audit the actual imported source before publishing the four labels in the UI.
-These are uses across contexts, not a claim that all senses apply to every token.
-
-Hover/focus on a rendering previews a real usage passage and the original word;
-clicking filters occurrence evidence to that rendering without changing a private
-translation choice. Compare two rendering groups to see how the same lexical
-group is used across passages. Keep observed source renderings separate from
-reviewed semantic categories and from different Bible editions' translations of
-the same verse. Do not equate raw inflected gloss frequencies with sense counts.
-
-The audit and SQL contract must collect evidence across word forms, preserve
-homographs, provide the grouping method/source, and report partial coverage.
-Existing surface-form alternatives alone do not establish a lemma-wide range.
-Meaning groups require reviewed mappings; otherwise label them as observed
-renderings. Never manufacture a fourth gloss or a contextual sense assignment.
-
-The inspector's initial hierarchy:
-
-1. **Identity:** original surface form, transliteration, language, and concise
-   source gloss; show the dictionary form separately when available.
-2. **Meaning:** an occurrence-specific English rendering followed by a short
-   sourced definition. Label a contextual sense only when evidence supports it;
-   otherwise say “Possible meanings” or “Meaning not assigned for this occurrence.”
-3. **Grammar:** readable decoded features, for example “noun · singular,” with
-   the raw code behind details. Explain the feature's relevance only when a
-   sourced explanation exists; retain unresolved grammar explicitly.
-4. **Connections:** a small representative set grouped by connection type,
-   with a visible reason, relevant passage, and an action to explore further.
-5. **Depth:** identifiers, full definitions, statistics, source releases, and
-   other available metadata through progressive disclosure.
-
-Selecting a word updates the inspector and its connections without moving the
-passage. Hovering another word previews it without changing the selection.
-Selecting a related word adds a breadcrumb so “Back to the original word”
-restores the previous selection, filters, and position.
-
-Retain occurrence-specific private English choices and reset. Show a quiet,
-discoverable choice affordance under each token rather than making selection
-controls dominate the reading rhythm. Changing a private rendering does not
-modify the published English verse, shared statistics, or public evidence.
-Do not add an empty “physical definition” section when no data exists.
-
-## 5. Make the kind of connection explicit
-
-| Reader-facing group | What it establishes | Initial presentation |
-| --- | --- | --- |
-| Same word elsewhere | Membership in the stated lexical group; current legacy counts use base Strong's | A book distribution and representative verse rows; exact scope and totals visible. |
-| Often appears with | Observed co-occurrence under the stated corpus/method | Word, available gloss, shared-passage evidence, and a plain-language reason; raw score in details. |
-| Related concepts | A sourced lexical, linguistic, textual, or interpretive assertion | Labeled relationship, summary, source, review state, and supporting passages. |
-| Passages with a similar pattern | Reviewed narrative or intertextual evidence | A short sequence of passages, what repeats, what differs, and available counterexamples. |
-| Hebrew–Greek translation links | Source-attested correspondence in a particular edition/context | Conditional future section dependent on the separate Septuagint queue. |
-
-Show “Why connected?” on every relationship row or edge. Examples of useful
-labels are “same base Strong's group,” “appears together in these passages,” and
-“reviewed narrative parallel.” Co-occurrence is evidence of proximity; it does
-not establish synonymy, derivation, or a theological conclusion. Score is never
-rendered as a percentage confidence in meaning.
-
-Offer a compact, directly labeled connection diagram as a secondary view:
-selected word at the center, a few visible neighbors, typed edges, and one-step
-expansion. Use the same returned evidence as the list, with equivalent keyboard
-actions. Preserve a stable arrangement during preview. Broad corpus graphs and
-continuous motion would make the first encounter harder to read.
-
-Counts must distinguish token occurrences, distinct verses, returned examples,
-word forms, and sense-specific evidence. Prefer “Showing 5 of N verses” with
-“Load more” to a silently truncated list. Never narrow a base-Strong's total to
-one sense without a verified sense assignment. A missing reviewed connection
-means that no annotation is available in this dataset, not that none exists.
-
-## 6. One preview language throughout the product
-
-| Hover or keyboard focus target | Immediate preview content |
-| --- | --- |
-| Passage reference / occurrence | Full English verse, translation name, reference, connection reason, and matched original form or gloss where available. |
-| Related original-language word | Original/dictionary forms where known, transliteration, English rendering range, short definition, relationship type, and one evidence passage. |
-| English rendering under a word | Full evidence verse for that observed rendering, original form, edition/source and lexical grouping scope. |
-| Connection label or diagram edge | What links the items, scope, representative evidence, and source/review state. |
-| Grammar label | Human-readable features and unresolved parts; optional brief sourced explanation. |
-| Place or date | Place role or chronology model, summary, uncertainty, and available evidence reference. |
-
-Interaction rules:
-
-- Pointer dwell of roughly 200–300 ms is a starting hypothesis to test. Cached
-  content should appear immediately after the dwell; keyboard focus exposes
-  equivalent information without pointer requirements.
-- Moving from trigger to preview keeps it open. Escape dismisses it, and it
-  stays available while being read. Hover never navigates, changes the selected
-  word, moves focus, or edits a translation.
-- A read-only preview leaves focus on its trigger. Controls such as Pin,
-  Compare, and Open belong to an explicitly opened, accessible nonmodal detail
-  surface, with predictable focus entry and return; they are not hidden inside
-  a tooltip. A visible Preview action supplies this path for every input mode.
-- Pointer users can pin a preview to keep it while comparing. Touch users tap
-  the Preview action to open a sheet; Open passage is a separate explicit action.
-- Show one transient preview at a time. References inside it do not start a
-  chain of nested floating previews. Pinned comparison is the route to depth.
-- Keep the triggering text visible where possible. Reposition at viewport
-  edges; allow long verses to expand into a reading surface with the complete
-  text accessible. Range previews identify the range and show the full relevant
-  verse first, with an explicit action for the entire range.
-- Display loading and retry in place. Distinguish a failed request from missing
-  text or absent evidence. Do not replace a real verse with a sample on failure.
-
-These rules follow the dismissible, hoverable, persistent behavior explained in
-[WCAG's hover/focus guidance](https://www.w3.org/WAI/WCAG22/Understanding/content-on-hover-or-focus.html).
-The [ARIA tooltip guidance](https://www.w3.org/WAI/ARIA/apg/patterns/tooltip/)
-distinguishes non-focusable tooltips from interactive nonmodal surfaces; that
-pattern document itself is marked as work in progress.
-
-## 7. Full English text is a foundation, with explicit boundaries
-
-Recommendation for the source audit: evaluate the Protestant World English
-Bible as the initial readable English edition. Its publisher describes it as
-public domain and permits faithful reuse; the translation name identifies
-unaltered text ([publisher information](https://www.ebible.org/find/details.php?id=engwebp)).
-Pin the actual edition, files, version, and hashes before choosing an import.
-This proposal has not audited its payload or established full reference parity.
-
-Store readable verse text separately from interlinear glosses and private
-choices. Audit mappings against the current corpus, including Psalm headings,
-missing/split verses, edition differences, and reference conventions. Where
-editions differ, show the difference or unavailable text honestly.
-
-English highlighting must use verified token alignment. Without it, show the
-complete English verse and identify the matching word in a separate original
-text/gloss line. Do not infer precise English spans by matching similar strings.
-An English translation's occurrence of the same English word does not prove
-that the underlying Hebrew or Greek word is the same.
-
-## 8. Compare and explore without losing place
-
-Preview provides a quick reading. Compare pins the source and target passages,
-their full English text, and available original-word evidence together. Open
-passage explicitly navigates the reader and records a return path.
-
-Maintain source passage, selected occurrence position, lexical candidate,
-connection type, target passage, and list cursor as distinct state. A word ID
-alone cannot distinguish repeated occurrences in one verse. Preserve legacy
-`#book-chapter-verse` links; any richer sharing format must remain backward
-compatible. Transient hover stays out of browser history. Browser Back should
-restore intentional navigation and the prior reading position.
-
-Example test journey: open John 1:1, choose λόγος, read the available gloss and
-grammar, preview a real occurrence returned for its lexical group, then compare
-the two passages. An unrelated English “word” result must not enter that exact
-group. A subsequent Genesis/John connection requires separately labeled textual
-or interpretive evidence; cross-language lexical identity is never inferred.
-
-## 9. Visual direction and responsive behavior
-
-Use a quiet scholarly reading environment: a restrained header, clear passage
-title, generous text spacing, and fewer enclosing boxes. Replace the prominent
-introductory hero with the live study workspace. Keep short onboarding help
-available through an example or help action.
-
-Use a readable English text face, a compatible Hebrew/Greek face with ample
-diacritic clearance, and a clean interface face. Original script is prominent;
-English meaning is immediately adjacent; transliteration remains legible.
-Test actual font coverage and line breaks before choosing fonts. Provide light
-and dark reading themes with consistent contrast and a saved preference.
-
-Use one stable selection accent and restrained connection-type cues. Pair color
-with text, line treatment, or shape. Avoid heat colors that suggest unsupported
-certainty. Use motion only to clarify intentional changes, respecting reduced
-motion. Keep technical endpoint names and payloads in research/export surfaces.
-
-Wide desktop: reading area plus persistent inspector. Tablet: reader plus an
-expandable inspector region. Phone: reader followed by a compact selected-word
-summary; explicit detail sheets expose meaning, connections, and comparisons.
-Keep full verses readable in the sheet and keep its close action reachable.
-Avoid accumulating nested sheets. Comparison stacks the passages on narrow
-screens, and every graph operation has an equivalent list action.
-
-Test from 320 px through desktop widths, keyboard navigation, screen readers,
-200% text enlargement and 400% zoom, bidirectional text, and approximately
-44 px touch targets. The reflow target follows
-[WCAG reflow guidance](https://www.w3.org/WAI/WCAG22/Understanding/reflow.html).
-
-## 10. Existing capabilities and implementation boundaries
-
-Make place and time first-class overview content. Keep the event timeline
-visible by default; expand its evidence and the full map on explicit action.
-Retain model alternatives, uncertainty, disputed places, symbolic-location
-guards, attributions, and all existing research capabilities.
-Group advanced work under study questions such as Find occurrences, Compare
-words, Explore patterns, and Export research. Keep OpenAPI/MCP documentation
-available in a developer/integrations area. Reuse the current research surfaces
-behind these entry points before considering deeper internal restructuring.
-
-All UI requests continue through BibleRPC; joins, word ordering, matching,
-counts, pagination, and ranking remain in PostgreSQL. Reuse existing bounded
-responses where practical. Plan additive bounded contracts for verse previews,
-word overviews with rendering-group evidence and occurrence continuation,
-verified place-name anchors, cross-passage event timelines, and discovery search. The latter
-must return labeled ambiguous candidates rather than relying on a legacy
-single-result resolver. Keep exact totals and stable pagination in SQL.
-Preserve existing RPC/public MCP contracts. Audit actual required fields before
-finalizing SQL.
-
-Render passage text and visible word ranges before expensive research. Load
-bounded timeline/place summaries automatically; defer the map canvas, extended
-context evidence, graph and exports until needed. Load the selected word's
-overview independently. Batch a small
-set of visible preview targets, deduplicate in-flight requests, bound cache
-size, and key public text by edition/reference. Keep private rendering state
-separate. Prevent stale results during rapid hover, word changes, and navigation.
-Do not fetch full occurrence corpora or 100-verse hydration packets for each hover.
-
-Proposed performance objectives, to measure rather than claim as achieved:
-cached preview content within 100 ms after dwell; a loading indicator within
-100 ms after dwell for an uncached target; typical uncached verse text within
-1 second on the agreed test connection. Measure cold/warm p50/p95 and request
-volume. A slow statistical/semantic request must not block English text.
-
-Septuagint work remains dependent on its separate source/schema approval and
-coverage audit. Gematria remains optional metadata, not a substitute for
-lexical evidence. Existing O5/M1 and other pending user checks keep their status.
-
-## 11. Direct place-name interaction
-
-Place names in original tokens, verified English spans, previews and evidence
-rows are visibly actionable. Hover/focus shows the ancient name, available
-modern identification, role in this passage and uncertainty. Click opens the
-existing map focused on that place without changing the active passage. Keep
-the name highlighted and make returning to the exact reading position simple.
-
-Use place IDs and verified token/span anchors. Identical strings do not prove
-the same place, and English entity spans require a verified edition mapping.
-When a name is unresolved, offer candidate places rather than silently choosing
-coordinates. Regional/disputed/symbolic references retain their existing guards.
-If text anchoring is unavailable, show an explicit “Places in this passage” row
-and state its context role instead of inventing an inline link.
-
-A place-name click opens geography; an adjacent Word details action retains
-lexical inspection. Keep the two actions separate and avoid nested buttons.
-Distinguish event setting, mentioned place, writing location and audience.
-An event linked to a psalm can supply contextual place information, labeled as
-inherited context rather than as a place explicitly named in the psalm.
-
-## 12. Visible event timeline and links across books
-
-Below the verse, show a compact timeline with era/reign, the selected historical
-event, and a few relevant neighboring events. The active passage is connected
-to that event. A second aligned lane shows linked texts such as psalms and
-narratives, so canonical book order does not hide their historical relationship.
-All links show their reason and source, with full-verse previews and comparison.
-
-Primary acceptance example: Psalm 3's superscription associates the psalm with
-David fleeing Absalom; show its link to the flight narrative in 2 Samuel 15,
-including 15:13–17. These are the historical books corresponding to this example;
-also support genuine event links in Kings rather than forcing a Davidic example
-into Kings ([Psalm 3 and narrative](https://www.biblegateway.com/passage/?search=2+Samuel+15-17%2CPsalm+3&version=NIV)).
-Label the relationship “Historical setting from superscription,” rather than
-claiming a securely established composition date. Psalm 18 / 2 Samuel 22 is a
-candidate parallel-text fixture to audit separately. 2 Kings 18:13 remains an
-existing chronology/archaeological-date regression case.
-
-Separate historical setting, event mentioned, retrospective/prophetic reference,
-and composition in the timeline data and labels. Same person, year or region
-alone does not establish an event link. Use stable shared event IDs and retain
-the association's exact reference, rationale, review state and source. Audit
-current published event coverage and add reviewed associations only where needed.
-
-Choose local-event scale by default; allow expansion to reign/era. Show BC/AD
-estimates or ranges only when supplied by the selected model. Display uncertainty
-as ranges; competing models remain selectable. If only relative sequence is
-known, label it “Event sequence; dates uncertain” and avoid a proportional year
-axis. Undated/unlinked texts remain explicitly unplaced with useful evidence
-actions. Never synthesize dates to fill gaps or stretch an event-start date into
-the dating of an entire psalm. Show a chronological text list on narrow screens
-and for assistive technology.
-
-Selecting a timeline event updates its evidence and contextual map target while
-leaving the reading passage in place. Opening a related text navigates explicitly;
-Compare preserves both. Synchronize model/era with the map where supported,
-retaining the distinction between source-passage and preview-target context.
-
-## 13. Delivery and validation strategy
-
-**Design first:** review this proposal, audit live UI/data, and produce desktop
-and phone wireframes covering no selection, selected word, ambiguous word,
-preview, comparison, and unavailable-data states. Approve the hierarchy before
-implementation. Proposed details may change in that design review.
-
-**First usable milestone:** readable English text, refreshed reading workspace,
-persistent word summary, visible word rendering ranges, mounted occurrence rows
-and typed connection groups, full-verse previews, direct place-to-map links,
-visible event timeline with cross-book evidence, keyboard/touch parity, and a
-return path. Place/time are required in this milestone, not deferred enhancements.
-
-**Second milestone:** passage comparison and the compact optional diagram.
-Integrate remaining advanced research without crowding the reading surface.
-
-**Validation:** use Genesis 1:1 and John 1:1 for RTL/LTR; repeated words in John
-1:1 for occurrence selection; H5869 and H1254 for ambiguity; Psalm headings and
-edition gaps for mapping; a high-frequency word for counts/pagination; reviewed
-well/marriage examples with non-marriage controls for interpretive distinctions;
-and offline, partial-data, long-verse, slow-response, and stale-response states.
-Add ruach's wind/spirit/breath/direction-side evidence across inflections,
-unknown and disputed place links, and Psalm 3/event connections with uncertain
-dates. Verify that rendering-group selection never writes a translation choice.
-
-Recruit a small formative group of roughly five readers spanning beginners and
-experienced students. Proposed targets: at least four can explain the displayed
-word summary and one connection within ten seconds; preview a complete verse
-without leaving the source within fifteen seconds; compare passages and return
-without losing selection within thirty seconds; and distinguish lexical
-recurrence from interpretive relationship. Treat these as design targets,
-not measured findings. Also require readers to recognize multiple English uses
-before opening a word; open the correct place with one explicit action; and
-explain the psalm/narrative event link without mistaking it for an exact
-composition date. If missed, revise labels and hierarchy before adding depth.
-
-During implementation, run the required pre-code/post-code pipeline one atomic
-task at a time. Verify SQL mappings/counts and caller access, then meaningful
-reader/preview/state regressions and required type/size/build checks. Update
-obsolete tab-count assertions when the new navigation is deliberately approved;
-retain coverage of the capabilities they protected. Complete visual user checks
-before marking those tasks done. No production rollout or database changes are
-implied by design acceptance; implementation is now authorized by the user.
+# BibleResearch UX Strategy — Evidence-First Discovery Explorer
+
+**Revised:** 2026-11-21. **Status:** implementation specification, superseding the 2026-11-05 UX refresh proposal where they differ. **Branch inspected:** feat/r12-qa-fixes. **Authority:** AGENTS.md and local workspace remain authoritative for implementation; TASKS.md is the only task queue.
+
+## 0. Product principle and measurable outcome
+
+The product is not a catalog of Bible references or a decorative network graph. It is a **Bible reading and exploration workspace** that makes surprising, grounded relationships intelligible in seconds. Scripture is the foreground; a graph provides navigation; evidence explains why edges exist; the reader remains free to notice patterns the algorithm cannot interpret.
+
+Four core actions, available on every appropriate surface:
+
+1. **Preview** — understand a word or read an entire cited verse without navigating.
+2. **Inspect** — see original-language context, translations, witnesses, provenance and epistemic limitations.
+3. **Compare** — display two or more actual passages simultaneously with aligned observations.
+4. **Follow** — traverse, branch, return to and save a path of discoveries.
+
+Success criteria: a user can read a cited verse in one hover/focus or tap, inspect a word's English/gloss/transliteration immediately, compare two entire verses without losing the original, and understand which evidence supports each graph edge. Discovery quality remains separate from infrastructure and visual acceptance.
+
+**Priority:** correctness of text and token identity > readable evidence > frictionless interaction > navigation/graph > additional research functions > decoration.
+
+## 1. Verified current capabilities — reuse rather than rebuild
+
+Source and connected MCP inspection on 2026-11-21 (not a completed end-to-end browser usability test):
+
+### Website components already present
+
+- **src/main.ts:** working reader-focused app shell, reader, inspector, cross-references, DiscoverConnections panel, notes, map, timeline, preview and comparison. Existing #book-chapter-verse navigation, search, theme and passage-selection state.
+- **VerseReader.ts:** full WEB English verse, ordered STEP-based original-language tokens, transliterations, occurrence renderings, rendering-range links, clickable words, note counts and place links.
+- **ContextPreview.ts:** 240 ms hover/focus preview using BibleRPC.getReaderPassage; persistent pointer preview, Escape handling, full English verse; pinned sheet has Compare/Open actions. Improve centrality and discoverability, do not reimplement it.
+- **WordInspector.ts:** nonmodal inspector with definitions, related words, word formation, occurrence pagination, LXX/grammatical relationships and notes. It currently requires selection; add lightweight hover preview independent of deep inspector fetching.
+- **PassageComparison.ts:** side-by-side English and concatenated original text for two verses. **Main gap:** no per-token transliteration/gloss, evidence alignment, phrase selection, third passage or reusable pin slots.
+- **DiscoverConnections.ts:** large standalone R10–R12 discovery workspace with search, modes, clusters, source references and expand/drill-down. **Main gap:** primarily result listings/chips rather than a synchronized Scripture/graph/evidence workbench.
+- **ExploreConnectionsPanel.ts:** existing R9B typed graph layers, target concept resolution, bounded multihop paths, source references, pagination and evidence cards. Reuse logic; unify with discovery instead of introducing another graph engine.
+- **PassageCrossReferences.ts, LexicalRelationshipsSection.ts, RelationshipExplorer.ts, ResearchPanel.ts:** multiple overlapping evidence and query surfaces. Consolidate reader-facing entry points; preserve technical tools under Advanced Research.
+- **VerseMap.ts, EventTimeline, ChronologyPanel, NotesPanel/NoteEditor:** geography, historical models, related narrative passages, user/AI notes and association workflows. Preserve these as optional contextual lanes, not competing primary screens.
+- **BibleRPC src/api/rpc.ts, r10-rpc.ts, relationships-rpc.ts, corpus-client.ts:** supported reader, lexical, notes and graph clients, with existing static corpus caching and gateway routing. Use these adapters. Do not initialize new Supabase clients inside UI components.
+- **scripts/verify-ux-refresh.mjs:** Playwright scenarios already cover full WEB preview, two-verse comparison, ruach renderings, Psalm 3/2 Samuel context, place focus, repeated Greek word selection, responsive widths and themes. Extend rather than discard.
+
+### New MCP v2 — seven user-facing research functions
+
+Live connected tools and GitHub MCP source inspected:
+
+1. **get_Passage** — full WEB and original text for verse/range/chapter; ordered word positions with shared lexicon, transliterations, glosses, LXX, passage/verse connections, named geography and chronology; pagination default 30/max 40; optional word_depth/etymology/realworld.
+2. **get_Word** — original-language lemma/form, transliteration, senses/candidates, grammar, occurrence evidence, LXX, etymology (documented versus spelling candidates), gematria, real-world data and connections; supports passage anchoring.
+3. **get_Connection** — compares 2–6 mixed passages, words or concepts with typed relation lanes, references and explicit uncertainty.
+4. **follow_connectionchain** — follow, branch, revisit, inspect; private expiring 24-hour server-side capability handle and trail; currently may record exploratory arbitrary hops.
+5. **research** — evidence, occurrences, word intersection, grammar search, LXX, gematria, numbers, chronology, geography, passage comparison, notes, set intersection/union/difference; batched 1–8 operations.
+6. **write_Note** — authenticated notes and DLM validation, **never call without user authorization**.
+7. **get_prompt** — guidance for AI tool use, not a reader-facing UX element.
+
+GitHub sources: research/r12/MCP_STRATEGY.md, MCP_IMPLEMENTATION_HANDOFF.md, mcp_v2_live_audit_2026-11-20/REPORT.md and ROOT_CAUSE_WORD_ID_MISMATCH.md; implementation in supabase/functions/bible-mcp/discovery-v2-tools.ts, word-model.ts, research-engine.ts, chain-store.ts.
+
+**Critical architecture boundary:** the MCP is designed for AI and can return large/slow hydrated responses (archived cold 6–14 seconds for large ranges; 2–3.5 warm). Its shape is a **semantic model**, not necessarily the browser's efficient hover network protocol. Use existing bounded BibleRPC reader/Cloudflare endpoints for instant verse/word previews. Add only minimal batched public read-only projection endpoints if truly missing, through the existing API layer. Do not expose MCP chain capability secrets or server/service credentials to an unauthenticated browser. Browser path history can be local; reuse the MCP chain server only with a proven secure authenticated contract.
+
+## 2. CRITICAL correctness gate — verified token identity (P0)
+
+**2026-11-21 live reproduction:** get_Passage Zechariah 4:2 still pairs the surface מְנוֹרַת֩ (menorah/lampstand, H4501) with word_id 59034 and transliteration za.Hav (gold), although canonical STEP identifies the lampstand as word_id **91302**. Similarly gold receives ku.Lah (all-of-it) and lamp(s) receives 'a.Lei.ha (upon-it). The 2026-11-20 audit traced the bug to src-independent Cloudflare normalizeTokenList joining Macula local word_no to STEP canonical positional indexes. This is a data-contract bug, not a cosmetic issue.
+
+**UX rule:** never attach transliteration, lemma key, grammar, precise English alignment, or evidence badges to a token until canonical occurrence and source edition identity have been verified. Do not assume identical Macula/STEP ordinal positions. In case of uncertainty render the safely sourced original English and token form separately and mark enriched alignment **unverified/unavailable**, rather than display a false word gloss. Preserve distinctions: word occurrence vs lexeme/lemma vs sense vs surface form; edition and Psalm verse 0.
+
+**Owner boundary:** UX implementer must not independently rewrite the algorithm or corpus crosswalk while Neon fixes it; add UI guards and regression fixtures, and integrate the corrected release when available. At minimum test Zech 4:2 against canonical STEP positions and controls Gen 1:1, Ezek 1:3, 1 Cor 12:10, Psalm headings and shifted Hebrew verses. Do not claim full original-language parity until corrected in live data.
+
+For geography and chronology, display model name, scope (setting / mention / audience / composition), confidence, evidence and alternatives. For example, an inferred Eden site or a 4004 BC model must never look like an established coordinates/date fact. External OEWN/Wikidata bridges remain modern exploratory concepts, not biblical proof.
+
+## 3. Single exploration state and reusable evidence contract
+
+Build **one central DiscoveryWorkspace** coordinating existing modules. Avoid a second traversal engine or duplicative discovery computations.
+
+Suggested typed adapter model (final types can differ, semantics must not):
+
+- **Anchor:** {kind: occurrence|lemma|sense|verse|passage|event|concept|place|external, canonicalKey, edition?, book/chapter/verse/position?, word_id?, label, original?, transliteration?, gloss?}. Source-specific keys and ambiguous alternatives remain explicit.
+- **Witness:** {reference/range, edition, completeEnglishText? [lazy], orderedOriginalTokens? [lazy], matchedOccurrenceIDs?, passageRole, source, evidenceID?, alignmentStatus}.
+- **ConnectionEdge:** {stable ID, from/to anchors, relation type, direct/indirect, epistemic class, human-readable why, support witnesses, step list, source/provenance, limitations, rank score as non-probabilistic metadata, release}.
+- **ExplorationBranch:** {id, parent branch/step, anchor, selected edge, path, expansion/filter/pagination state, scroll/selection state, pins, release}. Client-side state is authoritative for browser journeys.
+- **PinnedPassage:** {canonical reference, edition, selected occurrence/phrase, active connection/branch, explicit comparison slot}. Hold 2 by default, optionally up to 3.
+- **ResearchHypothesis:** user-owned note/edge with status **hypothesis**, not automatically promoted to verified corpus evidence.
+
+Normalize legacy R8/R9B grammatical/lexical/contextual/LXX, R10/R11 passages and R12 path/structural/orthographic/physical sources to this common UI format, while preserving epistemic distinctions and original evidence IDs. **Do not flatten contextual co-occurrence into lexical kinship, letter overlap into etymology, editorial cross-reference into quotation, or a multihop edge into a proven endpoint claim.**
+
+The same anchor/edge should render consistently as a compact result card, hover preview, graph node/edge, breadcrumb step and comparison annotation. A missing witness is explicit; do not create unsupported proof or synthetic verse text.
+
+## 4. Main screen hierarchy (build function first, not beauty)
+
+Desktop >=1200 px: left collapsible **Trail & Connections**, center dominant **Scripture Reader**, right **Evidence/Word Inspector**. On standard 900–1199 px use reader plus inspector with trail as drawer. On phone (320–430 px), default to **Read → Evidence → Next Connections**, with sticky compact path bar and graph in optional full-screen sheet. Do not put three tiny columns on a phone.
+
+On first load show active full English verse + original/transliteration, one approachable query field (verse/word/concept), a compact **What connects to this?** set (3–6 varied results), and an explicit **Compare** control. No hero, MCP tool names or nine technical tabs between reader and evidence. Leave maps and chronology as optional expandable lanes associated with the verse.
+
+**Readable scaffold:**
+
+TOP: Search / passage selector | Back | Compare | Graph | Saved trails
+
+TRAIL: Genesis 2:7 > adam > adamah  [branch indicator]
+
+READER: Genesis 2:7 (WEB full text)
+Original tokens in reading order: form / readable transliteration / contextual gloss
+Tap word → inspector; hover word → quick meaning
+
+NEXT: 5 relationship cards [why + real short evidence excerpt + evidence type]
+[More] [Find a bridge] [Surprise me]
+
+INSPECTOR: selected node/edge; full cited verses; highlighted original words; what links them; limits
+[Pin A] [Pin B] [Compare] [Follow] [Challenge]
+
+GRAPH: optional expandable local network, uses same state and evidence
+
+A **discovery** always has an evidence-centric textual rendering even if graph view is closed.
+
+## 5. Instant preview interaction contract
+
+### 5.1 Word hover / keyboard focus
+
+Hovering a token in the original text, its transliteration, an English rendering when mapped, a result card, or a graph word node shows a compact nonblocking preview after ~180–250 ms dwell (cached preview immediate after dwell; uncached loading state within ~100 ms). No navigation or persistent selection change on hover.
+
+Preview contains:
+- readable English heading **man / human**; *adam*; אָדָם; source/reference and exact occurrence when available;
+- **Here:** occurrence-specific observed English rendering;
+- **Elsewhere:** up to 2–3 distinct sourced renderings/meanings with small witness refs (not all possible senses asserted for this occurrence);
+- short decoded grammar (e.g. noun, masculine, singular) and ambiguous-sense notice where applicable;
+- one high-value connection/occurrence with an actual verse excerpt if cached; technical Strong's in secondary detail.
+
+Click/Enter opens the persistent **Word Inspector** at the selected passage/word position, retaining the reader. More meanings, occurrences with full-verse preview, senses, LXX, roots, context/grammatical relations and data provenance live here, not in the hover tooltip. Do not perform full get_Word/MCP hydration on every pointer move. Group by proper extended lemma/sense when attested; show disambiguation instead of choosing a homograph automatically.
+
+### 5.2 Verse reference hover / keyboard focus
+
+Any biblical reference **anywhere** (discovery result, graph edge, note, xref, word occurrence, map/timeline, nested evidence, compare pane) uses one reusable reference component and **ContextPreview**.
+
+- Within hover/focus show reference, complete actual WEB verse, translation label and connection-relevant highlighted phrase/word only where alignment is verified.
+- Range references: immediate first relevant *full verse*, visible range label and **Expand range** action to view all verses. Never substitute a partial excerpt for a full-verse preview while claiming it is complete.
+- Interactions: hover must be persistent/dismissible; no accidental navigation; Escape; focus parity; reposition away from viewport edges; no nested tooltip chains.
+- Click/tap opens an accessible nonmodal detail panel with explicit **Read**, **Pin/Compare**, **Inspect relation** actions. Touch never depends on hover.
+- Long verses remain readable with scroll/expanded view. Unknown text shows **English verse unavailable for this edition**, not generated substitute.
+- Use bounded in-flight-deduped requests keyed by edition+reference, stale-response guard, small LRU cache and optional prefetch for 3–6 visible references. Never fetch entire chapters for each hover.
+
+### 5.3 Event/place/edge hover
+
+Graph edge: **why these are connected**, type, weakest epistemic class, first real witness and limits; click opens full evidence. Place: identity/role/confidence with map action; date: competing model/scope. Never display uncertain location or model as settled fact.
+
+## 6. Comparison should be a first-class research workspace (P0/P1)
+
+Extend **PassageComparison.ts**, don't replace it with an unrelated page.
+
+- **Pin A** and **Pin B** explicit controls on any verse/edge; comparison opens both concurrently (not navigational toggle). Support an optional **C** column/passage later.
+- Each pane shows canonical reference, complete WEB text, complete original verse in proper RTL/LTR, **per-token transliteration and English gloss** plus selected contextual word/phrase. A plain concatenated original-language string is insufficient.
+- Highlight verified matching original words by linked evidence IDs/occurrence positions. Separately mark tentative conceptual similarities; do not auto-highlight identical English strings as original-language matches.
+- **Aligned comparison modes:** Word/translation, Grammar/action–participant, Repeated images/theme, LXX Hebrew/Greek, Narrative sequence, Contrast/difference. Switch lane without removing pinned texts. Unavailable lanes say why.
+- A comparison summary answers **What actually repeats? What differs? Which bridge is direct, which is proposed?** Include concrete witness locations rather than generic AI exposition. User can tag a pattern manually.
+- Allow selecting any token in pane A to preview/focus its counterpart(s) in B when supported, and to inspect the evidence that supports the proposed alignment. Else show **no verified correspondence**; do not fabricate a 1:1 translation alignment.
+- Add **Compare words in context**: source occurrence and another occurrence of same lemma/sense, showing both verse texts; display differing renderings separately from different underlying senses.
+- Add **Passage set compare** for a small group (up to 3 initially): display shared evidence categories / unique elements, with a per-passage verse list and passage pinning. Full passages with pagination; don't explode to all 40 verses in DOM at once.
+- A copyable comparison citation/route and **Back to source** preserve the original selection, pins, scroll, trail and filters.
+- Responsive: two columns when room; two stacked cards with sticky A/B selectors on phones, both fully retrievable without replacing one with the other.
+
+Existing data pathways: BibleRPC.getReaderPassage + getVerseWords/getReaderOverview; get_Connection and research(passage_compare, intersect_words, grammar_search, lxx) demonstrate available server analysis but are **not** required on every compare click. Enrich on demand.
+
+## 7. Graph traversal as the map, not the only UI
+
+Implement a small **graph neighborhood** centered on selected anchor, initially 5–9 diverse high-signal neighbors. Provide the *same ranked connections in a keyboard-accessible textual list*. No physics simulation or thousands of rendered nodes; use an SVG or simple lightweight graph first.
+
+Interaction:
+- Click node → shift focus and show word/passage summary + evidence; **Expand** adds next bounded neighborhood and does not replace trail.
+- Click edge → open evidence inspector showing full supporting verse(s) and individually attested steps.
+- **Follow** creates a step in a branching trail; **Branch from here**, **Back**, **Forward**, **Revisit**, **Return to origin** retain source reader and exact token position.
+- **Find a bridge:** select A and B (words/verses/concepts); use bounded existing get_Connection or graph path APIs; return multiple distinct routes with precise edge evidence. If no verified route, show **No supported path found at current coverage** plus explicitly exploratory leads.
+- **Alternative routes:** deduplicate mirrored/same-evidence paths; compare route length, provenance and meaning rather than numeric scores alone.
+- **Surprise me:** show unexpected, source-grounded, diverse next steps. Slider can adjust familiarity vs surprisingness; epistemic threshold never changes silently. Distinguish discovery based on precomputed pilot vs general corpus coverage.
+- Layer toggles: word/etymology, grammar, contextual co-occurrence, Hebrew–LXX–Greek, xrefs/direct quotes, narratives/events, motifs/structural patterns, physical-world bridges, and user hypotheses. Default 3–5 relevant diverse groups; advanced filters behind controls.
+- Source node typed roles matter. Do not merge *eye* and *spring* just because they share a Strong's ID; ambiguous meanings require an explicit branch/candidate choice.
+- A path is a series of evidenced steps, **not proof that first and last nodes have the same meaning**. Show an overall endpoint classification derived from evidence, not automatically from constituent edges.
+
+Persist a lightweight session tree locally and optionally save/bookmark via the existing notes/auth flow. The AI MCP 24-hour private follow_connectionchain is a useful interaction model but **must not be exposed as public browser persistence**. If server chain is integrated, require proper per-user authentication and capability isolation; do not grant extra permissions.
+
+## 8. Human-visible pattern discovery beyond the ranker
+
+Create a **Pattern Board** where users pin 2–3 verses/words and inspect observable features side by side without needing a model to propose a theological explanation.
+
+Feature lanes (each sourced and bounded):
+- shared actual words, common lemma versus similar spelling;
+- grammatical actions, agent/object/recipient and negation;
+- occurrences in near context, independent textual witnesses;
+- narrative motifs, event participants, order, place/time (distinguish narrative time from composition);
+- quantities *bound to their nouns* (e.g. three days, seven lamps), not random number co-occurrence;
+- imagery/objects/material properties; external data explicitly modern;
+- Hebrew–Greek translation parallels and variants (LXX correspondence/edition caveats);
+- contrasting features and **why this may not be the same pattern**.
+
+Let users manually select or add a pattern feature and label an edge **my hypothesis** with a note. Offer **Find supporting verses** and **Challenge** via research(occurrences/intersect_words/grammar_search/passage_compare/lxx) only when requested. Show genuine source snippets; no claim that a discovered literary resemblance is historical authorial intent. Integrate existing NotesPanel/NoteEditor; do not silently write notes or make global annotations.
+
+Pattern Board should support examples:
+- Genesis 2:7 ↔ Genesis 3:19 ↔ 1 Corinthians 15:45–49 (Adam/ground/dust/life with lexical/cross-language caveats);
+- Genesis 6:14 ↔ Exodus 2:3 (tevah/ark and covering/pitch; assess distinct words/contexts);
+- Zechariah 4 ↔ Revelation 11:4 (two olive trees and lampstands; source-specific link);
+- Genesis 1 ↔ Exodus 12–14 ↔ Revelation 21–22 (comparative observations, not forced typology).
+
+## 9. Research capability menu — progressive disclosure
+
+Default simple verbs: **Read**, **Explore**, **Compare**, **Find bridge**, **Follow path**, **Save insight**. Move technical research console and nine prompt tabs behind **Advanced research** without deleting their functionality.
+
+Offer context actions:
+- Word: usages, sense variants, forms, transliteration, LXX equivalents, grammatical neighbors, related words, documented roots vs spelling candidates, real-world bridge and optional gematria with method.
+- Passage: full read, nearby context, xrefs, event/map, chronology model, grammatical scene, compare, multiple-word intersection.
+- Edge: full evidence, competing paths, provenance, challenge or add note.
+- Selected set: overlap/intersection, differences, events, lexeme/grammar compare.
+
+Numbers/gematria should never be prominent as if they imply theological significance; they are exploratory calculators with recorded method and sample scope.
+
+## 10. Source integrity, identity, epistemology, and security
+
+- Preserve precise verse identity including Psalm headings verse 0, MT/LXX shifts and source editions. No synthetic verse references or misplaced morphology.
+- Word positions are occurrence-specific; never infer lemma/sense identity from a single base Strong's or an English gloss.
+- Use WEB with clear source and licensing for English text; STEP/MACULA/Swete retain their own provenance. Do not label STEP morpheme interlinear glosses as WEB translation.
+- English–original token highlights require a verified alignment. In absence, show accurate full English and the corresponding original word separately. Never fake precise WEB token spans.
+- Clarify direct biblical text, textual cross-reference/editorial association, lexical bridge, grammatical attestation, semantic interpretation, typological proposal, orthographic possibility, external world-property relation, and user hypothesis.
+- Historical events and chronology: show exact relation to passage, alternative dating models and uncertainty. Inferred or speculative places remain visibly inferred, not pinpointed as proven coordinates.
+- Distinguish loading, no result, source coverage gap, model ambiguity, stale release, request error, and permission failure.
+- Keep note permissions unchanged. Authorship, review status and DLM claims remain separate from corpus facts.
+- No destructive SQL, paid services, unlicensed source imports, security-control changes, or pushing private data into public assets.
+
+## 11. Implementation boundaries, sequencing and agent ownership
+
+**Do not start with an aesthetic redesign.** Reuse and refactor existing functional components; avoid adding competing apps.
+
+Suggested files and ownership (verify against local branch):
+- **P0 A — hover/reader:** ContextPreview.ts, VerseReader.ts, WordRenderingRange.ts; small shared word-preview component if needed. Own preview request lifecycle and keyboard/touch behavior.
+- **P0 B — compare:** PassageComparison.ts plus small shared verse-token rendering subcomponent; owns dual-pane state and accurate text rendering.
+- **P0 C — integration/state:** src/main.ts, ui/state.ts, a new exploration state/adapter module, relevant styles-workspace/mobile; **orchestrator owns these shared files**.
+- **P1 D — evidence/graph:** DiscoverConnections.ts, ExploreConnectionsPanel.ts, relationships-rpc/r10-rpc adapter only when necessary; one unified graph/trail UX, preserve existing algorithms.
+- **P1 E — Pattern Board:** a small new component reusing comparison and graph evidence; notes integration with explicit save.
+- **P2 F — optional map/timeline/technical research:** EventTimeline, VerseMap, ResearchPanel; do not block P0 on styling/polish.
+
+If another agent is implementing algorithms/MCP, use a separate Git worktree and feature branch. UI agent **does not edit** backend traversal/ranking, shared MCP schemas, corpus build scripts, or TASKS.md; Neon owns integration and TASKS.md. Integrate on the latest verified algorithm release and adapt only the client adapter. Do not deploy two branches to the same shared Workers/MCP simultaneously.
+
+MCP source contracts are reference data, not permission to expose server-only functions on an unauthenticated website. Keep the existing browser access model intact. Favor the existing BibleRPC methods and a small typed adapter mapping them into Anchor/ConnectionEdge/Witness.
+
+Build and test in thin working vertical slices:
+1. Accurate full verse display + reusable hover/focus word and reference preview.
+2. Expand and inspect one connection without leaving Scripture; stabilize shared selection/anchor identity.
+3. Side-by-side comparison with transliteration/gloss and reliable back/pinning.
+4. Graph neighborhood + branching trail + bridge search.
+5. Pattern Board + notes hypothesis/save + refined layer navigation.
+
+Every slice must remain usable before moving to the next.
+
+## 12. Performance and accessibility gates
+
+No full MCP calls or 40-verse hydrations on hover. Target cached hover visible within ~100 ms after dwell and network loading indicator within ~100 ms; measure real cold/warm p50/p95 separately rather than inventing compliance. Use request deduplication, bounded concurrency, cancel/ignore stale responses, finite cache keyed by reference+edition+release, lazy inspector and graph hydration, optional prefetch for a few visible citations. A slow graph search must not delay Scripture.
+
+Avoid new heavy graph dependencies and continuous-motion layouts. Support keyboard, screen readers, Escape, dismissible persistent preview, stable focus, nonmodal interaction when feasible, font scaling, true Hebrew RTL and Greek LTR, 200% text, 320/360/390/430/768/1280/1440px layouts, 44px touch targets, reduced motion and no horizontal overflow. Compare on mobile stacks both passages; no disappearing source pane.
+
+**No raw HTML insertion of untrusted text/evidence without escaping.** Prefer textContent/DOM builders for lexical/scriptural content.
+
+## 13. Exact acceptance journeys and checks
+
+Extend scripts/verify-ux-refresh.mjs (and add small focused tests where needed). Test actual local browser/Playwright, not screenshots alone. Core acceptance:
+
+1. **Gen 2:7:** load full WEB and original text. Hover original *adam* → English, transliteration, script, contextual gloss without selecting. Click *adam* → inspector, follow documented *adamah* wordplay, read Genesis 3:19 on hover; pin and compare both verses, return to same token/scroll.
+2. **Zech 4:2 P0:** correct original token ↔ transliteration/word_id; do not render *menorat* as za.Hav. If corrected backend not yet available, evidence enrichment is marked unverified and no incorrect precise pairing appears. Compare Zech 4 with Revelation 11:4; full English in both panes, original + romanized words, inspect two-olive-tree direct/editorial links.
+3. **Gen 6:14 ↔ Exod 2:3:** show WEB English for both, shared H8392 *tevah* with source evidence, do not equate other coverings automatically. Graph and list provide equivalent traversal.
+4. **2 Pet 1:19:** compare Greek *lamp* G3088 and *light-bearer* G5459 in their actual verse; no generic words overwhelm the precise source witness.
+5. **John 1:1:** repeated G3056 tokens keep distinct occurrence positions; RTL/LTR correct; hover/focus previews never change active occurrence.
+6. **Ruach:** render documented wind/spirit/breath and potentially direction-side as **different witnessed uses**, not a forced contextual sense; full-verse rendering-group preview; list pagination and uncertain homograph choices.
+7. **Psalm 3:** full superscription/context link to 2 Samuel 15 as a historical-association source, not an exact composition year. Psalm 45:0 heading present; ambiguous dates/places appropriately named.
+8. **Graph:** 6 neighbors expandable, click node/edge, inspect verse, branch, return to origin and back without losing pins. Failed/no-path/coverage states explicit.
+9. **Pattern Board:** pin A/B, compare shared and distinct features, manually add hypothesis, note only saved on explicit click. Show no implied certainty from mere English word similarity.
+10. **Mobile/accessibility:** 320/390px, keyboard only, focus/hover/tap parity, Escape, scroll/no overflow, two passages simultaneously accessible, no nested dialogs.
+11. **Performance:** measure cached vs uncached previews, number of network requests from 20 rapid hovers, graph expansion; assert no repeated large MCP query per hover and no stale-response UI corruption.
+12. **Regressions:** earlier scripts/verify-ux-refresh.mjs journeys, existing notes/reading preferences, map focus, full chronology alternatives, technical research tabs preserved.
+
+A completed UX is **not** accepted if the first page looks attractive but a user cannot inspect an exact verse, understand a related word in English, or follow and return along a path.
+
+## 14. Release and handoff
+
+Neon should coordinate low-cost subagents by non-overlapping file ownership, integrate, run npm type check/build and focused Playwright test(s), deploy the website only after backend algorithm/MCP integration compatibility is confirmed, and verify *live* reader/preview/compare/graph journeys. Follow AGENTS.md direct-live policy but preserve rollback and do not overwrite another active deployment.
+
+Update TASKS.md only through orchestrator; preserve its authority and old task history. In the UX handoff record: implementation commits, route/adapter changes, exact relevant MCP/Worker releases, P0 word-alignment status, screenshot/browser evidence, measured preview performance, limitations, and independently testable paths. Do not claim visual or data correctness if not tested.
+
+**Summary:** Every reference is readable, every important word is understandable, every edge is explainable, every comparison keeps both texts visible, and every path remains navigable. The user is the investigator; the graph and AI supply a map, not an unquestionable interpretation.
