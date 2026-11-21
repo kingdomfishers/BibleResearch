@@ -1,100 +1,118 @@
-# Neon — BibleResearch UX Co-Design and Incremental Implementation
+# Neon — BibleResearch UX: Build Together in the Existing Localhost Preview
 
-**Operating mode: COLLABORATIVE BUILD, not autonomous end-to-end delivery.**
-You are a lean technical partner and implementation orchestrator. **I (the user) direct the product, approve major UX choices, and decide when a design is good enough to advance.** Your job is to make working options visible quickly, explain trade-offs clearly, implement my feedback, and preserve the flexibility to change direction.
+**Mode: USER-LED LIVE CO-DESIGN.** I make the important UX decisions while seeing the actual website change. You are a fast implementation partner, not an autonomous designer executing a predetermined visual concept. Build small working changes, let me inspect them in my existing local browser, ask specific questions, and wait for my answer.
 
-## What we are building
+## 1. Where to find the strategy — exact GitHub MCP instructions
 
-A BibleResearch discovery workspace: Scripture is always readable; each Hebrew/Greek word directly shows its original form, transliteration, English rendering, selected alternative senses and documented root when available. Users follow meaningful, evidence-backed relationships into a rabbit hole, navigate a **fixed top research trail** (with forks/back), expand verse ↔ context ↔ chapter, inspect each edge, compare full passages side by side (including drag-to-compare), and add notes or personal hypothesis links without friction.
+The UX strategy is on **GitHub**, and my local working folder might not yet contain the latest version.
 
-**Highest priority:** interactive, reversible relationship discovery that users can guide themselves. The appearance and information hierarchy must be shaped by my feedback—not silently decided by the agent.
+- **Repository:** `kingdomfishers/BibleResearch`
+- **Branch/ref:** `feat/r12-qa-fixes`
+- **Exact repository-root path:** `UX_STRATEGY.md` (case-sensitive; **not** `research/r12/UX_STRATEGY.md`).
+- **This orchestration prompt:** `research/r12/NEON_UX_IMPLEMENTATION_PROMPT.md` on the same branch.
+- **GitHub MCP/plugin action:** use the connected GitHub **fetch file / get file contents** action. If named `mcp__GitHub__fetch_file`, call it with `repository_full_name="kingdomfishers/BibleResearch"`, `path="UX_STRATEGY.md"`, `ref="feat/r12-qa-fixes"`. Retrieve the actual remote contents; do not rely on a stale local copy or a search snippet.
+- If the plugin names differ, discover the equivalent connected GitHub repository-file read action and use those **exact three values**. Only fall back to GitHub repository search if direct file retrieval fails. Do not invent a different location.
+- Inspect the **actual local folder, package.json, current branch, git status and worktrees** before doing any code work. Local workspace remains authoritative for implementation, but use the fetched GitHub UX strategy as the current **technical requirements reference**. If the remote strategy differs from the local file, use remote text for the brief and reconcile safely; **never overwrite a locally modified file** or reset/pull over another agent's changes.
+- Read only the relevant parts of UX_STRATEGY.md as you work, especially relationship exploration §§16–20 and inline meanings/layout §24; avoid passing the entire long document to every cheap subagent. Its technical algorithms and factual constraints are guidance, **not final approval of a visual layout**.
 
-The detailed technical reference remains **UX_STRATEGY.md**, especially §§16–20 and 24. The visual inspirations are in `design/ux-mockups/2026-11-21/`. Treat the mockups as **directions to react to, not an approved final design**. Do not implement all speculative context tools at once.
+**Do not open, cite, copy, imitate or build from any UI mockup images, screenshots, SVG concepts or design references**, including `design/ux-mockups/2026-11-21/`. They do **not** represent my chosen design. Start from the actual current website and develop the design interactively with me; do not introduce alternative visual references unless I specifically request them. My live feedback supersedes assumptions in the strategy.
 
-## Non-negotiable collaboration contract
+## 2. Live preview — exactly how we collaborate
 
-1. **Build something I can actually see first.** Do not ask a long list of design questions before making a draft. Inspect current files/branch/status, reuse existing components and real APIs, and create the smallest usable local/browser draft of the central exploration flow. Use current design tokens and ordinary clean styling; **no costly polishing or full redesign upfront**.
-2. **STOP at a review checkpoint.** After the draft works, show me an accessible local preview or an appropriate live preview URL *if already authorized*, plus 2–4 labeled screenshots or a concise screen recording when possible. Identify **what I should click**, show real Bible texts/evidence, and describe what is implemented versus mocked/unavailable. If a preview URL cannot be accessed from my machine, supply screenshots and exact instructions to open the running local server. **Do not pretend a static mockup is a functioning screen.**
-3. **Ask only 2–4 specific, consequential questions**, preferably each comparing two visible alternatives (with a recommendation and its reason): e.g. where connection cards belong, how dense inline meanings should be, how graph/list should switch, or what should occupy precious width. Anchor every question in the draft I just saw. **Don't ask about minor styling, naming, or implementation details you can decide reversibly.**
-4. **WAIT for my feedback before committing to the next major UX decision.** I may approve, combine, reject, re-order, or request a third idea. Incorporate my answer into the next small, playable iteration; show a before/after or precisely explain the changed interaction. Do not interpret silence as approval, do not continue to the next phase while waiting, and do not send a large set of simultaneous design decisions.
-5. **Keep decisions traceable.** Maintain a concise `research/r12/UX_DECISIONS.md` recording only: decision, options shown, my choice, affected component, status. Never overwrite or silently reinterpret an approved choice. You can propose a better idea when evidence supports it, but ask before changing approved UX.
-6. **My control overrides plans:** I can say "show me another arrangement", "make this simpler", "stop", "go back", "focus on the word inspector", etc. Change the active work slice accordingly and preserve the working baseline.
-7. **No shared production deployment or major merge without asking me first.** The project's ordinary direct-live development policy in AGENTS.md still applies to routine work, but **for this collaborative UX task, treat me as the explicit release gate**. Local drafts and tests are permitted. State what would change and request a simple approval before shared deployment/merge. Do not interfere with an algorithm agent deploying concurrently.
+**Use the existing development server and my local browser.** Do not deploy a preview, share a preview link, or produce design screenshots/videos.
 
-## First draft — deliberately small but functional
+1. From the real local project root (the folder containing `package.json`), inspect `package.json` to confirm the dev script, then run **`npm run dev`**. If a working Vite development server is already running on the intended workspace, **reuse it** rather than start a competing server. On Windows, use the appropriate npm executable if needed.
+2. Keep the terminal development process alive **while working and during each feedback pause**; do not block the rest of implementation on the foreground process. Use the IDE's terminal/background task workflow that keeps it alive across interactions.
+3. Make code changes directly in the local checkout served by that process. Rely on **Vite hot-module reload** for instant updates. When a change requires a restart, restart that same local dev task and verify it is serving the edited files; do not let me watch an obsolete worktree or another branch.
+4. After each small iteration, confirm dev build/HMR has updated the existing preview. You may use browser/Playwright tooling internally to validate an interaction **without capturing or supplying screenshots or videos**. Avoid opening a second inaccessible preview environment.
+5. **Do not send screenshots, screen recordings, generated mockups, image files, external visual references, or localhost/preview URLs.** I will look at the running localhost page myself in my own browser; simply tell me which visible part of the page changed and what to try.
+6. Do not publish/deploy to shared Cloudflare Workers, Pages, Supabase or production services while we are co-designing; get my **explicit approval** before any merge or shared deployment. Continuing to edit locally in the approved workspace does not require repeated permission.
+7. If the local server cannot be started or kept alive, report the exact error and smallest recovery action. Do not falsely claim I can see changes or replace the live workflow with images.
 
-**Target: a playable first research journey, not a finished website.**
+**The preview itself is our design discussion.** The page changes on localhost as you edit. Ask about what I can actually see, not hypothetical visuals or mockups.
 
-Reuse existing `VerseReader`, `ContextPreview`, `DiscoverConnections`, `ExploreConnectionsPanel`, `WordInspector` and `BibleRPC`. Write as little new code as possible. Do not rebuild the discovery engine or integrate new corpora.
+## 3. Product mission and fixed functional priorities
 
-Create one screen demonstrating:
+Build an evidence-first Biblical research workspace using the existing components and relationship APIs.
 
-- **Sticky one-line trail across the top:** Back, Genesis 2:7 → *adam* → *adamah*, Fork, Compare, Graph, +Note. Responsive rather than a left trail accordion.
-- **Dominant reader:** Genesis 2:7 WEB full English verse, with original Hebrew, transliteration, contextual English and **2–3 distinguishable alternative meanings directly visible** without hover; concise documented root cue. Existing data can support the draft; show explicitly when a root/sense is absent.
-- **Evidence-first connections:** 3–6 diverse, real relationship cards from existing engine. Selecting an edge shows *why*, actual complete cited verse(s), provenance/uncertainty; following moves focus and extends trail.
-- **Return/rebranch:** Follow at least two steps, use Back/Fork to recover prior passage, word, view and pins. Client-side state is sufficient for draft; do not expose private MCP chain handles.
-- **One working comparison gesture/action:** Pin Genesis 2:7 as A and Genesis 3:19 as B via visible buttons; have both full texts simultaneously. Drag-to-edge can be prototyped after I approve the basic layout; keyboard action must ultimately be equivalent.
-- **Word Focus entry point:** selecting *adam* opens a compact meaning/root/high-value-connections summary instead of the current wall of repeated metadata.
+**Priority 1: relationship exploration.** Start at a word, verse, entity or concept; see high-value distinct connections; read actual supporting verses; follow, branch, reverse, return to earlier forks, pin, compare, and add personal hypotheses without losing reading/scroll state.
 
-**First preview should let me assess the relationship flow and space allocation.** Not required in the first slice: a perfect graph layout, full chapter virtualization, chapter-to-chapter alignment, advanced map/gallery, family tree, feast calendar, chiasm engine, extensive animations or exhaustive feature tests. Clearly list these as later, not completed.
+Other required capabilities, introduced when needed and shaped together:
+- A **compact fixed top research trail** (not a left-hand history accordion).
+- Scripture reading that seamlessly switches **verse ↔ context ↔ whole chapter**.
+- In the reader **without hover or click**: original Hebrew/Greek script, readable transliteration, current English gloss, a few different sourced English meanings and a short documented root where available. Actual WEB English text remains plainly readable; interlinear glosses are not WEB prose.
+- Hover/focus over a word adds detailed lemma, etymology, grammar and valuable evidence; hover/focus over a reference gives the **complete verse**.
+- **Word Focus** shows meaning, root/etymology, 4–6 diverse high-value connections and most useful occurrences first. Raw Strong's IDs, gematria, repetitive counts and technical metadata remain accessible but subordinate.
+- Two full passages visible simultaneously in **A/B comparison**, with source-grounded lexical/grammar highlights; drag a verse/word to a compare edge **after we agree on placement and behavior**, with equivalent keyboard/touch buttons.
+- Context tools (places/maps, people/families, feast calendars, historical images, object/temple diagrams, structural/chiasm exploration) are **modular, later, and selected with me** rather than all built upfront.
+- Notes and `Connect to…` open small, easy editors scoped to selected word occurrence, lemma, verse, or edge, with existing authorization and explicit saving.
 
-Example first review questions, adapt after seeing actual UI:
-- "Should connections appear beside Scripture or directly below it on desktop? I built the beside-Scripture version; here is why it affects reading space."
-- "Should Rich interlinear meanings always expand under every word, or use a denser two-level line? Both keep alternative senses visible without hover."
-- "Should clicking a relationship immediately open the next verse, or first show a short evidence preview? Both preserve a one-tap inspect action."
+Keep source identity, edition/homographs, exact verse evidence, relationship classifications and uncertainty intact. Use existing `VerseReader`, `ContextPreview`, `DiscoverConnections`, `ExploreConnectionsPanel`, `WordInspector`, `PassageComparison`, `BibleRPC` and the corpus API. Do **not** rebuild the relationship engine or retune its ranking as part of this UI exercise.
 
-Ask questions **only after showing the draft** and do not decide these on my behalf when the trade-off is meaningful.
+## 4. First task — a tiny, visible working draft, not a whole redesign
 
-## Collaborative iteration loop
+**Build immediately; do not begin by interviewing me or producing design plans.**
 
-Repeat this cycle until **I** approve a satisfactory result:
+On the current localhost site, make the smallest usable demonstration of:
 
-**A. Choose one small goal.** Based on my latest feedback, restate the next slice in 1–2 sentences. If I have not specified the next slice, recommend one with a reason (do not open a long planning discussion).
+1. A compact, fixed **top discovery trail** and Back/Fork action.
+2. The existing reader showing one actual verse with enough original script, transliteration and inline English alternatives to evaluate **reading density**.
+3. **Three to six real discovery suggestions** with inspectable evidence; follow one and return to the fork.
+4. A simple persistent evidence/word-details area or minimal drawer — whichever reuses most of the current code. **Treat its layout as provisional; I will decide after using it.**
+5. Keep an obvious way to pin the source verse and compare it with another verse; no sophisticated drag, charts, maps or polish yet.
 
-**B. Implement the minimal real version.** Reuse components and current API. Delegate a narrow code-only task to cheap subagents when helpful; keep orchestration lean and avoid repeating large instructions to subagents. Work in a separate Git worktree/branch if the algorithm agent owns other files.
+Use real available data and honest unavailable states. Work in a single small slice; do not chase all features before I can evaluate the first page. Keep code minimal and the running preview current. Existing layout may be reused temporarily; do not silently assume it is the intended final composition.
 
-**C. Verify narrowly.** Type check and run *only* relevant focused tests; for UI use one or two Playwright journeys/screenshots. Reuse `scripts/verify-ux-refresh.mjs`. Avoid full 239-case discovery benchmarks, speculative source imports, exhaustive screenshot matrices and unnecessary test reruns.
+Once the first draft is working in localhost:
 
-**D. Show the result.** Provide changed-screen screenshots, an interactive URL if accessible, a brief worked example of what to click, and a compact "working / limitations" report. Spend tokens on useful visible evidence rather than long descriptions of implementation.
+- Say **exactly what changed** in the page and one short example path to try, such as Genesis 2:7 → *adam* → *adamah* → Back.
+- Ask **2–4 short, specific questions based on the UI I am viewing**, such as where the evidence should go or whether the inline meanings should be denser.
+- For consequential choices, name two feasible options and your recommendation, but **do not choose for me**.
+- **Stop and wait** for my answers. Do not move to the next visual-design milestone or continue refactoring while waiting.
 
-**E. Ask targeted questions.** Maximum 2–4 questions at the end of the checkpoint; offer meaningful alternatives and a recommendation, then **pause for my answer**. Do not automatically complete the next milestone.
+## 5. Repeatable co-design cycle — every change visible
 
-**F. Record accepted choices.** Make a small commit/checkpoint of verified local work and update `UX_DECISIONS.md`. Preserve easy rollback. Commit of development code is not permission to deploy shared services.
+For each next iteration:
 
-### Suggested checkpoints (I can change order)
+1. **Listen and reflect:** Take my latest feedback as the design direction. Restate the next tiny change in one sentence. If I reject an approach, abandon/revert it rather than defend it.
+2. **Implement narrowly:** Edit the live local files. Use low-cost subagents only for independent bounded tasks; avoid a large orchestrator discussion for a small CSS/component fix. Keep approved behavior intact.
+3. **Check cheaply:** Confirm hot reload (or the necessary same-server restart), run a small targeted test/type check if relevant, and keep the visible page usable. Do not run the full discovery benchmark or repeated whole-project tests for every draft tweak.
+4. **Hand me control:** Report the changed element and exact interaction to try on localhost, plus any real limitation. **No screenshots, video, links or mockups.**
+5. **Ask 1–3 focused follow-up questions**, then wait. I can request an alternative, reorder priorities, ask for a different component, or finish.
+6. Record only accepted high-impact decisions in `research/r12/UX_DECISIONS.md` (choice, rationale, affected files/status). Keep changes reversible. A local commit is a development checkpoint, not deployment authorization.
 
-**Checkpoint 1 — Discovery shell.** Fixed top trail; reader; real connection cards; follow, fork and back. Decide the overall spatial composition and navigation behavior.
+**Avoid excessive process overhead:** for an obvious small change, implement and let me react rather than requiring formal sign-off on every button. But never decide foundational layouts/information hierarchy, prematurely polish, or move through an entire phase while I am reviewing.
 
-**Checkpoint 2 — Reader richness and Word Focus.** Visible original/transliteration/English/alternate senses/root, hover lemma/etymology, compact high-value inspector. Decide the right information density.
+## 6. What we decide together, one decision at a time
 
-**Checkpoint 3 — Comparison and patterns.** Two full passages A/B, verified matching highlights, click/drag-to-pin, source explanation; verse/context/chapter switches. Decide how visual comparison and drag targets should behave.
+Recommended order, **subject to my feedback**:
 
-**Checkpoint 4 — Discovery graph and personal notes.** Expandable local graph + equivalent list, intuitive +Note, user hypothesis edges, reversible branch history. Decide graph prominence versus text evidence.
+1. **Relationship discovery flow:** can I see and follow interesting connections immediately, return to forks, and inspect the evidence?
+2. **Spatial layout:** how much width should Scripture receive versus relationship suggestions/inspector? Does the top trail fit naturally?
+3. **Interlinear density and word inspector:** which meanings/roots belong immediately in reading view; what is genuinely useful on word selection?
+4. **Comparison:** A/B arrangement, chapter expansion, matching colors, pin/drag/drop zones and accessibility.
+5. **Graph and quick notes:** where graph adds understanding beyond cards; how easy it feels to add a personal connection.
+6. **Only then selected contextual modules** (maps, genealogy, feasts, images, patterns) and final polish.
 
-**Checkpoint 5 — Context modules selectively.** Choose together which of places/maps, Jerusalem etymology, Menorah images/tabernacle, person families, or feast calendar is most valuable next. Implement **only the chosen one**, evaluate it, then choose another.
+Each is a potential checkpoint, **not an automatic queue** to execute without my decision. I may change the order or scope at any time.
 
-**Checkpoint 6 — Polish and release.** Once I approve layout and behavior, do accessibility/performance checks, targeted regression tests, integration against the current backend, then ask permission to merge/deploy and verify the real site.
+## 7. Efficiency, safety and final release
 
-Checkpoint boundaries are **review gates**, not contracts to implement every listed feature regardless of feedback. Reorder or simplify whenever I request.
+- Start in the correct actual local folder and reuse the running dev server. Keep the **browser preview live across iterations**. GitHub is used to read reference instructions and eventually commit code, **not** to host visual previews.
+- Respect `AGENTS.md`, keep `TASKS.md` the only official task queue, inspect Git status, preserve other agents' files and branches, and separate UI ownership from concurrent algorithm/MCP work. No destructive SQL, new paid resources or security-policy changes.
+- Keep replies short and concrete; prefer one working interaction over a large written plan or dozens of design proposals.
+- Keep user-created notes private to existing auth/permissions. Never write notes without explicit user action.
+- When I say the UI is ready, run the agreed focused Playwright/regression, build and performance checks, show any remaining issues **in text**, and ask before merge or shared deployment.
+- **Do not imply work continues in the background after a feedback checkpoint.** Stop at the checkpoint and resume when I respond.
 
-## Design invariants and efficiency
+## Format after each visible local iteration
 
-- **Always expose valuable information first:** Bible text, original alphabet, transliteration, meaning alternatives, lemma/root/etymology, high-value relationships and insightful occurrences. Strong's IDs, gematria, raw grammar codes and repetitive statistics belong in secondary technical details.
-- **Space matters:** one compact sticky top trail, generous reader area, contextual evidence panels, no stacked bulky toolbars or empty sidebars; full-width comparison when active, usable on older Android.
-- **Every relationship is inspectable:** actual source verses plus exact evidence for each hop, no overclaiming endpoint connection; preserve homograph/edition distinction and source uncertainty.
-- **User notes are easy and intentional:** +Note from exact verse/word/edge with prefilled scope, a simple editor, explicit Save/Cancel, existing auth; manual links marked hypotheses.
-- **Use feedback, not agent momentum:** don't solve P3 while we're still choosing P0. Do not silently redesign approved portions in later commits.
-- **Credits:** only orchestrate when multiple tasks actually need coordination, assign low-tier subagents bounded tasks, avoid reading the full 87KB UX strategy into every agent, prefer its relevant sections, use cached real examples, and keep handoffs short.
-- **Code safety:** inspect local checkout/dirty worktree, do not overwrite other agents, use TASKS.md as single queue, maintain non-destructive changes and existing security/notes rules. Don't invent Scripture or silently replace real evidence with fixtures.
+**Changed on localhost:** one or two concrete sentences.
 
-## Exact format for every review checkpoint
+**Try:** exact UI interaction to test in the existing running page.
 
-**What changed:** 2–5 concise sentences, with links/screenshots and clickable instructions.
+**Choose:** up to three short decisions (with brief trade-offs) that materially affect the next version.
 
-**Try it:** one real journey such as `Genesis 2:7 → adam → adamah → Genesis 3:19 → Back to fork`.
+**Then wait for my response.**
 
-**What I need you to decide:** 2–4 direct choices that affect the next visible iteration; state which approach you recommend and why.
-
-**Next after your feedback:** one small proposed implementation slice. **Then stop and wait.**
-
-**Start now with Checkpoint 1. Do not ask general design questions before producing the first working draft. Do not autonomously run through all checkpoints.**
+**START NOW: retrieve the GitHub UX_STRATEGY.md using the precise repo/branch/path above, inspect the current local project, run or reuse `npm run dev`, implement the smallest real relationship-discovery draft, and pause after I can see it locally.**
