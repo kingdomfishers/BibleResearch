@@ -13,7 +13,7 @@ The UX strategy is on **GitHub**, and my local working folder might not yet cont
 - **GitHub MCP/plugin action:** use the connected GitHub **fetch file / get file contents** action. If named `mcp__GitHub__fetch_file`, call it with `repository_full_name="kingdomfishers/BibleResearch"`, `path="UX_STRATEGY.md"`, `ref="feat/r12-qa-fixes"`. Retrieve the actual remote contents; do not rely on a stale local copy or a search snippet.
 - If the plugin names differ, discover the equivalent connected GitHub repository-file read action and use those **exact three values**. Only fall back to GitHub repository search if direct file retrieval fails. Do not invent a different location.
 - Inspect the **actual local folder, package.json, current branch, git status and worktrees** before doing any code work. Local workspace remains authoritative for implementation, but use the fetched GitHub UX strategy as the current **technical requirements reference**. If the remote strategy differs from the local file, use remote text for the brief and reconcile safely; **never overwrite a locally modified file** or reset/pull over another agent's changes.
-- Read only the relevant parts of UX_STRATEGY.md as you work, especially relationship exploration §§16–20 and inline meanings/layout §24; avoid passing the entire long document to every cheap subagent. Its technical algorithms and factual constraints are guidance, **not final approval of a visual layout**.
+- Read only the relevant parts of UX_STRATEGY.md as you work, especially §§2–8 for the approved workspace, reader, inspector, graph and comparison, plus §§11–13 for integration and acceptance; avoid passing the entire long document to every cheap subagent. Its technical algorithms and factual constraints are guidance, **not final approval of a visual layout**.
 
 **Do not open, cite, copy, imitate or build from any UI mockup images, screenshots, SVG concepts or design references**, including `design/ux-mockups/2026-11-21/`. They do **not** represent my chosen design. Start from the actual current website and develop the design interactively with me; do not introduce alternative visual references unless I specifically request them. My live feedback supersedes assumptions in the strategy.
 
@@ -51,11 +51,13 @@ Keep source identity, edition/homographs, exact verse evidence, relationship cla
 
 ## 4. First task — a tiny, visible working draft, not a whole redesign
 
+**No AI-generated theological interpretations:** show only algorithmic relationship types, inspectable Scripture evidence and source-aware uncertainty; let the user infer significance. **Chapter view is continuous English only**, switching back to a verse restores rich interlinear.
+
 **Build immediately; do not begin by interviewing me or producing design plans.**
 
 On the current localhost site, make the smallest usable demonstration of:
 
-1. A compact, fixed **top discovery trail** and Back/Fork action.
+1. A compact, fixed **top discovery trail** and Back/Fork action; clicking a graph node changes focus, hovering previews it and clicking an edge inspects its witnesses.
 2. The existing reader showing one actual verse with enough original script, transliteration and inline English alternatives to evaluate **reading density**.
 3. **Three to six real discovery suggestions** with inspectable evidence; follow one and return to the fork.
 4. A simple persistent evidence/word-details area or minimal drawer — whichever reuses most of the current code. **Treat its layout as provisional; I will decide after using it.**
