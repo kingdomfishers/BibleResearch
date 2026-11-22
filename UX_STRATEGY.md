@@ -442,3 +442,34 @@ Potential **later** sources, only if license, source methodology, canonical iden
 Keep provenance for every original-language claim, etymology, image and calendar model. **Explore surprising evidence; do not turn interesting similarities into asserted historical/semantic certainty.**
 
 **End state:** The reader immediately suggests the richness of every Hebrew/Greek word; one click reveals a compact but deep inspector; every interesting connection is visible in an organized, expandable graph; every rabbit hole is reversible; passage comparisons make patterns visible; and additional research tools appear exactly when they help.
+
+
+---
+
+## 15. Central design system — one place to change the entire UI
+
+**Requirement:** Future coding agents must be able to redesign BibleResearch consistently without hunting through dozens of CSS/TypeScript files or adjusting each panel separately. **Define all shared visual language and reusable UI elements in one discoverable design-system module/directory**, rather than scattering hardcoded values and duplicated component styles.
+
+**Fit the existing architecture:** this project uses vanilla TypeScript and CSS, with existing theme variables in \`src/ui/styles-base.css\` and \`src/ui/styles-workspace.css\` and other feature stylesheets. Extend and **consolidate** what exists; no React/component-framework migration or unnecessary dependency. Suggested stable entry point: **\`src/ui/design/\`** containing:
+
+- **\`tokens.css\`** — the *single source of truth* for theme palettes and shared CSS custom properties: background/panel/text, borders, accents, hover/focus/selected/disabled states, semantic relationship-type and epistemic colors/patterns, spacing scale, border radius, shadows, typography scale, original-script/interlinear typography, animation duration, inspector/header dimensions and layer/z-index values. Light/dark/high-contrast variations belong here, keyed by theme data attributes. Preserve or alias existing \`--background\`, \`--panel\`, \`--gold\`, etc. during migration.
+- **\`components.css\`** (or equivalent well-organized existing styles) — canonical visual definitions for Button, IconButton, Badge/Tag, Card, Tab, Tooltip/Preview, Popover/Modal, SearchField, InspectorFrame, NoteComposer, ResearchTrail, WordTile, GraphNode/Edge, MediaSlideshow, ComparisonPane and loading/empty/error states. Provide a few explicit sizes/variants (compact/normal, quiet/prominent, selected/hover/focus) instead of bespoke per-screen copies.
+- **\`primitives.ts\`** — only when justified by real duplication: small typed DOM factories/props for the shared elements above. If a suitable helper already exists, consolidate into it rather than introducing a competing component abstraction. Feature components still own data fetching and interactions.
+- **\`README.md\`** — concise human/AI entry point: file map, token naming conventions, variants, responsive rules and **“change this to redesign the app”** instructions. This README documents the source; it must **not** become a second set of hardcoded color/spacing values.
+
+**Critical distinction:** “One place” refers to the **shared design definitions**, not moving the entire app and all its feature-specific code into one giant file. Feature CSS can still control unique structure/behavior, but it must consume tokens and primitives instead of redefining the global visual style.
+
+**Centralized layout constraints** should include: fixed research header height; reader/inspector proportions and breakpoints; interlinear tile spacing and Hebrew fonts; independent panel scrolling; graph node typography and link stroke; comparison pane minimum widths; responsive 320–1440+ layouts. For exceptions, define named variants/tokens, not scattered magic numbers.
+
+**Relationship colors have semantic meaning.** Map each relation mechanism (lexical, etymology/wordplay, grammatical, textual, LXX, narrative, real-world, personal hypothesis) to a centralized color plus non-color marker. Keep *repeated-lemma highlight palette* separate from *relationship-type colors*, and ensure both work with light/dark modes and color-vision differences. The graph, cards, inline highlights, inspector and comparison must derive matching labels/styles from the same semantic mapping.
+
+**Implementation order and verification:**
+
+1. Inventory existing root/theme variables and repeated button/card/tooltip/panel styles before editing. Introduce the canonical design-system entry point and wire it through the existing \`styles.css\` imports and app styles. Do not break existing theme switching or responsive behavior.
+2. Migrate the common high-visibility UI first (header/trail, VerseReader word tiles, inspector, graph/cards, comparison). Move remaining duplicated definitions incrementally without blocking the first functioning UX.
+3. When designing a new UI element, first add or reuse a token/primitive/variant in the central system; feature code consumes it. No new repeated inline hex codes, font sizes, radii or component-specific buttons unless there is a documented reason.
+4. Keep the existing component/data boundaries: \`BibleRPC\` and feature event/state logic stay separate from styling. Replacing a theme should **not** require rewriting connection traversal, lexical retrieval, notes or comparison logic.
+5. Create a simple **Design System Preview / component gallery** reachable locally in development (or a small dev-only test page) showing common controls, original-script word tiles, compact and expanded inspectors, graph nodes/edges and comparison highlights in light/dark themes. It must use the **actual shared styles/components**, not screenshots or static mockups.
+6. **Acceptance:** changing a small set of design tokens must visibly update the reader, inspector, research trail, graph and comparison consistently. Changing Button/Card/WordTile primitive styling updates all consumers; no accidental duplicated hover/focus styles. Verify light/dark mode, RTL/LTR word-tile ordering, reduced motion, keyboard focus, mobile widths and readable graph/lemma color contrast.
+
+**Future AI workflow:** inspect \`src/ui/design/README.md\` first, modify \`tokens.css\` for the overall look and \`components.css\`/shared primitives for element design, then check the live \`npm run dev\` page. Users should be able to explore alternate visual directions rapidly through small central changes **without redesigning every screen by hand**.
