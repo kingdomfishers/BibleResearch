@@ -15,7 +15,7 @@
     "strict_target_at_k": 110,
     "strict_target_top5": 42,
     "strict_target_after_k": 27,
-    "strict_target_absent_in25": 78,
+    "strict_target_absent_in25": 49,
     "unassessable_positive": 29,
     "strict_id_top_k": 37,
     "strict_ref_top_k": 74,
@@ -31,29 +31,32 @@
         "unassessable": 0,
         "strictIdAtK": 5,
         "strictRefAtK": 0,
-        "softAliasAtK": 3
+        "softAliasAtK": 3,
+        "all_positive_without_structured_match": 0
       },
       "linguistic_lexical": {
         "cases": 23,
         "assessable": 22,
         "atK": 5,
         "afterK": 6,
-        "absent25": 12,
+        "absent25": 11,
         "unassessable": 1,
         "strictIdAtK": 5,
         "strictRefAtK": 0,
-        "softAliasAtK": 10
+        "softAliasAtK": 10,
+        "all_positive_without_structured_match": 12
       },
       "linguistic_polysemy": {
         "cases": 5,
         "assessable": 3,
         "atK": 1,
         "afterK": 0,
-        "absent25": 4,
+        "absent25": 2,
         "unassessable": 2,
         "strictIdAtK": 1,
         "strictRefAtK": 0,
-        "softAliasAtK": 5
+        "softAliasAtK": 5,
+        "all_positive_without_structured_match": 4
       },
       "linguistic_translation": {
         "cases": 22,
@@ -64,7 +67,8 @@
         "unassessable": 0,
         "strictIdAtK": 21,
         "strictRefAtK": 0,
-        "softAliasAtK": 20
+        "softAliasAtK": 20,
+        "all_positive_without_structured_match": 1
       },
       "direct_intertext": {
         "cases": 55,
@@ -75,7 +79,8 @@
         "unassessable": 0,
         "strictIdAtK": 0,
         "strictRefAtK": 41,
-        "softAliasAtK": 40
+        "softAliasAtK": 40,
+        "all_positive_without_structured_match": 4
       },
       "narrative_chronology": {
         "cases": 8,
@@ -86,7 +91,8 @@
         "unassessable": 0,
         "strictIdAtK": 0,
         "strictRefAtK": 3,
-        "softAliasAtK": 5
+        "softAliasAtK": 5,
+        "all_positive_without_structured_match": 4
       },
       "narrative_pattern": {
         "cases": 54,
@@ -97,7 +103,8 @@
         "unassessable": 0,
         "strictIdAtK": 0,
         "strictRefAtK": 26,
-        "softAliasAtK": 34
+        "softAliasAtK": 34,
+        "all_positive_without_structured_match": 20
       },
       "narrative_genealogy": {
         "cases": 3,
@@ -108,51 +115,56 @@
         "unassessable": 0,
         "strictIdAtK": 0,
         "strictRefAtK": 2,
-        "softAliasAtK": 2
+        "softAliasAtK": 2,
+        "all_positive_without_structured_match": 1
       },
       "real_world_material": {
         "cases": 14,
         "assessable": 8,
         "atK": 4,
         "afterK": 1,
-        "absent25": 9,
+        "absent25": 3,
         "unassessable": 6,
         "strictIdAtK": 3,
         "strictRefAtK": 1,
-        "softAliasAtK": 11
+        "softAliasAtK": 11,
+        "all_positive_without_structured_match": 9
       },
       "real_world_part_whole": {
         "cases": 4,
         "assessable": 2,
         "atK": 1,
         "afterK": 1,
-        "absent25": 2,
+        "absent25": 0,
         "unassessable": 2,
         "strictIdAtK": 1,
         "strictRefAtK": 1,
-        "softAliasAtK": 4
+        "softAliasAtK": 4,
+        "all_positive_without_structured_match": 2
       },
       "real_world_process": {
         "cases": 12,
         "assessable": 2,
         "atK": 0,
         "afterK": 0,
-        "absent25": 12,
+        "absent25": 2,
         "unassessable": 10,
         "strictIdAtK": 0,
         "strictRefAtK": 0,
-        "softAliasAtK": 8
+        "softAliasAtK": 8,
+        "all_positive_without_structured_match": 12
       },
       "real_world_property": {
         "cases": 10,
         "assessable": 2,
         "atK": 1,
         "afterK": 0,
-        "absent25": 9,
+        "absent25": 1,
         "unassessable": 8,
         "strictIdAtK": 1,
         "strictRefAtK": 0,
-        "softAliasAtK": 8
+        "softAliasAtK": 8,
+        "all_positive_without_structured_match": 9
       }
     },
     "top5_unique_query_family": {
@@ -177,8 +189,11 @@
       "Target IDs and witness refs are candidate retrieval proxies only, not proof of meaningful relationships.",
       "Word queries with no explicit ID/ref target are unassessable by strict screen. Soft alias matching has false positives.",
       "The verse reference screener equates point references inside returned verse ranges; approximate book aliases may miss some equivalents.",
-      "One live query reused for repeated benchmark cases as in previous unique-payload runs."
-    ]
+      "One live query reused for repeated benchmark cases as in previous unique-payload runs.",
+      "Corrected denominator accounting: absent_in25 excludes the 29 positive cases with no machine-checkable expected target; 49/186 assessable targets are absent, while 78/215 positives lack a structured match including unassessable cases."
+    ],
+    "all_positive_without_structured_target_match": 78,
+    "assessable_target_absent_in25": 49
   },
   "case_results": [
     {
