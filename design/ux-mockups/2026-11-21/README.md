@@ -1,24 +1,21 @@
-# BibleResearch UX Mockups — 2026-11-21
+# BibleResearch — Modern Discovery Workspace concept
 
-These are **static SVG design illustrations** for implementation planning, not screenshots of the currently deployed application. They supplement `UX_STRATEGY.md` and `research/r12/NEON_UX_IMPLEMENTATION_PROMPT.md`.
+![Modern BibleResearch research workspace](MODERN_DISCOVERY_CONCEPT.svg)
 
-| File | Focus |
-| --- | --- |
-| [01 Discovery workspace](01-discovery-workspace.svg) | Sticky research trail; full verse; rich original/transliteration/alternate meanings; evidence-first connections; local graph. |
-| [02 Chapter & interlinear](02-chapter-rich-interlinear.svg) | Seamless chapter mode; always-visible alternatives; structure and lexical repetition; concise word focus. |
-| [03 Passage comparison](03-side-by-side-verse-comparison.svg) | Pin A/B, both complete texts, verified alignment/highlights, drag-to-compare, comparison actions. |
-| [04 Context tools](04-context-tools-jerusalem-menorah-feasts.svg) | Jerusalem etymology hypotheses + map, Melchizedek family context, menorah object, Pesach calendar. |
-| [05 Mobile exploration](05-mobile-rabbit-hole.svg) | Compact fixed top trail, meaningful inline words, inspectable evidence, mobile next steps and actions. |
+**[Open the full-size modern UI concept](MODERN_DISCOVERY_CONCEPT.svg)**
 
-The screenshots are **concept mockups**, so the words and data shown inside are illustrative, not validated output from the live corpus. Source validation, graph edges, verse editions, and visual/citation accuracy are governed by the current project strategy.
+This **single modern vector concept** replaces the five older experimental SVG layouts. It is an **illustrative design**, not a screenshot or a final approved interface.
 
-## Core implementation rules
+The current approved source of functional UX requirements is the repository-root [UX_STRATEGY.md](../../UX_STRATEGY.md), updated November 22, 2026. The collaborative local-first implementation instructions are in [research/r12/NEON_UX_IMPLEMENTATION_PROMPT.md](../../research/r12/NEON_UX_IMPLEMENTATION_PROMPT.md).
 
-1. Build the reversible relationship path first: follow, fork, back/forward and inspect each edge; graph is an optional view over same state.
-2. Keep true WEB English verses and interlinear source glosses distinct; visible alternative meanings are lexical possibilities, not assigned contextual senses.
-3. Display original-language script, transliteration, observed English and selected root/other meanings without needing hover/click.
-4. Make comparison real, simultaneous and accessible; keyboard Pin A/B must work wherever drag-and-drop works.
-5. Keep Strong's, gematria and deep metadata discoverable but secondary.
-6. Do not copy visual claims (e.g., etymology/wordplay) into fact tables without a source; especially distinguish proposed name origin from biblical literary association.
+## What this concept explores
 
-See [UX_STRATEGY.md](../../UX_STRATEGY.md) for precise interaction algorithms, component ownership, acceptance tests and phased delivery.
+- Bible-first, spacious reading with the complete English WEB verse as a smaller heading and a visually dominant Hebrew interlinear flow, showing original script, transliteration, observed English and alternative sourced meanings.
+- A **fixed top research trail**, easy back/fork actions, search and verse/chapter selectors, and optional Hebrew LTR/RTL tile flow.
+- A contextual **Word Focus inspector** with lemma, senses, documented roots and spelling relatives, a compact relationship graph, and meaningful occurrences.
+- A **large passage relationship graph below the reader**, with distinguishable relation types and more/less important connections visible through zoom and exploration.
+- A modern visual language: restrained white/cream backgrounds, deep teal navigation, soft green/blue/lilac/gold evidence accents, large readable text and low-clutter controls.
+
+**No visual design is yet approved.** Neon should not blindly copy this illustration or use it instead of the user's live choices. User feedback while working in `npm run dev` is authoritative. All shown text, graph links and labels are illustrative; source evidence must be verified from the actual project.
+
+**Current resource:** [MODERN_DISCOVERY_CONCEPT.svg](MODERN_DISCOVERY_CONCEPT.svg).
