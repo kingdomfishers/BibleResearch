@@ -6,7 +6,7 @@
 
 This **single modern vector concept** replaces the five older experimental SVG layouts. It is an **illustrative design**, not a screenshot or a final approved interface.
 
-The current approved source of functional UX requirements is the repository-root [UX_STRATEGY.md](../../../UX_STRATEGY.md), updated November 22, 2026. The collaborative local-first implementation instructions are in [research/r12/NEON_UX_IMPLEMENTATION_PROMPT.md](../../../research/r12/NEON_UX_IMPLEMENTATION_PROMPT.md).
+The current approved source of functional UX requirements is the repository-root [UX_STRATEGY.md](../../../UX_STRATEGY.md), updated November 22, 2026. Implementation orchestration is provided directly in the current user-approved chat prompt; there is no separate GitHub orchestrator prompt.
 
 ## What this concept explores
 
