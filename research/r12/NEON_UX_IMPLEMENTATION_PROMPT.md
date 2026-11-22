@@ -40,7 +40,7 @@ Build an evidence-first Biblical research workspace using the existing component
 Other required capabilities, introduced when needed and shaped together:
 - A **compact fixed top research trail** (not a left-hand history accordion).
 - Scripture reading that seamlessly switches **verse ↔ context ↔ whole chapter**.
-- In the reader **without hover or click**: original Hebrew/Greek script, readable transliteration, current English gloss, a few different sourced English meanings and a short documented root where available. Actual WEB English text remains plainly readable; interlinear glosses are not WEB prose.
+- In **Verse** mode, without hover or click: original Hebrew/Greek script, readable transliteration, current English gloss and 2–3 distinct source-attested alternative meanings; **no root or spelling relatives in the reader**. Above this dominant interlinear, show the complete English WEB verse in smaller readable text. Hebrew token tiles flow left-to-right by default with a right-to-left layout toggle (Hebrew letters always render RTL). **Chapter** mode is continuous English only. Lemma/root/spelling relations belong to hover/Word Focus.
 - Hover/focus over a word adds detailed lemma, etymology, grammar and valuable evidence; hover/focus over a reference gives the **complete verse**.
 - **Word Focus** shows meaning, root/etymology, 4–6 diverse high-value connections and most useful occurrences first. Raw Strong's IDs, gematria, repetitive counts and technical metadata remain accessible but subordinate.
 - Two full passages visible simultaneously in **A/B comparison**, with source-grounded lexical/grammar highlights; drag a verse/word to a compare edge **after we agree on placement and behavior**, with equivalent keyboard/touch buttons.
@@ -58,7 +58,7 @@ Keep source identity, edition/homographs, exact verse evidence, relationship cla
 On the current localhost site, make the smallest usable demonstration of:
 
 1. A compact, fixed **top discovery trail** and Back/Fork action; clicking a graph node changes focus, hovering previews it and clicking an edge inspects its witnesses.
-2. The existing reader showing one actual verse with enough original script, transliteration and inline English alternatives to evaluate **reading density**.
+2. The existing reader showing one complete smaller English verse above a visually dominant original-script/transliteration/English/alternative-meaning interlinear flow, including a Hebrew word-order layout toggle; **no inline roots or spelling relations**.
 3. **Three to six real discovery suggestions** with inspectable evidence; follow one and return to the fork.
 4. A simple persistent evidence/word-details area or minimal drawer — whichever reuses most of the current code. **Treat its layout as provisional; I will decide after using it.**
 5. Keep an obvious way to pin the source verse and compare it with another verse; no sophisticated drag, charts, maps or polish yet.
@@ -91,7 +91,7 @@ Recommended order, **subject to my feedback**:
 
 1. **Relationship discovery flow:** can I see and follow interesting connections immediately, return to forks, and inspect the evidence?
 2. **Spatial layout:** how much width should Scripture receive versus relationship suggestions/inspector? Does the top trail fit naturally?
-3. **Interlinear density and word inspector:** which meanings/roots belong immediately in reading view; what is genuinely useful on word selection?
+3. **Interlinear density and word inspector:** refine visual density of the already-approved original/transliteration/English/alternative-meaning reader; root, lemma and 3–4 spelling relatives belong to Word Focus, not directly in the reader.
 4. **Comparison:** A/B arrangement, chapter expansion, matching colors, pin/drag/drop zones and accessibility.
 5. **Graph and quick notes:** where graph adds understanding beyond cards; how easy it feels to add a personal connection.
 6. **Only then selected contextual modules** (maps, genealogy, feasts, images, patterns) and final polish.
