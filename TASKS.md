@@ -183,3 +183,12 @@ Policy: Direct Live Development Policy remains active (implement, run focused te
     3. **Shared Compact Model & Composable Engine:** `word-model.ts` (shared `CompactWord` / `CompactConnection`, scoped geography & competing chronology, separated etymology vs spelling suggestions, optional realworld) and `research-engine.ts` (12 declarative allowlisted operations + `set_combine`, zero unsandboxed code execution).
     4. **7-Tool MCP & Docs:** `discovery-v2-tools.ts`, reusable `notes-write.ts` / `dlm-notes.ts` helpers, `index.ts` routing (`/mcp` + `/legacy/mcp`), `skills/bible-research/`, `MCP_SETUP.md`, `PROJECTMAP.md`, and `research/r12/MCP_IMPLEMENTATION_HANDOFF.md`.
     5. **Verification & Deployment:** Local stubbed tests + live discovery session probes (`Genesis 6:14`, `Zechariah 4`, `Ezekiel 1`, `Revelation 13`, `1 Corinthians 12:10–13:4`, `Ruach`) and live deployment to `bibleresearch-corpus` and `bible-mcp`.
+
+
+### Active: MCP v2 audit reliability repairs (2026-11-21)
+
+- [x] Reproduce archived P01-G01 inputs; repair canonical token/morpheme/word-form joins without changing discovery ranking or candidates.
+- [x] Verify shared lexical identities, homograph uncertainty, LXX direction/counts, etymology and spelling arithmetic; compact repeated output.
+- [x] Repair chain evidence/session handling, combined research/chronology/geography, and concise accurate guidelines.
+- [x] Run focused regression, build, security/permission checks without user-note writes; deploy main corpus/MCP, verify live. Final bounded live sweep passed 2026-11-22 (12 archived cases plus source parity, controls, concurrent research and chains). Corpus `93de1432-6121-4204-bf69-d6a3c547192e`; MCP v50. Earlier free-Worker CPU-limit failures and explicit partial-result handling remain documented limitations.
+- [ ] Commit/push intended changes and record exact versions, sizes, limitations and retest inputs in research/r12/MCP_V2_FIXES_HANDOFF.md.

@@ -2,6 +2,7 @@
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "bibleresearch-corpus",
   "main": "./scripts/corpus-worker.mjs",
+  "minify": true,
   "compatibility_date": "2026-11-02",
   "preview_urls": false,
   "assets": {

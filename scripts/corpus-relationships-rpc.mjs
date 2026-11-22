@@ -3185,12 +3185,18 @@ async function loadFastProfileByStrongs(ctx, bs) {
 }
 
 function compactClusterItem(c) {
+  const vidCount = Array.isArray(c?.vids) ? c.vids.length : (Array.isArray(c?.verses) ? c.verses.length : 0);
+  const count = typeof c?.count === 'number' && c.count > 0 ? c.count : vidCount;
+  const sampleRefs = Array.isArray(c?.sample_passages)
+    ? c.sample_passages.slice(0, 4).map((p) => p?.ref).filter(Boolean)
+    : [];
   return {
     cluster_id: c?.cluster_id ?? null,
     category: c?.category ?? null,
     label: c?.label ?? null,
-    count: c?.count ?? (Array.isArray(c?.verses) ? c.verses.length : 0),
-    ...(c?.summary ? { summary: String(c.summary).slice(0, 180) } : {}),
+    count,
+    ...(sampleRefs.length > 0 ? { sample_refs: sampleRefs } : {}),
+    ...(c?.summary ? { summary: String(c.summary).slice(0, 140) } : {}),
   };
 }
 
@@ -3356,73 +3362,111 @@ function parseJsonOrArrayParam(raw) {
   return [];
 }
 
-function extractStemLemmaKey(morphemes, fallbackStrongs) {
-  if (Array.isArray(morphemes)) {
-    const stem = morphemes.find(m => Array.isArray(m) && m[0] === 'stem' && m[1]);
-    if (stem) return stem[1];
-    for (let i = morphemes.length - 1; i >= 0; i--) {
-      const m = morphemes[i];
-      if (Array.isArray(m) && m[1] && !String(m[0] || '').startsWith('prefix_')) {
-        return m[1];
-      }
-    }
-  }
-  return fallbackStrongs ? `lemma:${fallbackStrongs}` : null;
+// Morpheme links enumerate possible lemma identities, not a ranked sense selection.
+function stemLemmaKeys(morphemes, strongs) {
+  const target = paddedStrongs(strongs);
+  return [...new Set((Array.isArray(morphemes) ? morphemes : [])
+    .filter(m => Array.isArray(m) && m[0] === 'stem' && typeof m[1] === 'string')
+    .map(m => m[1]).filter(lk => paddedStrongs(lk.replace(/^lemma:/i, '')) === target))];
 }
 
-function normalizeTokenList(liteVerse, fastVerse) {
-  const liteRows = Array.isArray(liteVerse?.t) ? liteVerse.t : [];
-  const liteByWn = new Map();
-  for (const row of liteRows) {
-    if (Array.isArray(row)) liteByWn.set(Number(row[0]), row);
-  }
+function cleanSurfaceDisplay(s) {
+  return String(s ?? '').replace(/\s*׃\s*[פס]\s*$/u, '׃').trim();
+}
 
-  const fvToks = Array.isArray(fastVerse?.toks) ? fastVerse.toks : null;
-  if (fvToks) {
-    return fvToks.map((tok) => {
-      const wn = Number(tok.wn);
-      const liteRow = liteByWn.get(wn);
-      const rawStrongs = tok.s ?? liteRow?.[3] ?? null;
-      const norm = rawStrongs ? normalizeStrongsBase(rawStrongs) : null;
-      const strongs = norm ? norm.padded : (rawStrongs || null);
-      const rawAll = Array.isArray(tok.all_s) && tok.all_s.length > 0 ? tok.all_s : (strongs ? [strongs] : []);
-      const allStrongs = [];
-      const seenS = new Set();
-      for (const item of rawAll) {
-        const padded = normalizeStrongsBase(item)?.padded || String(item || '').trim();
-        if (padded && !seenS.has(padded)) {
-          seenS.add(padded);
-          allStrongs.push(padded);
-        }
-      }
+function stripConsonants(s) {
+  return cleanSurfaceDisplay(s)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f\u0591-\u05c7\u05be\u05c0\u05c3\u05c6]/g, '')
+    .replace(/[^\p{L}]/gu, '')
+    .toLowerCase();
+}
+
+function paddedStrongs(raw) {
+  if (!raw) return null;
+  return normalizeStrongsBase(raw)?.padded || String(raw).trim();
+}
+
+/**
+ * chapter-lite (liteVerse.t) is the canonical token spine: positions and word_ids are 1:1 with
+ * the lexical word table. fast-verses (fastVerse.toks) uses its own numbering that skips positions
+ * in ~1,100 verses and differs in token count in ~670, so it may only enrich a lite token after a
+ * monotone surface/Strong's match; it is never joined by position number.
+ */
+export function normalizeTokenList(liteVerse, fastVerse) {
+  const liteRows = Array.isArray(liteVerse?.t) ? liteVerse.t.filter(Array.isArray) : [];
+  const fvToks = Array.isArray(fastVerse?.toks) ? fastVerse.toks : [];
+
+  if (liteRows.length === 0) {
+    // No canonical spine: expose fast-verse tokens without word identity rather than guessing one.
+    return fvToks.map((tok, i) => {
+      const strongs = paddedStrongs(tok.s);
       return {
-        position: wn,
-        word_id: liteRow ? (liteRow[1] ?? null) : null,
-        surface: tok.sf ?? liteRow?.[2] ?? null,
+        position: i + 1,
+        word_id: null,
+        surface: tok.sf ?? null,
         lemma: tok.lm ?? null,
-        lemma_key: extractStemLemmaKey(liteRow?.[4], strongs),
+        lemma_key: strongs ? `lemma:${strongs}` : null,
         strongs,
-        all_strongs: allStrongs,
+        all_strongs: strongs ? [strongs] : [],
         gloss: tok.g ?? null,
         pos_class: tok.cl ?? null,
+        alignment: 'fast_verse_only',
       };
     });
   }
 
-  return liteRows.map((row) => {
-    const wn = Number(row[0]);
-    const rawStrongs = row[3] ?? null;
-    const strongs = rawStrongs ? (normalizeStrongsBase(rawStrongs)?.padded || rawStrongs) : null;
+  // Keep only pairs present in every optimal sequence alignment. A repeated form
+  // next to an omitted token must not inherit a later occurrence's contextual gloss.
+  const keys = liteRows.map(r => [stripConsonants(r[2]), paddedStrongs(r[3])]);
+  const fastKeys = fvToks.map(t => [stripConsonants(t.sf), paddedStrongs(t.s)]);
+  const matches = (i, j) => Boolean(keys[i][0] && keys[i][0] === fastKeys[j][0]
+    && keys[i][1] && keys[i][1] === fastKeys[j][1]);
+  const n = liteRows.length, m = fvToks.length;
+  const identical = n === m && keys.every((_, i) => matches(i, i));
+  const prefix = identical ? [] : Array.from({ length: n + 1 }, () => new Uint16Array(m + 1));
+  const suffix = identical ? [] : Array.from({ length: n + 1 }, () => new Uint16Array(m + 1));
+  if (!identical) for (let i = 0; i < n; i++) for (let j = 0; j < m; j++) {
+    prefix[i + 1][j + 1] = Math.max(prefix[i][j + 1], prefix[i + 1][j],
+      matches(i, j) ? prefix[i][j] + 1 : 0);
+  }
+  if (!identical) for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) {
+    suffix[i][j] = Math.max(suffix[i + 1][j], suffix[i][j + 1],
+      matches(i, j) ? suffix[i + 1][j + 1] + 1 : 0);
+  }
+  const best = identical ? n : prefix[n][m];
+  return liteRows.map((row, i) => {
+    const surface = row[2] != null ? cleanSurfaceDisplay(row[2]) : null;
+    const strongs = paddedStrongs(row[3]);
+    let matched = null;
+    const candidates = [];
+    let canSkip = false;
+    if (!identical) for (let j = 0; j <= m; j++) {
+      if (prefix[i][j] + suffix[i + 1][j] === best) canSkip = true;
+      if (j < m && matches(i, j) && prefix[i][j] + 1 + suffix[i + 1][j + 1] === best) candidates.push(j);
+    }
+    if (identical) matched = fvToks[i];
+    else if (!canSkip && candidates.length === 1) matched = fvToks[candidates[0]];
+    const primaryMatches = Boolean(matched && strongs && paddedStrongs(matched.s) === strongs);
+    const lemmaKeys = stemLemmaKeys(row[4], strongs);
+    const allStrongs = [];
+    const seen = new Set();
+    const morphemeStrongs = (Array.isArray(row[4]) ? row[4] : []).filter(Array.isArray).map(m => paddedStrongs(String(m[1] || '').replace(/^lemma:/i, '')));
+    for (const s of [strongs, ...morphemeStrongs]) {
+      if (s && !seen.has(s)) { seen.add(s); allStrongs.push(s); }
+    }
     return {
-      position: wn,
+      position: Number(row[0]),
       word_id: row[1] ?? null,
-      surface: row[2] ?? null,
-      lemma: null,
-      lemma_key: extractStemLemmaKey(row[4], strongs),
+      surface,
+      lemma: primaryMatches ? (matched.lm ?? null) : null,
+      lemma_key: lemmaKeys.length === 1 ? lemmaKeys[0] : (strongs ? 'lemma:' + strongs : null),
+      ...(lemmaKeys.length > 1 ? { lemma_candidates: lemmaKeys, sense_status: 'ambiguous_source_links' } : {}),
       strongs,
-      all_strongs: strongs ? [strongs] : [],
-      gloss: null,
-      pos_class: null,
+      all_strongs: allStrongs,
+      gloss: matched?.g ?? null,
+      pos_class: matched?.cl ?? null,
+      ...(!matched ? { alignment: 'canonical_only' } : {}),
     };
   });
 }
@@ -3631,6 +3675,7 @@ export async function handleGetPassageCompactV1(ctx, params = {}) {
   const includeProfiles = parseBoolParam(params.include_profiles, true);
   const profileLimit = Math.min(30, Math.max(0, Math.floor(Number(params.profile_limit ?? 24))));
   const profiles = {};
+  let profilePlan = null;
 
   if (includeProfiles && profileLimit > 0 && freqByStrongs.size > 0) {
     const candidateStrongs = [...freqByStrongs.entries()]
@@ -3638,6 +3683,9 @@ export async function handleGetPassageCompactV1(ctx, params = {}) {
       .slice(0, Math.min(profileLimit + 6, 36))
       .map(([bs]) => bs);
 
+    if (parseBoolParam(params.defer_profiles, false)) {
+      profilePlan = { limit: profileLimit, candidates: candidateStrongs.map(bs => ({ bs, freq: freqByStrongs.get(bs) || 0 })) };
+    } else {
     const decodedProfiles = await Promise.all(candidateStrongs.map(bs => loadFastProfileByStrongs(ctx, bs)));
     const valid = [];
     for (let i = 0; i < candidateStrongs.length; i++) {
@@ -3660,6 +3708,7 @@ export async function handleGetPassageCompactV1(ctx, params = {}) {
     for (const item of valid.slice(0, profileLimit)) {
       profiles[item.bs] = projectCompactProfile(item.prof);
     }
+    }
   }
 
   return {
@@ -3673,6 +3722,7 @@ export async function handleGetPassageCompactV1(ctx, params = {}) {
     },
     verses,
     profiles,
+    ...(profilePlan ? { profile_plan: profilePlan } : {}),
   };
 }
 

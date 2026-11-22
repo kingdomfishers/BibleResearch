@@ -13,6 +13,7 @@ import { RESEARCH_TOOL_NAMES } from './workflow-contract.ts';
 import { createNotesWriter, registerNoteWriteTools, type NotesWriter } from './notes-write.ts';
 import { registerDlmWriteTools } from './dlm-notes.ts';
 import { createChainStore } from './chain-store.ts';
+import { formatRef } from './bible-ref.ts';
 import { createDiscoveryV2Server, V2_READ_TOOL_NAMES } from './discovery-v2-tools.ts';
 
 // === @section:types ===
@@ -176,7 +177,7 @@ export function createDatabaseReader(
       await res.body?.cancel();
       res = await fetcher(url, req);
     }
-    if (!res.ok) return [];
+    if (!res.ok) throw new Error(`Bible data source unavailable (HTTP ${res.status}).`);
     const data = await res.json();
     return Array.isArray(data) ? (data as Record<string, unknown>[]) : [];
   }
@@ -251,16 +252,14 @@ export function createDatabaseReader(
         ? [...new Set(args.word_ids.map(Number).filter(n => Number.isInteger(n) && n > 0))]
         : [];
       const chunks: number[][] = [];
-      for (let i = 0; i < ids.length && chunks.length < 4; i += 100) {
+      for (let i = 0; i < ids.length; i += 100) {
         chunks.push(ids.slice(i, i + 100));
       }
-      const pages = await Promise.all(
-        chunks.map(c =>
-          publicRestGet(
-            `/rest/v1/words?id=in.(${c.join(',')})&select=${wordColumns},gematria`,
-          ),
-        ),
-      );
+      const pages: Record<string, unknown>[][] = [];
+      for (let i = 0; i < chunks.length; i += 4) {
+        pages.push(...await Promise.all(chunks.slice(i, i + 4).map(c =>
+          publicRestGet(`/rest/v1/words?id=in.(${c.join(',')})&select=${wordColumns},gematria`))));
+      }
       const rows = pages.flat();
       return {
         source: 'live',
@@ -313,15 +312,16 @@ export function createDatabaseReader(
       const places = placesRaw.map(p => {
         const pid = Number(p.id);
         const loc = locByPid.get(pid);
-        const linkedPassages: string[] = [];
+        const linkedPassages: Record<string, unknown>[] = [];
         for (const pg of pgRows) {
           if (Number(pg.place_id) !== pid) continue;
-          const ref = `${pg.book}:${pg.start_chapter}:${pg.start_verse}`;
-          linkedPassages.push(pg.title ? `${ref} (${pg.title})` : ref);
+          const start = formatRef(Number(pg.book), Number(pg.start_chapter), Number(pg.start_verse));
+          const end = formatRef(Number(pg.book), Number(pg.end_chapter), Number(pg.end_verse));
+          linkedPassages.push({ ref: start === end ? start : `${start}-${end}`, relationship_type: pg.relationship_type, passage_key: pg.passage_key, title: pg.title });
         }
         for (const vg of vgRows) {
           if (Number(vg.place_id) !== pid) continue;
-          if (typeof vg.evidence_ref === 'string' && vg.evidence_ref) linkedPassages.push(vg.evidence_ref);
+          linkedPassages.push({ ref: vg.evidence_ref || null, verse_id: vg.verse_id, relationship_type: vg.relationship_type });
         }
         return {
           place: p.biblical_name,
@@ -331,7 +331,8 @@ export function createDatabaseReader(
           modern_name: loc?.modern_name ?? null,
           lat: typeof loc?.latitude === 'number' ? loc.latitude : null,
           lon: typeof loc?.longitude === 'number' ? loc.longitude : null,
-          linked_passages: [...new Set(linkedPassages)].slice(0, 12),
+          linked_passages: [...new Map(linkedPassages.map(x => [JSON.stringify(x), x])).values()].slice(0, 12),
+          linked_passages_truncated: linkedPassages.length > 12 || pgRows.length === 40 || vgRows.length === 40,
         };
       });
       return { source: 'live', rows: [{ places }], page: { limit: 1, offset: 0, has_more: false, next_offset: null } };
@@ -407,13 +408,6 @@ export function createDatabaseReader(
 
 // === @section:logic:transport ===
 export function createApp(config: DatabaseConfig, fetcher: typeof fetch = fetch) {
-  let requestHeaders: Headers | undefined;
-  let requestPath = '/';
-  const read = createDatabaseReader(config, fetcher, () => {
-    if (config.corpusUrl) return config.corpusUrl;
-    if (requestPath.includes('bible-mcp-staging')) return DEFAULT_STAGING_CORPUS_URL;
-    return DEFAULT_CORPUS_URL;
-  });
   let writer: NotesWriter | null = null;
   if (config.serviceRoleKey) {
     writer = createNotesWriter({
@@ -426,19 +420,6 @@ export function createApp(config: DatabaseConfig, fetcher: typeof fetch = fetch)
     config.serviceRoleKey ? { url: config.url, serviceRoleKey: config.serviceRoleKey } : null,
     fetcher,
   );
-  const v2Mcp = createMcpHandler(() => {
-    const reqHeaders = requestHeaders;
-    return createDiscoveryV2Server(read, writer, chainStore, () => reqHeaders);
-  }, { maxRequestBodySize: 32768 });
-  const legacyMcp = createMcpHandler(() => {
-    const reqHeaders = requestHeaders;
-    const server = createResearchServer(read);
-    if (writer) {
-      registerNoteWriteTools(server, writer, () => reqHeaders, read);
-      registerDlmWriteTools(server, read, writer, () => reqHeaders);
-    }
-    return server;
-  }, { maxRequestBodySize: 32768 });
   const v2Paths = new Set(['/', '/mcp', '/bible-mcp', '/bible-mcp/mcp',
     '/functions/v1/bible-mcp', '/functions/v1/bible-mcp/mcp',
     '/bible-mcp-staging', '/bible-mcp-staging/mcp',
@@ -458,7 +439,6 @@ export function createApp(config: DatabaseConfig, fetcher: typeof fetch = fetch)
   };
   return async (request: Request): Promise<Response> => {
     const path = new URL(request.url).pathname.replace(/\/+$/, '') || '/';
-    requestPath = path;
     if (request.method === 'OPTIONS') return withCors(new Response(null, { status: 204 }));
     if (request.method === 'GET' && path.endsWith('/health')) {
       const writesEnabled = Boolean(writer);
@@ -500,7 +480,22 @@ export function createApp(config: DatabaseConfig, fetcher: typeof fetch = fetch)
     }
     const isLegacy = legacyPaths.has(path);
     if (!v2Paths.has(path) && !isLegacy) return withCors(Response.json({ error: 'Not found' }, { status: 404 }));
-    requestHeaders = request.headers;
+    const corpusUrl = config.corpusUrl || (path.includes('bible-mcp-staging') ? DEFAULT_STAGING_CORPUS_URL : DEFAULT_CORPUS_URL);
+    const read = createDatabaseReader({ ...config, corpusUrl }, fetcher);
+  const v2Mcp = createMcpHandler(() => {
+    const reqHeaders = request.headers;
+    return createDiscoveryV2Server(read, writer, chainStore, () => reqHeaders);
+  }, { maxRequestBodySize: 32768 });
+  const legacyMcp = createMcpHandler(() => {
+    const reqHeaders = request.headers;
+    const server = createResearchServer(read);
+    if (writer) {
+      registerNoteWriteTools(server, writer, () => reqHeaders, read);
+      registerDlmWriteTools(server, read, writer, () => reqHeaders);
+    }
+    return server;
+  }, { maxRequestBodySize: 32768 });
+
     try { return withCors(await (isLegacy ? legacyMcp : v2Mcp).fetch(request)); }
     catch {
       console.error('BibleResearch MCP transport failed');

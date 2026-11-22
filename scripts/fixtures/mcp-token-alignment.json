@@ -1,0 +1,3250 @@
+{
+  "source": "Public STEP canonical chapter-lite r8-v1.2, MACULA fast-verses r11-v1.0, read-only words snapshot 2026-11-21. Preserve source attribution in repository corpus notices.",
+  "fixtures": [
+    {
+      "ref": "Zechariah 4:2",
+      "verse_id": 23041,
+      "lite": {
+        "web": "He said to me, “What do you see?” I said, “I have seen, and behold, a lamp stand all of gold, with its bowl on the top of it, and its seven lamps on it; there are seven pipes to each of the lamps which are on the top of it;",
+        "t": [
+          [
+            1,
+            35447,
+            "וַיֹּ֣אמֶר",
+            "H559",
+            [
+              [
+                "prefix_conjunction",
+                "lemma:H9002"
+              ],
+              [
+                "stem",
+                "lemma:H0559"
+              ]
+            ]
+          ],
+          [
+            2,
+            33111,
+            "אֵלַ֔י",
+            "H413",
+            [
+              [
+                "prefix_preposition",
+                "lemma:H9003"
+              ],
+              [
+                "stem",
+                "lemma:H0413"
+              ]
+            ]
+          ],
+          [
+            3,
+            86639,
+            "מָ֥ה",
+            "H4100",
+            [
+              [
+                "stem",
+                "lemma:H4100"
+              ]
+            ]
+          ],
+          [
+            4,
+            40148,
+            "אַתָּ֖ה",
+            "H859",
+            [
+              [
+                "stem",
+                "lemma:H0859A"
+              ]
+            ]
+          ],
+          [
+            5,
+            128742,
+            "רֹאֶ֑ה",
+            "H7200",
+            [
+              [
+                "stem",
+                "lemma:H7200N"
+              ],
+              [
+                "stem",
+                "lemma:H7200G"
+              ]
+            ]
+          ],
+          [
+            6,
+            35557,
+            "וָאֹמַ֡ר",
+            "H559",
+            [
+              [
+                "prefix_conjunction",
+                "lemma:H9002"
+              ],
+              [
+                "stem",
+                "lemma:H0559"
+              ]
+            ]
+          ],
+          [
+            7,
+            128692,
+            "רָאִ֣יתִי׀",
+            "H7200",
+            [
+              [
+                "stem",
+                "lemma:H7200N"
+              ],
+              [
+                "stem",
+                "lemma:H7200G"
+              ]
+            ]
+          ],
+          [
+            8,
+            57816,
+            "וְהִנֵּ֣ה",
+            "H2009",
+            [
+              [
+                "prefix_conjunction",
+                "lemma:H9002"
+              ],
+              [
+                "stem",
+                "lemma:H2009"
+              ]
+            ]
+          ],
+          [
+            9,
+            91302,
+            "מְנוֹרַת֩",
+            "H4501",
+            [
+              [
+                "stem",
+                "lemma:H4501"
+              ]
+            ]
+          ],
+          [
+            10,
+            59034,
+            "זָהָ֨ב",
+            "H2091",
+            [
+              [
+                "stem",
+                "lemma:H2091"
+              ]
+            ]
+          ],
+          [
+            11,
+            79865,
+            "כֻּלָּ֜הּ",
+            "H3605",
+            [
+              [
+                "stem",
+                "lemma:H3605"
+              ]
+            ]
+          ],
+          [
+            12,
+            50648,
+            "וְגֻלָּ֣הּ",
+            "H1543",
+            [
+              [
+                "prefix_conjunction",
+                "lemma:H9002"
+              ],
+              [
+                "stem",
+                "lemma:H1543"
+              ]
+            ]
+          ],
+          [
+            13,
+            110272,
+            "עַל־",
+            "H5921",
+            [
+              [
+                "stem",
+                "lemma:H5921A"
+              ]
+            ]
+          ],
+          [
+            14,
+            129219,
+            "רֹאשָׁ֗הּ",
+            "H7218",
+            [
+              [
+                "stem",
+                "lemma:H7218B"
+              ],
+              [
+                "stem",
+                "lemma:H7218A"
+              ]
+            ]
+          ],
+          [
+            15,
+            134980,
+            "וְשִׁבְעָ֤ה",
+            "H7651",
+            [
+              [
+                "prefix_conjunction",
+                "lemma:H9002"
+              ],
+              [
+                "stem",
+                "lemma:H7651"
+              ]
+            ]
+          ],
+          [
+            16,
+            99243,
+            "נֵרֹתֶ֙יהָ֙",
+            "H5216",
+            [
+              [
+                "stem",
+                "lemma:H5216B"
+              ],
+              [
+                "stem",
+                "lemma:H5216a"
+              ]
+            ]
+          ],
+          [
+            17,
+            110317,
+            "עָלֶ֔יהָ",
+            "H5921",
+            [
+              [
+                "prefix_preposition",
+                "lemma:H9003"
+              ],
+              [
+                "stem",
+                "lemma:H5921A"
+              ]
+            ]
+          ],
+          [
+            18,
+            135053,
+            "שִׁבְעָ֤ה",
+            "H7651",
+            [
+              [
+                "stem",
+                "lemma:H7651"
+              ]
+            ]
+          ],
+          [
+            19,
+            134989,
+            "וְשִׁבְעָה֙",
+            "H7651",
+            [
+              [
+                "prefix_conjunction",
+                "lemma:H9002"
+              ],
+              [
+                "stem",
+                "lemma:H7651"
+              ]
+            ]
+          ],
+          [
+            20,
+            87223,
+            "מֽוּצָק֔וֹת",
+            "H4166",
+            [
+              [
+                "stem",
+                "lemma:H4166"
+              ]
+            ]
+          ],
+          [
+            21,
+            99225,
+            "לַנֵּר֖וֹת",
+            "H5216",
+            [
+              [
+                "prefix_preposition",
+                "lemma:H9003"
+              ],
+              [
+                "stem",
+                "lemma:H5216B"
+              ],
+              [
+                "stem",
+                "lemma:H5216a"
+              ]
+            ]
+          ],
+          [
+            22,
+            39326,
+            "אֲשֶׁ֥ר",
+            "H834",
+            [
+              [
+                "stem",
+                "lemma:H0834A"
+              ]
+            ]
+          ],
+          [
+            23,
+            110272,
+            "עַל־",
+            "H5921",
+            [
+              [
+                "stem",
+                "lemma:H5921A"
+              ]
+            ]
+          ],
+          [
+            24,
+            129220,
+            "רֹאשָֽׁהּ׃",
+            "H7218",
+            [
+              [
+                "stem",
+                "lemma:H7218A"
+              ]
+            ]
+          ]
+        ]
+      },
+      "fast": {
+        "book": 38,
+        "chapter": 4,
+        "verse": 2,
+        "ref": "Zechariah 4:2",
+        "en": "He said to me, “What do you see?” I said, “I have seen, and behold, a lamp stand all of gold, with its bowl on the top of it, and its seven lamps on it; there are seven pipes to each of the lamps which are on the top of it;",
+        "toks": [
+          {
+            "wn": 1,
+            "sf": "וַיֹּ֣אמֶר",
+            "lm": "אָמַר",
+            "s": "H0559",
+            "all_s": [
+              "H2050",
+              "H0559"
+            ],
+            "g": "and he.said",
+            "cl": "verb"
+          },
+          {
+            "wn": 2,
+            "sf": "אֵלַ֔י",
+            "lm": "הוּא",
+            "s": "H2967",
+            "all_s": [
+              "H0413",
+              "H2967"
+            ],
+            "g": "to me",
+            "cl": "pron"
+          },
+          {
+            "wn": 3,
+            "sf": "מָ֥ה",
+            "lm": "מָה",
+            "s": "H4100",
+            "g": "what?",
+            "cl": "pron"
+          },
+          {
+            "wn": 4,
+            "sf": "אַתָּ֖ה",
+            "lm": "אַתָּה",
+            "s": "H0859",
+            "g": "[are].you",
+            "cl": "pron"
+          },
+          {
+            "wn": 5,
+            "sf": "רֹאֶ֑ה",
+            "lm": "רָאָה",
+            "s": "H7200",
+            "g": "seeing",
+            "cl": "verb"
+          },
+          {
+            "wn": 7,
+            "sf": "וָאֹמַ֡ר",
+            "lm": "אָמַר",
+            "s": "H0559",
+            "all_s": [
+              "H2050",
+              "H0559"
+            ],
+            "g": "and I.said",
+            "cl": "verb"
+          },
+          {
+            "wn": 8,
+            "sf": "רָאִ֣יתִי",
+            "lm": "רָאָה",
+            "s": "H7200",
+            "g": "I.see",
+            "cl": "verb"
+          },
+          {
+            "wn": 9,
+            "sf": "וְהִנֵּ֣ה",
+            "lm": "הִנֵּה",
+            "s": "H2009",
+            "all_s": [
+              "H2050",
+              "H2009"
+            ],
+            "g": "and there!",
+            "cl": "ij"
+          },
+          {
+            "wn": 10,
+            "sf": "מְנוֹרַת֩",
+            "lm": "מְנוֹרָה",
+            "s": "H4501",
+            "g": "a.lampstand",
+            "cl": "noun"
+          },
+          {
+            "wn": 11,
+            "sf": "זָהָ֨ב",
+            "lm": "זָהָב",
+            "s": "H2091",
+            "g": "of.gold",
+            "cl": "noun"
+          },
+          {
+            "wn": 12,
+            "sf": "כֻּלָּ֜הּ",
+            "lm": "כֹּל",
+            "s": "H3605",
+            "all_s": [
+              "H3605",
+              "H1886"
+            ],
+            "g": "of.it all",
+            "cl": "noun"
+          },
+          {
+            "wn": 13,
+            "sf": "וְגֻלָּ֣הּ",
+            "lm": "גֻּלָּה",
+            "s": "H1543",
+            "all_s": [
+              "H2050",
+              "H1543"
+            ],
+            "g": "and a.bowl",
+            "cl": "noun"
+          },
+          {
+            "wn": 14,
+            "sf": "עַל",
+            "lm": "עַל",
+            "s": "H5921",
+            "g": "[is].on",
+            "cl": "prep"
+          },
+          {
+            "wn": 15,
+            "sf": "רֹאשָׁ֗הּ",
+            "lm": "רֹאשׁ",
+            "s": "H7218",
+            "all_s": [
+              "H7218",
+              "H1886"
+            ],
+            "g": "top its",
+            "cl": "noun"
+          },
+          {
+            "wn": 16,
+            "sf": "וְשִׁבְעָ֤ה",
+            "lm": "שֶׁבַע",
+            "s": "H7651",
+            "all_s": [
+              "H2050",
+              "H7651"
+            ],
+            "g": "and seven",
+            "cl": "num"
+          },
+          {
+            "wn": 17,
+            "sf": "נֵרֹתֶ֨יהָ֙",
+            "lm": "נֵר",
+            "s": "H5216",
+            "all_s": [
+              "H5216",
+              "H1886"
+            ],
+            "g": "lamps its",
+            "cl": "noun"
+          },
+          {
+            "wn": 18,
+            "sf": "עָלֶ֔יהָ",
+            "lm": "הוּא",
+            "s": "H1886",
+            "all_s": [
+              "H5921",
+              "H1886"
+            ],
+            "g": "[are].on it",
+            "cl": "pron"
+          },
+          {
+            "wn": 19,
+            "sf": "שִׁבְעָ֤ה",
+            "lm": "שֶׁבַע",
+            "s": "H7651",
+            "g": "seven",
+            "cl": "num"
+          },
+          {
+            "wn": 20,
+            "sf": "וְשִׁבְעָה֙",
+            "lm": "שֶׁבַע",
+            "s": "H7651",
+            "all_s": [
+              "H2050",
+              "H7651"
+            ],
+            "g": "and seven",
+            "cl": "num"
+          },
+          {
+            "wn": 21,
+            "sf": "מֽוּצָק֔וֹת",
+            "lm": "מוּצֶקֶת",
+            "s": "H4166",
+            "g": "pipes",
+            "cl": "noun"
+          },
+          {
+            "wn": 22,
+            "sf": "לַנֵּר֖וֹת",
+            "lm": "נֵר",
+            "s": "H5216",
+            "all_s": [
+              "H3807",
+              "H1886",
+              "H5216"
+            ],
+            "g": "[belong].to the lamps",
+            "cl": "noun"
+          },
+          {
+            "wn": 23,
+            "sf": "אֲשֶׁ֥ר",
+            "lm": "אֲשֶׁר",
+            "s": "H0834",
+            "g": "which",
+            "cl": "rel"
+          },
+          {
+            "wn": 24,
+            "sf": "עַל",
+            "lm": "עַל",
+            "s": "H5921",
+            "g": "[are].on",
+            "cl": "prep"
+          },
+          {
+            "wn": 25,
+            "sf": "רֹאשָֽׁהּ",
+            "lm": "רֹאשׁ",
+            "s": "H7218",
+            "all_s": [
+              "H7218",
+              "H1886"
+            ],
+            "g": "top its",
+            "cl": "noun"
+          }
+        ]
+      },
+      "words": [
+        {
+          "id": 33111,
+          "strongs_nr": "H413",
+          "original_word": "אֵלַ֔י",
+          "transliteration": "'e.Lai",
+          "grammar_code": "HR/Sp1bs"
+        },
+        {
+          "id": 35447,
+          "strongs_nr": "H559",
+          "original_word": "וַיֹּ֣אמֶר",
+          "transliteration": "vai.Yo.mer",
+          "grammar_code": "Hc/Vqw3ms"
+        },
+        {
+          "id": 35557,
+          "strongs_nr": "H559",
+          "original_word": "וָאֹמַ֡ר",
+          "transliteration": "vai.yo.mer",
+          "grammar_code": "Hc/Vqw1cs"
+        },
+        {
+          "id": 39326,
+          "strongs_nr": "H834",
+          "original_word": "אֲשֶׁ֥ר",
+          "transliteration": "'a.Sher",
+          "grammar_code": "HTr"
+        },
+        {
+          "id": 40148,
+          "strongs_nr": "H859",
+          "original_word": "אַתָּ֖ה",
+          "transliteration": "'a.Tah",
+          "grammar_code": "HPp2ms"
+        },
+        {
+          "id": 50648,
+          "strongs_nr": "H1543",
+          "original_word": "וְגֻלָּ֣הּ",
+          "transliteration": "ve.gu.Lah",
+          "grammar_code": "HC/Ncfsa"
+        },
+        {
+          "id": 57816,
+          "strongs_nr": "H2009",
+          "original_word": "וְהִנֵּ֣ה",
+          "transliteration": "ve.hi.Neh",
+          "grammar_code": "HC/Tj"
+        },
+        {
+          "id": 59034,
+          "strongs_nr": "H2091",
+          "original_word": "זָהָ֨ב",
+          "transliteration": "za.Hav",
+          "grammar_code": "HNcmsa"
+        },
+        {
+          "id": 79865,
+          "strongs_nr": "H3605",
+          "original_word": "כֻּלָּ֜הּ",
+          "transliteration": "ku.Lah",
+          "grammar_code": "HNcmsc/Sp3fs"
+        },
+        {
+          "id": 86639,
+          "strongs_nr": "H4100",
+          "original_word": "מָ֥ה",
+          "transliteration": "mah",
+          "grammar_code": "HPi"
+        },
+        {
+          "id": 87223,
+          "strongs_nr": "H4166",
+          "original_word": "מֽוּצָק֔וֹת",
+          "transliteration": "mu.tza.Kot",
+          "grammar_code": "HNcfpa"
+        },
+        {
+          "id": 91302,
+          "strongs_nr": "H4501",
+          "original_word": "מְנוֹרַת֩",
+          "transliteration": "me.no.Rat",
+          "grammar_code": "HNcfsc"
+        },
+        {
+          "id": 99225,
+          "strongs_nr": "H5216",
+          "original_word": "לַנֵּר֖וֹת",
+          "transliteration": "la.ne.Rot",
+          "grammar_code": "HRd/Ncfpa"
+        },
+        {
+          "id": 99243,
+          "strongs_nr": "H5216",
+          "original_word": "נֵרֹתֶ֙יהָ֙",
+          "transliteration": "ne.ro.Tei.ha",
+          "grammar_code": "HNcfpc/Sp3fs"
+        },
+        {
+          "id": 110272,
+          "strongs_nr": "H5921",
+          "original_word": "עַל־",
+          "transliteration": "'al-",
+          "grammar_code": "HR"
+        },
+        {
+          "id": 110317,
+          "strongs_nr": "H5921",
+          "original_word": "עָלֶ֔יהָ",
+          "transliteration": "'a.Lei.ha",
+          "grammar_code": "HR/Sp3fs"
+        },
+        {
+          "id": 128692,
+          "strongs_nr": "H7200",
+          "original_word": "רָאִ֣יתִי׀",
+          "transliteration": "ra.'I.ti",
+          "grammar_code": "HVqp1cs"
+        },
+        {
+          "id": 128742,
+          "strongs_nr": "H7200",
+          "original_word": "רֹאֶ֑ה",
+          "transliteration": "ro.'Eh",
+          "grammar_code": "HVqrmsa"
+        },
+        {
+          "id": 129219,
+          "strongs_nr": "H7218",
+          "original_word": "רֹאשָׁ֗הּ",
+          "transliteration": "ro.Shah",
+          "grammar_code": "HNcmsc/Sp3fs"
+        },
+        {
+          "id": 129220,
+          "strongs_nr": "H7218",
+          "original_word": "רֹאשָֽׁהּ׃",
+          "transliteration": "ro.Shah",
+          "grammar_code": "HNcmsc/Sp3fs"
+        },
+        {
+          "id": 134980,
+          "strongs_nr": "H7651",
+          "original_word": "וְשִׁבְעָ֤ה",
+          "transliteration": "ve.shiv.'Ah",
+          "grammar_code": "HC/Ncbsa"
+        },
+        {
+          "id": 134989,
+          "strongs_nr": "H7651",
+          "original_word": "וְשִׁבְעָה֙",
+          "transliteration": "ve.shiv.'Ah",
+          "grammar_code": "HC/Ncbsa"
+        },
+        {
+          "id": 135053,
+          "strongs_nr": "H7651",
+          "original_word": "שִׁבְעָ֤ה",
+          "transliteration": "shiv.'Ah",
+          "grammar_code": "HNcbsa"
+        }
+      ]
+    },
+    {
+      "ref": "Genesis 6:14",
+      "verse_id": 152,
+      "lite": {
+        "web": "Make a ship of gopher wood. You shall make rooms in the ship, and shall seal it inside and outside with pitch.",
+        "t": [
+          [
+            1,
+            115714,
+            "עֲשֵׂ֤ה",
+            "H6213",
+            [
+              [
+                "stem",
+                "lemma:H6213H"
+              ]
+            ]
+          ],
+          [
+            2,
+            149215,
+            "לְךָ֙",
+            "H9031",
+            [
+              [
+                "prefix_preposition",
+                "lemma:H9003"
+              ],
+              [
+                "stem",
+                "lemma:H9031"
+              ]
+            ]
+          ],
+          [
+            3,
+            146507,
+            "תֵּבַ֣ת",
+            "H8392",
+            [
+              [
+                "stem",
+                "lemma:H8392"
+              ]
+            ]
+          ],
+          [
+            4,
+            113693,
+            "עֲצֵי־",
+            "H6086",
+            [
+              [
+                "stem",
+                "lemma:H6086G"
+              ]
+            ]
+          ],
+          [
+            5,
+            51272,
+            "גֹ֔פֶר",
+            "H1613",
+            [
+              [
+                "stem",
+                "lemma:H1613"
+              ]
+            ]
+          ],
+          [
+            6,
+            126074,
+            "קִנִּ֖ים",
+            "H7064",
+            [
+              [
+                "stem",
+                "lemma:H7064"
+              ]
+            ]
+          ],
+          [
+            7,
+            115872,
+            "תַּֽעֲשֶׂ֣ה",
+            "H6213",
+            [
+              [
+                "stem",
+                "lemma:H6213H"
+              ]
+            ]
+          ],
+          [
+            8,
+            39599,
+            "אֶת־",
+            "H853",
+            [
+              [
+                "stem",
+                "lemma:H0853"
+              ]
+            ]
+          ],
+          [
+            9,
+            146500,
+            "הַתֵּבָ֑ה",
+            "H8392",
+            [
+              [
+                "prefix_article",
+                "lemma:H9009"
+              ],
+              [
+                "stem",
+                "lemma:H8392"
+              ]
+            ]
+          ],
+          [
+            10,
+            81786,
+            "וְכָֽפַרְתָּ֥",
+            "H3722",
+            [
+              [
+                "prefix_conjunction",
+                "lemma:H9002"
+              ],
+              [
+                "stem",
+                "lemma:H3722B"
+              ]
+            ]
+          ],
+          [
+            11,
+            39666,
+            "אֹתָ֛הּ",
+            "H853",
+            [
+              [
+                "prefix_particle",
+                "lemma:H9003"
+              ],
+              [
+                "stem",
+                "lemma:H0853"
+              ]
+            ]
+          ],
+          [
+            12,
+            43732,
+            "מִבַּ֥יִת",
+            "H1004",
+            [
+              [
+                "prefix_preposition",
+                "lemma:H9003"
+              ],
+              [
+                "stem",
+                "lemma:H1004B"
+              ]
+            ]
+          ],
+          [
+            13,
+            61589,
+            "וּמִח֖וּץ",
+            "H2351",
+            [
+              [
+                "prefix_conjunction",
+                "lemma:H9002"
+              ],
+              [
+                "stem",
+                "lemma:H2351"
+              ]
+            ]
+          ],
+          [
+            14,
+            81801,
+            "בַּכֹּֽפֶר׃",
+            "H3724",
+            [
+              [
+                "prefix_preposition",
+                "lemma:H9003"
+              ],
+              [
+                "stem",
+                "lemma:H3724B"
+              ]
+            ]
+          ]
+        ]
+      },
+      "fast": {
+        "book": 1,
+        "chapter": 6,
+        "verse": 14,
+        "ref": "Genesis 6:14",
+        "en": "Make a ship of gopher wood. You shall make rooms in the ship, and shall seal it inside and outside with pitch.",
+        "toks": [
+          {
+            "wn": 1,
+            "sf": "עֲשֵׂ֤ה",
+            "lm": "עָשָׂה",
+            "s": "H6213",
+            "g": "make",
+            "cl": "verb"
+          },
+          {
+            "wn": 2,
+            "sf": "לְךָ֙",
+            "lm": "הוּא",
+            "s": "H3509",
+            "all_s": [
+              "H3807",
+              "H3509"
+            ],
+            "g": "for yourself",
+            "cl": "pron"
+          },
+          {
+            "wn": 3,
+            "sf": "תֵּבַ֣ת",
+            "lm": "תֵּבָה",
+            "s": "H8392",
+            "g": "an.ark",
+            "cl": "noun"
+          },
+          {
+            "wn": 4,
+            "sf": "עֲצֵי",
+            "lm": "עֵץ",
+            "s": "H6086",
+            "g": "of.wood(s)",
+            "cl": "noun"
+          },
+          {
+            "wn": 5,
+            "sf": "גֹ֔פֶר",
+            "lm": "גֹּפֶר",
+            "s": "H1613",
+            "g": "of.gopher",
+            "cl": "noun"
+          },
+          {
+            "wn": 6,
+            "sf": "קִנִּ֖ים",
+            "lm": "קֵן",
+            "s": "H7064",
+            "g": "nests",
+            "cl": "noun"
+          },
+          {
+            "wn": 7,
+            "sf": "תַּֽעֲשֶׂ֣ה",
+            "lm": "עָשָׂה",
+            "s": "H6213",
+            "g": "you.will.make",
+            "cl": "verb"
+          },
+          {
+            "wn": 8,
+            "sf": "אֶת",
+            "lm": "אֵת",
+            "s": "H0853",
+            "g": "(et)",
+            "cl": "om"
+          },
+          {
+            "wn": 9,
+            "sf": "הַתֵּבָ֑ה",
+            "lm": "תֵּבָה",
+            "s": "H8392",
+            "all_s": [
+              "H1886",
+              "H8392"
+            ],
+            "g": "the ark",
+            "cl": "noun"
+          },
+          {
+            "wn": 10,
+            "sf": "וְכָֽפַרְתָּ֥",
+            "lm": "כָּפַר",
+            "s": "H3722",
+            "all_s": [
+              "H2050",
+              "H3722"
+            ],
+            "g": "and you.will.cover",
+            "cl": "verb"
+          },
+          {
+            "wn": 11,
+            "sf": "אֹתָ֛הּ",
+            "lm": "אֵת",
+            "s": "H0853",
+            "all_s": [
+              "H0853",
+              "H1886"
+            ],
+            "g": "it",
+            "cl": "om"
+          },
+          {
+            "wn": 12,
+            "sf": "מִבַּ֥יִת",
+            "lm": "בַּיִת",
+            "s": "H1004",
+            "all_s": [
+              "H4480",
+              "H1004"
+            ],
+            "g": "from inside",
+            "cl": "noun"
+          },
+          {
+            "wn": 13,
+            "sf": "וּמִח֖וּץ",
+            "lm": "חוּץ",
+            "s": "H2351",
+            "all_s": [
+              "H2050",
+              "H4480",
+              "H2351"
+            ],
+            "g": "and from outside",
+            "cl": "noun"
+          },
+          {
+            "wn": 14,
+            "sf": "בַּכֹּֽפֶר",
+            "lm": "כֹּפֶר",
+            "s": "H3724",
+            "all_s": [
+              "H0871",
+              "H1886",
+              "H3724"
+            ],
+            "g": "with (the) pitch",
+            "cl": "noun"
+          }
+        ]
+      },
+      "words": [
+        {
+          "id": 39599,
+          "strongs_nr": "H853",
+          "original_word": "אֶת־",
+          "transliteration": "'et-",
+          "grammar_code": "HTo"
+        },
+        {
+          "id": 39666,
+          "strongs_nr": "H853",
+          "original_word": "אֹתָ֛הּ",
+          "transliteration": "'o.Tah",
+          "grammar_code": "HTo/Sp3fs"
+        },
+        {
+          "id": 43732,
+          "strongs_nr": "H1004",
+          "original_word": "מִבַּ֥יִת",
+          "transliteration": "mi.Ba.yit",
+          "grammar_code": "HR/Ncmsa"
+        },
+        {
+          "id": 51272,
+          "strongs_nr": "H1613",
+          "original_word": "גֹ֔פֶר",
+          "transliteration": "Go.fer",
+          "grammar_code": "HNcmsa"
+        },
+        {
+          "id": 61589,
+          "strongs_nr": "H2351",
+          "original_word": "וּמִח֖וּץ",
+          "transliteration": "u.mi.Chutz",
+          "grammar_code": "HC/R/Ncmsa"
+        },
+        {
+          "id": 81786,
+          "strongs_nr": "H3722",
+          "original_word": "וְכָֽפַרְתָּ֥",
+          "transliteration": "ve.kha.far.Ta",
+          "grammar_code": "Hc/Vqq2ms"
+        },
+        {
+          "id": 81801,
+          "strongs_nr": "H3724",
+          "original_word": "בַּכֹּֽפֶר׃",
+          "transliteration": "ba.Ko.fer",
+          "grammar_code": "HRd/Ncmsa"
+        },
+        {
+          "id": 113693,
+          "strongs_nr": "H6086",
+          "original_word": "עֲצֵי־",
+          "transliteration": "'a.tzei-",
+          "grammar_code": "HNcmpc"
+        },
+        {
+          "id": 115714,
+          "strongs_nr": "H6213",
+          "original_word": "עֲשֵׂ֤ה",
+          "transliteration": "'a.Seh",
+          "grammar_code": "HVqv2ms"
+        },
+        {
+          "id": 115872,
+          "strongs_nr": "H6213",
+          "original_word": "תַּֽעֲשֶׂ֣ה",
+          "transliteration": "ta.'a.Seh",
+          "grammar_code": "HVqi2ms"
+        },
+        {
+          "id": 126074,
+          "strongs_nr": "H7064",
+          "original_word": "קִנִּ֖ים",
+          "transliteration": "ki.Nim",
+          "grammar_code": "HNcmpa"
+        },
+        {
+          "id": 146500,
+          "strongs_nr": "H8392",
+          "original_word": "הַתֵּבָ֑ה",
+          "transliteration": "ha.te.Vah",
+          "grammar_code": "HTd/Ncfsa"
+        },
+        {
+          "id": 146507,
+          "strongs_nr": "H8392",
+          "original_word": "תֵּבַ֣ת",
+          "transliteration": "te.Vat",
+          "grammar_code": "HNcfsc"
+        },
+        {
+          "id": 149215,
+          "strongs_nr": "H9031",
+          "original_word": "לְךָ֙",
+          "transliteration": "le.Kha",
+          "grammar_code": "HRd/Sp2ms"
+        }
+      ]
+    },
+    {
+      "ref": "1 Corinthians 12:10",
+      "verse_id": 28745,
+      "lite": {
+        "web": "and to another workings of miracles, and to another prophecy, and to another discerning of spirits, to another different kinds of languages, and to another the interpretation of languages.",
+        "t": [
+          [
+            1,
+            1380,
+            "ἄλλῳ",
+            "G243",
+            [
+              [
+                "stem",
+                "lemma:G0243"
+              ]
+            ]
+          ],
+          [
+            2,
+            5693,
+            "δὲ",
+            "G1161",
+            [
+              [
+                "stem",
+                "lemma:G1161"
+              ]
+            ]
+          ],
+          [
+            3,
+            8794,
+            "ἐνεργήματα",
+            "G1755",
+            [
+              [
+                "stem",
+                "lemma:G1755"
+              ]
+            ]
+          ],
+          [
+            4,
+            7031,
+            "δυνάμεων,",
+            "G1411",
+            [
+              [
+                "stem",
+                "lemma:G1411"
+              ]
+            ]
+          ],
+          [
+            5,
+            1380,
+            "ἄλλῳ",
+            "G243",
+            [
+              [
+                "stem",
+                "lemma:G0243"
+              ]
+            ]
+          ],
+          [
+            6,
+            5693,
+            "δὲ",
+            "G1161",
+            [
+              [
+                "stem",
+                "lemma:G1161"
+              ]
+            ]
+          ],
+          [
+            7,
+            21364,
+            "προφητεία,",
+            "G4394",
+            [
+              [
+                "stem",
+                "lemma:G4394"
+              ]
+            ]
+          ],
+          [
+            8,
+            1380,
+            "ἄλλῳ",
+            "G243",
+            [
+              [
+                "stem",
+                "lemma:G0243"
+              ]
+            ]
+          ],
+          [
+            9,
+            5693,
+            "δὲ",
+            "G1161",
+            [
+              [
+                "stem",
+                "lemma:G1161"
+              ]
+            ]
+          ],
+          [
+            10,
+            6118,
+            "διακρίσεις",
+            "G1253",
+            [
+              [
+                "stem",
+                "lemma:G1253"
+              ]
+            ]
+          ],
+          [
+            11,
+            20073,
+            "πνευμάτων,",
+            "G4151",
+            [
+              [
+                "stem",
+                "lemma:G4151"
+              ]
+            ]
+          ],
+          [
+            12,
+            10229,
+            "ἑτέρῳ",
+            "G2087",
+            [
+              [
+                "stem",
+                "lemma:G2087"
+              ]
+            ]
+          ],
+          [
+            13,
+            4994,
+            "γένη",
+            "G1085",
+            [
+              [
+                "stem",
+                "lemma:G1085G"
+              ]
+            ]
+          ],
+          [
+            14,
+            5318,
+            "γλωσσῶν,",
+            "G1100",
+            [
+              [
+                "stem",
+                "lemma:G1100"
+              ]
+            ]
+          ],
+          [
+            15,
+            1380,
+            "ἄλλῳ",
+            "G243",
+            [
+              [
+                "stem",
+                "lemma:G0243"
+              ]
+            ]
+          ],
+          [
+            16,
+            5693,
+            "δὲ",
+            "G1161",
+            [
+              [
+                "stem",
+                "lemma:G1161"
+              ]
+            ]
+          ],
+          [
+            17,
+            9990,
+            "ἑρμηνεία",
+            "G2058",
+            [
+              [
+                "stem",
+                "lemma:G2058"
+              ]
+            ]
+          ],
+          [
+            18,
+            5320,
+            "γλωσσῶν·",
+            "G1100",
+            [
+              [
+                "stem",
+                "lemma:G1100"
+              ]
+            ]
+          ]
+        ]
+      },
+      "fast": {
+        "book": 46,
+        "chapter": 12,
+        "verse": 10,
+        "ref": "1 Corinthians 12:10",
+        "en": "and to another workings of miracles, and to another prophecy, and to another discerning of spirits, to another different kinds of languages, and to another the interpretation of languages.",
+        "toks": [
+          {
+            "wn": 1,
+            "sf": "ἄλλῳ",
+            "lm": "ἄλλος",
+            "s": "G0243",
+            "g": "to another",
+            "cl": "adj",
+            "role": "io"
+          },
+          {
+            "wn": 2,
+            "sf": "δὲ",
+            "lm": "δέ",
+            "s": "G1161",
+            "g": "now",
+            "cl": "conj"
+          },
+          {
+            "wn": 3,
+            "sf": "ἐνεργήματα",
+            "lm": "ἐνέργημα",
+            "s": "G1755",
+            "g": "working",
+            "cl": "noun"
+          },
+          {
+            "wn": 4,
+            "sf": "δυνάμεων",
+            "lm": "δύναμις",
+            "s": "G1411",
+            "g": "of miracles",
+            "cl": "noun"
+          },
+          {
+            "wn": 5,
+            "sf": "ἄλλῳ",
+            "lm": "ἄλλος",
+            "s": "G0243",
+            "g": "to another",
+            "cl": "adj",
+            "role": "io"
+          },
+          {
+            "wn": 6,
+            "sf": "δὲ",
+            "lm": "δέ",
+            "s": "G1161",
+            "g": "now",
+            "cl": "conj"
+          },
+          {
+            "wn": 7,
+            "sf": "προφητεία",
+            "lm": "προφητεία",
+            "s": "G4394",
+            "g": "prophecy",
+            "cl": "noun",
+            "role": "s"
+          },
+          {
+            "wn": 8,
+            "sf": "ἄλλῳ",
+            "lm": "ἄλλος",
+            "s": "G0243",
+            "g": "to another",
+            "cl": "adj",
+            "role": "io"
+          },
+          {
+            "wn": 9,
+            "sf": "δὲ",
+            "lm": "δέ",
+            "s": "G1161",
+            "g": "now",
+            "cl": "conj"
+          },
+          {
+            "wn": 10,
+            "sf": "διακρίσεις",
+            "lm": "διάκρισις",
+            "s": "G1253",
+            "g": "distinguishing",
+            "cl": "noun"
+          },
+          {
+            "wn": 11,
+            "sf": "πνευμάτων",
+            "lm": "πνεῦμα",
+            "s": "G4151",
+            "g": "of spirits",
+            "cl": "noun"
+          },
+          {
+            "wn": 12,
+            "sf": "ἑτέρῳ",
+            "lm": "ἕτερος",
+            "s": "G2087",
+            "g": "and to a different one",
+            "cl": "adj",
+            "role": "io"
+          },
+          {
+            "wn": 13,
+            "sf": "γένη",
+            "lm": "γένος",
+            "s": "G1085",
+            "g": "various kinds",
+            "cl": "noun"
+          },
+          {
+            "wn": 14,
+            "sf": "γλωσσῶν",
+            "lm": "γλῶσσα",
+            "s": "G1100",
+            "g": "of tongues",
+            "cl": "noun"
+          },
+          {
+            "wn": 15,
+            "sf": "ἄλλῳ",
+            "lm": "ἄλλος",
+            "s": "G0243",
+            "g": "to another",
+            "cl": "adj",
+            "role": "io"
+          },
+          {
+            "wn": 16,
+            "sf": "δὲ",
+            "lm": "δέ",
+            "s": "G1161",
+            "g": "now",
+            "cl": "conj"
+          },
+          {
+            "wn": 17,
+            "sf": "ἑρμηνεία",
+            "lm": "ἑρμηνεία",
+            "s": "G2058",
+            "g": "interpretation",
+            "cl": "noun"
+          },
+          {
+            "wn": 18,
+            "sf": "γλωσσῶν",
+            "lm": "γλῶσσα",
+            "s": "G1100",
+            "g": "of tongues",
+            "cl": "noun"
+          }
+        ]
+      },
+      "words": [
+        {
+          "id": 1380,
+          "strongs_nr": "G243",
+          "original_word": "ἄλλῳ",
+          "transliteration": "allō",
+          "grammar_code": "A-DSM"
+        },
+        {
+          "id": 4994,
+          "strongs_nr": "G1085",
+          "original_word": "γένη",
+          "transliteration": "genē",
+          "grammar_code": "N-NPN"
+        },
+        {
+          "id": 5318,
+          "strongs_nr": "G1100",
+          "original_word": "γλωσσῶν,",
+          "transliteration": "glōssōn",
+          "grammar_code": "N-GPF"
+        },
+        {
+          "id": 5320,
+          "strongs_nr": "G1100",
+          "original_word": "γλωσσῶν·",
+          "transliteration": "glōssōn",
+          "grammar_code": "N-GPF"
+        },
+        {
+          "id": 5693,
+          "strongs_nr": "G1161",
+          "original_word": "δὲ",
+          "transliteration": "de",
+          "grammar_code": "CONJ"
+        },
+        {
+          "id": 6118,
+          "strongs_nr": "G1253",
+          "original_word": "διακρίσεις",
+          "transliteration": "diakriseis",
+          "grammar_code": "N-NPF"
+        },
+        {
+          "id": 7031,
+          "strongs_nr": "G1411",
+          "original_word": "δυνάμεων,",
+          "transliteration": "dunameōn",
+          "grammar_code": "N-GPF"
+        },
+        {
+          "id": 8794,
+          "strongs_nr": "G1755",
+          "original_word": "ἐνεργήματα",
+          "transliteration": "energēmata",
+          "grammar_code": "N-NPN"
+        },
+        {
+          "id": 9990,
+          "strongs_nr": "G2058",
+          "original_word": "ἑρμηνεία",
+          "transliteration": "hermēneia",
+          "grammar_code": "N-NSF"
+        },
+        {
+          "id": 10229,
+          "strongs_nr": "G2087",
+          "original_word": "ἑτέρῳ",
+          "transliteration": "heterō",
+          "grammar_code": "A-DSM"
+        },
+        {
+          "id": 20073,
+          "strongs_nr": "G4151",
+          "original_word": "πνευμάτων,",
+          "transliteration": "pneumatōn",
+          "grammar_code": "N-GPN"
+        },
+        {
+          "id": 21364,
+          "strongs_nr": "G4394",
+          "original_word": "προφητεία,",
+          "transliteration": "prophēteia",
+          "grammar_code": "N-NSF"
+        }
+      ]
+    },
+    {
+      "ref": "Psalms 45:0",
+      "verse_id": 14638,
+      "lite": {
+        "web": "For the Chief Musician. Set to “The Lilies.” A contemplation by the sons of Korah. A wedding song.",
+        "t": [
+          [
+            1,
+            101170,
+            "לַמְנַצֵּ֣חַ",
+            "H5329",
+            [
+              [
+                "prefix_preposition",
+                "lemma:H9003"
+              ],
+              [
+                "stem",
+                "lemma:H5329"
+              ]
+            ]
+          ],
+          [
+            2,
+            110271,
+            "עַל־",
+            "H5921",
+            [
+              [
+                "stem",
+                "lemma:H5921A"
+              ]
+            ]
+          ],
+          [
+            3,
+            137489,
+            "שֹׁ֭שַׁנִּים",
+            "H7799",
+            [
+              [
+                "stem",
+                "lemma:H7799"
+              ]
+            ]
+          ],
+          [
+            4,
+            45312,
+            "לִבְנֵי־",
+            "H1121",
+            [
+              [
+                "prefix_preposition",
+                "lemma:H9003"
+              ],
+              [
+                "stem",
+                "lemma:H1121B"
+              ],
+              [
+                "stem",
+                "lemma:H1121A"
+              ]
+            ]
+          ],
+          [
+            5,
+            127643,
+            "קֹ֑רַח",
+            "H7141",
+            [
+              [
+                "stem",
+                "lemma:H7141I"
+              ],
+              [
+                "stem",
+                "lemma:H7141G"
+              ]
+            ]
+          ],
+          [
+            6,
+            94879,
+            "מַ֝שְׂכִּ֗יל",
+            "H4905",
+            [
+              [
+                "stem",
+                "lemma:H4905"
+              ]
+            ]
+          ],
+          [
+            7,
+            138354,
+            "שִׁ֣יר",
+            "H7892",
+            [
+              [
+                "stem",
+                "lemma:H7892B"
+              ],
+              [
+                "stem",
+                "lemma:H7892A"
+              ]
+            ]
+          ],
+          [
+            8,
+            70089,
+            "יְדִידֹֽת׃",
+            "H3039",
+            [
+              [
+                "stem",
+                "lemma:H3039B"
+              ],
+              [
+                "stem",
+                "lemma:H3039A"
+              ]
+            ]
+          ]
+        ]
+      },
+      "fast": {
+        "book": 19,
+        "chapter": 45,
+        "verse": 0,
+        "ref": "Psalms 45:0",
+        "mt_ref": "Psalms 45:1",
+        "en": "For the Chief Musician. Set to “The Lilies.” A contemplation by the sons of Korah. A wedding song.",
+        "toks": [
+          {
+            "wn": 1,
+            "sf": "לַמְנַצֵּ֣חַ",
+            "lm": "נָצַח",
+            "s": "H5329",
+            "all_s": [
+              "H3807",
+              "H1886",
+              "H5329"
+            ],
+            "g": "to the choirmaster",
+            "cl": "verb"
+          },
+          {
+            "wn": 2,
+            "sf": "עַל",
+            "lm": "עַל",
+            "s": "H5921",
+            "g": "on",
+            "cl": "prep"
+          },
+          {
+            "wn": 3,
+            "sf": "שֹׁ֭שַׁנִּים",
+            "lm": "שׁוּשַׁן",
+            "s": "H7799",
+            "g": "Shoshannim",
+            "cl": "noun"
+          },
+          {
+            "wn": 4,
+            "sf": "לִבְנֵי",
+            "lm": "בֵּן",
+            "s": "H1121",
+            "all_s": [
+              "H3807",
+              "H1121"
+            ],
+            "g": "of the.sons",
+            "cl": "noun"
+          },
+          {
+            "wn": 5,
+            "sf": "קֹ֑רַח",
+            "lm": "קֹרַח",
+            "s": "H7141",
+            "g": "of.Korah",
+            "cl": "noun"
+          },
+          {
+            "wn": 6,
+            "sf": "מַ֝שְׂכִּ֗יל",
+            "lm": "מַשְׂכִּיל",
+            "s": "H4905",
+            "g": "a.poem",
+            "cl": "noun"
+          },
+          {
+            "wn": 7,
+            "sf": "שִׁ֣יר",
+            "lm": "שִׁיר",
+            "s": "H7892",
+            "g": "a.song",
+            "cl": "noun"
+          },
+          {
+            "wn": 8,
+            "sf": "יְדִידֹֽת",
+            "lm": "יְדִידֹת",
+            "s": "H3039",
+            "g": "of.love(s)",
+            "cl": "noun"
+          }
+        ]
+      },
+      "words": [
+        {
+          "id": 45312,
+          "strongs_nr": "H1121",
+          "original_word": "לִבְנֵי־",
+          "transliteration": "liv.nei-",
+          "grammar_code": "HR/Ncmpc"
+        },
+        {
+          "id": 70089,
+          "strongs_nr": "H3039",
+          "original_word": "יְדִידֹֽת׃",
+          "transliteration": "ye.di.Dot",
+          "grammar_code": "HNcfsa"
+        },
+        {
+          "id": 94879,
+          "strongs_nr": "H4905",
+          "original_word": "מַ֝שְׂכִּ֗יל",
+          "transliteration": "mas.Kil",
+          "grammar_code": "HNtmsa"
+        },
+        {
+          "id": 101170,
+          "strongs_nr": "H5329",
+          "original_word": "לַמְנַצֵּ֣חַ",
+          "transliteration": "lam.na.Tze.ach",
+          "grammar_code": "HRd/Vprmsa"
+        },
+        {
+          "id": 110271,
+          "strongs_nr": "H5921",
+          "original_word": "עַל־",
+          "transliteration": "'a.lo.Sho-",
+          "grammar_code": "HR"
+        },
+        {
+          "id": 127643,
+          "strongs_nr": "H7141",
+          "original_word": "קֹ֑רַח",
+          "transliteration": "Ko.rach",
+          "grammar_code": "HNpm"
+        },
+        {
+          "id": 137489,
+          "strongs_nr": "H7799",
+          "original_word": "שֹׁ֭שַׁנִּים",
+          "transliteration": "Sho.sha.nim",
+          "grammar_code": "HNcmpa"
+        },
+        {
+          "id": 138354,
+          "strongs_nr": "H7892",
+          "original_word": "שִׁ֣יר",
+          "transliteration": "shir",
+          "grammar_code": "HNcmsc"
+        }
+      ]
+    },
+    {
+      "ref": "Hosea 14:5",
+      "verse_id": 22404,
+      "lite": {
+        "web": "I will be like the dew to Israel. He will blossom like the lily, and send down his roots like Lebanon.",
+        "t": [
+          [
+            1,
+            55557,
+            "אֶהְיֶ֤ה",
+            "H1961",
+            [
+              [
+                "stem",
+                "lemma:H1961"
+              ]
+            ]
+          ],
+          [
+            2,
+            68437,
+            "כַטַּל֙",
+            "H2919",
+            [
+              [
+                "prefix_preposition",
+                "lemma:H9003"
+              ],
+              [
+                "stem",
+                "lemma:H2919"
+              ]
+            ]
+          ],
+          [
+            3,
+            77938,
+            "לְיִשְׂרָאֵ֔ל",
+            "H3478",
+            [
+              [
+                "prefix_preposition",
+                "lemma:H9003"
+              ],
+              [
+                "stem",
+                "lemma:H3478"
+              ]
+            ]
+          ],
+          [
+            4,
+            119742,
+            "יִפְרַ֖ח",
+            "H6524",
+            [
+              [
+                "stem",
+                "lemma:H6524C"
+              ],
+              [
+                "stem",
+                "lemma:H6524B"
+              ],
+              [
+                "stem",
+                "lemma:H6524A"
+              ]
+            ]
+          ],
+          [
+            5,
+            137488,
+            "כַּשּֽׁוֹשַׁנָּ֑ה",
+            "H7799",
+            [
+              [
+                "prefix_preposition",
+                "lemma:H9003"
+              ],
+              [
+                "stem",
+                "lemma:H7799"
+              ]
+            ]
+          ],
+          [
+            6,
+            99391,
+            "וְיַ֥ךְ",
+            "H5221",
+            [
+              [
+                "prefix_conjunction",
+                "lemma:H9002"
+              ],
+              [
+                "stem",
+                "lemma:H5221"
+              ]
+            ]
+          ],
+          [
+            7,
+            145896,
+            "שָׁרָשָׁ֖יו",
+            "H8328",
+            [
+              [
+                "stem",
+                "lemma:H8328"
+              ]
+            ]
+          ],
+          [
+            8,
+            83516,
+            "כַּלְּבָנֽוֹן׃",
+            "H3844",
+            [
+              [
+                "prefix_preposition",
+                "lemma:H9003"
+              ],
+              [
+                "stem",
+                "lemma:H3844J"
+              ],
+              [
+                "stem",
+                "lemma:H3844I"
+              ],
+              [
+                "stem",
+                "lemma:H3844H"
+              ],
+              [
+                "stem",
+                "lemma:H3844G"
+              ]
+            ]
+          ]
+        ]
+      },
+      "fast": {
+        "book": 28,
+        "chapter": 14,
+        "verse": 5,
+        "ref": "Hosea 14:5",
+        "mt_ref": "Hosea 14:6",
+        "en": "I will be like the dew to Israel. He will blossom like the lily, and send down his roots like Lebanon.",
+        "toks": [
+          {
+            "wn": 1,
+            "sf": "אֶהְיֶ֤ה",
+            "lm": "הָיָה",
+            "s": "H1961",
+            "g": "I.will.be",
+            "cl": "verb"
+          },
+          {
+            "wn": 2,
+            "sf": "כַטַּל֙",
+            "lm": "טַל",
+            "s": "H2919",
+            "all_s": [
+              "H3509",
+              "H1886",
+              "H2919"
+            ],
+            "g": "like the dew",
+            "cl": "noun",
+            "sim": true
+          },
+          {
+            "wn": 3,
+            "sf": "לְיִשְׂרָאֵ֔ל",
+            "lm": "יִשְׂרָאֵל",
+            "s": "H3478",
+            "all_s": [
+              "H3807",
+              "H3478"
+            ],
+            "g": "to Israel",
+            "cl": "noun"
+          },
+          {
+            "wn": 4,
+            "sf": "יִפְרַ֖ח",
+            "lm": "פָּרַח",
+            "s": "H6524",
+            "g": "it.will.blossom",
+            "cl": "verb"
+          },
+          {
+            "wn": 5,
+            "sf": "כַּשּֽׁוֹשַׁנָּ֑ה",
+            "lm": "שׁוּשַׁן",
+            "s": "H7799",
+            "all_s": [
+              "H3509",
+              "H1886",
+              "H7799"
+            ],
+            "g": "like (the) lily",
+            "cl": "noun",
+            "sim": true
+          },
+          {
+            "wn": 6,
+            "sf": "וְיַ֥ךְ",
+            "lm": "נָכָה",
+            "s": "H5221",
+            "all_s": [
+              "H2050",
+              "H5221"
+            ],
+            "g": "and it.will.strike",
+            "cl": "verb"
+          },
+          {
+            "wn": 7,
+            "sf": "שָׁרָשָׁ֖יו",
+            "lm": "שֹׁרֶשׁ",
+            "s": "H8328",
+            "all_s": [
+              "H8328",
+              "H2050"
+            ],
+            "g": "roots its",
+            "cl": "noun"
+          },
+          {
+            "wn": 8,
+            "sf": "כַּלְּבָנֽוֹן",
+            "lm": "לְבָנוֹן",
+            "s": "H3844",
+            "all_s": [
+              "H3509",
+              "H1886",
+              "H3844"
+            ],
+            "g": "like (the) Lebanon",
+            "cl": "noun",
+            "sim": true
+          }
+        ]
+      },
+      "words": [
+        {
+          "id": 55557,
+          "strongs_nr": "H1961",
+          "original_word": "אֶהְיֶ֤ה",
+          "transliteration": "'eh.Yeh",
+          "grammar_code": "HVqi1cs"
+        },
+        {
+          "id": 68437,
+          "strongs_nr": "H2919",
+          "original_word": "כַטַּל֙",
+          "transliteration": "kha.Tal",
+          "grammar_code": "HRd/Ncmsa"
+        },
+        {
+          "id": 77938,
+          "strongs_nr": "H3478",
+          "original_word": "לְיִשְׂרָאֵ֔ל",
+          "transliteration": "le.Yis.ra.'El",
+          "grammar_code": "HR/Npl"
+        },
+        {
+          "id": 83516,
+          "strongs_nr": "H3844",
+          "original_word": "כַּלְּבָנֽוֹן׃",
+          "transliteration": "ka.le.va.Non",
+          "grammar_code": "HRd/Npl"
+        },
+        {
+          "id": 99391,
+          "strongs_nr": "H5221",
+          "original_word": "וְיַ֥ךְ",
+          "transliteration": "ve.Yakh",
+          "grammar_code": "HC/Vhj3ms"
+        },
+        {
+          "id": 119742,
+          "strongs_nr": "H6524",
+          "original_word": "יִפְרַ֖ח",
+          "transliteration": "yif.Rach",
+          "grammar_code": "HVqi3ms"
+        },
+        {
+          "id": 137488,
+          "strongs_nr": "H7799",
+          "original_word": "כַּשּֽׁוֹשַׁנָּ֑ה",
+          "transliteration": "ka.sho.sha.Nah",
+          "grammar_code": "HRd/Ncfsa"
+        },
+        {
+          "id": 145896,
+          "strongs_nr": "H8328",
+          "original_word": "שָׁרָשָׁ֖יו",
+          "transliteration": "sha.ra.Shav",
+          "grammar_code": "HNcmpc/Sp3ms"
+        }
+      ]
+    },
+    {
+      "ref": "Ezekiel 1:10",
+      "verse_id": 20591,
+      "lite": {
+        "web": "As for the likeness of their faces, they had the face of a man. The four of them had the face of a lion on the right side. The four of them had the face of an ox on the left side. The four of them also had the face of an eagle.",
+        "t": [
+          [
+            1,
+            53880,
+            "וּדְמ֣וּת",
+            "H1823",
+            [
+              [
+                "prefix_conjunction",
+                "lemma:H9002"
+              ],
+              [
+                "stem",
+                "lemma:H1823"
+              ]
+            ]
+          ],
+          [
+            2,
+            118639,
+            "פְּנֵיהֶם֮",
+            "H6440",
+            [
+              [
+                "stem",
+                "lemma:H6440H"
+              ]
+            ]
+          ],
+          [
+            3,
+            118626,
+            "פְּנֵ֣י",
+            "H6440",
+            [
+              [
+                "stem",
+                "lemma:H6440H"
+              ]
+            ]
+          ],
+          [
+            4,
+            27968,
+            "אָדָם֒",
+            "H120",
+            [
+              [
+                "stem",
+                "lemma:H0120H"
+              ],
+              [
+                "stem",
+                "lemma:H0120G"
+              ]
+            ]
+          ],
+          [
+            5,
+            118526,
+            "וּפְנֵ֨י",
+            "H6440",
+            [
+              [
+                "prefix_conjunction",
+                "lemma:H9002"
+              ],
+              [
+                "stem",
+                "lemma:H6440H"
+              ]
+            ]
+          ],
+          [
+            6,
+            37871,
+            "אַרְיֵ֤ה",
+            "H738",
+            [
+              [
+                "stem",
+                "lemma:H0738B"
+              ],
+              [
+                "stem",
+                "lemma:H0738A"
+              ]
+            ]
+          ],
+          [
+            7,
+            33213,
+            "אֶל־",
+            "H413",
+            [
+              [
+                "stem",
+                "lemma:H0413"
+              ]
+            ]
+          ],
+          [
+            8,
+            73452,
+            "הַיָּמִין֙",
+            "H3225",
+            [
+              [
+                "prefix_article",
+                "lemma:H9009"
+              ],
+              [
+                "stem",
+                "lemma:H3225I"
+              ],
+              [
+                "stem",
+                "lemma:H3225G"
+              ]
+            ]
+          ],
+          [
+            9,
+            37556,
+            "לְאַרְבַּעְתָּ֔ם",
+            "H702",
+            [
+              [
+                "prefix_preposition",
+                "lemma:H9003"
+              ],
+              [
+                "stem",
+                "lemma:H0702"
+              ]
+            ]
+          ],
+          [
+            10,
+            118528,
+            "וּפְנֵי־",
+            "H6440",
+            [
+              [
+                "prefix_conjunction",
+                "lemma:H9002"
+              ],
+              [
+                "stem",
+                "lemma:H6440H"
+              ]
+            ]
+          ],
+          [
+            11,
+            137438,
+            "שׁ֥וֹר",
+            "H7794",
+            [
+              [
+                "stem",
+                "lemma:H7794"
+              ]
+            ]
+          ],
+          [
+            12,
+            141176,
+            "מֵֽהַשְּׂמֹ֖אול",
+            "H8040",
+            [
+              [
+                "prefix_preposition",
+                "lemma:H9003"
+              ],
+              [
+                "stem",
+                "lemma:H8040G"
+              ]
+            ]
+          ],
+          [
+            13,
+            37555,
+            "לְאַרְבַּעְתָּ֑ן",
+            "H702",
+            [
+              [
+                "prefix_preposition",
+                "lemma:H9003"
+              ],
+              [
+                "stem",
+                "lemma:H0702"
+              ]
+            ]
+          ],
+          [
+            14,
+            118528,
+            "וּפְנֵי־",
+            "H6440",
+            [
+              [
+                "prefix_conjunction",
+                "lemma:H9002"
+              ],
+              [
+                "stem",
+                "lemma:H6440H"
+              ]
+            ]
+          ],
+          [
+            15,
+            102483,
+            "נֶ֖שֶׁר",
+            "H5404",
+            [
+              [
+                "stem",
+                "lemma:H5404"
+              ]
+            ]
+          ],
+          [
+            16,
+            37559,
+            "לְאַרְבַּעְתָּֽן׃",
+            "H702",
+            [
+              [
+                "prefix_preposition",
+                "lemma:H9003"
+              ],
+              [
+                "stem",
+                "lemma:H0702"
+              ]
+            ]
+          ]
+        ]
+      },
+      "fast": {
+        "book": 26,
+        "chapter": 1,
+        "verse": 10,
+        "ref": "Ezekiel 1:10",
+        "en": "As for the likeness of their faces, they had the face of a man. The four of them had the face of a lion on the right side. The four of them had the face of an ox on the left side. The four of them also had the face of an eagle.",
+        "toks": [
+          {
+            "wn": 1,
+            "sf": "וּדְמ֣וּת",
+            "lm": "דְּמוּת",
+            "s": "H1823",
+            "all_s": [
+              "H2050",
+              "H1823"
+            ],
+            "g": "and the.likeness",
+            "cl": "noun"
+          },
+          {
+            "wn": 2,
+            "sf": "פְּנֵיהֶם֮",
+            "lm": "פָּנֶה",
+            "s": "H6440",
+            "all_s": [
+              "H6440",
+              "H3963"
+            ],
+            "g": "their.faces their",
+            "cl": "noun"
+          },
+          {
+            "wn": 3,
+            "sf": "פְּנֵ֣י",
+            "lm": "פָּנֶה",
+            "s": "H6440",
+            "g": "[was.the].face",
+            "cl": "noun"
+          },
+          {
+            "wn": 4,
+            "sf": "אָדָם֒",
+            "lm": "אָדָם",
+            "s": "H0120",
+            "g": "of.a.human",
+            "cl": "noun"
+          },
+          {
+            "wn": 5,
+            "sf": "וּפְנֵ֨י",
+            "lm": "פָּנֶה",
+            "s": "H6440",
+            "all_s": [
+              "H2050",
+              "H6440"
+            ],
+            "g": "and.[the] face",
+            "cl": "noun"
+          },
+          {
+            "wn": 6,
+            "sf": "אַרְיֵ֤ה",
+            "lm": "אַרְיֵה",
+            "s": "H0738",
+            "g": "of.a.lion",
+            "cl": "noun"
+          },
+          {
+            "wn": 7,
+            "sf": "אֶל",
+            "lm": "אֶל",
+            "s": "H0413",
+            "g": "to",
+            "cl": "prep"
+          },
+          {
+            "wn": 8,
+            "sf": "הַיָּמִין֙",
+            "lm": "יָמִין",
+            "s": "H3225",
+            "all_s": [
+              "H1886",
+              "H3225"
+            ],
+            "g": "the.right side",
+            "cl": "noun"
+          },
+          {
+            "wn": 9,
+            "sf": "לְאַרְבַּעְתָּ֔ם",
+            "lm": "אַרְבַּע",
+            "s": "H0702",
+            "all_s": [
+              "H3807",
+              "H0702",
+              "H3963"
+            ],
+            "g": "[belonged].to the.four of.them",
+            "cl": "num"
+          },
+          {
+            "wn": 10,
+            "sf": "וּפְנֵי",
+            "lm": "פָּנֶה",
+            "s": "H6440",
+            "all_s": [
+              "H2050",
+              "H6440"
+            ],
+            "g": "and.[the] face",
+            "cl": "noun"
+          },
+          {
+            "wn": 11,
+            "sf": "שׁ֥וֹר",
+            "lm": "שׁוֹר",
+            "s": "H7794",
+            "g": "of.an.ox",
+            "cl": "noun"
+          },
+          {
+            "wn": 12,
+            "sf": "מֵֽהַשְּׂמֹ֖אול",
+            "lm": "שְׂמֹאל",
+            "s": "H8040",
+            "all_s": [
+              "H4480",
+              "H1886",
+              "H8040"
+            ],
+            "g": "from the.left side",
+            "cl": "noun"
+          },
+          {
+            "wn": 13,
+            "sf": "לְאַרְבַּעְתָּ֑ן",
+            "lm": "אַרְבַּע",
+            "s": "H0702",
+            "all_s": [
+              "H3807",
+              "H0702",
+              "H4993"
+            ],
+            "g": "[belonged].to the.four of.them",
+            "cl": "num"
+          },
+          {
+            "wn": 14,
+            "sf": "וּפְנֵי",
+            "lm": "פָּנֶה",
+            "s": "H6440",
+            "all_s": [
+              "H2050",
+              "H6440"
+            ],
+            "g": "and the.face",
+            "cl": "noun"
+          },
+          {
+            "wn": 15,
+            "sf": "נֶ֖שֶׁר",
+            "lm": "נֶשֶׁר",
+            "s": "H5404",
+            "g": "of.an.eagle",
+            "cl": "noun"
+          },
+          {
+            "wn": 16,
+            "sf": "לְאַרְבַּעְתָּֽן",
+            "lm": "אַרְבַּע",
+            "s": "H0702",
+            "all_s": [
+              "H3807",
+              "H0702",
+              "H4993"
+            ],
+            "g": "[belonged].to the.four of.them",
+            "cl": "num"
+          }
+        ]
+      },
+      "words": [
+        {
+          "id": 27968,
+          "strongs_nr": "H120",
+          "original_word": "אָדָם֒",
+          "transliteration": "'a.Dam",
+          "grammar_code": "HNcmsa"
+        },
+        {
+          "id": 33213,
+          "strongs_nr": "H413",
+          "original_word": "אֶל־",
+          "transliteration": "'el-",
+          "grammar_code": "HR"
+        },
+        {
+          "id": 37555,
+          "strongs_nr": "H702",
+          "original_word": "לְאַרְבַּעְתָּ֑ן",
+          "transliteration": "le.'ar.ba'.Tan",
+          "grammar_code": "HR/Acfsc/Sp3fp"
+        },
+        {
+          "id": 37556,
+          "strongs_nr": "H702",
+          "original_word": "לְאַרְבַּעְתָּ֔ם",
+          "transliteration": "le.'ar.ba'.Tam",
+          "grammar_code": "HR/Acfsc/Sp3mp"
+        },
+        {
+          "id": 37559,
+          "strongs_nr": "H702",
+          "original_word": "לְאַרְבַּעְתָּֽן׃",
+          "transliteration": "le.'ar.ba'.Tan",
+          "grammar_code": "HR/Acfsc/Sp3fp"
+        },
+        {
+          "id": 37871,
+          "strongs_nr": "H738",
+          "original_word": "אַרְיֵ֤ה",
+          "transliteration": "'ar.Yeh",
+          "grammar_code": "HNcmsa"
+        },
+        {
+          "id": 53880,
+          "strongs_nr": "H1823",
+          "original_word": "וּדְמ֣וּת",
+          "transliteration": "u.de.Mut",
+          "grammar_code": "HC/Ncfsc"
+        },
+        {
+          "id": 73452,
+          "strongs_nr": "H3225",
+          "original_word": "הַיָּמִין֙",
+          "transliteration": "hai.ya.Min",
+          "grammar_code": "HTd/Ncfsa"
+        },
+        {
+          "id": 102483,
+          "strongs_nr": "H5404",
+          "original_word": "נֶ֖שֶׁר",
+          "transliteration": "Ne.sher",
+          "grammar_code": "HNcmsa"
+        },
+        {
+          "id": 118526,
+          "strongs_nr": "H6440",
+          "original_word": "וּפְנֵ֨י",
+          "transliteration": "u.fe.Nei",
+          "grammar_code": "HC/Ncmpc"
+        },
+        {
+          "id": 118528,
+          "strongs_nr": "H6440",
+          "original_word": "וּפְנֵי־",
+          "transliteration": "u.fe.nei-",
+          "grammar_code": "HC/Ncmpc"
+        },
+        {
+          "id": 118626,
+          "strongs_nr": "H6440",
+          "original_word": "פְּנֵ֣י",
+          "transliteration": "pe.Nei",
+          "grammar_code": "HNcmpc"
+        },
+        {
+          "id": 118639,
+          "strongs_nr": "H6440",
+          "original_word": "פְּנֵיהֶם֮",
+          "transliteration": "pe.nei.Hem",
+          "grammar_code": "HNcmpc/Sp3mp"
+        },
+        {
+          "id": 137438,
+          "strongs_nr": "H7794",
+          "original_word": "שׁ֥וֹר",
+          "transliteration": "Shor",
+          "grammar_code": "HNcmsa"
+        },
+        {
+          "id": 141176,
+          "strongs_nr": "H8040",
+          "original_word": "מֵֽהַשְּׂמֹ֖אול",
+          "transliteration": "me.ha.se.Mol",
+          "grammar_code": "HR/Td/Ncmsa"
+        }
+      ]
+    },
+    {
+      "ref": "Ezekiel 10:20",
+      "verse_id": 20770,
+      "lite": {
+        "web": "This is the living creature that I saw under the God of Israel by the river Chebar; and I knew that they were cherubim.",
+        "t": [
+          [
+            1,
+            55221,
+            "הִ֣יא",
+            "H1931",
+            [
+              [
+                "stem",
+                "lemma:H1931"
+              ]
+            ]
+          ],
+          [
+            2,
+            62754,
+            "הַחַיָּ֗ה",
+            "H2416",
+            [
+              [
+                "prefix_article",
+                "lemma:H9009"
+              ],
+              [
+                "stem",
+                "lemma:H2416E"
+              ],
+              [
+                "stem",
+                "lemma:H2416D"
+              ],
+              [
+                "stem",
+                "lemma:H2416C"
+              ],
+              [
+                "stem",
+                "lemma:H2416B"
+              ],
+              [
+                "stem",
+                "lemma:H2416A"
+              ]
+            ]
+          ],
+          [
+            3,
+            39326,
+            "אֲשֶׁ֥ר",
+            "H834",
+            [
+              [
+                "stem",
+                "lemma:H0834A"
+              ]
+            ]
+          ],
+          [
+            4,
+            128687,
+            "רָאִ֛יתִי",
+            "H7200",
+            [
+              [
+                "stem",
+                "lemma:H7200G"
+              ]
+            ]
+          ],
+          [
+            5,
+            147452,
+            "תַּ֥חַת",
+            "H8478",
+            [
+              [
+                "stem",
+                "lemma:H8478G"
+              ]
+            ]
+          ],
+          [
+            6,
+            33543,
+            "אֱלֹהֵֽי־",
+            "H430",
+            [
+              [
+                "stem",
+                "lemma:H0430I"
+              ],
+              [
+                "stem",
+                "lemma:H0430H"
+              ],
+              [
+                "stem",
+                "lemma:H0430a"
+              ],
+              [
+                "stem",
+                "lemma:H0430G"
+              ]
+            ]
+          ],
+          [
+            7,
+            77896,
+            "יִשְׂרָאֵ֖ל",
+            "H3478",
+            [
+              [
+                "stem",
+                "lemma:H3478"
+              ]
+            ]
+          ],
+          [
+            8,
+            97702,
+            "בִּֽנְהַר־",
+            "H5104",
+            [
+              [
+                "prefix_preposition",
+                "lemma:H9003"
+              ],
+              [
+                "stem",
+                "lemma:H5104H"
+              ],
+              [
+                "stem",
+                "lemma:H5104G"
+              ]
+            ]
+          ],
+          [
+            9,
+            78572,
+            "כְּבָ֑ר",
+            "H3529",
+            [
+              [
+                "stem",
+                "lemma:H3529"
+              ]
+            ]
+          ],
+          [
+            10,
+            70303,
+            "וָאֵדַ֕ע",
+            "H3045",
+            [
+              [
+                "prefix_conjunction",
+                "lemma:H9002"
+              ],
+              [
+                "stem",
+                "lemma:H3045"
+              ]
+            ]
+          ],
+          [
+            11,
+            79513,
+            "כִּ֥י",
+            "H3588",
+            [
+              [
+                "stem",
+                "lemma:H3588C"
+              ],
+              [
+                "stem",
+                "lemma:H3588B"
+              ],
+              [
+                "stem",
+                "lemma:H3588A"
+              ]
+            ]
+          ],
+          [
+            12,
+            81916,
+            "כְרוּבִ֖ים",
+            "H3742",
+            [
+              [
+                "stem",
+                "lemma:H3742"
+              ]
+            ]
+          ],
+          [
+            13,
+            57479,
+            "הֵֽמָּה׃",
+            "H1992",
+            [
+              [
+                "stem",
+                "lemma:H1992"
+              ]
+            ]
+          ]
+        ]
+      },
+      "fast": {
+        "book": 26,
+        "chapter": 10,
+        "verse": 20,
+        "ref": "Ezekiel 10:20",
+        "en": "This is the living creature that I saw under the God of Israel by the river Chebar; and I knew that they were cherubim.",
+        "toks": [
+          {
+            "wn": 1,
+            "sf": "הִ֣יא",
+            "lm": "הִיא",
+            "s": "H1931",
+            "g": "that",
+            "cl": "pron"
+          },
+          {
+            "wn": 2,
+            "sf": "הַחַיָּ֗ה",
+            "lm": "חַיָּה",
+            "s": "H2416",
+            "all_s": [
+              "H1886",
+              "H2416"
+            ],
+            "g": "[was].the living.creature",
+            "cl": "noun"
+          },
+          {
+            "wn": 3,
+            "sf": "אֲשֶׁ֥ר",
+            "lm": "אֲשֶׁר",
+            "s": "H0834",
+            "g": "which",
+            "cl": "rel"
+          },
+          {
+            "wn": 4,
+            "sf": "רָאִ֛יתִי",
+            "lm": "רָאָה",
+            "s": "H7200",
+            "g": "I.had.seen",
+            "cl": "verb"
+          },
+          {
+            "wn": 5,
+            "sf": "תַּ֥חַת",
+            "lm": "תַּחַת",
+            "s": "H8478",
+            "g": "under",
+            "cl": "prep"
+          },
+          {
+            "wn": 6,
+            "sf": "אֱלֹהֵֽי",
+            "lm": "אֱלֹהִים",
+            "s": "H0430",
+            "g": "the.God",
+            "cl": "noun"
+          },
+          {
+            "wn": 7,
+            "sf": "יִשְׂרָאֵ֖ל",
+            "lm": "יִשְׂרָאֵל",
+            "s": "H3478",
+            "g": "of.Israel",
+            "cl": "noun"
+          },
+          {
+            "wn": 8,
+            "sf": "בִּֽנְהַר",
+            "lm": "נָהָר",
+            "s": "H5104",
+            "all_s": [
+              "H0871",
+              "H5104"
+            ],
+            "g": "at the.river",
+            "cl": "noun"
+          },
+          {
+            "wn": 9,
+            "sf": "כְּבָ֑ר",
+            "lm": "כְּבָר",
+            "s": "H3529",
+            "g": "of.Kebar",
+            "cl": "noun"
+          },
+          {
+            "wn": 10,
+            "sf": "וָאֵדַ֕ע",
+            "lm": "יָדַע",
+            "s": "H3045",
+            "all_s": [
+              "H2050",
+              "H3045"
+            ],
+            "g": "and I.knew",
+            "cl": "verb"
+          },
+          {
+            "wn": 11,
+            "sf": "כִּ֥י",
+            "lm": "כִּי",
+            "s": "H3588",
+            "g": "(dm).that",
+            "cl": "cj"
+          },
+          {
+            "wn": 12,
+            "sf": "כְרוּבִ֖ים",
+            "lm": "כְּרוּב",
+            "s": "H3742",
+            "g": "[were].cherubim",
+            "cl": "noun"
+          },
+          {
+            "wn": 13,
+            "sf": "הֵֽמָּה",
+            "lm": "הֵמָּה",
+            "s": "H1992",
+            "g": "they",
+            "cl": "pron"
+          }
+        ]
+      },
+      "words": [
+        {
+          "id": 33543,
+          "strongs_nr": "H430",
+          "original_word": "אֱלֹהֵֽי־",
+          "transliteration": "'e.lo.hei-",
+          "grammar_code": "HNcmpc"
+        },
+        {
+          "id": 39326,
+          "strongs_nr": "H834",
+          "original_word": "אֲשֶׁ֥ר",
+          "transliteration": "'a.Sher",
+          "grammar_code": "HTr"
+        },
+        {
+          "id": 55221,
+          "strongs_nr": "H1931",
+          "original_word": "הִ֣יא",
+          "transliteration": "hi'",
+          "grammar_code": "HPp3fs"
+        },
+        {
+          "id": 57479,
+          "strongs_nr": "H1992",
+          "original_word": "הֵֽמָּה׃",
+          "transliteration": "He.mah",
+          "grammar_code": "HPp3mp"
+        },
+        {
+          "id": 62754,
+          "strongs_nr": "H2416",
+          "original_word": "הַחַיָּ֗ה",
+          "transliteration": "ha.chai.Yah",
+          "grammar_code": "HTd/Ncfsa"
+        },
+        {
+          "id": 70303,
+          "strongs_nr": "H3045",
+          "original_word": "וָאֵדַ֕ע",
+          "transliteration": "va.'e.Da'",
+          "grammar_code": "Hc/Vqw1cs"
+        },
+        {
+          "id": 77896,
+          "strongs_nr": "H3478",
+          "original_word": "יִשְׂרָאֵ֖ל",
+          "transliteration": "Yis.ra.'El",
+          "grammar_code": "HNpl"
+        },
+        {
+          "id": 78572,
+          "strongs_nr": "H3529",
+          "original_word": "כְּבָ֑ר",
+          "transliteration": "ke.Var",
+          "grammar_code": "HNpl"
+        },
+        {
+          "id": 79513,
+          "strongs_nr": "H3588",
+          "original_word": "כִּ֥י",
+          "transliteration": "ki",
+          "grammar_code": "HTc"
+        },
+        {
+          "id": 81916,
+          "strongs_nr": "H3742",
+          "original_word": "כְרוּבִ֖ים",
+          "transliteration": "khe.ru.Vim",
+          "grammar_code": "HNcmpa"
+        },
+        {
+          "id": 97702,
+          "strongs_nr": "H5104",
+          "original_word": "בִּֽנְהַר־",
+          "transliteration": "bin.har-",
+          "grammar_code": "HR/Ncmsc"
+        },
+        {
+          "id": 128687,
+          "strongs_nr": "H7200",
+          "original_word": "רָאִ֛יתִי",
+          "transliteration": "ra.'I.ti",
+          "grammar_code": "HVqp1cs"
+        },
+        {
+          "id": 147452,
+          "strongs_nr": "H8478",
+          "original_word": "תַּ֥חַת",
+          "transliteration": "Ta.chat",
+          "grammar_code": "HNcmsc"
+        }
+      ]
+    }
+  ]
+}

@@ -401,8 +401,7 @@ export function createChainStore(
 
     if (
       record.session_hash !== null &&
-      callerSessionHash !== null &&
-      !constantTimeEqual(record.session_hash, callerSessionHash)
+      (callerSessionHash === null || !constantTimeEqual(record.session_hash, callerSessionHash))
     ) {
       return {
         ok: false,

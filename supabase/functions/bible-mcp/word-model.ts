@@ -24,19 +24,22 @@ export interface CompactConnection {
 }
 
 export interface CompactWord {
-  form: string;
+  form?: string;
   lemma: string;
   strongs: string;
   lemma_key?: string;
   transliteration: string;
   gloss: string;
   senses?: Array<{ key?: string; gloss: string; note?: string }>;
-  grammar: string;
+  grammar?: string;
   pos?: string;
   total_verses?: number;
-  lxx?: Array<{ strongs?: string; script: string; gloss: string; count?: number }>;
+  lxx?: Array<{ strongs?: string; script: string; gloss: string; count?: number; direction?: string }>;
   etymology?: {
     status: 'documented' | 'unavailable';
+    lemma_key?: string;
+    other_homograph_roots?: Array<Record<string, unknown>>;
+    morphological_components?: Array<Record<string, unknown>>;
     roots?: Array<Record<string, unknown>>;
     formations?: Array<Record<string, unknown>>;
     relatives?: Array<Record<string, unknown>>;
@@ -321,52 +324,97 @@ export function cleanTransliteration(raw?: string | null, fallbackScript?: strin
   return translit || fallback;
 }
 
-function compactSenses(raw: unknown): CompactWord['senses'] | undefined {
+function compactSenses(
+  raw: unknown,
+  homographSiblings?: unknown,
+  baseStrongs?: string,
+): CompactWord['senses'] | undefined {
   const items = asArray(raw);
-  if (items.length === 0) return undefined;
   const result: NonNullable<CompactWord['senses']> = [];
+  const seen = new Set<string>();
+  const push = (entry: { key?: string; gloss: string; note?: string }) => {
+    const dedupe = (entry.key || entry.gloss).toLowerCase();
+    if (seen.has(dedupe)) return;
+    seen.add(dedupe);
+    result.push(entry);
+  };
   for (const item of items) {
     if (typeof item === 'string') {
       const gloss = normalizeText(item, 140);
-      if (gloss) result.push({ gloss });
+      if (gloss) push({ gloss });
       continue;
     }
     const obj = asRecord(item);
     if (!obj) continue;
-    const gloss = normalizeText(firstNonEmpty(obj.gloss, obj.definition, obj.label, obj.text), 140);
+    const gloss = normalizeText(firstNonEmpty(obj.gloss, obj.gl, obj.short_gloss, obj.definition, obj.label, obj.text), 140);
     if (!gloss) continue;
-    const key = firstNonEmpty(obj.key, obj.sense_key, obj.id);
+    const key = firstNonEmpty(obj.key, obj.sense_key, obj.id, obj.lemma_key);
     const note = normalizeText(firstNonEmpty(obj.note, obj.domain, obj.usage), 120);
-    result.push({
+    push({
       ...(key ? { key } : {}),
       gloss,
       ...(note ? { note } : {}),
     });
   }
+  // Other homograph lemmas sharing the same Strong's number are distinct words with their own sense.
+  const base = normalizeStrongs(baseStrongs);
+  if (base) {
+    for (const rawSib of asArray(homographSiblings)) {
+      const sib = asRecord(rawSib);
+      if (!sib || normalizeStrongs(sib.bs) !== base) continue;
+      const gloss = normalizeText(firstNonEmpty(sib.gl, sib.gloss), 140);
+      const key = firstNonEmpty(sib.lk, sib.lemma_key);
+      if (!gloss) continue;
+      push({ ...(key ? { key } : {}), gloss, note: 'Separate homograph lemma under the same Strong\'s number' });
+    }
+  }
   return result.length > 0 ? result : undefined;
 }
 
-function compactLxx(raw: unknown): CompactWord['lxx'] | undefined {
+function compactLxx(raw: unknown, sourceStrongs?: string): CompactWord['lxx'] | undefined {
   const items = asArray(raw);
   if (items.length === 0) return undefined;
   const result: NonNullable<CompactWord['lxx']> = [];
+  const byTarget = new Map<string, number>();
+  const src = normalizeStrongs(sourceStrongs);
   for (const item of items) {
     const obj = asRecord(item);
     if (!obj) continue;
-    const script = firstNonEmpty(obj.script, obj.greek, obj.lemma, obj.word, obj.text);
+    const script = firstNonEmpty(obj.script, obj.greek, obj.hebrew, obj.lemma, obj.word, obj.text);
     const gloss = normalizeText(firstNonEmpty(obj.gloss, obj.english, obj.meaning), 100);
     if (!script && !gloss) continue;
-    const strongs = normalizeStrongs(firstNonEmpty(obj.strongs, obj.greek_strongs));
+    const strongs = normalizeStrongs(firstNonEmpty(obj.strongs, obj.target_strongs, obj.greek_strongs))
+      .replace(/^([HG])0*(\d+)([A-Z]*)$/, (_, language: string, digits: string, suffix: string) =>
+        `${language}${digits.padStart(4, '0')}${suffix}`);
     const count = typeof obj.count === 'number' && Number.isFinite(obj.count)
       ? obj.count
       : typeof obj.occurrences === 'number' && Number.isFinite(obj.occurrences)
         ? obj.occurrences
         : undefined;
+    // The same target is often listed by two evidence sources (alignment bridge + Swete witness): merge, keep max count.
+    const targetKey = strongs || script;
+    const existingIdx = targetKey ? byTarget.get(targetKey) : undefined;
+    if (existingIdx !== undefined) {
+      const prev = result[existingIdx];
+      if (count !== undefined && (prev.count === undefined || count > prev.count)) prev.count = count;
+      if (!prev.script && script) prev.script = script;
+      if (!prev.gloss && gloss) prev.gloss = gloss;
+      continue;
+    }
+    const direction = src && strongs
+      ? (src.startsWith('G') && strongs.startsWith('H')
+        ? 'hebrew_source_rendered_by_this_greek'
+        : src.startsWith('H') && strongs.startsWith('G')
+          ? 'greek_rendering_of_this_hebrew'
+          : undefined)
+      : undefined;
+    if (targetKey) byTarget.set(targetKey, result.length);
     result.push({
       ...(strongs ? { strongs } : {}),
-      script: script || gloss,
+      script,
       gloss,
       ...(count !== undefined ? { count } : {}),
+      ...(direction ? { direction } : {}),
     });
   }
   return result.length > 0 ? result : undefined;
@@ -380,29 +428,22 @@ export function compactWordFromData(opts: CompactWordOptions): CompactWord {
   const token = opts.token ?? null;
   const profile = opts.profile ?? null;
   const wordRow = opts.wordRow ?? null;
-
+  const tokenLemmaKey = firstNonEmpty(token?.lemma_key);
+  const profileLemmaKey = firstNonEmpty(profile?.lemma_key, profile?.lk);
+  const matchingProfile = !tokenLemmaKey || !profileLemmaKey || tokenLemmaKey === profileLemmaKey;
   const lemma = firstNonEmpty(
-    profile?.lemma,
-    profile?.sc,
     token?.lemma,
-    wordRow?.lemma,
-    wordRow?.original_word,
     token?.lexical_form,
-    token?.text,
-    token?.surface,
-    token?.form,
-    wordRow?.word,
+    matchingProfile ? profile?.lemma : '',
+    matchingProfile ? profile?.sc : '',
+    wordRow?.lemma,
   );
-  const form = firstNonEmpty(
-    token?.text,
-    token?.surface,
-    token?.form,
-    token?.word,
-    wordRow?.word,
-    wordRow?.original_word,
-    profile?.form,
-    lemma,
-  );
+  // Anchored mode: the caller selected one source token, so form/grammar/gloss describe that occurrence.
+  // Lemma mode: describe the lexeme only; never borrow an arbitrary inflected sample as if it were this word.
+  const anchored = token !== null;
+  const form = anchored
+    ? firstNonEmpty(token?.text, token?.surface, token?.form, token?.word)
+    : '';
   const strongs = normalizeStrongs(
     firstNonEmpty(
       token?.strongs,
@@ -413,59 +454,43 @@ export function compactWordFromData(opts: CompactWordOptions): CompactWord {
       profile?.strongs_id,
     ),
   );
-  const lemmaKey = firstNonEmpty(profile?.lemma_key, profile?.lk, token?.lemma_key, wordRow?.lemma_key);
+  const lemmaKey = anchored
+    ? tokenLemmaKey
+    : firstNonEmpty(profile?.lemma_key, profile?.lk, wordRow?.lemma_key);
   const transliteration = cleanTransliteration(
-    firstNonEmpty(
-      token?.transliteration,
-      token?.tr,
-      profile?.transliteration,
-      profile?.tr,
-      wordRow?.transliteration,
-      wordRow?.translit,
-    ),
-    lemma || form,
+    anchored
+      ? firstNonEmpty(token?.transliteration, token?.tr)
+      : firstNonEmpty(profile?.transliteration, profile?.tr),
+    anchored ? form : lemma,
   );
-  const engArr = asArray(wordRow?.english_translations).filter((x): x is string => typeof x === 'string');
+  const engArr = anchored ? asArray(wordRow?.english_translations).filter((x): x is string => typeof x === 'string') : [];
   const gloss = normalizeText(
-    firstNonEmpty(
-      token?.gloss,
-      profile?.gloss,
-      profile?.gl,
-      wordRow?.gloss,
-      wordRow?.short_gloss,
-      engArr[0],
-      wordRow?.definition,
-    ),
+    anchored
+      ? firstNonEmpty(token?.gloss, profile?.gloss, profile?.gl, engArr[0])
+      : firstNonEmpty(profile?.gloss, profile?.gl, wordRow?.short_gloss, wordRow?.definition),
     180,
   );
-  const grammar = firstNonEmpty(
-    token?.grammar,
-    token?.code,
-    token?.morph_desc,
-    token?.morphology,
-    token?.morph,
-    profile?.grammar,
-    wordRow?.grammar_code,
-    wordRow?.morphology,
-  );
+  const grammar = anchored
+    ? firstNonEmpty(token?.grammar, token?.code, token?.morph_desc, token?.morphology, token?.morph)
+    : '';
   const pos = firstNonEmpty(token?.pos_class, token?.pos, profile?.pos_class, profile?.pos, wordRow?.pos);
   const rawTotalVerses = profile?.total_verses ?? profile?.verse_count ?? wordRow?.total_verses;
   const totalVerses = typeof rawTotalVerses === 'number' && Number.isFinite(rawTotalVerses)
     ? rawTotalVerses
     : undefined;
 
-  const senses = compactSenses(profile?.senses ?? wordRow?.senses);
-  const lxx = compactLxx(profile?.lxx ?? profile?.lxx_relations ?? profile?.lxx_equivalents ?? wordRow?.lxx);
+  const senses = compactSenses(profile?.senses ?? wordRow?.senses, profile?.homograph_siblings, strongs);
+  const lxx = compactLxx(profile?.lxx ?? profile?.lxx_relations ?? profile?.lxx_equivalents ?? wordRow?.lxx, strongs);
 
   const out: CompactWord = {
-    form,
+    ...(form ? { form } : {}),
     lemma,
     strongs,
     ...(lemmaKey ? { lemma_key: lemmaKey } : {}),
     transliteration,
     gloss,
     ...(senses ? { senses } : {}),
-    grammar,
+    ...(grammar ? { grammar } : {}),
     ...(pos ? { pos } : {}),
     ...(totalVerses !== undefined ? { total_verses: totalVerses } : {}),
     ...(lxx ? { lxx } : {}),
@@ -638,7 +663,8 @@ export function normalizeDiscoveryConnection(rawConn: Record<string, unknown>): 
   }
 
   const title = normalizeText(
-    firstNonEmpty(rawConn.title, rawConn.label, rawConn.headline, rawConn.summary, relationRaw),
+    firstNonEmpty(rawConn.title, rawConn.label, rawConn.headline, rawConn.summary, relationRaw)
+      .replace(/^R12 (\d+)-hop discovery: /, '$1-hop: '),
     140,
   );
   const id = firstNonEmpty(
@@ -658,16 +684,22 @@ export function normalizeDiscoveryConnection(rawConn: Record<string, unknown>): 
   );
   const rawTier = rawConn.tier ?? rawConn.evidence_tier ?? rawConn.confidence_tier;
   const tier = typeof rawTier === 'number' && Number.isFinite(rawTier) ? rawTier : undefined;
+  let whyText = firstNonEmpty(
+    rawConn.why, rawConn.explanation, rawConn.reason, rawConn.rationale,
+    rawConn.description, rawConn.summary, title,
+  );
+  // Remove repeated discovery machinery before the existing text budget is applied.
+  // This keeps more of the actual biblical path, without changing selected edges or scores.
+  whyText = whyText
+    .replace(/^(\d+)-hop source-backed discovery path \(([^,;)]+)[^)]*\): /, '$1-hop path ($2): ')
+    .replace(/--\[lxx_translation_bridge\]-->/g, '—LXX→')
+    .replace(/--\[gram_grammatical_subject_of\]-->/g, '—subject of→')
+    .replace(/--\[gram_grammatical_object_of\]-->/g, '—object of→')
+    .replace(/--\[gram_modifies\]-->/g, '—modifies→')
+    .replace(/--\[lex_source_provided_lexical_equivalent\]-->/g, '—source lexical equivalent→')
+    .replace(/^Syntactic dependency analysis identifies direct grammatical connection \(([^)]+)\) between /, '$1: ');
   const why = normalizeText(
-    firstNonEmpty(
-      rawConn.why,
-      rawConn.explanation,
-      rawConn.reason,
-      rawConn.rationale,
-      rawConn.description,
-      rawConn.summary,
-      title,
-    ),
+    whyText,
     240,
   );
   const refs = extractRefStrings(rawConn);
@@ -914,16 +946,16 @@ function mapSpellingSuggestions(
   for (const rawItem of items) {
     const item = asRecord(rawItem);
     if (!item) continue;
-    const strongs = normalizeStrongs(firstNonEmpty(item.strongs, item.target_strongs, item.id));
-    const script = firstNonEmpty(item.script, item.lemma, item.word, item.surface);
-    const gloss = normalizeText(firstNonEmpty(item.gloss, item.short_gloss, item.definition), 120);
+    const strongs = normalizeStrongs(firstNonEmpty(item.bs, item.strongs, item.target_strongs, item.id));
+    const script = firstNonEmpty(item.sc, item.script, item.lemma, item.word, item.surface);
+    const gloss = normalizeText(firstNonEmpty(item.gl, item.gloss, item.short_gloss, item.definition), 120);
     if (!strongs && !script) continue;
     const key = `${strongs}|${script}`;
     if (seen.has(key)) continue;
     seen.add(key);
 
-    const translit = cleanTransliteration(firstNonEmpty(item.transliteration, item.translit), script);
-    const shared = firstNonEmpty(item.shared, item.skeleton, item.shared_consonants, item.match_type);
+    const translit = cleanTransliteration(firstNonEmpty(item.tr, item.transliteration, item.translit), script);
+    const shared = firstNonEmpty(item.cons, item.shared, item.skeleton, item.shared_consonants, item.match_type);
     const note = normalizeText(
       firstNonEmpty(item.note, ORTHOGRAPHIC_WARNING),
       180,
@@ -943,34 +975,131 @@ function mapSpellingSuggestions(
   return out;
 }
 
+export interface EtymologyOptions {
+  /** Homograph lemma selected by the caller (e.g. a source token's lemma_key). */
+  activeLemmaKey?: string;
+  /** Contextual gloss for display; never sufficient to choose a homograph lemma. */
+  contextualGloss?: string;
+  /** Canonical word id of an anchored occurrence (enables token-level component candidates). */
+  wordId?: number | null;
+}
+
+const ROOT_FIELDS = [
+  'root_key', 'root_script', 'root_transliteration', 'lemma_key', 'relation_type', 'base_strongs',
+  'lemma_script', 'primary_gloss', 'transliteration', 'evidence_note',
+] as const;
+
+function compactFormationRecord(rec: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const key of ROOT_FIELDS) {
+    const val = rec[key];
+    if (typeof val === 'string' && val.trim()) out[key] = key === 'evidence_note' ? normalizeText(val, 200) : val.trim();
+  }
+  if (rec.implies_synonymy === false) out.implies_synonymy = false;
+  return out;
+}
+
 /**
  * Retrieve documented etymology/formation (roots, formations, relatives) via
- * get_word_formation_v1 and separate non-etymological orthographic candidates.
+ * get_word_formation_v1. Roots are attributed to the specific homograph lemma that carries
+ * them: roots documented only for a different lemma under the same Strong's number are listed
+ * separately and never presented as this word's etymology. Spelling similarity is kept apart.
  */
 export async function buildWordEtymology(
   read: DatabaseReader,
   strongs: string,
   profile: Record<string, unknown> | null,
   limit: number,
+  options: EtymologyOptions = {},
 ): Promise<NonNullable<CompactWord['etymology']>> {
   const safeLimit = Math.max(1, Math.min(Number.isFinite(limit) ? limit : 10, 50));
   let roots: Array<Record<string, unknown>> = [];
   let formations: Array<Record<string, unknown>> = [];
   let relatives: Array<Record<string, unknown>> = [];
+  let otherHomographRoots: Array<Record<string, unknown>> = [];
+  let components: Array<Record<string, unknown>> = [];
+  let activeLemmaKey = options.activeLemmaKey ?? '';
 
   try {
-    const rows = await callRpc(read, 'get_word_formation_v1', { p_query: strongs }, 1, 0);
+    const rows = await callRpc(
+      read,
+      'get_word_formation_v1',
+      { p_query: strongs, ...(options.wordId ? { p_word_id: options.wordId } : {}) },
+      1,
+      0,
+    );
     const first = asRecord(rows[0]);
     if (first) {
-      roots = asArray(first.documented_roots ?? first.roots)
+      const matched = asArray(first.matched_lemmas)
+        .map((m) => asRecord(m))
+        .filter((m): m is Record<string, unknown> => m !== null);
+      const glossByLemma = new Map<string, string>();
+      for (const m of matched) {
+        const lk = firstNonEmpty(m.lemma_key);
+        if (lk) glossByLemma.set(lk.toLowerCase(), firstNonEmpty(m.primary_gloss));
+      }
+      if (!activeLemmaKey) {
+        activeLemmaKey = firstNonEmpty(profile?.lk, profile?.lemma_key);
+        if (!activeLemmaKey && matched.length === 1) activeLemmaKey = firstNonEmpty(matched[0]?.lemma_key);
+      }
+      const activeLc = activeLemmaKey.toLowerCase();
+
+      const allRoots = asArray(first.documented_roots ?? first.roots)
         .map((r) => asRecord(r))
         .filter((r): r is Record<string, unknown> => r !== null);
+      const allRelatives = asArray(first.root_relatives ?? first.relatives)
+        .map((r) => asRecord(r))
+        .filter((r): r is Record<string, unknown> => r !== null);
+      const keptRootKeys = new Set<string>();
+      for (const root of allRoots) {
+        const lk = firstNonEmpty(root.lemma_key);
+        if (activeLc && lk.toLowerCase() === activeLc) {
+          roots.push(compactFormationRecord(root));
+          keptRootKeys.add(firstNonEmpty(root.root_key));
+        } else {
+          const rk = firstNonEmpty(root.root_key);
+          otherHomographRoots.push({
+            ...compactFormationRecord(root),
+            homograph_gloss: glossByLemma.get(lk.toLowerCase()) || undefined,
+            relatives: allRelatives.filter((r) => firstNonEmpty(r.root_key) === rk).map(compactFormationRecord).slice(0, 3),
+            note: activeLc && lk
+              ? 'Other homograph lemma; not the selected word.'
+              : 'Lemma assignment unavailable; do not attribute this root to a selected sense.',
+          });
+        }
+      }
+      relatives = allRelatives
+        .filter((r) => keptRootKeys.has(firstNonEmpty(r.root_key)))
+        .map(compactFormationRecord);
       formations = asArray(first.lexical_formations ?? first.formations)
         .map((r) => asRecord(r))
-        .filter((r): r is Record<string, unknown> => r !== null);
-      relatives = asArray(first.root_relatives ?? first.relatives)
-        .map((r) => asRecord(r))
-        .filter((r): r is Record<string, unknown> => r !== null);
+        .filter((r): r is Record<string, unknown> => r !== null)
+        .filter((r) => {
+          const lk = firstNonEmpty(r.lemma_key);
+          return Boolean(activeLc && lk.toLowerCase() === activeLc);
+        })
+        .map(compactFormationRecord);
+
+      if (options.wordId) {
+        const seen = new Set<string>();
+        for (const cand of asArray(first.word_form_component_candidates)) {
+          const c = asRecord(cand);
+          if (!c) continue;
+          const lk = firstNonEmpty(c.lemma_key);
+          if (c.is_context_ambiguous !== false || !activeLc || lk.toLowerCase() !== activeLc) continue;
+          const entry = {
+            surface: firstNonEmpty(c.surface),
+            role: firstNonEmpty(c.morpheme_role),
+            grammar: firstNonEmpty(c.grammar_code),
+            gloss: firstNonEmpty(c.gloss),
+          };
+          const key = JSON.stringify(entry);
+          if (seen.has(key)) continue;
+          seen.add(key);
+          components.push(entry);
+        }
+        components = components.slice(0, 6);
+      }
     }
   } catch {
     // Graceful degradation when word formation RPC is temporarily unavailable.
@@ -1003,21 +1132,25 @@ export async function buildWordEtymology(
   }
 
   const hasDocumented = roots.length > 0 || formations.length > 0 || relatives.length > 0;
-  const note = hasDocumented
-    ? spellingSuggestions.length > 0
-      ? `Documented lexical formation records returned. ${ORTHOGRAPHIC_WARNING}`
-      : 'Documented lexical formation records returned.'
-    : spellingSuggestions.length > 0
-      ? `No documented etymology/root record found. ${ORTHOGRAPHIC_WARNING}`
-      : 'No documented etymology, root, or formation record found for this word.';
+  const noteParts: string[] = [];
+  if (hasDocumented) noteParts.push('Documented lexical formation records for the selected lemma.');
+  else if (otherHomographRoots.length > 0) {
+    noteParts.push(activeLemmaKey
+      ? 'No verified root for the selected lemma; other or unassigned roots are separate.'
+      : 'Lemma selection is unresolved; roots are listed separately without assigning them to a sense.');
+  } else noteParts.push('No documented etymology, root, or formation record found for this word.');
+  if (spellingSuggestions.length > 0) noteParts.push(ORTHOGRAPHIC_WARNING);
 
   return {
     status: hasDocumented ? 'documented' : 'unavailable',
+    ...(activeLemmaKey ? { lemma_key: activeLemmaKey } : {}),
     ...(roots.length > 0 ? { roots: roots.slice(0, safeLimit) } : {}),
     ...(formations.length > 0 ? { formations: formations.slice(0, safeLimit) } : {}),
     ...(relatives.length > 0 ? { relatives: relatives.slice(0, safeLimit) } : {}),
+    ...(otherHomographRoots.length > 0 ? { other_homograph_roots: otherHomographRoots.slice(0, 3) } : {}),
+    ...(components.length > 0 ? { morphological_components: components } : {}),
     ...(spellingSuggestions.length > 0 ? { spelling_suggestions: spellingSuggestions } : {}),
-    note,
+    note: noteParts.join(' '),
   };
 }
 
@@ -1099,4 +1232,39 @@ export async function buildWordRealworld(
     ...(conceptProperties.length > 0 ? { concept_properties: conceptProperties } : {}),
     sources,
   };
+}
+
+function consonantKey(val: string): string {
+  return val
+    .normalize('NFD')
+    .replace(/[\u0591-\u05af]/g, '')
+    .replace(/[^\p{L}\p{M}]/gu, '')
+    .toLowerCase();
+}
+
+function padStrongs(val: string): string {
+  const m = /^([HG])0*(\d+)/i.exec(val.trim());
+  return m ? `${m[1].toUpperCase()}${m[2].padStart(4, '0')}` : '';
+}
+
+/**
+ * A lexical-table row may enrich a passage token only if it is the same source token:
+ * identical word-form id, surface letters AND Strong's number. Otherwise its
+ * transliteration/grammar belong to another word and must not be attached.
+ */
+export function verifyWordRowAlignment(token: Record<string, unknown>, row: Record<string, unknown> | null | undefined): boolean {
+  if (!row) return false;
+  const wid = Number(token.word_id);
+  if (!Number.isInteger(wid) || wid <= 0 || Number(row.id) !== wid) return false;
+  const tokCons = consonantKey(firstNonEmpty(token.surface));
+  const rowCons = consonantKey(firstNonEmpty(row.original_word));
+  const tokBs = padStrongs(firstNonEmpty(token.strongs));
+  const rowBs = padStrongs(firstNonEmpty(row.strongs_nr));
+  const tokenExtended = /[A-Z]+$/i.exec(firstNonEmpty(token.strongs))?.[0].toUpperCase();
+  const rowExtended = /[A-Z]+$/i.exec(firstNonEmpty(row.strongs_nr))?.[0].toUpperCase();
+  if (tokenExtended && rowExtended && tokenExtended !== rowExtended) return false;
+  const tokenLemma = firstNonEmpty(token.lemma_key);
+  const rowLemma = firstNonEmpty(row.lemma_key);
+  if (tokenLemma && rowLemma && tokenLemma !== rowLemma) return false;
+  return Boolean(tokCons && rowCons && tokCons === rowCons && tokBs && rowBs && tokBs === rowBs);
 }

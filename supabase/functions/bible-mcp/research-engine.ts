@@ -14,8 +14,10 @@ import {
 import { computeGematria, type GematriaResult } from './gematria.ts';
 import { NOTE_SECURITY_NOTICE, formatCompactNote } from './notes-tools.ts';
 import {
+  cleanTransliteration,
   isFunctionWord,
   normalizeDiscoveryConnection,
+  verifyWordRowAlignment,
   type CompactConnection,
 } from './word-model.ts';
 
@@ -380,15 +382,14 @@ async function hydrateCompactVersesByIds(
   read: DatabaseReader,
   verseIds: number[],
 ): Promise<Record<string, unknown>[]> {
-  if (verseIds.length === 0) return [];
-  const rows = await callRpc(
-    read,
-    'get_passage_compact_v1',
-    { verse_ids: verseIds, include_profiles: false },
-    verseIds.length,
-    0,
-  );
-  return extractRowsOrField(rows, 'verses', 'items', 'passages');
+  const verses: Record<string, unknown>[] = [];
+  for (let offset = 0; offset < verseIds.length; offset += 50) {
+    const ids = verseIds.slice(offset, offset + 50);
+    const rows = await callRpc(read, 'get_passage_compact_v1',
+      { verse_ids: ids, include_profiles: false, max_verses: ids.length }, ids.length, 0);
+    verses.push(...extractRowsOrField(rows, 'verses', 'items', 'passages'));
+  }
+  return verses;
 }
 
 async function hydrateCompactVersesByPassage(
@@ -396,14 +397,16 @@ async function hydrateCompactVersesByPassage(
   parsed: ParsedPassage,
   limit = 50,
 ): Promise<Record<string, unknown>[]> {
-  const rows = await callRpc(
-    read,
-    'get_passage_compact_v1',
-    { passages: parsed.passages, include_profiles: false },
-    limit,
-    0,
-  );
-  return extractRowsOrField(rows, 'verses', 'items', 'passages');
+  const verses: Record<string, unknown>[] = [];
+  while (verses.length < limit) {
+    const pageLimit = Math.min(50, limit - verses.length);
+    const rows = await callRpc(read, 'get_passage_compact_v1',
+      { passages: parsed.passages, include_profiles: false, max_verses: pageLimit, offset: verses.length }, pageLimit, 0);
+    const page = extractRowsOrField(rows, 'verses', 'items', 'passages');
+    verses.push(...page);
+    if (page.length < pageLimit || rows[0]?.pagination && asRecord(rows[0].pagination)?.has_more === false) break;
+  }
+  return verses;
 }
 
 async function executeEvidence(
@@ -810,100 +813,115 @@ async function executeChronologyOccurrences(
     };
   }
   const limit = clampLimit(op.limit, 80, 80);
-
-  let verseIds: number[] = [];
+  let allIds: number[] = [];
+  let totalMatchingVerses = 0;
   if (op.word) {
     const resolved = await resolveWordFast(ctx.read, op.word);
     if (resolved) {
       const profile = await fetchWordProfileWithVids(ctx.read, resolved);
-      verseIds = profile.allVids.slice(0, limit);
+      allIds = profile.allVids;
+      totalMatchingVerses = profile.totalVerses;
     }
   } else if (op.passage) {
     const parsed = parsePassageString(op.passage);
-    if (!parsed) {
-      return {
-        result: { status: 'invalid_request', error: `Could not parse passage: ${op.passage}` },
-        storedIds: [],
-      };
-    }
-    const hydrated = await hydrateCompactVersesByPassage(ctx.read, parsed, limit);
-    verseIds = hydrated
-      .map((v) => v.verse_id)
-      .filter((id): id is number => typeof id === 'number' && Number.isInteger(id))
-      .slice(0, limit);
+    if (!parsed) return { result: { status: 'invalid_request', error: 'Could not parse passage: ' + op.passage }, storedIds: [] };
+    const hydrated = await hydrateCompactVersesByPassage(ctx.read, parsed, parsed.verse_count);
+    allIds = hydrated.map((v) => Number(v.verse_id)).filter((id) => Number.isInteger(id) && id > 0);
+    totalMatchingVerses = parsed.verse_count;
   }
-
-  if (verseIds.length === 0) {
-    return {
-      result: { status: 'not_found', verse_ids: [], models: [] },
-      storedIds: [],
-    };
-  }
-
-  const rows = await callRpc(
-    ctx.read,
-    'query_chronology_assertions_batch',
-    { verse_ids: verseIds },
-    verseIds.length,
-    0,
-  );
-  const assertions = extractRowsOrField(rows, 'assertions', 'items', 'results');
-
-  const grouped = new Map<
-    string,
-    {
-      model_id: string;
-      date_label: string;
-      earliest_year: number | null;
-      latest_year: number | null;
-      axis: string;
-      verse_ids: number[];
-      occurrences: Array<Record<string, unknown>>;
+  // Bound work independently of the witness display limit. A few early
+  // occurrences cannot describe the historical distribution of a whole lemma.
+  const verseIds = [...new Set(allIds)].slice(0, 1000);
+  if (!verseIds.length) return { result: { status: 'not_found', verse_ids: [], models: [] }, storedIds: [] };
+  const assertions: Record<string, unknown>[] = [];
+  const modelNames = new Map<string, string>();
+  let assertionCapReached = false;
+  for (let offset = 0; offset < verseIds.length; offset += 80) {
+    const ids = verseIds.slice(offset, offset + 80);
+    const rows = await callRpc(ctx.read, 'query_chronology_assertions_batch', { verse_ids: ids }, ids.length, 0);
+    const batch = extractRowsOrField(rows, 'assertions', 'items', 'results');
+    assertionCapReached ||= batch.length >= 400;
+    assertions.push(...batch);
+    for (const raw of asArray(rows[0]?.models)) {
+      const model = asRecord(raw);
+      if (model) modelNames.set(String(model.id), firstNonEmpty(model.name));
     }
-  >();
-
+  }
+  const groups = new Map<string, { model_id: string; model: string; axis: string; earliest_year: number | null; latest_year: number | null; verse_ids: Set<number> }>();
+  const datedIds = new Set<number>();
+  const requestedIds = new Set(verseIds);
   for (const row of assertions) {
-    const modelId = firstNonEmpty(row.model_id, row.model, 'unknown_model');
-    const dateLabel = firstNonEmpty(row.date_label, row.date, 'unspecified');
+    const vid = Number(row.verse_id);
+    if (!requestedIds.has(vid)) continue;
+    const modelId = String(row.model_id ?? row.model ?? 'unknown_model');
+    const axis = firstNonEmpty(row.axis, row.chronology_axis, 'unspecified');
     const earliest = typeof row.earliest_year === 'number' ? row.earliest_year : null;
     const latest = typeof row.latest_year === 'number' ? row.latest_year : null;
-    const axis = firstNonEmpty(row.axis, row.chronology_axis, 'event');
-    const key = `${modelId}|${dateLabel}|${earliest ?? ''}|${latest ?? ''}|${axis}`;
-
-    let group = grouped.get(key);
-    if (!group) {
-      group = {
-        model_id: modelId,
-        date_label: dateLabel,
-        earliest_year: earliest,
-        latest_year: latest,
-        axis,
-        verse_ids: [],
-        occurrences: [],
-      };
-      grouped.set(key, group);
-    }
-
-    const vid = row.verse_id;
-    if (typeof vid === 'number' && Number.isInteger(vid) && !group.verse_ids.includes(vid)) {
-      group.verse_ids.push(vid);
-    }
-    group.occurrences.push({
-      ...(typeof vid === 'number' ? { verse_id: vid } : {}),
-      ...(row.ref ? { ref: row.ref } : {}),
-      ...(row.what_was_dated || row.event_label
-        ? { what_was_dated: firstNonEmpty(row.what_was_dated, row.event_label) }
-        : {}),
-    });
+    // Keep uncertain intervals intact; assigning their midpoint invents precision.
+    const exact = earliest !== null && earliest === latest;
+    const start = exact ? Math.floor(earliest / 100) * 100 : earliest;
+    const end = exact ? start! + 99 : latest;
+    const key = [modelId, axis, start, end].join('|');
+    if (!groups.has(key)) groups.set(key, { model_id: modelId, model: modelNames.get(modelId) || modelId, axis, earliest_year: start, latest_year: end, verse_ids: new Set() });
+    groups.get(key)!.verse_ids.add(vid);
+    if (earliest !== null || latest !== null) datedIds.add(vid);
   }
-
+  const distribution = [...groups.values()].sort((a, b) => a.model_id.localeCompare(b.model_id) || a.axis.localeCompare(b.axis) || (a.earliest_year ?? Infinity) - (b.earliest_year ?? Infinity));
   return {
     result: {
       status: 'ok',
-      verse_ids: verseIds,
-      models: Array.from(grouped.values()),
+      count_unit: 'distinct matching verses per model/axis/date bin, not token occurrences',
+      assumptions: 'Chronology models are interpretive. Axes stay separate; exact dates use 100-year bins, uncertain intervals stay intact. Astronomical years: 0 = 1 BC. Verses may occur in multiple bins/models.',
+      coverage: { total_matching_verses: totalMatchingVerses, indexed_verse_ids: allIds.length, examined_verses: verseIds.length, remaining_verses: Math.max(0, totalMatchingVerses - verseIds.length), selection: 'first indexed verses in canonical order, capped at 1000; not a random sample', dated_verses: datedIds.size, undated_verses: verseIds.length - datedIds.size, complete_matching_verse_coverage: totalMatchingVerses === verseIds.length && !assertionCapReached, assertion_cap_reached: assertionCapReached, max_examined_verses: 1000 },
+      models: distribution.map((g) => ({ model_id: g.model_id, model: g.model, axis: g.axis, earliest_year: g.earliest_year, latest_year: g.latest_year, count: g.verse_ids.size, verse_ids: [...g.verse_ids].slice(0, limit), witnesses_truncated: g.verse_ids.size > limit })),
     },
     storedIds: verseIds,
+  };
+}
+
+function readableReference(value: unknown): string {
+  const ref = typeof value === 'string' ? value : '';
+  return ref.replace(/^(\d{1,2}):(\d{1,3}):(\d{1,3})(?=$|\s|[-–])/, (_match, b, c, v) => formatRef(Number(b), Number(c), Number(v)));
+}
+
+function compactComparisonVerse(verse: Record<string, unknown>, wordById: Map<number, Record<string, unknown>>, lexicon: Record<string, unknown>): Record<string, unknown> {
+  const tokens = asArray(verse.words ?? verse.tokens).map((raw) => {
+    const token = asRecord(raw) ?? {};
+    const fields = ['position', 'word_id', 'surface', 'lemma', 'lemma_key', 'lemma_candidates', 'sense_status', 'strongs', 'all_strongs', 'gloss', 'transliteration', 'grammar_code', 'pos_class', 'alignment', 'alignment_status', 'source_token_id', 'source_word_id', 'canonical_occurrence_id'];
+    const compact = Object.fromEntries(fields.filter((key) => token[key] !== undefined && token[key] !== null && token[key] !== '').map((key) => [key, token[key]]));
+    const row = wordById.get(Number(token.word_id));
+    // Never attach another word's morphology or transliteration, even if its ID exists.
+    delete compact.transliteration;
+    delete compact.grammar_code;
+    if (verifyWordRowAlignment(token, row)) {
+      const tr = cleanTransliteration(firstNonEmpty(row?.transliteration));
+      const code = firstNonEmpty(row?.grammar_code);
+      if (tr) compact.transliteration = tr;
+      if (code) compact.grammar_code = code;
+    }
+    const lexical = Object.fromEntries(['lemma', 'pos_class', 'lemma_candidates', 'sense_status'].filter((key) => compact[key] !== undefined).map((key) => [key, compact[key]]));
+    const baseKey = firstNonEmpty(token.lemma_key, token.strongs);
+    if (baseKey) {
+      // Preserve distinct records if source variants under one lemma disagree.
+      let key = baseKey;
+      for (let suffix = 2; lexicon[key]; suffix++) {
+        const stored = { ...asRecord(lexicon[key]) };
+        delete stored.lemma_key;
+        if (JSON.stringify(stored) === JSON.stringify(lexical)) break;
+        key = baseKey + ':' + suffix;
+      }
+      lexicon[key] = key === baseKey ? lexical : { ...lexical, lemma_key: token.lemma_key };
+      compact.key = key;
+      for (const field of ['lemma', 'lemma_key', 'pos_class', 'lemma_candidates', 'sense_status']) delete compact[field];
+    }
+    return compact;
+  });
+  return {
+    verse_id: verse.verse_id,
+    ref: verse.ref || formatRef(Number(verse.book), Number(verse.chapter), Number(verse.verse)),
+    original: firstNonEmpty(verse.original, verse.original_text, verse.text, tokens.map((t) => t.surface).join(' ')),
+    english: firstNonEmpty(verse.web, verse.english),
+    tokens,
   };
 }
 
@@ -939,7 +957,14 @@ async function executeGeographySearch(
       modern_name: firstNonEmpty(p.modern_name, p.modern) || null,
       lat,
       lon,
-      linked_passages: asArray(p.linked_passages ?? p.passages ?? p.refs).slice(0, 12),
+      ...(p.is_non_physical !== undefined ? { is_non_physical: p.is_non_physical } : {}),
+      linked_passages: asArray(p.linked_passages ?? p.passages ?? p.refs).slice(0, 12).map((raw) => {
+        const link = asRecord(raw);
+        return link
+          ? { ...link, ref: readableReference(link.ref ?? link.evidence_ref), role: firstNonEmpty(link.role, link.relationship_type, 'unknown') }
+          : { ref: readableReference(raw), role: 'unknown' };
+      }),
+      coverage: 'Published links only; roles are source assertions. Unknown roles do not establish event or audience location.',
       events: asArray(p.events).slice(0, 8),
     };
   });
@@ -968,9 +993,18 @@ async function executePassageCompare(
   const hydratedPassages = await Promise.all(
     parsedPassages.map(async ({ parsed }) => ({
       normalized: parsed.normalized,
-      verses: await hydrateCompactVersesByPassage(ctx.read, parsed, 20),
+      verses: await hydrateCompactVersesByPassage(ctx.read, parsed, parsed.verse_count),
     })),
   );
+  const wordIds = [...new Set(hydratedPassages.flatMap((p) => p.verses.flatMap((v) => asArray(v.words ?? v.tokens).map((t) => Number(asRecord(t)?.word_id)))))]
+    .filter((id) => Number.isInteger(id) && id > 0);
+  const wordById = new Map<number, Record<string, unknown>>();
+  try {
+    const rows = wordIds.length ? await callRpc(ctx.read, 'get_words_batch', { word_ids: wordIds }, wordIds.length, 0) : [];
+    for (const row of rows) wordById.set(Number(row.id), row);
+  } catch {
+    // Verified source tokens remain available without optional enrichment.
+  }
 
   const lemmaCountsPerPassage = hydratedPassages.map((p) => {
     const map = new Map<string, { strongs: string; lemma: string; gloss: string; count: number }>();
@@ -1013,6 +1047,7 @@ async function executePassageCompare(
   }
 
   let crossConnections: CompactConnection[] = [];
+  const warnings: string[] = [];
   const verseIdSets = hydratedPassages.map((p) => new Set(
     p.verses.map((v) => Number(v.verse_id)).filter((n) => Number.isInteger(n) && n > 0),
   ));
@@ -1022,7 +1057,7 @@ async function executePassageCompare(
       for (const rawXr of asArray(v.xrefs)) {
         const xr = asRecord(rawXr);
         const targetVid = Number(xr?.target_vid ?? (Array.isArray(rawXr) ? rawXr[0] : 0));
-        const targetRef = firstNonEmpty(xr?.ref, Array.isArray(rawXr) ? rawXr[1] : '');
+        const targetRef = firstNonEmpty(xr?.ref, xr?.target_ref, Array.isArray(rawXr) ? rawXr[1] : '');
         const phrase = firstNonEmpty(xr?.phrase, Array.isArray(rawXr) ? rawXr[2] : '');
         const matchedIdx = verseIdSets.findIndex((s, j) => j !== i && s.has(targetVid));
         if (matchedIdx >= 0) {
@@ -1060,12 +1095,17 @@ async function executePassageCompare(
       .map((c) => normalizeDiscoveryConnection(c))
       .filter((c): c is CompactConnection => c !== null));
   } catch {
-    // Optional graph comparison fallback.
+    warnings.push('Connection discovery unavailable; direct cross-references remain available. Retry to retrieve graph bridges.');
   }
 
+  const lexicon: Record<string, unknown> = {};
+  const passages = hydratedPassages.map((p) => ({ normalized: p.normalized, verses: p.verses.map((v) => compactComparisonVerse(v, wordById, lexicon)) }));
   return {
     status: 'ok',
-    passages: hydratedPassages,
+    passages,
+    lexicon,
+    word_enrichment: 'Transliteration/grammar require matching word ID, surface and Strong\'s. Missing fields are unverified/unavailable. tokens[].key indexes lexicon; its lemma_key is the source identity. verse_id + position identifies an occurrence.',
+    ...(warnings.length ? { warnings } : {}),
     shared_lemmas: sharedLemmas.slice(0, limit),
     cross_references_and_bridges: crossConnections.slice(0, limit),
   };
@@ -1293,6 +1333,7 @@ export async function executeResearch(
       let output: Record<string, unknown>;
       let storedIds: number[] | null = null;
 
+      try {
       switch (op.op) {
         case 'evidence':
           output = await executeEvidence(read, op);
@@ -1344,6 +1385,10 @@ export async function executeResearch(
         }
       }
 
+      } catch {
+        output = { status: 'error', error: `Research operation "${op.op}" could not complete. Retry this operation; other results are retained.`, retryable: true };
+      }
+
       if (storedIds !== null) {
         ctx.verseIdStore.set(String(idx), storedIds);
         if (op.id) ctx.verseIdStore.set(op.id, storedIds);
@@ -1357,7 +1402,7 @@ export async function executeResearch(
     }
 
     return {
-      status: 'ok',
+      status: results.every((r) => r.status === 'error') ? 'error' : results.some((r) => r.status === 'error') ? 'partial' : 'ok',
       mode: 'operations',
       results,
     };

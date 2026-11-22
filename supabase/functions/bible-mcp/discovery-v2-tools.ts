@@ -5,6 +5,7 @@ import { McpServer } from '@modelcontextprotocol/server';
 import * as z from 'zod';
 import type { DatabaseQuery, DatabaseReader } from './catalog.ts';
 import type { ChainState, ChainStep, ChainStore } from './chain-store.ts';
+import { chainEvidenceTarget, selectChainEvidence, type ChainEvidence } from './chain-evidence.ts';
 import {
   bookName,
   formatRef,
@@ -29,6 +30,7 @@ import { dlmCardInputSchema, executeSaveDlmCard } from './dlm-notes.ts';
 import { ResearchOpSchema, executeResearch } from './research-engine.ts';
 import { WORKFLOW_INSTRUCTIONS, WORKFLOW_VERSION } from './research-workflow.ts';
 import {
+  verifyWordRowAlignment,
   buildWordEtymology,
   buildWordRealworld,
   cleanTransliteration,
@@ -120,6 +122,32 @@ async function safeCallFirst(
   }
 }
 
+// Split profile decoding across bounded read RPCs to respect the free Worker CPU budget.
+// Candidate selection and ordering use the identical plan produced by the corpus handler.
+export async function fetchCompactPassage(read: DatabaseReader, args: Rec): Promise<Rec | null> {
+  const packet = await safeCallFirst(read, 'get_passage_compact_v1', { ...args, defer_profiles: true });
+  const plan = asRec(packet?.profile_plan);
+  if (!packet || !plan) return packet;
+  const candidates = asArr(plan.candidates).map(asRec).filter((c): c is Rec => c !== null);
+  const loaded: Rec = {};
+  let unavailable = false;
+  for (let offset = 0; offset < candidates.length; offset += 4) {
+    const page = await safeCallFirst(read, 'get_word_profiles_batch_v1', {
+      strongs: candidates.slice(offset, offset + 4).map(c => c.bs),
+      include_vids: false, include_forms: false, include_orth: true, include_pilot: false,
+    });
+    if (!page) unavailable = true;
+    Object.assign(loaded, asRec(page?.profiles) ?? {});
+  }
+  candidates.sort((a, b) => Number(b.freq) - Number(a.freq)
+    || Number(asRec(loaded[str(a.bs)])?.total_verses ?? Number.MAX_SAFE_INTEGER) - Number(asRec(loaded[str(b.bs)])?.total_verses ?? Number.MAX_SAFE_INTEGER)
+    || str(a.bs).localeCompare(str(b.bs)));
+  packet.profiles = Object.fromEntries(candidates.filter(c => loaded[str(c.bs)]).slice(0, Number(plan.limit)).map(c => [str(c.bs), loaded[str(c.bs)]]));
+  delete packet.profile_plan;
+  if (unavailable) packet.profiles_status = 'partial';
+  return packet;
+}
+
 function parseRealworldFlag(val: unknown): 0 | 1 {
   return val === 1 || val === true ? 1 : 0;
 }
@@ -161,6 +189,7 @@ function buildProfileDerivedConnections(profile: Rec, limit: number): CompactCon
   const sc = str(profile.sc);
   const gl = str(profile.gl);
   const out: CompactConnection[] = [];
+  const greekSource = bs.startsWith('G');
 
   for (const rawLxx of asArr(profile.lxx_relations).slice(0, 3)) {
     const lx = asRec(rawLxx);
@@ -175,10 +204,14 @@ function buildProfileDerivedConnections(profile: Rec, limit: number): CompactCon
       relation: 'lxx_translation_bridge',
       epistemic: 'documented_cross_language_bridge',
       tier: 3,
-      title: `LXX bridge: ${sc || bs} (${bs}) -> ${tSc} (${tBs}${tGl ? `, "${tGl}"` : ''})`,
-      why: cnt > 0
-        ? `Septuagint renders ${sc || bs} as ${tSc}${tGl ? ` ("${tGl}")` : ''} across ${cnt} passage(s).`
-        : `Attested Septuagint correspondence ${sc || bs} -> ${tSc}.`,
+      title: greekSource && tBs.startsWith('H')
+        ? `LXX bridge: Hebrew ${tSc || tBs} (${tBs}${tGl ? `, "${tGl}"` : ''}) rendered by Greek ${sc || bs} (${bs})`
+        : `LXX bridge: ${sc || bs} (${bs}) -> ${tSc} (${tBs}${tGl ? `, "${tGl}"` : ''})`,
+      why: greekSource && tBs.startsWith('H')
+        ? `Septuagint Greek ${sc || bs} (${bs}) renders Hebrew ${tSc || tBs} (${tBs})${cnt > 0 ? ` in ${cnt} passage(s)` : ''}.`
+        : cnt > 0
+          ? `Septuagint renders ${sc || bs} as ${tSc}${tGl ? ` ("${tGl}")` : ''} across ${cnt} passage(s).`
+          : `Attested Septuagint correspondence ${sc || bs} -> ${tSc}.`,
       refs: [],
       target: { strongs: tBs || undefined, script: tSc, gloss: tGl },
     });
@@ -248,7 +281,7 @@ function buildProfileDerivedConnections(profile: Rec, limit: number): CompactCon
   return out.slice(0, limit);
 }
 
-function buildXrefConnection(fromRef: string, fromVid: number, rawXr: unknown): CompactConnection | null {
+function buildXrefConnection(fromRef: string, fromVid: number, rawXr: unknown, concise = false): CompactConnection | null {
   let targetVid = 0;
   let targetRef = '';
   let phrase = '';
@@ -270,6 +303,17 @@ function buildXrefConnection(fromRef: string, fromVid: number, rawXr: unknown): 
   const fromOt = fromVid <= 23213;
   const toNt = targetVid > 23213;
   const isCrossTestament = (fromOt && toNt) || (!fromOt && targetVid > 0 && !toNt);
+  if (concise) {
+    return {
+      id: `r11:xref:${fromVid}:${targetVid}`,
+      relation: isCrossTestament ? 'cross_testament_reference' : 'cross_reference',
+      epistemic: 'editorial_cross_reference',
+      tier: 4,
+      title: `${targetRef}${phrase ? ` ("${phrase}")` : ''}`,
+      why: `${isCrossTestament ? 'OT/NT x' : 'X'}ref${votes > 0 ? `, ${votes} votes` : ''}`,
+      refs: [targetRef],
+    };
+  }
   return {
     id: `r11:xref:${fromVid}:${targetVid}`,
     relation: isCrossTestament ? 'cross_testament_reference' : 'cross_reference',
@@ -388,7 +432,9 @@ async function resolveWordCandidate(
         const wid = Number(anchoredToken.word_id);
         if (Number.isInteger(wid) && wid > 0) {
           const wRows = await callRpc(read, 'get_words_batch', { word_ids: [wid] }, 1, 0).catch(() => []);
-          anchoredWordRow = asRec(wRows[0]);
+          const candidateRow = asRec(wRows[0]);
+          anchoredWordRow = verifyWordRowAlignment(anchoredToken, candidateRow) ? candidateRow : null;
+          if (anchoredWordRow) anchoredToken = { ...anchoredToken, tr: anchoredWordRow.transliteration, code: anchoredWordRow.grammar_code };
         }
         const tokStrongs = str(anchoredToken.strongs);
         if (tokStrongs) lookupQuery = tokStrongs;
@@ -472,7 +518,8 @@ async function buildFullCompactWord(
   const wordRow = wordDetailsRes.wordRow;
 
   const [etymologyData, realworldData, wordNotesRaw] = await Promise.all([
-    options.etymology > 0 ? buildWordEtymology(read, bs, fullProfile, options.etymology) : Promise.resolve(null),
+    options.etymology > 0 ? buildWordEtymology(read, bs, fullProfile, options.etymology,
+      anchoredToken ? { activeLemmaKey: str(anchoredToken.lemma_key), wordId } : {}) : Promise.resolve(null),
     options.realworld === 1
       ? buildWordRealworld(read, bs, str(fullProfile.gl), wordRow, fullProfile)
       : Promise.resolve(null),
@@ -508,7 +555,7 @@ async function buildFullCompactWord(
     }
   }
 
-  const sc = str(fullProfile.sc, str(anchoredToken?.lemma));
+  const sc = anchoredToken ? str(anchoredToken.lemma) : str(fullProfile.sc);
   const gematria = sc ? computeGematria(sc, 'standard_lemma_script') : null;
 
   const samples = asArr(fullProfile.first_occ_passages)
@@ -560,8 +607,6 @@ async function buildFullCompactWord(
     notes: compactNotes,
     connections: mergedConns,
     gematria,
-    occurrences_sample: samples,
-    ambiguous_candidates: ambiguousCandidates,
     etymologyDepth: options.etymology,
     realworldDepth: options.realworld,
     wordDepth: options.connections,
@@ -618,7 +663,7 @@ async function handleGetPassage(read: DatabaseReader, input: {
 
   const firstSpan = parsed.passages[0];
   const anchorVerse = firstSpan.start_verse;
-  const compactPromise = safeCallFirst(read, 'get_passage_compact_v1', {
+  const compactPromise = fetchCompactPassage(read, {
     passages: parsed.passages,
     max_verses: input.limit,
     offset: input.offset,
@@ -708,7 +753,7 @@ async function handleGetPassage(read: DatabaseReader, input: {
 
   const [wordRows, chronBatch, ...discPages] = await Promise.all([
     wordIdSet.size > 0
-      ? callRpc(read, 'get_words_batch', { word_ids: [...wordIdSet].slice(0, 350) }, 350, 0).catch(() => [])
+      ? callRpc(read, 'get_words_batch', { word_ids: [...wordIdSet] }, wordIdSet.size, 0).catch(() => [])
       : Promise.resolve([]),
     anchorVids.length > 0
       ? safeCallFirst(read, 'query_chronology_assertions_batch', { verse_ids: anchorVids })
@@ -773,20 +818,23 @@ async function handleGetPassage(read: DatabaseReader, input: {
   const etymByStrongs = new Map<string, CompactWord['etymology']>();
   const rwByStrongs = new Map<string, Rec>();
   if (input.etymology > 0 || input.realworld === 1) {
-    await Promise.all(
-      enrichTargets.map(async bs => {
-        const prof = asRec(profiles[bs]);
-        const tok = sampleTokenByStrongs.get(bs);
-        const wid = Number(tok?.word_id || 0);
-        const wRow = wid > 0 ? wordById.get(wid) ?? null : null;
-        if (input.etymology > 0) {
-          etymByStrongs.set(bs, await buildWordEtymology(read, bs, prof, input.etymology));
-        }
-        if (input.realworld === 1) {
-          rwByStrongs.set(bs, await buildWordRealworld(read, bs, str(prof?.gl, str(tok?.gloss)), wRow, prof));
-        }
-      }),
-    );
+    // Small batches keep the number of simultaneous upstream requests bounded on long passages.
+    for (let i = 0; i < enrichTargets.length; i += 4) {
+      await Promise.all(
+        enrichTargets.slice(i, i + 4).map(async bs => {
+          const prof = asRec(profiles[bs]);
+          const tok = sampleTokenByStrongs.get(bs);
+          const wid = Number(tok?.word_id || 0);
+          const wRow = wid > 0 ? wordById.get(wid) ?? null : null;
+          if (input.etymology > 0) {
+            etymByStrongs.set(bs, await buildWordEtymology(read, bs, prof, input.etymology, { activeLemmaKey: str(prof?.lk) }));
+          }
+          if (input.realworld === 1) {
+            rwByStrongs.set(bs, await buildWordRealworld(read, bs, str(prof?.gl), wRow, prof));
+          }
+        }),
+      );
+    }
   }
 
   const lexicon: Record<string, CompactWord> = {};
@@ -800,9 +848,10 @@ async function handleGetPassage(read: DatabaseReader, input: {
       ? buildProfileDerivedConnections(prof, input.word_depth)
       : null;
 
+    // Lexicon entries describe the lexeme, not the first inflected occurrence (those live in verses[].words).
     lexicon[bs] = compactWordFromData({
-      token: tok ? { ...tok, transliteration: str(wRow?.transliteration, str(prof?.tr)) } : null,
-      profile: prof,
+      token: null,
+      profile: prof ?? (tok ? { bs, sc: str(tok.lemma), gl: str(tok.gloss), lk: str(tok.lemma_key), pos: str(tok.pos_class) } : null),
       wordRow: wRow,
       etymology: etymByStrongs.get(bs) ?? null,
       realworld: rwByStrongs.get(bs) ?? null,
@@ -828,25 +877,32 @@ async function handleGetPassage(read: DatabaseReader, input: {
       const bs = str(t.strongs).toUpperCase();
       const prof = bs ? asRec(profiles[bs]) : null;
       const surface = str(t.surface);
-      const tr = cleanTransliteration(str(wRow?.transliteration, str(prof?.tr)), surface);
-      const code = str(wRow?.grammar_code, str(t.pos_class));
+      // Transliteration and grammar come only from a lexical row proven to be this exact token.
+      const verified = verifyWordRowAlignment(t, wRow);
+      const tr = verified ? cleanTransliteration(str(wRow?.transliteration)) : '';
+      const code = verified ? str(wRow?.grammar_code) : '';
       return {
         pos: Number(t.position),
         ...(Number.isInteger(wid) && wid > 0 ? { word_id: wid } : {}),
         form: surface,
-        lemma: str(t.lemma, str(prof?.sc)),
+        lemma: str(t.lemma, str(t.lemma_key) === str(prof?.lk) ? str(prof?.sc) : ''),
         ...(bs ? { strongs: bs } : {}),
-        tr,
-        gloss: str(t.gloss),
-        code,
-        ...(bs && lexicon[bs] ? { key: bs } : {}),
+        ...(str(t.lemma_key) ? { lemma_key: str(t.lemma_key) } : {}),
+        ...(Array.isArray(t.lemma_candidates) ? { lemma_candidates: t.lemma_candidates } : {}),
+        ...(tr ? { tr } : {}),
+        gloss: str(t.gloss, verified ? str(asArr(wRow?.english_translations)[0]) : ''),
+        ...(code ? { code } : {}),
+        ...(verified ? {} : { alignment_status: 'partial_source_only' }),
       };
     });
 
     const vXrefs: CompactConnection[] = [];
+    const vXrefsConcise: CompactConnection[] = [];
     for (const rawXr of asArr(v.xrefs)) {
       const xc = buildXrefConnection(ref, vid, rawXr);
       if (!xc) continue;
+      const xcc = buildXrefConnection(ref, vid, rawXr, true);
+      if (xcc) vXrefsConcise.push(xcc);
       vXrefs.push(xc);
       if (xc.relation === 'cross_testament_reference') crossTestamentXrefs.push(xc);
       else otherXrefs.push(xc);
@@ -863,7 +919,11 @@ async function handleGetPassage(read: DatabaseReader, input: {
 
     const verseConns = input.depth > 0
       ? filterConnectionsForPrimary([...vXrefs, ...vRare], '', input.depth, false).map((c) => {
-        const { witness: _w, why, ...rest } = c as Rec;
+        const display = vXrefsConcise.find(x => x.id === c.id) ?? c;
+        if (display.epistemic === 'editorial_cross_reference') {
+          return { id: display.id, relation: display.relation, refs: display.refs, title: display.title };
+        }
+        const { witness: _w, why, ...rest } = display;
         return { ...rest, why: typeof why === 'string' && why.length > 100 ? `${why.slice(0, 97)}...` : why };
       })
       : [];
@@ -875,6 +935,7 @@ async function handleGetPassage(read: DatabaseReader, input: {
 
     return {
       ref,
+      verse_id: vid,
       ...(v.mt_ref ? { mt_ref: v.mt_ref } : {}),
       original: wordsOut.map(w => w.form).filter(Boolean).join(' '),
       english: str(v.web),
@@ -907,6 +968,16 @@ async function handleGetPassage(read: DatabaseReader, input: {
       )
     : [];
 
+  // Reuse the shared lexicon instead of repeating invariant lemma identities on every token.
+  for (const verse of versesOut) {
+    for (const word of verse.words) {
+      const row = word as Rec;
+      const shared = lexicon[str(row.strongs)] as unknown as Rec | undefined;
+      if (shared && row.lemma === shared.lemma) delete row.lemma;
+      if (shared && row.lemma_key === shared.lemma_key) delete row.lemma_key;
+    }
+  }
+
   const geography = compactGeography(rawGeo);
   const chronology = compactChronology(
     rawChron,
@@ -924,6 +995,8 @@ async function handleGetPassage(read: DatabaseReader, input: {
     chronology,
     ...(input.depth > 0 ? { passage_connections: passageConnections } : {}),
     lexicon,
+    ...(compact.profiles_status ? { lexical_status: compact.profiles_status } : {}),
+    word_fields: 'Missing lemma/lemma_key inherit from lexicon[strongs]. word_id identifies a word form; verse_id + pos identifies its occurrence. Verse cross_reference entries are editorial links, not proof of dependence.',
     verses: versesOut,
     ...(hasAnyNotes ? { notes_notice: NOTE_SECURITY_NOTICE } : {}),
   };
@@ -946,7 +1019,7 @@ async function handleGetConnection(
     items.map(async (rawItem, idx) => {
       const parsed = isPassageLike(rawItem) ? parsePassageString(rawItem) : null;
       if (parsed) {
-        const compactPassage = await safeCallFirst(read, 'get_passage_compact_v1', {
+        const compactPassage = await fetchCompactPassage(read, {
           passages: parsed.passages,
           max_verses: 14,
           offset: 0,
@@ -956,7 +1029,7 @@ async function handleGetConnection(
         itemEntries[idx] = { input: rawItem, kind: 'passage', parsed, compactPassage };
       } else {
         const wordResult = await buildFullCompactWord(read, rawItem, {
-          connections: 4,
+          connections: maxConnections,
           etymology: 0,
           realworld: 0,
         });
@@ -972,6 +1045,7 @@ async function handleGetConnection(
       return {
         input: entry.input,
         kind: 'passage',
+        ...(!verses.length ? { status: 'unavailable', error: 'Passage source unavailable; retry this input before drawing conclusions.' } : {}),
         passage: entry.parsed.normalized,
         verse_count: entry.parsed.verse_count,
         verses_preview: verses.slice(0, 4).map(v => ({
@@ -997,6 +1071,10 @@ async function handleGetConnection(
         input: entry.input,
         kind: 'word',
         word: entry.wordResult.word,
+        grammar_forms: entry.wordResult.grammarForms,
+        grammar_forms_scope: 'Attested forms of this Strong\'s group, including possible homograph lemmas; not morphology of the selected occurrence.',
+        occurrences: entry.wordResult.occurrences,
+        ...(entry.wordResult.ambiguousCandidates.length ? { ambiguous_candidates: entry.wordResult.ambiguousCandidates } : {}),
       };
     }
     return {
@@ -1200,9 +1278,15 @@ async function handleGetConnection(
     c.relation === 'cross_reference' ||
     (c.tier !== undefined && c.tier <= 4),
   );
+  const warnings = itemEntries
+    .filter(e => e.kind === 'passage' && !asArr(e.compactPassage?.verses).length)
+    .map(e => `Passage source unavailable: ${e.input}. Retry before treating missing connections as absence.`);
+  for (const entry of itemEntries) if (entry.compactPassage?.profiles_status === 'partial') warnings.push(`Lexical profiles incomplete for ${entry.input}; retry for missing lexical bridges.`);
+  if (!discRes) warnings.push('Graph discovery unavailable. Returned direct witnesses are partial; retry to retrieve graph connections.');
 
   return {
-    status: 'ok',
+    status: warnings.length ? 'partial' : 'ok',
+    ...(warnings.length ? { warnings } : {}),
     items: itemSummaries,
     direct_link_found: directLinkFound,
     connections,
@@ -1364,6 +1448,8 @@ export function createDiscoveryV2Server(
         query: word,
         word: res.word,
         grammar_forms: res.grammarForms,
+        grammar_forms_scope: 'Attested forms of this Strong\'s group, including possible homograph lemmas; not morphology of the selected occurrence.',
+        resolution: res.ambiguousCandidates.length ? 'selected_candidate_with_alternatives' : 'selected_lexical_entry',
         occurrences: res.occurrences,
         ambiguous_candidates: res.ambiguousCandidates,
       });
@@ -1423,6 +1509,7 @@ export function createDiscoveryV2Server(
           visited_edges: [],
           steps: [],
           branches: [],
+          active_candidates: neighbors as unknown as Rec[],
         }, sessionId);
         if (!created.ok) return errorReply(created.message, { code: created.error });
         return jsonReply({
@@ -1454,6 +1541,9 @@ export function createDiscoveryV2Server(
         const visitedSet = new Set(st.visited_nodes.map(v => v.toLowerCase()));
         const edgeSet = new Set(st.visited_edges);
         const { neighbors } = await fetchNodeNeighbors(read, st.current_node, visitedSet, edgeSet, limit);
+        st.active_candidates = neighbors as unknown as Rec[];
+        const updated = await chainStore.update(chain, st, sessionId);
+        if (!updated.ok) return errorReply(updated.message, { code: updated.error });
         return jsonReply({
           status: 'ok',
           chain,
@@ -1474,6 +1564,7 @@ export function createDiscoveryV2Server(
         const visitedSet = new Set(st.visited_nodes.map(v => v.toLowerCase()));
         const edgeSet = new Set(st.visited_edges);
         const { neighbors } = await fetchNodeNeighbors(read, target, visitedSet, edgeSet, limit);
+        st.active_candidates = neighbors as unknown as Rec[];
         const updated = await chainStore.update(chain, st, sessionId);
         if (!updated.ok) return errorReply(updated.message, { code: updated.error });
         return jsonReply({
@@ -1505,6 +1596,7 @@ export function createDiscoveryV2Server(
           const visitedSet = new Set(st.visited_nodes.map(v => v.toLowerCase()));
           const edgeSet = new Set(st.visited_edges);
           const { neighbors } = await fetchNodeNeighbors(read, origin, visitedSet, edgeSet, limit);
+          st.active_candidates = neighbors as unknown as Rec[];
           const updated = await chainStore.update(chain, st, sessionId);
           if (!updated.ok) return errorReply(updated.message, { code: updated.error });
           return jsonReply({
@@ -1533,10 +1625,26 @@ export function createDiscoveryV2Server(
       let stepRefs: string[] = [];
       let toNode = next;
 
-      if (next.startsWith('r10:') || next.startsWith('r11:') || next.startsWith('r12:')) {
-        edgeId = next;
+      // Preserve a selected returned edge, including ordinary passage targets.
+      // A branch origin has different candidates; never reuse the prior node's list.
+      let candidates = action === 'branch' && from_node
+        ? [] : (st.active_candidates ?? []) as unknown as ChainEvidence[];
+      let selected = selectChainEvidence(candidates, fromNode, next);
+      if (!selected) {
+        const origin = await fetchNodeNeighbors(read, fromNode, new Set(), new Set(), 15);
+        candidates = origin.neighbors;
+        selected = selectChainEvidence(candidates, fromNode, next);
+      }
+      if (selected) {
+        edgeId = selected.id;
+        relation = selected.relation;
+        epistemic = selected.epistemic;
+        stepRefs = selected.refs;
+        if (next === selected.id) toNode = chainEvidenceTarget(selected, fromNode);
+      } else if (next.startsWith('r10:') || next.startsWith('r11:') || next.startsWith('r12:')) {
         const ev = await safeCallFirst(read, 'get_connection_evidence_v1', { evidence_id: next });
         if (ev) {
+          edgeId = next;
           relation = str(ev.predicate ?? ev.relation, relation);
           epistemic = str(ev.epistemic_class ?? ev.epistemic, 'documented_lexical_relationship');
           stepRefs = asArr(ev.passages).map(asRec).filter(Boolean).map(p => str(p?.ref)).filter(Boolean).slice(0, 4);
@@ -1548,10 +1656,13 @@ export function createDiscoveryV2Server(
 
       const visitedSet = new Set(st.visited_nodes.map(v => v.toLowerCase()));
       const edgeSet = new Set(st.visited_edges);
+      if (edgeId) edgeSet.add(edgeId);
       const { resolvedNode, neighbors } = await fetchNodeNeighbors(read, toNode, visitedSet, edgeSet, limit);
       if (!visitedSet.has(toNode.toLowerCase())) st.visited_nodes.push(toNode);
+      visitedSet.add(toNode.toLowerCase());
       if (!visitedSet.has(resolvedNode.toLowerCase())) st.visited_nodes.push(resolvedNode);
-      if (edgeId && !edgeSet.has(edgeId)) st.visited_edges.push(edgeId);
+      if (edgeId && !st.visited_edges.includes(edgeId)) st.visited_edges.push(edgeId);
+      st.active_candidates = neighbors as unknown as Rec[];
 
       const newStep: ChainStep = {
         step_index: st.steps.length + 1,
