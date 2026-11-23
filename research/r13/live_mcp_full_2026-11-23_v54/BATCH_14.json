@@ -11,263 +11,1102 @@
       "q": "H0216",
       "mode": "discover",
       "via": "word",
-      "status": "partial",
-      "discovery_status": "unavailable",
+      "status": "ok",
+      "discovery_status": "ok",
       "latency_ms": 30280,
       "primary_strongs": "H0216",
       "error": null,
       "cards": [
         {
           "rank": 1,
-          "id": "lxx:H0216:G5457",
-          "relation": "lxx_translation_bridge",
-          "ep": "documented_cross_language_bridge",
-          "tier": 3,
-          "title": "LXX bridge: אוֹר (H0216) -> φῶς (G5457, \"light\")",
-          "refs": [],
-          "target": "G5457",
-          "matched_endpoints": [],
-          "why": "Septuagint renders אוֹר as φῶς (\"light\") across 94 passage(s)."
+          "id": "r11:gram:H0216:possessive_construction_with:H1242",
+          "relation": "verified_lexical_grammatical",
+          "evidence_type": "syntactic_relationship",
+          "ep": "direct_textual_evidence",
+          "tier": 2,
+          "title": "Head of genitive / construct: אוֹר (or) ↔ בֹּ֫קֶר (\"morning\", 8×)",
+          "refs": [
+            "1 Samuel 14:36",
+            "1 Samuel 25:36",
+            "2 Kings 7:9"
+          ],
+          "target": "H1242",
+          "matched_endpoints": [
+            "light",
+            "morning",
+            "H0216",
+            "H1242"
+          ],
+          "why": "Head of genitive / construct: אוֹר (H0216, \"light\") and בֹּ֫קֶר (H1242, \"morning\") across 8 indexed occurrences. 7 distinct canonical source clauses pass token-position verification; parallel editions are counted once."
         },
         {
           "rank": 2,
-          "id": "lxx:H0216:G5462",
-          "relation": "lxx_translation_bridge",
-          "ep": "documented_cross_language_bridge",
-          "tier": 3,
-          "title": "LXX bridge: אוֹר (H0216) -> φωτισμός (G5462, \"light\")",
-          "refs": [],
-          "target": "G5462",
-          "matched_endpoints": [],
-          "why": "Septuagint renders אוֹר as φωτισμός (\"light\") across 15 passage(s)."
+          "id": "r11:cluster:H0216:prophetic_imagery_and_oracles",
+          "relation": "explicit_comparison",
+          "evidence_type": "explicit_comparison",
+          "ep": "direct_textual_evidence",
+          "tier": 2,
+          "title": "Prophetic Imagery & Oracles (Isaiah 2, 5, 9, 10 · Jeremiah 4, 13, 25, 31 · Lamentations 3)",
+          "refs": [
+            "Isaiah 2:5",
+            "Isaiah 5:20",
+            "Isaiah 5:30",
+            "Isaiah 9:2"
+          ],
+          "target": "H0216",
+          "matched_endpoints": [
+            "light",
+            "אוֹר",
+            "H0216"
+          ],
+          "why": "Attested in 39 verses (Isaiah 2:5, Isaiah 5:20, Isaiah 5:30, Isaiah 9:2...) with surface forms: בְּא֥וֹר, לְאוֹר֙, וְא֣וֹר, וָא֔וֹר. Co-occurs with: darkness, moon, sun, brightness."
         },
         {
           "rank": 3,
-          "id": "lex:H0216:G5457",
-          "relation": "source_provided_lexical_equivalent",
-          "ep": "documented_lexical_relationship",
-          "tier": 3,
-          "title": "φῶς (phōs · G5457)",
+          "id": "r11:gram:H0216:possessive_construction_with:H6440",
+          "relation": "verified_lexical_grammatical",
+          "evidence_type": "syntactic_relationship",
+          "ep": "direct_textual_evidence",
+          "tier": 2,
+          "title": "Head of genitive / construct: אוֹר (or) ↔ פָּנֶה (\"face\", 5×)",
           "refs": [
-            "Genesis 1:3",
-            "Genesis 1:4"
+            "Job 29:24",
+            "Proverbs 16:15",
+            "Psalms 4:6"
           ],
-          "target": "G5457",
-          "matched_endpoints": [],
-          "why": "Documented lexical link (source_provided_lexical_equivalent)."
+          "target": "H6440",
+          "matched_endpoints": [
+            "light",
+            "face",
+            "H0216",
+            "H6440"
+          ],
+          "why": "Head of genitive / construct: אוֹר (H0216, \"light\") and פָּנֶה (H6440, \"face\") across 5 indexed occurrences. 5 distinct canonical source clauses pass token-position verification; parallel editions are counted once."
         },
         {
           "rank": 4,
-          "id": "lex:H0216:H0215",
-          "relation": "derived_from_root_anchor",
-          "ep": "documented_lexical_relationship",
+          "id": "r13:motif:r13:motif:chain:H0216:H0734:H5410:H0215",
+          "relation": "shared_motif",
+          "evidence_type": "multi_passage_motif",
+          "ep": "shared_motif_evidence",
           "tier": 3,
-          "title": "Lexical relation (derived_from_root_anchor): אוֹר <-> אוֹר (\"to light\")",
+          "title": "Multi-passage motif (chain): אוֹר (light) ↔ אֹ֫רַח (way) ↔ נָתִיב (path) ↔ אוֹר (to light) (9 chapters)",
           "refs": [
-            "Genesis 1:3",
-            "Genesis 1:4"
+            "Proverbs 4:18",
+            "Psalms 119:104",
+            "Psalms 119:105"
           ],
-          "target": "H0215",
-          "matched_endpoints": [],
-          "why": "Shares documented root אוֹר (derived_from_root_anchor)."
+          "target": "H0734",
+          "matched_endpoints": [
+            "H0216",
+            "H0734",
+            "H5410",
+            "H0215",
+            "wordplay",
+            "collocation",
+            "self_interpretation"
+          ],
+          "why": "Recurring motif network (chain) connecting H0216, H0734, H5410, H0215 across 9 chapters and 10 shared witness verses; edge types: wordplay, collocation, self_interpretation."
         },
         {
           "rank": 5,
-          "id": "lex:H0216:H0219",
-          "relation": "derived_from_root_anchor",
+          "id": "r11:lxx:H0216:1",
+          "relation": "cross_language_bridge",
+          "evidence_type": "translation_alignment",
           "ep": "documented_lexical_relationship",
           "tier": 3,
-          "title": "Lexical relation (derived_from_root_anchor): אוֹר <-> אוֹרָה (\"light\")",
+          "title": "Septuagint (LXX) bridge: אוֹר (H0216) → φῶς (G5457, \"light\") across 63 passages",
           "refs": [
             "Genesis 1:3",
-            "Genesis 1:4"
+            "Genesis 1:4",
+            "Genesis 1:5",
+            "Exodus 10:23"
           ],
-          "target": "H0219",
-          "matched_endpoints": [],
-          "why": "Shares documented root אוֹרָה (derived_from_root_anchor)."
+          "target": "G5457",
+          "matched_endpoints": [
+            "light",
+            "אוֹר",
+            "light"
+          ],
+          "why": "Ancient Greek Septuagint translates Hebrew אוֹר (H0216) as Greek φῶς (G5457) in 63 occurrences (Genesis 1:3, Genesis 1:4, Genesis 1:5, Exodus 10:23). Establishes documented Greek translation bridge."
         },
         {
           "rank": 6,
-          "id": "gram:H0216:possessive_construction_with:H1242",
-          "relation": "possessive_construction_with",
-          "ep": "documented_lexical_relationship",
+          "id": "r13:motif:r13:motif:tri:H0216:H0734:H5410",
+          "relation": "shared_motif",
+          "evidence_type": "multi_passage_motif",
+          "ep": "shared_motif_evidence",
           "tier": 3,
-          "title": "Head of genitive / construct: אוֹר <-> בֹּ֫קֶר (\"morning\", 8x)",
-          "refs": [],
-          "target": "H1242",
-          "matched_endpoints": [],
-          "why": "R8 grammatical relation (possessive_construction_with) attested 8 time(s) with בֹּ֫קֶר (morning)."
+          "title": "Multi-passage motif (triangle): אוֹר (light) ↔ אֹ֫רַח (way) ↔ נָתִיב (path) (8 chapters)",
+          "refs": [
+            "Proverbs 4:18",
+            "Psalms 119:104",
+            "Psalms 119:105"
+          ],
+          "target": "H0734",
+          "matched_endpoints": [
+            "H0216",
+            "H0734",
+            "H5410",
+            "wordplay",
+            "collocation",
+            "self_interpretation"
+          ],
+          "why": "Recurring motif network (triangle) connecting H0216, H0734, H5410 across 8 chapters and 8 shared witness verses; edge types: wordplay, collocation, self_interpretation."
         },
         {
           "rank": 7,
-          "id": "gram:H0216:grammatical_subject_of:H1961",
-          "relation": "grammatical_subject_of",
+          "id": "r13:wp:H0216:H0215",
+          "relation": "orthographic_wordplay",
+          "evidence_type": "proximate_wordplay_candidate",
           "ep": "documented_lexical_relationship",
           "tier": 3,
-          "title": "Subject of: אוֹר <-> הָיָה (\"to be\", 7x)",
-          "refs": [],
-          "target": "H1961",
-          "matched_endpoints": [],
-          "why": "R8 grammatical relation (grammatical_subject_of) attested 7 time(s) with הָיָה (to be)."
+          "title": "Shared root / derivation (proximate wordplay candidate): אוֹר (H0216) ↔ אוֹר (H0215)",
+          "refs": [
+            "Job 33:30",
+            "Proverbs 4:18"
+          ],
+          "target": "H0215",
+          "matched_endpoints": [
+            "light",
+            "to light",
+            "אוֹר",
+            "אוֹר",
+            "H0216",
+            "H0215"
+          ],
+          "why": "אוֹר (H0216, \"light\") and אוֹר (H0215, \"to light\") share consonantal/phonetic sequence \"אור\" (edit distance 0, same-verse proximity). Documented shared root in STEPBible."
         },
         {
           "rank": 8,
-          "id": "gram:H0216:grammatical_object_of:H7200",
-          "relation": "grammatical_object_of",
-          "ep": "documented_lexical_relationship",
+          "id": "r13:wp:H0216:H0776",
+          "relation": "orthographic_wordplay",
+          "evidence_type": "proximate_wordplay_candidate",
+          "ep": "orthographic_similarity_only",
           "tier": 3,
-          "title": "Direct object of: אוֹר <-> רָאָה (\"to see: see\", 6x)",
-          "refs": [],
-          "target": "H7200",
-          "matched_endpoints": [],
-          "why": "R8 grammatical relation (grammatical_object_of) attested 6 time(s) with רָאָה (to see: see)."
+          "title": "Consonantal / phonetic correspondence: אוֹר (H0216) ↔ אֶ֫רֶץ (H0776)",
+          "refs": [
+            "2 Samuel 23:4",
+            "Job 37:3"
+          ],
+          "target": "H0776",
+          "matched_endpoints": [
+            "light",
+            "land: country/planet",
+            "אוֹר",
+            "אֶ֫רֶץ",
+            "H0216",
+            "H0776"
+          ],
+          "why": "אוֹר (H0216, \"light\") and אֶ֫רֶץ (H0776, \"land: country/planet\") share consonantal/phonetic sequence \"אר\" (edit distance 1, same-verse proximity). Shared consonantal or phonetic pattern does not establish a historical etymology, common r..."
         },
         {
           "rank": 9,
-          "id": "gram:H0216:possessive_construction_with:H6440",
-          "relation": "possessive_construction_with",
+          "id": "r11:lxx:H0216:2",
+          "relation": "cross_language_bridge",
+          "evidence_type": "translation_alignment",
           "ep": "documented_lexical_relationship",
           "tier": 3,
-          "title": "Head of genitive / construct: אוֹר <-> פָּנֶה (\"face\", 5x)",
-          "refs": [],
-          "target": "H6440",
-          "matched_endpoints": [],
-          "why": "R8 grammatical relation (possessive_construction_with) attested 5 time(s) with פָּנֶה (face)."
+          "title": "Septuagint (LXX) bridge: אוֹר (H0216) → φωτισμός (G5462, \"light\") across 15 passages",
+          "refs": [
+            "2 Samuel 23:4",
+            "Job 3:9",
+            "Job 29:3",
+            "Job 33:30"
+          ],
+          "target": "G5462",
+          "matched_endpoints": [
+            "light",
+            "אוֹר",
+            "light"
+          ],
+          "why": "Ancient Greek Septuagint translates Hebrew אוֹר (H0216) as Greek φωτισμός (G5462) in 15 occurrences (2 Samuel 23:4, Job 3:9, Job 29:3, Job 33:30). Establishes documented Greek translation bridge."
+        },
+        {
+          "rank": 10,
+          "id": "r11:lex:H0216:1",
+          "relation": "verified_lexical_grammatical",
+          "evidence_type": "documented_root_family",
+          "ep": "documented_lexical_relationship",
+          "tier": 3,
+          "title": "Lexical relation (derived from root anchor): אוֹר (H0216) ↔ אוֹר (H0215)",
+          "refs": [
+            "Genesis 1:3"
+          ],
+          "target": "H0215",
+          "matched_endpoints": [
+            "light",
+            "אוֹר",
+            "to light"
+          ],
+          "why": "Morphological and root derivation analysis links אוֹר (H0216) to אוֹר (H0215) (\"to light\")."
+        },
+        {
+          "rank": 11,
+          "id": "r13:colloc:H0216:H2822",
+          "relation": "verified_lexical_grammatical",
+          "evidence_type": "collocation",
+          "ep": "documented_collocation_or_cooccurrence",
+          "tier": 3,
+          "title": "High-PMI collocation: אוֹר (H0216) ↔ חֹ֫שֶׁךְ (\"darkness\", H2822) (NPMI=0.63, 25×)",
+          "refs": [
+            "Genesis 1:4",
+            "Genesis 1:5"
+          ],
+          "target": "H2822",
+          "matched_endpoints": [
+            "light",
+            "darkness",
+            "H0216",
+            "H2822"
+          ],
+          "why": "אוֹר (H0216, \"light\") and חֹ֫שֶׁךְ (\"darkness\", H2822) co-occur in 25 verses (normalized PMI 0.63), indicating non-accidental contextual association."
+        },
+        {
+          "rank": 12,
+          "id": "r11:gram:H0216:grammatical_subject_of:H2821",
+          "relation": "verified_lexical_grammatical",
+          "evidence_type": "syntactic_relationship",
+          "ep": "direct_textual_evidence",
+          "tier": 2,
+          "title": "Subject of: אוֹר (or) ↔ חָשַׁךְ (\"to darken\", 3×)",
+          "refs": [
+            "Ecclesiastes 12:2",
+            "Isaiah 5:30",
+            "Job 18:6"
+          ],
+          "target": "H2821",
+          "matched_endpoints": [
+            "light",
+            "to darken",
+            "H0216",
+            "H2821"
+          ],
+          "why": "Subject of: אוֹר (H0216, \"light\") and חָשַׁךְ (H2821, \"to darken\") across 3 indexed occurrences. 3 distinct canonical source clauses pass token-position verification; parallel editions are counted once."
+        },
+        {
+          "rank": 13,
+          "id": "r11:cluster:H0216:temple_and_sanctuary_architecture",
+          "relation": "verified_lexical_grammatical",
+          "evidence_type": "verified_lexical_grammatical",
+          "ep": "direct_textual_evidence",
+          "tier": 2,
+          "title": "Temple & Sanctuary Architecture (Judges 19 · 1 Samuel 25 · 2 Kings 7)",
+          "refs": [
+            "Judges 19:26",
+            "1 Samuel 25:36",
+            "2 Kings 7:9"
+          ],
+          "target": "H0216",
+          "matched_endpoints": [
+            "light",
+            "אוֹר",
+            "H0216"
+          ],
+          "why": "Attested in 3 verses (Judges 19:26, 1 Samuel 25:36, 2 Kings 7:9) with surface forms: הָאֽוֹר, א֥וֹר. Co-occurs with: morning, till, to tell, place. Occurs in sanctuary or Temple architectural descriptions and sacred vessel ornamentation."
+        },
+        {
+          "rank": 14,
+          "id": "r13:colloc:H0216:H2821",
+          "relation": "verified_lexical_grammatical",
+          "evidence_type": "collocation",
+          "ep": "documented_collocation_or_cooccurrence",
+          "tier": 3,
+          "title": "High-PMI collocation: אוֹר (H0216) ↔ חָשַׁךְ (\"to darken\", H2821) (NPMI=0.56, 7×)",
+          "refs": [
+            "Jeremiah 13:16",
+            "Isaiah 13:10"
+          ],
+          "target": "H2821",
+          "matched_endpoints": [
+            "light",
+            "to darken",
+            "H0216",
+            "H2821"
+          ],
+          "why": "אוֹר (H0216, \"light\") and חָשַׁךְ (\"to darken\", H2821) co-occur in 7 verses (normalized PMI 0.56), indicating non-accidental contextual association."
+        },
+        {
+          "rank": 15,
+          "id": "r11:xref:7051:30530",
+          "relation": "cross_reference_witness",
+          "evidence_type": "cross_testament_correspondence",
+          "ep": "editorial_cross_reference",
+          "tier": 4,
+          "title": "Modern editorial cross-reference (OT↔NT): Judges 19:26 → 1 Peter 3:6 (\"master\")",
+          "refs": [
+            "Judges 19:26",
+            "1 Peter 3:6"
+          ],
+          "target": "H0216",
+          "matched_endpoints": [
+            "Judges 19:26",
+            "1 Peter 3:6",
+            "master",
+            "light"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Judges 19:26 and 1 Peter 3:6 via anchor phrase \"master\" (thematic editorial cross-reference)."
+        },
+        {
+          "rank": 16,
+          "id": "r11:lex:H0216:0",
+          "relation": "cross_language_bridge",
+          "evidence_type": "translation_alignment",
+          "ep": "documented_cross_language_bridge",
+          "tier": 3,
+          "title": "Cross-language lexical equivalent: אוֹר (H0216) ↔ φῶς (phōs · G5457)",
+          "refs": [
+            "Genesis 1:3"
+          ],
+          "target": "G5457",
+          "matched_endpoints": [
+            "light",
+            "אוֹר",
+            "φῶς"
+          ],
+          "why": "Source-provided lexical and translation equivalent links אוֹר (H0216, \"light\") with φῶς (phōs · G5457); this documents semantic/translation correspondence across Hebrew and Greek rather than a shared morphological root."
+        },
+        {
+          "rank": 17,
+          "id": "r11:lex:H0216:2",
+          "relation": "verified_lexical_grammatical",
+          "evidence_type": "documented_root_family",
+          "ep": "documented_lexical_relationship",
+          "tier": 3,
+          "title": "Lexical relation (derived from root anchor): אוֹר (H0216) ↔ אוֹרָה (H0219)",
+          "refs": [
+            "Genesis 1:3"
+          ],
+          "target": "H0219",
+          "matched_endpoints": [
+            "light",
+            "אוֹר",
+            "אוֹרָה"
+          ],
+          "why": "Morphological and root derivation analysis links אוֹר (H0216) to אוֹרָה (H0219) (\"light\")."
+        },
+        {
+          "rank": 18,
+          "id": "r11:xref:3:13767",
+          "relation": "cross_reference_witness",
+          "evidence_type": "explicit_quotation_or_allusion",
+          "ep": "editorial_cross_reference",
+          "tier": 4,
+          "title": "Modern editorial cross-reference: Genesis 1:3 → Job 36:30 (\"Let\")",
+          "refs": [
+            "Genesis 1:3",
+            "Job 36:30"
+          ],
+          "target": "H0216",
+          "matched_endpoints": [
+            "Genesis 1:3",
+            "Job 36:30",
+            "Let",
+            "light"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Genesis 1:3 and Job 36:30 via anchor phrase \"Let\" (same original lemma)."
+        },
+        {
+          "rank": 19,
+          "id": "r11:cluster:H0216:poetic_imagery_and_similes",
+          "relation": "verified_lexical_grammatical",
+          "evidence_type": "verified_lexical_grammatical",
+          "ep": "direct_textual_evidence",
+          "tier": 3,
+          "title": "Poetic Imagery & Similes (Job 3, 12, 17, 18 · Psalms 4, 27, 36, 37 · Proverbs 6, 13, 16)",
+          "refs": [
+            "Job 3:9",
+            "Job 3:16",
+            "Job 3:20",
+            "Job 12:22"
+          ],
+          "target": "H0216",
+          "matched_endpoints": [
+            "light",
+            "אוֹר",
+            "H0216"
+          ],
+          "why": "Attested in 56 verses (Job 3:9, Job 3:16, Job 3:20, Job 12:22...) with surface forms: לְא֥וֹר, אֽוֹר, א֑וֹר, לָא֣וֹר. Co-occurs with: darkness, alive, lamp, to see: see."
+        },
+        {
+          "rank": 20,
+          "id": "r11:lxx:H0216:3",
+          "relation": "cross_language_bridge",
+          "evidence_type": "translation_alignment",
+          "ep": "documented_lexical_relationship",
+          "tier": 3,
+          "title": "Septuagint (LXX) bridge: אוֹר (H0216) → διαφαύσκω (G6898, \"to show light through\") across 4 passages",
+          "refs": [
+            "Judges 16:2",
+            "Judges 19:26",
+            "1 Samuel 14:36",
+            "Job 33:28"
+          ],
+          "target": "G6898",
+          "matched_endpoints": [
+            "light",
+            "אוֹר",
+            "to show light through"
+          ],
+          "why": "Ancient Greek Septuagint translates Hebrew אוֹר (H0216) as Greek διαφαύσκω (G6898) in 4 occurrences (Judges 16:2, Judges 19:26, 1 Samuel 14:36, Job 33:28). Establishes documented Greek translation bridge."
+        },
+        {
+          "rank": 21,
+          "id": "r13:colloc:H0216:H3394",
+          "relation": "verified_lexical_grammatical",
+          "evidence_type": "collocation",
+          "ep": "documented_collocation_or_cooccurrence",
+          "tier": 3,
+          "title": "High-PMI collocation: אוֹר (H0216) ↔ יָרֵחַ (\"moon\", H3394) (NPMI=0.56, 9×)",
+          "refs": [
+            "Isaiah 60:19",
+            "Jeremiah 31:35"
+          ],
+          "target": "H3394",
+          "matched_endpoints": [
+            "light",
+            "moon",
+            "H0216",
+            "H3394"
+          ],
+          "why": "אוֹר (H0216, \"light\") and יָרֵחַ (\"moon\", H3394) co-occur in 9 verses (normalized PMI 0.56), indicating non-accidental contextual association."
+        },
+        {
+          "rank": 22,
+          "id": "r11:xref:3:13813",
+          "relation": "cross_reference_witness",
+          "evidence_type": "explicit_quotation_or_allusion",
+          "ep": "editorial_cross_reference",
+          "tier": 4,
+          "title": "Modern editorial cross-reference: Genesis 1:3 → Job 38:19 (\"Let\")",
+          "refs": [
+            "Genesis 1:3",
+            "Job 38:19"
+          ],
+          "target": "H0216",
+          "matched_endpoints": [
+            "Genesis 1:3",
+            "Job 38:19",
+            "Let",
+            "light"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Genesis 1:3 and Job 38:19 via anchor phrase \"Let\" (same original lemma)."
+        },
+        {
+          "rank": 23,
+          "id": "r13:wp:H0216:H0219",
+          "relation": "orthographic_wordplay",
+          "evidence_type": "proximate_wordplay_candidate",
+          "ep": "documented_lexical_relationship",
+          "tier": 4,
+          "title": "Shared root / derivation (proximate wordplay candidate): אוֹר (H0216) ↔ אוֹרָה (H0219)",
+          "refs": [
+            "Psalms 139:11",
+            "Psalms 139:12"
+          ],
+          "target": "H0219",
+          "matched_endpoints": [
+            "light",
+            "light",
+            "אוֹר",
+            "אוֹרָה",
+            "H0216",
+            "H0219"
+          ],
+          "why": "אוֹר (H0216, \"light\") and אוֹרָה (H0219, \"light\") share consonantal/phonetic sequence \"אור\" (edit distance 1, adjacent-verse proximity). Documented shared root in STEPBible."
+        },
+        {
+          "rank": 24,
+          "id": "r11:xref:3:15575",
+          "relation": "cross_reference_witness",
+          "evidence_type": "explicit_quotation_or_allusion",
+          "ep": "editorial_cross_reference",
+          "tier": 4,
+          "title": "Modern editorial cross-reference: Genesis 1:3 → Psalms 97:11 (\"Let\")",
+          "refs": [
+            "Genesis 1:3",
+            "Psalms 97:11"
+          ],
+          "target": "H0216",
+          "matched_endpoints": [
+            "Genesis 1:3",
+            "Psalms 97:11",
+            "Let",
+            "light"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Genesis 1:3 and Psalms 97:11 via anchor phrase \"Let\" (same original lemma)."
+        },
+        {
+          "rank": 25,
+          "id": "r11:lxx:H0216:4",
+          "relation": "cross_language_bridge",
+          "evidence_type": "translation_alignment",
+          "ep": "documented_lexical_relationship",
+          "tier": 3,
+          "title": "Septuagint superscription witness for Psalms 27:0: אוֹר (H0216)",
+          "refs": [
+            "Psalms 27:0"
+          ],
+          "target": "H0216",
+          "matched_endpoints": [
+            "light",
+            "אוֹר"
+          ],
+          "why": "In Psalms 27:0, the Septuagint renders the Hebrew title containing אוֹר as: \"Κύριος φωτισμός μου καὶ σωτήρ μου, τίνα φοβηθήσομαι; Κύριος ὑπερασπιστὴς τῆς ζωῆς μου, ἀπὸ τίνος δειλιάσω;\". Witnesses ancient translation understanding of this..."
         }
-      ]
+      ],
+      "initial_status": "partial",
+      "retry_recovered": true,
+      "latency_ms_retry": 3869,
+      "completion_note": "Recovered after transient partial discovery; initial response kept via initial_status/retry_recovered."
     },
     {
       "index": 1,
       "q": "H4194",
       "mode": "discover",
       "via": "word",
-      "status": "partial",
-      "discovery_status": "unavailable",
+      "status": "ok",
+      "discovery_status": "ok",
       "latency_ms": 30280,
       "primary_strongs": "H4194",
       "error": null,
       "cards": [
         {
           "rank": 1,
-          "id": "lxx:H4194:G2288",
-          "relation": "lxx_translation_bridge",
-          "ep": "documented_cross_language_bridge",
-          "tier": 3,
-          "title": "LXX bridge: מָ֫וֶת (H4194) -> θάνατος (G2288, \"death\")",
-          "refs": [],
-          "target": "G2288",
-          "matched_endpoints": [],
-          "why": "Septuagint renders מָ֫וֶת as θάνατος (\"death\") across 75 passage(s)."
+          "id": "r11:gram:H4194:possessive_construction_with:H3117",
+          "relation": "verified_lexical_grammatical",
+          "evidence_type": "syntactic_relationship",
+          "ep": "direct_textual_evidence",
+          "tier": 2,
+          "title": "Genitive / construct connection: מָ֫וֶת (ma.vet) ↔ יוֹם (\"day\", 10×)",
+          "refs": [
+            "1 Samuel 15:35",
+            "2 Chronicles 26:21",
+            "2 Kings 15:5"
+          ],
+          "target": "H3117",
+          "matched_endpoints": [
+            "death",
+            "day",
+            "H4194",
+            "H3117"
+          ],
+          "why": "Genitive / construct connection: מָ֫וֶת (H4194, \"death\") and יוֹם (H3117, \"day\") across 10 indexed occurrences. 9 distinct canonical source clauses pass token-position verification; parallel editions are counted once."
         },
         {
           "rank": 2,
-          "id": "lxx:H4194:G0599",
-          "relation": "lxx_translation_bridge",
-          "ep": "documented_cross_language_bridge",
-          "tier": 3,
-          "title": "LXX bridge: מָ֫וֶת (H4194) -> ἀποθνήσκω (G0599, \"to die\")",
-          "refs": [],
-          "target": "G0599",
-          "matched_endpoints": [],
-          "why": "Septuagint renders מָ֫וֶת as ἀποθνήσκω (\"to die\") across 24 passage(s)."
+          "id": "r11:gram:H4194:possessive_construction_with:H6440",
+          "relation": "verified_lexical_grammatical",
+          "evidence_type": "syntactic_relationship",
+          "ep": "direct_textual_evidence",
+          "tier": 2,
+          "title": "Genitive / construct connection: מָ֫וֶת (ma.vet) ↔ פָּנֶה (\"face\", 5×)",
+          "refs": [
+            "1 Chronicles 22:5",
+            "Deuteronomy 33:1",
+            "Genesis 27:10"
+          ],
+          "target": "H6440",
+          "matched_endpoints": [
+            "death",
+            "face",
+            "H4194",
+            "H6440"
+          ],
+          "why": "Genitive / construct connection: מָ֫וֶת (H4194, \"death\") and פָּנֶה (H6440, \"face\") across 5 indexed occurrences. 5 distinct canonical source clauses pass token-position verification; parallel editions are counted once."
         },
         {
           "rank": 3,
-          "id": "lex:H4194:H4193",
-          "relation": "shares_root",
-          "ep": "documented_lexical_relationship",
-          "tier": 3,
-          "title": "Lexical relation (shares_root): מָ֫וֶת <-> מוֹת (\"death\")",
+          "id": "r11:cluster:H4194:temple_and_sanctuary_architecture",
+          "relation": "verified_lexical_grammatical",
+          "evidence_type": "verified_lexical_grammatical",
+          "ep": "direct_textual_evidence",
+          "tier": 2,
+          "title": "Temple & Sanctuary Architecture (Leviticus 11 · Deuteronomy 21, 31 · Joshua 20)",
           "refs": [
-            "Genesis 21:16",
-            "Genesis 25:11"
+            "Leviticus 11:32",
+            "Deuteronomy 21:22",
+            "Deuteronomy 31:29",
+            "Joshua 20:6"
           ],
-          "target": "H4193",
-          "matched_endpoints": [],
-          "why": "Shares documented root מָ֫וֶת (shares_root)."
+          "target": "H4194",
+          "matched_endpoints": [
+            "death",
+            "מָ֫וֶת",
+            "H4194"
+          ],
+          "why": "Attested in 14 verses (Leviticus 11:32, Deuteronomy 21:22, Deuteronomy 31:29, Joshua 20:6...) with surface forms: בְּמֹתָ֜ם, מָ֖וֶת, מוֹתִי֙, מוֹת֙. Co-occurs with: place, freedom, to die, for. Occurs in sanctuary or Temple architectural..."
         },
         {
           "rank": 4,
-          "id": "lex:H4194:G2288",
-          "relation": "source_provided_lexical_equivalent",
+          "id": "r11:lxx:H4194:2",
+          "relation": "cross_language_bridge",
+          "evidence_type": "translation_alignment",
           "ep": "documented_lexical_relationship",
           "tier": 3,
-          "title": "θάνατος (thanatos · G2288)",
+          "title": "Septuagint (LXX) bridge: מָ֫וֶת (H4194) → θάνατος (G2288, \"death\") across 83 passages",
           "refs": [
+            "Isaiah 53:9",
+            "Isaiah 53:12",
             "Genesis 21:16",
-            "Genesis 25:11"
+            "Exodus 10:17"
           ],
           "target": "G2288",
-          "matched_endpoints": [],
-          "why": "Documented lexical link (source_provided_lexical_equivalent)."
+          "matched_endpoints": [
+            "death",
+            "מָ֫וֶת",
+            "death"
+          ],
+          "why": "Ancient Greek Septuagint translates Hebrew מָ֫וֶת (H4194) as Greek θάνατος (G2288) in 83 occurrences (Isaiah 53:9, Isaiah 53:12, Genesis 21:16, Exodus 10:17). Establishes documented Greek translation bridge."
         },
         {
           "rank": 5,
-          "id": "lex:H4194:H2700",
-          "relation": "derived_from_root_anchor",
+          "id": "r13:wp:H4194:H4191",
+          "relation": "orthographic_wordplay",
+          "evidence_type": "proximate_wordplay_candidate",
           "ep": "documented_lexical_relationship",
           "tier": 3,
-          "title": "Lexical relation (derived_from_root_anchor): מָ֫וֶת <-> חֲצַרְמָ֫וֶת (\"Hazarmaveth\")",
+          "title": "Shared root / derivation (proximate wordplay candidate): מָ֫וֶת (H4194) ↔ מוּת (H4191)",
           "refs": [
-            "Genesis 21:16",
-            "Genesis 25:11"
+            "Leviticus 16:1",
+            "Numbers 16:29"
           ],
-          "target": "H2700",
-          "matched_endpoints": [],
-          "why": "Shares documented root חֲצַרְמָ֫וֶת (derived_from_root_anchor)."
+          "target": "H4191",
+          "matched_endpoints": [
+            "death",
+            "to die",
+            "מָ֫וֶת",
+            "מוּת",
+            "H4194",
+            "H4191"
+          ],
+          "why": "מָ֫וֶת (H4194, \"death\") and מוּת (H4191, \"to die\") share consonantal/phonetic sequence \"מות\" (edit distance 0, same-verse proximity). Documented shared root in STEPBible."
         },
         {
           "rank": 6,
-          "id": "lex:H4194:H4191",
-          "relation": "derived_from_root_anchor",
+          "id": "r11:lxx:H4194:3",
+          "relation": "cross_language_bridge",
+          "evidence_type": "translation_alignment",
           "ep": "documented_lexical_relationship",
           "tier": 3,
-          "title": "Lexical relation (derived_from_root_anchor): מָ֫וֶת <-> מוּת (\"to die\")",
+          "title": "Septuagint (LXX) bridge: מָ֫וֶת (H4194) → τελευτή (G5054, \"death\") across 14 passages",
           "refs": [
-            "Genesis 21:16",
-            "Genesis 25:11"
+            "Genesis 27:2",
+            "Genesis 50:16",
+            "Leviticus 16:1",
+            "Deuteronomy 31:29"
           ],
-          "target": "H4191",
-          "matched_endpoints": [],
-          "why": "Shares documented root מוּת (derived_from_root_anchor)."
+          "target": "G5054",
+          "matched_endpoints": [
+            "death",
+            "מָ֫וֶת",
+            "death"
+          ],
+          "why": "Ancient Greek Septuagint translates Hebrew מָ֫וֶת (H4194) as Greek τελευτή (G5054) in 14 occurrences (Genesis 27:2, Genesis 50:16, Leviticus 16:1, Deuteronomy 31:29). Establishes documented Greek translation bridge."
         },
         {
           "rank": 7,
-          "id": "gram:H4194:possessive_construction_with:H3117",
-          "relation": "possessive_construction_with",
-          "ep": "documented_lexical_relationship",
+          "id": "r13:colloc:H4194:H7585",
+          "relation": "verified_lexical_grammatical",
+          "evidence_type": "collocation",
+          "ep": "documented_collocation_or_cooccurrence",
           "tier": 3,
-          "title": "Genitive / construct connection: מָ֫וֶת <-> יוֹם (\"day\", 10x)",
-          "refs": [],
-          "target": "H3117",
-          "matched_endpoints": [],
-          "why": "R8 grammatical relation (possessive_construction_with) attested 10 time(s) with יוֹם (day)."
+          "title": "High-PMI collocation: מָ֫וֶת (H4194) ↔ שְׁאוֹל (\"hell: Sheol\", H7585) (NPMI=0.51, 15×)",
+          "refs": [
+            "2 Samuel 22:6",
+            "Psalms 6:5"
+          ],
+          "target": "H7585",
+          "matched_endpoints": [
+            "death",
+            "hell: Sheol",
+            "H4194",
+            "H7585"
+          ],
+          "why": "מָ֫וֶת (H4194, \"death\") and שְׁאוֹל (\"hell: Sheol\", H7585) co-occur in 15 verses (normalized PMI 0.51), indicating non-accidental contextual association."
         },
         {
           "rank": 8,
-          "id": "gram:H4194:possessive_construction_with:H6440",
-          "relation": "possessive_construction_with",
-          "ep": "documented_lexical_relationship",
+          "id": "r11:lex:H4194:1",
+          "relation": "cross_language_bridge",
+          "evidence_type": "translation_alignment",
+          "ep": "documented_cross_language_bridge",
           "tier": 3,
-          "title": "Genitive / construct connection: מָ֫וֶת <-> פָּנֶה (\"face\", 5x)",
-          "refs": [],
-          "target": "H6440",
-          "matched_endpoints": [],
-          "why": "R8 grammatical relation (possessive_construction_with) attested 5 time(s) with פָּנֶה (face)."
+          "title": "Cross-language lexical equivalent: מָ֫וֶת (H4194) ↔ θάνατος (thanatos · G2288)",
+          "refs": [
+            "Genesis 21:16"
+          ],
+          "target": "G2288",
+          "matched_endpoints": [
+            "death",
+            "מָ֫וֶת",
+            "θάνατος"
+          ],
+          "why": "Source-provided lexical and translation equivalent links מָ֫וֶת (H4194, \"death\") with θάνατος (thanatos · G2288); this documents semantic/translation correspondence across Hebrew and Greek rather than a shared morphological root."
         },
         {
           "rank": 9,
-          "id": "gram:H4194:possessive_construction_with:H3548",
-          "relation": "possessive_construction_with",
+          "id": "r11:cluster:H4194:torah_ritual_and_covenant_law",
+          "relation": "verified_lexical_grammatical",
+          "evidence_type": "verified_lexical_grammatical",
+          "ep": "direct_textual_evidence",
+          "tier": 3,
+          "title": "Torah Ritual & Covenant Law (Exodus 10 · Leviticus 11, 16 · Numbers 6, 16, 23, 35)",
+          "refs": [
+            "Exodus 10:17",
+            "Leviticus 11:31",
+            "Leviticus 16:1",
+            "Numbers 6:7"
+          ],
+          "target": "H4194",
+          "matched_endpoints": [
+            "death",
+            "מָ֫וֶת",
+            "H4194"
+          ],
+          "why": "Attested in 15 verses (Exodus 10:17, Leviticus 11:31, Leviticus 16:1, Numbers 6:7...) with surface forms: הַמָּ֥וֶת, בְּמֹתָ֖ם, מ֔וֹת, כְּמ֤וֹת. Co-occurs with: to murder, refuge, after, to die."
+        },
+        {
+          "rank": 10,
+          "id": "r11:gram:H4194:possessive_construction_with:H3548",
+          "relation": "verified_lexical_grammatical",
+          "evidence_type": "syntactic_relationship",
+          "ep": "direct_textual_evidence",
+          "tier": 2,
+          "title": "Head of genitive / construct: מָ֫וֶת (ma.vet) ↔ כֹּהֵן (\"priest\", 5×)",
+          "refs": [
+            "Joshua 20:6",
+            "Numbers 35:25",
+            "Numbers 35:28"
+          ],
+          "target": "H3548",
+          "matched_endpoints": [
+            "death",
+            "priest",
+            "H4194",
+            "H3548"
+          ],
+          "why": "Head of genitive / construct: מָ֫וֶת (H4194, \"death\") and כֹּהֵן (H3548, \"priest\") across 5 indexed occurrences. 5 distinct canonical source clauses pass token-position verification; parallel editions are counted once."
+        },
+        {
+          "rank": 11,
+          "id": "r13:colloc:H4194:H2416",
+          "relation": "verified_lexical_grammatical",
+          "evidence_type": "collocation",
+          "ep": "documented_collocation_or_cooccurrence",
+          "tier": 4,
+          "title": "High-PMI collocation: מָ֫וֶת (H4194) ↔ חַי (\"alive\", H2416) (NPMI=0.34, 24×)",
+          "refs": [
+            "Psalms 56:13",
+            "Jonah 4:8"
+          ],
+          "target": "H2416",
+          "matched_endpoints": [
+            "death",
+            "alive",
+            "H4194",
+            "H2416"
+          ],
+          "why": "מָ֫וֶת (H4194, \"death\") and חַי (\"alive\", H2416) co-occur in 24 verses (normalized PMI 0.34), indicating non-accidental contextual association."
+        },
+        {
+          "rank": 12,
+          "id": "r11:lex:H4194:3",
+          "relation": "verified_lexical_grammatical",
+          "evidence_type": "documented_root_family",
           "ep": "documented_lexical_relationship",
           "tier": 3,
-          "title": "Head of genitive / construct: מָ֫וֶת <-> כֹּהֵן (\"priest\", 5x)",
+          "title": "Lexical relation (derived from root anchor): מָ֫וֶת (H4194) ↔ מוּת (H4191)",
+          "refs": [
+            "Genesis 21:16"
+          ],
+          "target": "H4191",
+          "matched_endpoints": [
+            "death",
+            "מָ֫וֶת",
+            "to die",
+            "מוּת"
+          ],
+          "why": "Morphological and root derivation analysis links מָ֫וֶת (H4194) to מוּת (H4191) (\"to die\")."
+        },
+        {
+          "rank": 13,
+          "id": "r11:xref:18073:17887",
+          "relation": "cross_reference_witness",
+          "evidence_type": "explicit_quotation_or_allusion",
+          "ep": "editorial_cross_reference",
+          "tier": 4,
+          "title": "Modern editorial cross-reference: Isaiah 14:28 → Isaiah 6:1 (\"King Ahaz died\")",
+          "refs": [
+            "Isaiah 14:28",
+            "Isaiah 6:1"
+          ],
+          "target": "H4194",
+          "matched_endpoints": [
+            "Isaiah 14:28",
+            "Isaiah 6:1",
+            "King Ahaz died",
+            "death"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Isaiah 14:28 and Isaiah 6:1 via anchor phrase \"King Ahaz died\" (same original lemma)."
+        },
+        {
+          "rank": 14,
+          "id": "r13:wp:H4194:H0571",
+          "relation": "orthographic_wordplay",
+          "evidence_type": "proximate_wordplay_candidate",
+          "ep": "orthographic_similarity_only",
+          "tier": 4,
+          "title": "Consonantal / phonetic correspondence: מָ֫וֶת (H4194) ↔ אֱמֶת (H0571)",
+          "refs": [
+            "Isaiah 38:18",
+            "Joshua 2:12"
+          ],
+          "target": "H0571",
+          "matched_endpoints": [
+            "death",
+            "truth: faithful",
+            "מָ֫וֶת",
+            "אֱמֶת",
+            "H4194",
+            "H0571"
+          ],
+          "why": "מָ֫וֶת (H4194, \"death\") and אֱמֶת (H0571, \"truth: faithful\") share consonantal/phonetic sequence \"מת\" (edit distance 1, same-verse proximity). Shared consonantal or phonetic pattern does not establish a historical etymology, common root,..."
+        },
+        {
+          "rank": 15,
+          "id": "r11:xref:730:7734",
+          "relation": "cross_reference_witness",
+          "evidence_type": "explicit_quotation_or_allusion",
+          "ep": "editorial_cross_reference",
+          "tier": 4,
+          "title": "Modern editorial cross-reference: Genesis 27:2 → 1 Samuel 20:3 (\"I do not know\")",
+          "refs": [
+            "Genesis 27:2",
+            "1 Samuel 20:3"
+          ],
+          "target": "H4194",
+          "matched_endpoints": [
+            "Genesis 27:2",
+            "1 Samuel 20:3",
+            "I do not know",
+            "death"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Genesis 27:2 and 1 Samuel 20:3 via anchor phrase \"I do not know\" (same original lemma)."
+        },
+        {
+          "rank": 16,
+          "id": "r11:lxx:H4194:1",
+          "relation": "cross_language_bridge",
+          "evidence_type": "translation_alignment",
+          "ep": "documented_lexical_relationship",
+          "tier": 3,
+          "title": "Septuagint alignment witness: מָ֫וֶת (H4194) → ἀποθνήσκω",
           "refs": [],
-          "target": "H3548",
-          "matched_endpoints": [],
-          "why": "R8 grammatical relation (possessive_construction_with) attested 5 time(s) with כֹּהֵן (priest)."
+          "target": "G0599",
+          "matched_endpoints": [
+            "death",
+            "מָ֫וֶת",
+            "to die"
+          ],
+          "why": "Documented LXX lexical alignment linking מָ֫וֶת (H4194) with Greek witness ἀποθνήσκω."
+        },
+        {
+          "rank": 17,
+          "id": "r11:cluster:H4194:prophetic_imagery_and_oracles",
+          "relation": "verified_lexical_grammatical",
+          "evidence_type": "verified_lexical_grammatical",
+          "ep": "direct_textual_evidence",
+          "tier": 3,
+          "title": "Prophetic Imagery & Oracles (Isaiah 6, 14, 25, 28 · Jeremiah 8, 9, 15, 18 · Lamentations 1)",
+          "refs": [
+            "Isaiah 6:1",
+            "Isaiah 14:28",
+            "Isaiah 25:8",
+            "Isaiah 28:15"
+          ],
+          "target": "H4194",
+          "matched_endpoints": [
+            "death",
+            "מָ֫וֶת",
+            "H4194"
+          ],
+          "why": "Attested in 28 verses (Isaiah 6:1, Isaiah 14:28, Isaiah 25:8, Isaiah 28:15...) with surface forms: מוֹת֙, מ֖וֹת, הַמָּ֨וֶת֙, מָ֔וֶת. Co-occurs with: hell: Sheol, for, Lord, alive."
+        },
+        {
+          "rank": 18,
+          "id": "r11:lex:H4194:0",
+          "relation": "verified_lexical_grammatical",
+          "evidence_type": "documented_root_family",
+          "ep": "documented_lexical_relationship",
+          "tier": 3,
+          "title": "Lexical relation (shares root): מָ֫וֶת (H4194) ↔ מוֹת (H4193)",
+          "refs": [
+            "Genesis 21:16"
+          ],
+          "target": "H4193",
+          "matched_endpoints": [
+            "death",
+            "מָ֫וֶת",
+            "מוֹת"
+          ],
+          "why": "Morphological and root derivation analysis links מָ֫וֶת (H4194) to מוֹת (H4193) (\"death\")."
+        },
+        {
+          "rank": 19,
+          "id": "r11:xref:735:5812",
+          "relation": "cross_reference_witness",
+          "evidence_type": "explicit_quotation_or_allusion",
+          "ep": "editorial_cross_reference",
+          "tier": 4,
+          "title": "Modern editorial cross-reference: Genesis 27:7 → Deuteronomy 33:1 (\"in the presence of the LORD\")",
+          "refs": [
+            "Genesis 27:7",
+            "Deuteronomy 33:1"
+          ],
+          "target": "H4194",
+          "matched_endpoints": [
+            "Genesis 27:7",
+            "Deuteronomy 33:1",
+            "in the presence of the LORD",
+            "death"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Genesis 27:7 and Deuteronomy 33:1 via anchor phrase \"in the presence of the LORD\" (same original lemma)."
+        },
+        {
+          "rank": 20,
+          "id": "r13:colloc:H4194:H0661",
+          "relation": "verified_lexical_grammatical",
+          "evidence_type": "collocation",
+          "ep": "documented_collocation_or_cooccurrence",
+          "tier": 4,
+          "title": "High-PMI collocation: מָ֫וֶת (H4194) ↔ אָפַף (\"to surround\", H0661) (NPMI=0.52, 3×)",
+          "refs": [
+            "Psalms 116:3",
+            "2 Samuel 22:5"
+          ],
+          "target": "H0661",
+          "matched_endpoints": [
+            "death",
+            "to surround",
+            "H4194",
+            "H0661"
+          ],
+          "why": "מָ֫וֶת (H4194, \"death\") and אָפַף (\"to surround\", H0661) co-occur in 3 verses (normalized PMI 0.52), indicating non-accidental contextual association."
+        },
+        {
+          "rank": 21,
+          "id": "r13:wp:H4194:H4195",
+          "relation": "orthographic_wordplay",
+          "evidence_type": "proximate_wordplay_candidate",
+          "ep": "orthographic_similarity_only",
+          "tier": 4,
+          "title": "Consonantal / phonetic correspondence: מָ֫וֶת (H4194) ↔ מוֹתָר (H4195)",
+          "refs": [
+            "Ecclesiastes 3:19",
+            "Proverbs 21:5"
+          ],
+          "target": "H4195",
+          "matched_endpoints": [
+            "death",
+            "advantage",
+            "מָ֫וֶת",
+            "מוֹתָר",
+            "H4194",
+            "H4195"
+          ],
+          "why": "מָ֫וֶת (H4194, \"death\") and מוֹתָר (H4195, \"advantage\") share consonantal/phonetic sequence \"מות\" (edit distance 1, same-verse proximity). Shared consonantal or phonetic pattern does not establish a historical etymology, common root, or..."
+        },
+        {
+          "rank": 22,
+          "id": "r11:gram:H4194:possessive_construction_with:H4170",
+          "relation": "verified_lexical_grammatical",
+          "evidence_type": "syntactic_relationship",
+          "ep": "direct_textual_evidence",
+          "tier": 2,
+          "title": "Genitive / construct connection: מָ֫וֶת (ma.vet) ↔ מוֹקֵשׁ (\"snare\", 4×)",
+          "refs": [
+            "2 Samuel 22:6",
+            "Proverbs 13:14",
+            "Proverbs 14:27"
+          ],
+          "target": "H4170",
+          "matched_endpoints": [
+            "death",
+            "snare",
+            "H4194",
+            "H4170"
+          ],
+          "why": "Genitive / construct connection: מָ֫וֶת (H4194, \"death\") and מוֹקֵשׁ (H4170, \"snare\") across 4 indexed occurrences. 4 distinct canonical source clauses pass token-position verification; parallel editions are counted once."
+        },
+        {
+          "rank": 23,
+          "id": "r11:cluster:H4194:historical_narrative",
+          "relation": "verified_lexical_grammatical",
+          "evidence_type": "verified_lexical_grammatical",
+          "ep": "direct_textual_evidence",
+          "tier": 3,
+          "title": "Historical Narrative (Genesis 21, 25, 26, 27 · Joshua 1, 2 · Judges 1, 13)",
+          "refs": [
+            "Genesis 21:16",
+            "Genesis 25:11",
+            "Genesis 26:18",
+            "Genesis 27:2"
+          ],
+          "target": "H4194",
+          "matched_endpoints": [
+            "death",
+            "מָ֫וֶת",
+            "H4194"
+          ],
+          "why": "Attested in 39 verses (Genesis 21:16, Genesis 25:11, Genesis 26:18, Genesis 27:2...) with surface forms: בְּמ֣וֹת, מ֣וֹת, מוֹתִֽי, מוֹתֽוֹ. Co-occurs with: after, to be, father, to(wards)."
+        },
+        {
+          "rank": 24,
+          "id": "r11:lex:H4194:2",
+          "relation": "verified_lexical_grammatical",
+          "evidence_type": "documented_root_family",
+          "ep": "documented_lexical_relationship",
+          "tier": 3,
+          "title": "Lexical relation (derived from root anchor): מָ֫וֶת (H4194) ↔ חֲצַרְמָ֫וֶת (H2700)",
+          "refs": [
+            "Genesis 21:16"
+          ],
+          "target": "H2700",
+          "matched_endpoints": [
+            "death",
+            "מָ֫וֶת",
+            "Hazarmaveth",
+            "חֲצַרְמָ֫וֶת"
+          ],
+          "why": "Morphological and root derivation analysis links מָ֫וֶת (H4194) to חֲצַרְמָ֫וֶת (H2700) (\"Hazarmaveth\")."
+        },
+        {
+          "rank": 25,
+          "id": "r11:xref:7734:8411",
+          "relation": "cross_reference_witness",
+          "evidence_type": "explicit_quotation_or_allusion",
+          "ep": "editorial_cross_reference",
+          "tier": 4,
+          "title": "Modern editorial cross-reference: Verse 7734 → 2 Samuel 15:21 (\"As surely\")",
+          "refs": [
+            "Verse 7734",
+            "2 Samuel 15:21"
+          ],
+          "target": "H4194",
+          "matched_endpoints": [
+            "Verse 7734",
+            "2 Samuel 15:21",
+            "As surely",
+            "death"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Verse 7734 and 2 Samuel 15:21 via anchor phrase \"As surely\" (same original lemma)."
         }
-      ]
+      ],
+      "initial_status": "partial",
+      "retry_recovered": true,
+      "latency_ms_retry": 3868,
+      "completion_note": "Recovered after transient partial discovery; initial response kept via initial_status/retry_recovered."
     },
     {
       "index": 2,
@@ -3665,260 +4504,1140 @@
       "q": "H0784",
       "mode": "bridge",
       "via": "word",
-      "status": "partial",
-      "discovery_status": "unavailable",
+      "status": "ok",
+      "discovery_status": "ok",
       "latency_ms": 30284,
       "primary_strongs": "H0784",
       "error": null,
       "cards": [
         {
           "rank": 1,
-          "id": "lxx:H0784:G4442",
-          "relation": "lxx_translation_bridge",
-          "ep": "documented_cross_language_bridge",
+          "id": "r13:colloc:H0784:H8313",
+          "relation": "verified_lexical_grammatical",
+          "evidence_type": "collocation",
+          "ep": "documented_collocation_or_cooccurrence",
           "tier": 3,
-          "title": "LXX bridge: אֵשׁ (H0784) -> πῦρ (G4442, \"fire\")",
-          "refs": [],
-          "target": "G4442",
-          "matched_endpoints": [],
-          "why": "Septuagint renders אֵשׁ as πῦρ (\"fire\") across 334 passage(s)."
+          "title": "High-PMI collocation: אֵשׁ (H0784) ↔ שָׂרַף (\"to burn\", H8313) (NPMI=0.69, 75×)",
+          "refs": [
+            "Deuteronomy 7:25",
+            "Deuteronomy 12:3"
+          ],
+          "target": "H8313",
+          "matched_endpoints": [
+            "fire",
+            "to burn",
+            "H0784",
+            "H8313"
+          ],
+          "why": "אֵשׁ (H0784, \"fire\") and שָׂרַף (\"to burn\", H8313) co-occur in 75 verses (normalized PMI 0.69), indicating non-accidental contextual association."
         },
         {
           "rank": 2,
-          "id": "lex:H0784:H0785",
-          "relation": "shares_root",
-          "ep": "documented_lexical_relationship",
+          "id": "r13:colloc:H0784:H0398",
+          "relation": "verified_lexical_grammatical",
+          "evidence_type": "collocation",
+          "ep": "documented_collocation_or_cooccurrence",
           "tier": 3,
-          "title": "Lexical relation (shares_root): אֵשׁ <-> אֶשָּׁא (\"fire\")",
+          "title": "High-PMI collocation: אֵשׁ (H0784) ↔ אָכַל (\"to eat\", H0398) (NPMI=0.42, 90×)",
           "refs": [
-            "Genesis 15:17",
-            "Genesis 19:24"
+            "Deuteronomy 4:24",
+            "Deuteronomy 5:25"
           ],
-          "target": "H0785",
-          "matched_endpoints": [],
-          "why": "Shares documented root אֵשׁ (shares_root)."
+          "target": "H0398",
+          "matched_endpoints": [
+            "fire",
+            "to eat",
+            "H0784",
+            "H0398"
+          ],
+          "why": "אֵשׁ (H0784, \"fire\") and אָכַל (\"to eat\", H0398) co-occur in 90 verses (normalized PMI 0.42), indicating non-accidental contextual association."
         },
         {
           "rank": 3,
-          "id": "lex:H0784:H0786",
-          "relation": "derived_from_root_anchor",
-          "ep": "documented_lexical_relationship",
+          "id": "r13:wp:H0784:H0376",
+          "relation": "orthographic_wordplay",
+          "evidence_type": "proximate_wordplay_candidate",
+          "ep": "orthographic_similarity_only",
           "tier": 3,
-          "title": "Lexical relation (derived_from_root_anchor): אֵשׁ <-> אִשׁ (\"there is\")",
+          "title": "Consonantal / phonetic correspondence: אֵשׁ (H0784) ↔ אִישׁ (H0376)",
           "refs": [
-            "Genesis 15:17",
-            "Genesis 19:24"
+            "Leviticus 10:1",
+            "Leviticus 20:14"
           ],
-          "target": "H0786",
-          "matched_endpoints": [],
-          "why": "Shares documented root אִשׁ (derived_from_root_anchor)."
+          "target": "H0376",
+          "matched_endpoints": [
+            "fire",
+            "man",
+            "אֵשׁ",
+            "אִישׁ",
+            "H0784",
+            "H0376"
+          ],
+          "why": "אֵשׁ (H0784, \"fire\") and אִישׁ (H0376, \"man\") share consonantal/phonetic sequence \"אש\" (edit distance 0, same-verse proximity). Shared consonantal or phonetic pattern does not establish a historical etymology, common root, or intentional..."
         },
         {
           "rank": 4,
-          "id": "lex:H0784:H0799",
-          "relation": "derived_from_root_anchor",
-          "ep": "documented_lexical_relationship",
+          "id": "r13:wp:H0784:H0802",
+          "relation": "orthographic_wordplay",
+          "evidence_type": "proximate_wordplay_candidate",
+          "ep": "orthographic_similarity_only",
           "tier": 3,
-          "title": "Lexical relation (derived_from_root_anchor): אֵשׁ <-> אֶשְׁדָּת (\"fiery\")",
+          "title": "Consonantal / phonetic correspondence: אֵשׁ (H0784) ↔ אִשָּׁה (H0802)",
           "refs": [
-            "Genesis 15:17",
-            "Genesis 19:24"
+            "Leviticus 20:14",
+            "Judges 9:49"
           ],
-          "target": "H0799",
-          "matched_endpoints": [],
-          "why": "Shares documented root אֶשְׁדָּת (derived_from_root_anchor)."
+          "target": "H0802",
+          "matched_endpoints": [
+            "fire",
+            "woman",
+            "אֵשׁ",
+            "אִשָּׁה",
+            "H0784",
+            "H0802"
+          ],
+          "why": "אֵשׁ (H0784, \"fire\") and אִשָּׁה (H0802, \"woman\") share consonantal/phonetic sequence \"אש\" (edit distance 1, same-verse proximity). Shared consonantal or phonetic pattern does not establish a historical etymology, common root, or intenti..."
         },
         {
           "rank": 5,
-          "id": "lex:H0784:H0800",
-          "relation": "derived_from_root_anchor",
-          "ep": "documented_lexical_relationship",
-          "tier": 3,
-          "title": "Lexical relation (derived_from_root_anchor): אֵשׁ <-> אֶשָּׁה (\"fire\")",
+          "id": "r12:path:H0784:H8313",
+          "relation": "multihop_proof_path",
+          "evidence_type": "multi_hop_pattern",
+          "ep": "documented_collocation_or_cooccurrence",
+          "tier": 4,
+          "title": "3-hop: אֵשׁ (H0784) → שָׂרַף (\"to burn\", H8313)",
           "refs": [
-            "Genesis 15:17",
-            "Genesis 19:24"
+            "Exodus 12:10",
+            "Exodus 29:14",
+            "Exodus 29:34",
+            "Exodus 32:20"
           ],
-          "target": "H0800",
-          "matched_endpoints": [],
-          "why": "Shares documented root אֶשָּׁה (derived_from_root_anchor)."
+          "target": "H8313",
+          "matched_endpoints": [
+            "fire",
+            "H0784",
+            "to burn",
+            "H8313"
+          ],
+          "why": "3-hop path (direct endpoint witness): אֵשׁ (fire) —LXX→ πῦρ (fire) ; πῦρ (fire) —LXX→ שְׂרֵפָה (fire) ; שְׂרֵפָה (fire) —object of→ שָׂרַף (to burn)"
         },
         {
           "rank": 6,
-          "id": "gram:H0784:grammatical_subject_of:H0398",
-          "relation": "grammatical_subject_of",
-          "ep": "documented_lexical_relationship",
-          "tier": 3,
-          "title": "Subject of: אֵשׁ <-> אָכַל (\"to eat\", 22x)",
-          "refs": [],
-          "target": "H0398",
-          "matched_endpoints": [],
-          "why": "R8 grammatical relation (grammatical_subject_of) attested 22 time(s) with אָכַל (to eat)."
+          "id": "r12:path:H0784:H3852",
+          "relation": "multihop_proof_path",
+          "evidence_type": "multi_hop_pattern",
+          "ep": "documented_collocation_or_cooccurrence",
+          "tier": 4,
+          "title": "3-hop: אֵשׁ (H0784) → לֶהָבָה (\"flame\", H3852)",
+          "refs": [
+            "Numbers 21:28",
+            "Psalms 29:7",
+            "Psalms 83:14",
+            "Psalms 105:32"
+          ],
+          "target": "H3852",
+          "matched_endpoints": [
+            "fire",
+            "H0784",
+            "flame",
+            "H3852"
+          ],
+          "why": "3-hop path (direct endpoint witness): אֵשׁ (fire) --[gram_possessive_construction_with]--> גַּחֶ֫לֶת (coal) ; גַּחֶ֫לֶת (coal) —object of→ לָהַט (to kindle) ; לָהַט (to kindle) —subject of→ לֶהָבָה (flame)"
         },
         {
           "rank": 7,
-          "id": "gram:H0784:possessive_construction_with:H8432",
-          "relation": "possessive_construction_with",
-          "ep": "documented_lexical_relationship",
-          "tier": 3,
-          "title": "Genitive / construct connection: אֵשׁ <-> תָּ֫וֶךְ (\"midst\", 12x)",
-          "refs": [],
-          "target": "H8432",
-          "matched_endpoints": [],
-          "why": "R8 grammatical relation (possessive_construction_with) attested 12 time(s) with תָּ֫וֶךְ (midst)."
+          "id": "r12:path:H0784:H6862",
+          "relation": "multihop_proof_path",
+          "evidence_type": "multi_hop_pattern",
+          "ep": "documented_collocation_or_cooccurrence",
+          "tier": 4,
+          "title": "3-hop: אֵשׁ (H0784) → צַר (\"narrow\", H6862)",
+          "refs": [
+            "Psalms 97:3",
+            "Isaiah 26:11",
+            "Isaiah 64:2",
+            "Lamentations 2:4"
+          ],
+          "target": "H6862",
+          "matched_endpoints": [
+            "fire",
+            "H0784",
+            "narrow",
+            "H6862"
+          ],
+          "why": "3-hop path (direct endpoint witness): אֵשׁ (fire) --[gram_possessive_construction_with]--> לֶהָבָה (flame) ; לֶהָבָה (flame) —subject of→ לָהַט (to kindle) ; לָהַט (to kindle) —object of→ צַר (narrow)"
         },
         {
           "rank": 8,
-          "id": "gram:H0784:grammatical_subject_of:H3318",
-          "relation": "grammatical_subject_of",
-          "ep": "documented_lexical_relationship",
-          "tier": 3,
-          "title": "Subject of: אֵשׁ <-> יָצָא (\"to come out: come\", 11x)",
-          "refs": [],
-          "target": "H3318",
-          "matched_endpoints": [],
-          "why": "R8 grammatical relation (grammatical_subject_of) attested 11 time(s) with יָצָא (to come out: come)."
+          "id": "r12:path:H0784:H3857",
+          "relation": "multihop_proof_path",
+          "evidence_type": "multi_hop_pattern",
+          "ep": "documented_collocation_or_cooccurrence",
+          "tier": 4,
+          "title": "2-hop: אֵשׁ (H0784) → לָהַט (\"to kindle\", H3857)",
+          "refs": [
+            "Deuteronomy 32:22",
+            "Psalms 83:14",
+            "Psalms 97:3",
+            "Psalms 104:4"
+          ],
+          "target": "H3857",
+          "matched_endpoints": [
+            "fire",
+            "H0784",
+            "to kindle",
+            "H3857"
+          ],
+          "why": "2-hop path (direct endpoint witness): אֵשׁ (fire) --[gram_possessive_construction_with]--> לֶהָבָה (flame) ; לֶהָבָה (flame) —subject of→ לָהַט (to kindle)"
         },
         {
           "rank": 9,
-          "id": "gram:H0784:grammatical_object_of:H3341",
-          "relation": "grammatical_object_of",
-          "ep": "documented_lexical_relationship",
-          "tier": 3,
-          "title": "Direct object of: אֵשׁ <-> יָצַת (\"to kindle\", 9x)",
-          "refs": [],
+          "id": "r12:path:H0784:H2534",
+          "relation": "multihop_proof_path",
+          "evidence_type": "multi_hop_pattern",
+          "ep": "documented_collocation_or_cooccurrence",
+          "tier": 4,
+          "title": "2-hop: אֵשׁ (H0784) → חֵמָה (\"rage\", H2534)",
+          "refs": [
+            "Psalms 89:46",
+            "Isaiah 66:15",
+            "Jeremiah 4:4",
+            "Jeremiah 21:12"
+          ],
+          "target": "H2534",
+          "matched_endpoints": [
+            "fire",
+            "H0784",
+            "rage",
+            "H2534"
+          ],
+          "why": "2-hop path (direct endpoint witness): אֵשׁ (fire) —object of→ יָצַת (to kindle) ; יָצַת (to kindle) —subject of→ חֵמָה (rage)"
+        },
+        {
+          "rank": 10,
+          "id": "r11:gram:H0784:grammatical_subject_of:H0398",
+          "relation": "verified_lexical_grammatical",
+          "evidence_type": "syntactic_relationship",
+          "ep": "direct_textual_evidence",
+          "tier": 2,
+          "title": "Subject of: אֵשׁ (esh) ↔ אָכַל (\"to eat\", 22×)",
+          "refs": [
+            "2 Samuel 22:9",
+            "Deuteronomy 5:25",
+            "Ezekiel 15:4"
+          ],
+          "target": "H0398",
+          "matched_endpoints": [
+            "fire",
+            "to eat",
+            "H0784",
+            "H0398"
+          ],
+          "why": "Subject of: אֵשׁ (H0784, \"fire\") and אָכַל (H0398, \"to eat\") across 22 indexed occurrences. 22 distinct canonical source clauses pass token-position verification; parallel editions are counted once."
+        },
+        {
+          "rank": 11,
+          "id": "r11:gram:H0784:grammatical_object_of:H3341",
+          "relation": "verified_lexical_grammatical",
+          "evidence_type": "syntactic_relationship",
+          "ep": "direct_textual_evidence",
+          "tier": 2,
+          "title": "Direct object of: אֵשׁ (esh) ↔ יָצַת (\"to kindle\", 9×)",
+          "refs": [
+            "Amos 1:14",
+            "Ezekiel 20:47",
+            "Jeremiah 11:16"
+          ],
           "target": "H3341",
-          "matched_endpoints": [],
-          "why": "R8 grammatical relation (grammatical_object_of) attested 9 time(s) with יָצַת (to kindle)."
+          "matched_endpoints": [
+            "fire",
+            "to kindle",
+            "H0784",
+            "H3341"
+          ],
+          "why": "Direct object of: אֵשׁ (H0784, \"fire\") and יָצַת (H3341, \"to kindle\") across 9 indexed occurrences. 9 distinct canonical source clauses pass token-position verification; parallel editions are counted once."
+        },
+        {
+          "rank": 12,
+          "id": "r11:cluster:H0784:poetic_imagery_and_similes",
+          "relation": "explicit_comparison",
+          "evidence_type": "explicit_comparison",
+          "ep": "direct_textual_evidence",
+          "tier": 2,
+          "title": "Poetic Imagery & Similes (Job 1, 15, 18, 20 · Psalms 11, 18, 21, 29 · Proverbs 6, 16, 26, 30)",
+          "refs": [
+            "Job 1:16",
+            "Job 15:34",
+            "Job 18:5",
+            "Job 20:26"
+          ],
+          "target": "H0784",
+          "matched_endpoints": [
+            "fire",
+            "אֵשׁ",
+            "H0784"
+          ],
+          "why": "Attested in 41 verses (Job 1:16, Job 15:34, Job 18:5, Job 20:26...) with surface forms: אֵ֣שׁ, וְ֝אֵ֗שׁ, אִשּֽׁוֹ, אֵֽשׁ. Co-occurs with: to burn: burn, coal, to eat, to kindle."
+        },
+        {
+          "rank": 13,
+          "id": "r13:wp:H0784:H7218",
+          "relation": "orthographic_wordplay",
+          "evidence_type": "proximate_wordplay_candidate",
+          "ep": "orthographic_similarity_only",
+          "tier": 3,
+          "title": "Consonantal / phonetic correspondence: אֵשׁ (H0784) ↔ רֹאשׁ (H7218)",
+          "refs": [
+            "Exodus 12:9",
+            "Exodus 24:17"
+          ],
+          "target": "H7218",
+          "matched_endpoints": [
+            "fire",
+            "head",
+            "אֵשׁ",
+            "רֹאשׁ",
+            "H0784",
+            "H7218"
+          ],
+          "why": "אֵשׁ (H0784, \"fire\") and רֹאשׁ (H7218, \"head\") share consonantal/phonetic sequence \"אש\" (edit distance 1, same-verse proximity). Shared consonantal or phonetic pattern does not establish a historical etymology, common root, or intentiona..."
+        },
+        {
+          "rank": 14,
+          "id": "r12:orth:H0784:H0834",
+          "relation": "orthographic_overlap",
+          "evidence_type": "shared_consonantal_pattern",
+          "ep": "orthographic_similarity_only",
+          "tier": 6,
+          "title": "Orthographic similarity: אֵשׁ (H0784) ↔ אֲשֶׁר (H0834, matched \"אש\")",
+          "refs": [
+            "Genesis 15:17",
+            "Exodus 9:24",
+            "Genesis 1:7"
+          ],
+          "target": "H0834",
+          "matched_endpoints": [
+            "fire",
+            "which",
+            "אש"
+          ],
+          "why": "Unpointed/unaccented script similarity (hebrew_unpointed, score=1, shared segment \"אש\", co-occurs in 69 canonical verse(s)). Shared spelling does not establish root, etymology, meaning, or intentional wordplay."
+        },
+        {
+          "rank": 15,
+          "id": "r13:colloc:H0784:H1197",
+          "relation": "verified_lexical_grammatical",
+          "evidence_type": "collocation",
+          "ep": "documented_collocation_or_cooccurrence",
+          "tier": 3,
+          "title": "High-PMI collocation: אֵשׁ (H0784) ↔ בָּעַר (\"to burn: burn\", H1197) (NPMI=0.54, 37×)",
+          "refs": [
+            "Job 1:16",
+            "Jeremiah 7:18"
+          ],
+          "target": "H1197",
+          "matched_endpoints": [
+            "fire",
+            "to burn: burn",
+            "H0784",
+            "H1197"
+          ],
+          "why": "אֵשׁ (H0784, \"fire\") and בָּעַר (\"to burn: burn\", H1197) co-occur in 37 verses (normalized PMI 0.54), indicating non-accidental contextual association."
+        },
+        {
+          "rank": 16,
+          "id": "r12:orth:H0784:H0802",
+          "relation": "orthographic_overlap",
+          "evidence_type": "shared_consonantal_pattern",
+          "ep": "orthographic_similarity_only",
+          "tier": 6,
+          "title": "Orthographic similarity: אֵשׁ (H0784) ↔ אִשָּׁה (H0802, matched \"אש\")",
+          "refs": [
+            "Leviticus 20:14",
+            "Judges 9:49",
+            "Genesis 15:17",
+            "Genesis 2:22"
+          ],
+          "target": "H0802",
+          "matched_endpoints": [
+            "fire",
+            "woman",
+            "אש"
+          ],
+          "why": "Unpointed/unaccented script similarity (hebrew_unpointed, score=1, shared segment \"אש\", co-occurs in 10 canonical verse(s)). Shared spelling does not establish root, etymology, meaning, or intentional wordplay."
+        },
+        {
+          "rank": 17,
+          "id": "r12:path:H0784:H3518",
+          "relation": "multihop_proof_path",
+          "evidence_type": "multi_hop_pattern",
+          "ep": "documented_collocation_or_cooccurrence",
+          "tier": 4,
+          "title": "2-hop: אֵשׁ (H0784) → כָּבָה (\"to quench\", H3518)",
+          "refs": [
+            "Leviticus 6:12",
+            "Leviticus 6:13",
+            "Proverbs 26:20",
+            "Isaiah 66:24"
+          ],
+          "target": "H3518",
+          "matched_endpoints": [
+            "fire",
+            "H0784",
+            "to quench",
+            "H3518"
+          ],
+          "why": "2-hop path (direct endpoint witness): אֵשׁ (fire) --[gram_possessive_construction_with]--> גַּחֶ֫לֶת (coal) ; גַּחֶ֫לֶת (coal) —object of→ כָּבָה (to quench)"
+        },
+        {
+          "rank": 18,
+          "id": "r11:colloc:H0784:H3341",
+          "relation": "verified_lexical_grammatical",
+          "evidence_type": "collocation",
+          "ep": "documented_collocation_or_cooccurrence",
+          "tier": 4,
+          "title": "Direct collocation: אֵשׁ (\"fire\") ↔ יָצַת (\"to kindle\", 6×)",
+          "refs": [
+            "Genesis 15:17",
+            "Genesis 19:24",
+            "Joshua 7:15",
+            "Joshua 7:25"
+          ],
+          "target": "H3341",
+          "matched_endpoints": [
+            "fire",
+            "to kindle",
+            "H0784",
+            "H3341"
+          ],
+          "why": "Corpus co-occurrence links אֵשׁ (H0784, \"fire\") with יָצַת (H3341, \"to kindle\") across 6 shared contexts (Genesis 15:17, Genesis 19:24, Joshua 7:15, Joshua 7:25, Joshua 8:8, Joshua 8:19)."
+        },
+        {
+          "rank": 19,
+          "id": "r11:cluster:H0784:prophetic_imagery_and_oracles",
+          "relation": "explicit_comparison",
+          "evidence_type": "explicit_comparison",
+          "ep": "direct_textual_evidence",
+          "tier": 2,
+          "title": "Prophetic Imagery & Oracles (Isaiah 1, 4, 5, 9 · Jeremiah 4, 5, 6, 7 · Lamentations 1, 2, 4)",
+          "refs": [
+            "Isaiah 1:7",
+            "Isaiah 4:5",
+            "Isaiah 5:24",
+            "Isaiah 9:5"
+          ],
+          "target": "H0784",
+          "matched_endpoints": [
+            "fire",
+            "אֵשׁ",
+            "H0784"
+          ],
+          "why": "Attested in 133 verses (Isaiah 1:7, Isaiah 4:5, Isaiah 5:24, Isaiah 9:5...) with surface forms: אֵ֑שׁ, אֵ֥שׁ, אֵ֗שׁ, אֵֽשׁ. Co-occurs with: to eat, to burn, to kindle, to burn: burn."
+        },
+        {
+          "rank": 20,
+          "id": "r12:path:H0784:H5315",
+          "relation": "multihop_proof_path",
+          "evidence_type": "multi_hop_pattern",
+          "ep": "documented_collocation_or_cooccurrence",
+          "tier": 4,
+          "title": "3-hop: אֵשׁ (H0784) → נֶ֫פֶשׁ (\"soul\", H5315)",
+          "refs": [
+            "Deuteronomy 4:15",
+            "Joshua 11:11",
+            "2 Kings 1:14",
+            "Isaiah 47:14"
+          ],
+          "target": "H5315",
+          "matched_endpoints": [
+            "fire",
+            "H0784",
+            "soul",
+            "H5315"
+          ],
+          "why": "3-hop path (direct endpoint witness): אֵשׁ (fire) --[gram_possessive_construction_with]--> גַּחֶ֫לֶת (coal) ; גַּחֶ֫לֶת (coal) —object of→ לָהַט (to kindle) ; לָהַט (to kindle) —subject of→ נֶ֫פֶשׁ (soul)"
+        },
+        {
+          "rank": 21,
+          "id": "r12:orth:H0784:H7218",
+          "relation": "orthographic_overlap",
+          "evidence_type": "shared_consonantal_pattern",
+          "ep": "orthographic_similarity_only",
+          "tier": 6,
+          "title": "Orthographic similarity: אֵשׁ (H0784) ↔ רֹאשׁ (H7218, matched \"אש\")",
+          "refs": [
+            "Exodus 12:9",
+            "Exodus 24:17",
+            "Genesis 15:17",
+            "Genesis 2:10"
+          ],
+          "target": "H7218",
+          "matched_endpoints": [
+            "fire",
+            "head",
+            "אש"
+          ],
+          "why": "Unpointed/unaccented script similarity (hebrew_unpointed, score=1, shared segment \"אש\", co-occurs in 9 canonical verse(s)). Shared spelling does not establish root, etymology, meaning, or intentional wordplay."
+        },
+        {
+          "rank": 22,
+          "id": "r11:colloc:H0784:H6086",
+          "relation": "verified_lexical_grammatical",
+          "evidence_type": "collocation",
+          "ep": "documented_collocation_or_cooccurrence",
+          "tier": 4,
+          "title": "Direct collocation: אֵשׁ (\"fire\") ↔ עֵץ (\"tree: wood\", 18×)",
+          "refs": [
+            "Genesis 22:6",
+            "Genesis 22:7",
+            "Exodus 13:21",
+            "Exodus 13:22"
+          ],
+          "target": "H6086",
+          "matched_endpoints": [
+            "fire",
+            "tree: wood",
+            "H0784",
+            "H6086"
+          ],
+          "why": "Corpus co-occurrence links אֵשׁ (H0784, \"fire\") with עֵץ (H6086, \"tree: wood\") across 18 shared contexts (Genesis 22:6, Genesis 22:7, Exodus 13:21, Exodus 13:22, Exodus 14:24, Exodus 29:14)."
+        },
+        {
+          "rank": 23,
+          "id": "r11:xref:378:1582",
+          "relation": "cross_reference_witness",
+          "evidence_type": "explicit_quotation_or_allusion",
+          "ep": "editorial_cross_reference",
+          "tier": 4,
+          "title": "Modern editorial cross-reference: Genesis 15:17 → Exodus 3:2-3 (\"smoking firepot\")",
+          "refs": [
+            "Genesis 15:17",
+            "Exodus 3:2-3"
+          ],
+          "target": "H0784",
+          "matched_endpoints": [
+            "Genesis 15:17",
+            "Exodus 3:2-3",
+            "smoking firepot",
+            "fire"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Genesis 15:17 and Exodus 3:2-3 via anchor phrase \"smoking firepot\" (same original lemma)."
+        },
+        {
+          "rank": 24,
+          "id": "r11:xref:378:6676",
+          "relation": "cross_reference_witness",
+          "evidence_type": "explicit_quotation_or_allusion",
+          "ep": "editorial_cross_reference",
+          "tier": 4,
+          "title": "Modern editorial cross-reference: Genesis 15:17 → Judges 6:21 (\"smoking firepot\")",
+          "refs": [
+            "Genesis 15:17",
+            "Judges 6:21"
+          ],
+          "target": "H0784",
+          "matched_endpoints": [
+            "Genesis 15:17",
+            "Judges 6:21",
+            "smoking firepot",
+            "fire"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Genesis 15:17 and Judges 6:21 via anchor phrase \"smoking firepot\" (same original lemma)."
+        },
+        {
+          "rank": 25,
+          "id": "r13:wp:H0784:H0801",
+          "relation": "orthographic_wordplay",
+          "evidence_type": "proximate_wordplay_candidate",
+          "ep": "orthographic_similarity_only",
+          "tier": 3,
+          "title": "Consonantal / phonetic correspondence: אֵשׁ (H0784) ↔ אִשֶּׁה (H0801)",
+          "refs": [
+            "Leviticus 1:17",
+            "Leviticus 3:5"
+          ],
+          "target": "H0801",
+          "matched_endpoints": [
+            "fire",
+            "food offering",
+            "אֵשׁ",
+            "אִשֶּׁה",
+            "H0784",
+            "H0801"
+          ],
+          "why": "אֵשׁ (H0784, \"fire\") and אִשֶּׁה (H0801, \"food offering\") share consonantal/phonetic sequence \"אש\" (edit distance 1, same-verse proximity). Shared consonantal or phonetic pattern does not establish a historical etymology, common root, or..."
         }
-      ]
+      ],
+      "initial_status": "partial",
+      "retry_recovered": true,
+      "latency_ms_retry": 3869,
+      "completion_note": "Recovered after transient partial discovery; initial response kept via initial_status/retry_recovered."
     },
     {
       "index": 11,
       "q": "barley",
       "mode": "bridge",
       "via": "word",
-      "status": "partial",
-      "discovery_status": "unavailable",
+      "status": "ok",
+      "discovery_status": "ok",
       "latency_ms": 30283,
       "primary_strongs": "H8184",
       "error": null,
       "cards": [
         {
           "rank": 1,
-          "id": "lxx:H8184:G2915",
-          "relation": "lxx_translation_bridge",
-          "ep": "documented_cross_language_bridge",
+          "id": "r11:lxx:H8184:2",
+          "relation": "cross_language_bridge",
+          "evidence_type": "translation_alignment",
+          "ep": "documented_lexical_relationship",
           "tier": 3,
-          "title": "LXX bridge: שְׂעֹרָה (H8184) -> κριθή (G2915, \"barley\")",
-          "refs": [],
-          "target": "G2915",
-          "matched_endpoints": [],
-          "why": "Septuagint renders שְׂעֹרָה as κριθή (\"barley\") across 16 passage(s)."
+          "title": "Septuagint (LXX) bridge: שְׂעֹרָה (H8184) → κρίθινος (G2916, \"barley\") across 29 passages",
+          "refs": [
+            "Exodus 9:31",
+            "Leviticus 27:16",
+            "Numbers 5:15",
+            "Deuteronomy 8:8"
+          ],
+          "target": "G2916",
+          "matched_endpoints": [
+            "barley",
+            "שְׂעֹרָה",
+            "barley"
+          ],
+          "why": "Ancient Greek Septuagint translates Hebrew שְׂעֹרָה (H8184) as Greek κρίθινος (G2916) in 29 occurrences (Exodus 9:31, Leviticus 27:16, Numbers 5:15, Deuteronomy 8:8). Establishes documented Greek translation bridge."
         },
         {
           "rank": 2,
-          "id": "lxx:H8184:G2916",
-          "relation": "lxx_translation_bridge",
-          "ep": "documented_cross_language_bridge",
+          "id": "r11:lxx:H8184:1",
+          "relation": "cross_language_bridge",
+          "evidence_type": "translation_alignment",
+          "ep": "documented_lexical_relationship",
           "tier": 3,
-          "title": "LXX bridge: שְׂעֹרָה (H8184) -> κρίθινος (G2916, \"barley\")",
-          "refs": [],
-          "target": "G2916",
-          "matched_endpoints": [],
-          "why": "Septuagint renders שְׂעֹרָה as κρίθινος (\"barley\") across 29 passage(s)."
+          "title": "Septuagint (LXX) bridge: שְׂעֹרָה (H8184) → κριθή (G2915, \"barley\") across 29 passages",
+          "refs": [
+            "Exodus 9:31",
+            "Leviticus 27:16",
+            "Numbers 5:15",
+            "Deuteronomy 8:8"
+          ],
+          "target": "G2915",
+          "matched_endpoints": [
+            "barley",
+            "שְׂעֹרָה",
+            "barley"
+          ],
+          "why": "Ancient Greek Septuagint translates Hebrew שְׂעֹרָה (H8184) as Greek κριθή (G2915) in 29 occurrences (Exodus 9:31, Leviticus 27:16, Numbers 5:15, Deuteronomy 8:8). Establishes documented Greek translation bridge."
         },
         {
           "rank": 3,
-          "id": "lex:H8184:H8175",
-          "relation": "derived_from_root_anchor",
-          "ep": "documented_lexical_relationship",
+          "id": "r13:colloc:H8184:H2406",
+          "relation": "verified_lexical_grammatical",
+          "evidence_type": "collocation",
+          "ep": "documented_collocation_or_cooccurrence",
           "tier": 3,
-          "title": "Lexical relation (derived_from_root_anchor): שְׂעֹרָה <-> שָׂעַר (\"to shudder\")",
+          "title": "High-PMI collocation: שְׂעֹרָה (H8184) ↔ חִטָּה (\"wheat\", H2406) (NPMI=0.76, 12×)",
           "refs": [
-            "Exodus 9:31",
-            "Leviticus 27:16"
+            "2 Samuel 17:28",
+            "Ezekiel 4:9"
           ],
-          "target": "H8175",
-          "matched_endpoints": [],
-          "why": "Shares documented root שָׂעַר (derived_from_root_anchor)."
+          "target": "H2406",
+          "matched_endpoints": [
+            "barley",
+            "wheat",
+            "H8184",
+            "H2406"
+          ],
+          "why": "שְׂעֹרָה (H8184, \"barley\") and חִטָּה (\"wheat\", H2406) co-occur in 12 verses (normalized PMI 0.76), indicating non-accidental contextual association."
         },
         {
           "rank": 4,
-          "id": "lex:H8184:H8188",
-          "relation": "derived_from_root_anchor",
+          "id": "r11:lex:H8184:0",
+          "relation": "verified_lexical_grammatical",
+          "evidence_type": "documented_root_family",
           "ep": "documented_lexical_relationship",
           "tier": 3,
-          "title": "Lexical relation (derived_from_root_anchor): שְׂעֹרָה <-> שְׂעֹרִים (\"Seorim\")",
+          "title": "Lexical relation (derived from root anchor): שְׂעֹרָה (H8184) ↔ שָׂעַר (H8175)",
           "refs": [
-            "Exodus 9:31",
-            "Leviticus 27:16"
+            "Exodus 9:31"
           ],
-          "target": "H8188",
-          "matched_endpoints": [],
-          "why": "Shares documented root שְׂעֹרִים (derived_from_root_anchor)."
+          "target": "H8175",
+          "matched_endpoints": [
+            "barley",
+            "שְׂעֹרָה",
+            "to shudder",
+            "שָׂעַר"
+          ],
+          "why": "Morphological and root derivation analysis links שְׂעֹרָה (H8184) to שָׂעַר (H8175) (\"to shudder\")."
         },
         {
           "rank": 5,
-          "id": "gram:H8184:grammatical_object_of:H5414",
-          "relation": "grammatical_object_of",
-          "ep": "documented_lexical_relationship",
-          "tier": 3,
-          "title": "Direct object of: שְׂעֹרָה <-> נָתַן (\"to give: give\", 3x)",
-          "refs": [],
-          "target": "H5414",
-          "matched_endpoints": [],
-          "why": "R8 grammatical relation (grammatical_object_of) attested 3 time(s) with נָתַן (to give: give)."
+          "id": "r11:cluster:H8184:temple_and_sanctuary_architecture",
+          "relation": "verified_lexical_grammatical",
+          "evidence_type": "verified_lexical_grammatical",
+          "ep": "direct_textual_evidence",
+          "tier": 2,
+          "title": "Temple & Sanctuary Architecture (Deuteronomy 8 · 2 Chronicles 2 · Ezekiel 45)",
+          "refs": [
+            "Deuteronomy 8:8",
+            "2 Chronicles 2:10",
+            "Ezekiel 45:13"
+          ],
+          "target": "H8184",
+          "matched_endpoints": [
+            "barley",
+            "שְׂעֹרָה",
+            "H8184"
+          ],
+          "why": "Attested in 3 verses (Deuteronomy 8:8, 2 Chronicles 2:10, Ezekiel 45:13) with surface forms: וּשְׂעֹרָ֔ה, וּשְׂעֹרִ֕ים, הַשְּׂעֹרִֽים. Co-occurs with: wheat, oil, to give a sixth, kor. Occurs in sanctuary or Temple architectural descript..."
         },
         {
           "rank": 6,
-          "id": "gram:H8184:possessive_construction_with:H3899",
-          "relation": "possessive_construction_with",
-          "ep": "documented_lexical_relationship",
-          "tier": 3,
-          "title": "Genitive / construct connection: שְׂעֹרָה <-> לֶ֫חֶם (\"food\", 2x)",
-          "refs": [],
-          "target": "H3899",
-          "matched_endpoints": [],
-          "why": "R8 grammatical relation (possessive_construction_with) attested 2 time(s) with לֶ֫חֶם (food)."
+          "id": "r12:path:H8184:H2406",
+          "relation": "multihop_proof_path",
+          "evidence_type": "multi_hop_pattern",
+          "ep": "documented_collocation_or_cooccurrence",
+          "tier": 4,
+          "title": "3-hop: שְׂעֹרָה (H8184) → חִטָּה (\"wheat\", H2406)",
+          "refs": [
+            "Deuteronomy 8:8",
+            "Ruth 2:23",
+            "2 Samuel 17:28",
+            "2 Chronicles 2:10"
+          ],
+          "target": "H2406",
+          "matched_endpoints": [
+            "barley",
+            "H8184",
+            "wheat",
+            "H2406"
+          ],
+          "why": "3-hop path (direct endpoint witness): שְׂעֹרָה (barley) --[gram_possessive_construction_with]--> מָלֵא (full) ; מָלֵא (full) --[gram_possessive_construction_with]--> סֹ֫לֶת (fine flour) ; סֹ֫לֶת (fine flour) --[gram_possessive_constructi..."
         },
         {
           "rank": 7,
-          "id": "gram:H8184:grammatical_object_of:H0935",
-          "relation": "grammatical_object_of",
+          "id": "r11:lex:H8184:1",
+          "relation": "verified_lexical_grammatical",
+          "evidence_type": "documented_root_family",
           "ep": "documented_lexical_relationship",
           "tier": 3,
-          "title": "Direct object of: שְׂעֹרָה <-> בּוֹא (\"to come (in): come\", 1x)",
-          "refs": [],
-          "target": "H0935",
-          "matched_endpoints": [],
-          "why": "R8 grammatical relation (grammatical_object_of) attested 1 time(s) with בּוֹא (to come (in): come)."
+          "title": "Lexical relation (derived from root anchor): שְׂעֹרָה (H8184) ↔ שְׂעֹרִים (H8188)",
+          "refs": [
+            "Exodus 9:31"
+          ],
+          "target": "H8188",
+          "matched_endpoints": [
+            "barley",
+            "שְׂעֹרָה",
+            "Seorim",
+            "שְׂעֹרִים"
+          ],
+          "why": "Morphological and root derivation analysis links שְׂעֹרָה (H8184) to שְׂעֹרִים (H8188) (\"Seorim\")."
         },
         {
           "rank": 8,
-          "id": "gram:H8184:grammatical_object_of:H4058",
-          "relation": "grammatical_object_of",
-          "ep": "documented_lexical_relationship",
-          "tier": 3,
-          "title": "Direct object of: שְׂעֹרָה <-> מָדַד (\"to measure\", 1x)",
-          "refs": [],
-          "target": "H4058",
-          "matched_endpoints": [],
-          "why": "R8 grammatical relation (grammatical_object_of) attested 1 time(s) with מָדַד (to measure)."
+          "id": "r12:path:H8184:H0374",
+          "relation": "multihop_proof_path",
+          "evidence_type": "multi_hop_pattern",
+          "ep": "documented_collocation_or_cooccurrence",
+          "tier": 4,
+          "title": "2-hop: שְׂעֹרָה (H8184) → אֵיפָה (\"ephah\", H0374)",
+          "refs": [
+            "Numbers 5:15",
+            "Ruth 2:17",
+            "Ezekiel 45:13",
+            "Judges 6:19"
+          ],
+          "target": "H0374",
+          "matched_endpoints": [
+            "barley",
+            "H8184",
+            "ephah",
+            "H0374"
+          ],
+          "why": "2-hop path (direct endpoint witness): שְׂעֹרָה (barley) --[gram_possessive_construction_with]--> קֶ֫מַח (flour) ; קֶ֫מַח (flour) --[gram_possessive_construction_with]--> אֵיפָה (ephah)"
         },
         {
           "rank": 9,
-          "id": "prop:H8184:oewn:hypernym:oewn:07818393-n",
+          "id": "r12:path:H8184:H1992",
+          "relation": "multihop_proof_path",
+          "evidence_type": "multi_hop_pattern",
+          "ep": "documented_collocation_or_cooccurrence",
+          "tier": 4,
+          "title": "3-hop: שְׂעֹרָה (H8184) → הֵ֫מָּה (\"they(masc.)\", H1992)",
+          "refs": [
+            "Ruth 1:22",
+            "2 Samuel 21:9",
+            "Ruth 3:2",
+            "1 Samuel 23:1"
+          ],
+          "target": "H1992",
+          "matched_endpoints": [
+            "barley",
+            "H8184",
+            "they(masc.)",
+            "H1992"
+          ],
+          "why": "3-hop path (direct endpoint witness): שְׂעֹרָה (barley) --[gram_possessive_construction_with]--> גֹּ֫רֶן (threshing floor) ; גֹּ֫רֶן (threshing floor) —object of→ שָׁסָה (to plunder) ; שָׁסָה (to plunder) —subject of→ הֵ֫מָּה (they(masc.))"
+        },
+        {
+          "rank": 10,
+          "id": "r12:path:H8184:H0622",
+          "relation": "multihop_proof_path",
+          "evidence_type": "multi_hop_pattern",
+          "ep": "documented_collocation_or_cooccurrence",
+          "tier": 4,
+          "title": "2-hop: שְׂעֹרָה (H8184) → אָסַף (\"to gather\", H0622)",
+          "refs": [
+            "1 Chronicles 11:13",
+            "Leviticus 27:16",
+            "Numbers 11:32"
+          ],
+          "target": "H0622",
+          "matched_endpoints": [
+            "barley",
+            "H8184",
+            "to gather",
+            "H0622"
+          ],
+          "why": "2-hop path (direct endpoint witness): שְׂעֹרָה (barley) --[gram_possessive_construction_with]--> חֹ֫מֶר (clay) ; חֹ֫מֶר (clay) —object of→ אָסַף (to gather)"
+        },
+        {
+          "rank": 11,
+          "id": "r12:prop:H8184:G2916",
           "relation": "shared_external_property",
+          "evidence_type": "physical_world_bridge",
           "ep": "external_world_bridge",
+          "tier": 5,
+          "title": "External concept equivalence: שְׂעֹרָה (barley) ↔ κρίθινος (\"barley\") via \"oewn:07818393-n\"",
+          "refs": [
+            "Exodus 9:31",
+            "Leviticus 27:16",
+            "John 6:9",
+            "John 6:13"
+          ],
+          "target": "G2916",
+          "matched_endpoints": [
+            "barley",
+            "barley",
+            "oewn:07818393-n",
+            "H8184",
+            "G2916"
+          ],
+          "why": "External concept equivalence (candidate mapping; OpenEnglishWordNet) linking H8184 (barley) and G2916 (made of barley (barley loaves)) via shared property oewn:hypernym=oewn:07818393-n. Independent biblical support=0 (exploratory hypothe..."
+        },
+        {
+          "rank": 12,
+          "id": "r11:cluster:H8184:historical_narrative",
+          "relation": "verified_lexical_grammatical",
+          "evidence_type": "verified_lexical_grammatical",
+          "ep": "direct_textual_evidence",
+          "tier": 3,
+          "title": "Historical Narrative (Judges 7 · Ruth 1, 2, 3 · 2 Samuel 14, 17, 21)",
+          "refs": [
+            "Judges 7:13",
+            "Ruth 1:22",
+            "Ruth 2:17",
+            "Ruth 2:23"
+          ],
+          "target": "H8184",
+          "matched_endpoints": [
+            "barley",
+            "שְׂעֹרָה",
+            "H8184"
+          ],
+          "why": "Attested in 18 verses (Judges 7:13, Ruth 1:22, Ruth 2:17, Ruth 2:23...) with surface forms: שְׂעֹרִים֙, שְׂעֹרִֽים, הַשְּׂעֹרִ֖ים, הַשְּׂעֹרִ֥ים. Co-occurs with: wheat, seah, harvest, fine flour."
+        },
+        {
+          "rank": 13,
+          "id": "r11:gram:H8184:possessive_construction_with:H3899",
+          "relation": "verified_lexical_grammatical",
+          "evidence_type": "syntactic_relationship",
+          "ep": "direct_textual_evidence",
+          "tier": 3,
+          "title": "Genitive / construct connection: שְׂעֹרָה (se.o.rah) ↔ לֶ֫חֶם (\"food\", 2×)",
+          "refs": [
+            "2 Kings 4:42"
+          ],
+          "target": "H3899",
+          "matched_endpoints": [
+            "barley",
+            "food",
+            "H8184",
+            "H3899"
+          ],
+          "why": "Genitive / construct connection: שְׂעֹרָה (H8184, \"barley\") and לֶ֫חֶם (H3899, \"food\") across 2 indexed occurrences. 1 distinct canonical source clauses pass token-position verification; parallel editions are counted once."
+        },
+        {
+          "rank": 14,
+          "id": "r12:path:H8184:H4503",
+          "relation": "multihop_proof_path",
+          "evidence_type": "multi_hop_pattern",
+          "ep": "documented_collocation_or_cooccurrence",
+          "tier": 4,
+          "title": "3-hop: שְׂעֹרָה (H8184) → מִנְחָה (\"offering\", H4503)",
+          "refs": [
+            "Numbers 5:15",
+            "Ezekiel 4:12",
+            "Exodus 12:39",
+            "Ezekiel 46:20"
+          ],
+          "target": "H4503",
+          "matched_endpoints": [
+            "barley",
+            "H8184",
+            "offering",
+            "H4503"
+          ],
+          "why": "3-hop path (direct endpoint witness): שְׂעֹרָה (barley) --[gram_possessive_construction_with]--> עֻגָה (bun) ; עֻגָה (bun) --[gram_grammatical_second_object_of]--> אָפָה (to bake) ; אָפָה (to bake) —object of→ מִנְחָה (offering)"
+        },
+        {
+          "rank": 15,
+          "id": "r12:prop:H8184:H2406",
+          "relation": "shared_external_property",
+          "evidence_type": "physical_world_bridge",
+          "ep": "external_world_bridge",
+          "tier": 5,
+          "title": "Physical/semantic bridge: שְׂעֹרָה (barley) ↔ חִטָּה (\"wheat\") via \"oewn:07818393-n\"",
+          "refs": [
+            "Exodus 9:31",
+            "Leviticus 27:16",
+            "Genesis 30:14",
+            "Exodus 9:32"
+          ],
+          "target": "H2406",
+          "matched_endpoints": [
+            "barley",
+            "wheat",
+            "oewn:07818393-n",
+            "H8184",
+            "H2406"
+          ],
+          "why": "External property bridge (verified mapping; OpenEnglishWordNet) linking H8184 (barley) and H2406 (wheat) via shared property oewn:hypernym=oewn:07818393-n. Independent biblical support=0 (exploratory hypothesis)."
+        },
+        {
+          "rank": 16,
+          "id": "r12:orth:H8184:H8179",
+          "relation": "orthographic_overlap",
+          "evidence_type": "shared_consonantal_pattern",
+          "ep": "orthographic_similarity_only",
           "tier": 6,
-          "title": "External property (oewn:hypernym=oewn:07818393-n): barley",
-          "refs": [],
-          "target": null,
-          "matched_endpoints": [],
-          "why": "External conceptual/physical property (OEWN/Wikidata); not an independent textual citation."
+          "title": "Orthographic similarity: שְׂעֹרָה (H8184) ↔ שַׁ֫עַר (H8179, matched \"שער\")",
+          "refs": [
+            "2 Kings 7:1",
+            "2 Kings 7:18",
+            "Exodus 9:31",
+            "Genesis 19:1"
+          ],
+          "target": "H8179",
+          "matched_endpoints": [
+            "barley",
+            "gate",
+            "שער"
+          ],
+          "why": "Unpointed/unaccented script similarity (hebrew_unpointed, score=0.974264, shared segment \"שער\", co-occurs in 2 canonical verse(s)). Shared spelling does not establish root, etymology, meaning, or intentional wordplay."
+        },
+        {
+          "rank": 17,
+          "id": "r12:path:H8184:G2916",
+          "relation": "multihop_proof_path",
+          "evidence_type": "multi_hop_pattern",
+          "ep": "documented_cross_language_bridge",
+          "tier": 5,
+          "title": "2-hop: שְׂעֹרָה (H8184) → κρίθινος (\"barley\", G2916)",
+          "refs": [
+            "Exodus 9:31",
+            "Leviticus 27:16",
+            "Numbers 5:15",
+            "Deuteronomy 8:8"
+          ],
+          "target": "G2916",
+          "matched_endpoints": [
+            "barley",
+            "H8184",
+            "barley",
+            "G2916"
+          ],
+          "why": "2-hop path (coherent multihop lead): שְׂעֹרָה (barley) —LXX→ κριθή (barley) ; κριθή (barley) --[lex_shares_root]--> κρίθινος (barley)"
+        },
+        {
+          "rank": 18,
+          "id": "r11:gram:H8184:grammatical_object_of:H4058",
+          "relation": "verified_lexical_grammatical",
+          "evidence_type": "syntactic_relationship",
+          "ep": "direct_textual_evidence",
+          "tier": 3,
+          "title": "Direct object of: שְׂעֹרָה (se.o.rah) ↔ מָדַד (\"to measure\", 1×)",
+          "refs": [
+            "Ruth 3:15"
+          ],
+          "target": "H4058",
+          "matched_endpoints": [
+            "barley",
+            "to measure",
+            "H8184",
+            "H4058"
+          ],
+          "why": "Direct object of: שְׂעֹרָה (H8184, \"barley\") and מָדַד (H4058, \"to measure\") across 1 indexed occurrences. 1 distinct canonical source clauses pass token-position verification; parallel editions are counted once."
+        },
+        {
+          "rank": 19,
+          "id": "r13:colloc:H8184:H5429",
+          "relation": "verified_lexical_grammatical",
+          "evidence_type": "collocation",
+          "ep": "documented_collocation_or_cooccurrence",
+          "tier": 4,
+          "title": "High-PMI collocation: שְׂעֹרָה (H8184) ↔ סְאָה (\"seah\", H5429) (NPMI=0.67, 3×)",
+          "refs": [
+            "2 Kings 7:18",
+            "2 Kings 7:16"
+          ],
+          "target": "H5429",
+          "matched_endpoints": [
+            "barley",
+            "seah",
+            "H8184",
+            "H5429"
+          ],
+          "why": "שְׂעֹרָה (H8184, \"barley\") and סְאָה (\"seah\", H5429) co-occur in 3 verses (normalized PMI 0.67), indicating non-accidental contextual association."
+        },
+        {
+          "rank": 20,
+          "id": "r13:wp:H8184:H5291",
+          "relation": "orthographic_wordplay",
+          "evidence_type": "proximate_wordplay_candidate",
+          "ep": "orthographic_similarity_only",
+          "tier": 4,
+          "title": "Consonantal / phonetic correspondence: שְׂעֹרָה (H8184) ↔ נַעֲרָה (H5291)",
+          "refs": [
+            "Ruth 2:23",
+            "Ruth 3:2"
+          ],
+          "target": "H5291",
+          "matched_endpoints": [
+            "barley",
+            "maiden",
+            "שְׂעֹרָה",
+            "נַעֲרָה",
+            "H8184",
+            "H5291"
+          ],
+          "why": "שְׂעֹרָה (H8184, \"barley\") and נַעֲרָה (H5291, \"maiden\") share consonantal/phonetic sequence \"ערה\" (edit distance 1, same-verse proximity). Shared consonantal or phonetic pattern does not establish a historical etymology, common root, or..."
+        },
+        {
+          "rank": 21,
+          "id": "r13:wp:H8184:H8179",
+          "relation": "orthographic_wordplay",
+          "evidence_type": "proximate_wordplay_candidate",
+          "ep": "orthographic_similarity_only",
+          "tier": 4,
+          "title": "Consonantal / phonetic correspondence: שְׂעֹרָה (H8184) ↔ שַׁ֫עַר (H8179)",
+          "refs": [
+            "2 Kings 7:1",
+            "2 Kings 7:18"
+          ],
+          "target": "H8179",
+          "matched_endpoints": [
+            "barley",
+            "gate",
+            "שְׂעֹרָה",
+            "שַׁ֫עַר",
+            "H8184",
+            "H8179"
+          ],
+          "why": "שְׂעֹרָה (H8184, \"barley\") and שַׁ֫עַר (H8179, \"gate\") share consonantal/phonetic sequence \"שער\" (edit distance 0, same-verse proximity). Shared consonantal or phonetic pattern does not establish a historical etymology, common root, or i..."
+        },
+        {
+          "rank": 22,
+          "id": "r11:xref:1774:7150",
+          "relation": "cross_reference_witness",
+          "evidence_type": "explicit_quotation_or_allusion",
+          "ep": "editorial_cross_reference",
+          "tier": 4,
+          "title": "Modern editorial cross-reference: Exodus 9:31 → Ruth 1:22 (\"barley\")",
+          "refs": [
+            "Exodus 9:31",
+            "Ruth 1:22"
+          ],
+          "target": "H8184",
+          "matched_endpoints": [
+            "Exodus 9:31",
+            "Ruth 1:22",
+            "barley"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Exodus 9:31 and Ruth 1:22 via anchor phrase \"barley\" (same original lemma)."
+        },
+        {
+          "rank": 23,
+          "id": "r11:xref:1774:7173",
+          "relation": "cross_reference_witness",
+          "evidence_type": "explicit_quotation_or_allusion",
+          "ep": "editorial_cross_reference",
+          "tier": 4,
+          "title": "Modern editorial cross-reference: Exodus 9:31 → Ruth 2:23 (\"barley\")",
+          "refs": [
+            "Exodus 9:31",
+            "Ruth 2:23"
+          ],
+          "target": "H8184",
+          "matched_endpoints": [
+            "Exodus 9:31",
+            "Ruth 2:23",
+            "barley"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Exodus 9:31 and Ruth 2:23 via anchor phrase \"barley\" (same original lemma)."
+        },
+        {
+          "rank": 24,
+          "id": "r12:path:H8184:G2915",
+          "relation": "multihop_proof_path",
+          "evidence_type": "multi_hop_pattern",
+          "ep": "documented_cross_language_bridge",
+          "tier": 5,
+          "title": "2-hop: שְׂעֹרָה (H8184) → κριθή (\"barley\", G2915)",
+          "refs": [
+            "Exodus 9:31",
+            "Leviticus 27:16",
+            "Numbers 5:15",
+            "Deuteronomy 8:8"
+          ],
+          "target": "G2915",
+          "matched_endpoints": [
+            "barley",
+            "H8184",
+            "barley",
+            "G2915"
+          ],
+          "why": "2-hop path (coherent multihop lead): שְׂעֹרָה (barley) —LXX→ κρίθινος (barley) ; κρίθινος (barley) --[lex_shares_root]--> κριθή (barley)"
+        },
+        {
+          "rank": 25,
+          "id": "r12:prop:H8184:G0740",
+          "relation": "shared_external_property",
+          "evidence_type": "physical_world_bridge",
+          "ep": "external_world_bridge",
+          "tier": 5,
+          "title": "Physical/semantic bridge: שְׂעֹרָה (barley) ↔ ἄρτος (\"bread\") via \"oewn:07581905-n\"",
+          "refs": [
+            "Exodus 9:31",
+            "Leviticus 27:16",
+            "Matthew 4:3",
+            "Matthew 4:4"
+          ],
+          "target": "G0740",
+          "matched_endpoints": [
+            "barley",
+            "bread",
+            "oewn:07581905-n",
+            "H8184",
+            "G0740"
+          ],
+          "why": "External property bridge (verified mapping; OpenEnglishWordNet) linking H8184 (barley) and G0740 (bread / loaf) via shared property oewn:hypernym_l2=oewn:07581905-n. Independent biblical support=0 (exploratory hypothesis)."
         }
-      ]
+      ],
+      "initial_status": "partial",
+      "retry_recovered": true,
+      "latency_ms_retry": 3868,
+      "completion_note": "Recovered after transient partial discovery; initial response kept via initial_status/retry_recovered."
     },
     {
       "index": 12,
@@ -4468,6 +6187,40 @@
           "why": "3-hop path (exploratory step chain): אֵזוֹב (hyssop) --[contextual_collocation]--> צִפּוֹר (bird) ; צִפּוֹר (bird) —object of→ טָבַל (to dip) ; טָבַל (to dip) —subject of→ כֹּהֵן (priest)"
         }
       ]
+    }
+  ],
+  "retries": [
+    {
+      "q": "H0216",
+      "status": "ok",
+      "discovery_status": "ok",
+      "cards": 25,
+      "warnings": [],
+      "error": null
+    },
+    {
+      "q": "H4194",
+      "status": "ok",
+      "discovery_status": "ok",
+      "cards": 25,
+      "warnings": [],
+      "error": null
+    },
+    {
+      "q": "H0784",
+      "status": "ok",
+      "discovery_status": "ok",
+      "cards": 25,
+      "warnings": [],
+      "error": null
+    },
+    {
+      "q": "barley",
+      "status": "ok",
+      "discovery_status": "ok",
+      "cards": 25,
+      "warnings": [],
+      "error": null
     }
   ]
 }
