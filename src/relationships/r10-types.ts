@@ -56,6 +56,13 @@ export type R10EpistemicClass =
   | 'interpretive_hypothesis'
   | 'user_note';
 
+export type R10QueryIntent =
+  | 'passage_intertext'
+  | 'lexical'
+  | 'multi_concept'
+  | 'physical_bridge'
+  | 'open_discovery';
+
 /** §5 Evidence hierarchy tiers (1 = highest source-backed explicitness, 8 = unreviewed hypothesis). */
 export type R10EvidenceTier = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
 
@@ -211,9 +218,23 @@ export interface R12EvidenceMetadata {
   };
 }
 
+export interface R13ScoreBreakdown {
+  E: number;
+  F: number;
+  P: number;
+  I: number;
+  R: number;
+  N: number;
+  U: number;
+  rrf: number;
+  final: number;
+  formula?: string;
+}
+
 export interface R10EvidenceRecord {
   evidence_id: string;
   predicate: R10Predicate;
+  evidence_type?: string;
   evidence_tier: R10EvidenceTier;
   epistemic_class: R10EpistemicClass;
   title: string;
@@ -258,11 +279,13 @@ export interface R10EvidenceRecord {
     orthographic_penalty: number;
     final_score: number;
   };
+  score_breakdown?: R13ScoreBreakdown;
   r12_metadata?: R12EvidenceMetadata;
 }
 
 export interface R10ConnectionSummary {
   query_support?: 'all_concepts' | 'meaningful_subset' | 'background';
+  query_intent?: R10QueryIntent;
   shared_witness_refs?: string[];
   connection_id: string;
   evidence_id: string;
@@ -270,9 +293,11 @@ export interface R10ConnectionSummary {
   title: string;
   explanation: string;
   predicate: R10Predicate;
+  evidence_type?: string;
   evidence_tier: R10EvidenceTier;
   epistemic_class: R10EpistemicClass;
   score: number;
+  score_breakdown?: R13ScoreBreakdown;
   confidence_label: 'explicit_textual' | 'strong_correspondence' | 'moderate_motif' | 'lexical_reference' | 'candidate_pattern' | 'orthographic_only' | 'interpretive';
   uncertainty_note: string;
   matched_concepts: string[];
@@ -383,9 +408,13 @@ export interface DiscoverConnectionsQuery {
   edition_key?: string;
   lemma_id?: string;
   extended_strongs?: string;
+  anchor_lemma_key?: string;
+  anchor_extended_strongs?: string;
+  anchor_passage?: string;
   anchor?: OccurrenceAnchorInput;
   filters?: {
     predicates?: R10Predicate[];
+    evidence_types?: string[];
     max_tier?: R10EvidenceTier;
     include_orthographic?: boolean;
     include_candidate_patterns?: boolean;
@@ -403,6 +432,7 @@ export interface DiscoverConnectionsResult {
   status: 'ok' | 'partial' | 'no_match' | 'selector_mismatch' | 'invalid_request';
   release_id: string;
   evidence_release_id?: string;
+  query_intent?: R10QueryIntent;
   error?: string;
   mismatch?: Record<string, unknown>;
   selected_occurrence?: {

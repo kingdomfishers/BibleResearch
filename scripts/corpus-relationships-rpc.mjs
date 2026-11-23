@@ -11,6 +11,8 @@ import { ShardedAdjacencyLoader } from '../src/relationships/adjacency-loader.ts
 import { lemmaShardEntry, packedShardEntry } from './relationship-shard-codec.mjs';
 import { resolveResearchConcept } from '../src/relationships/concept-resolver.ts';
 import { discoverMultiHopPaths } from '../src/relationships/multihop-search.ts';
+import { scoreCrossTestamentPair, synthesizeEvidencePatterns } from '../src/relationships/evidence-synthesis.ts';
+import { compareStructuredRoleFrames } from '../src/relationships/symbolic-patterns.ts';
 import {
   DEFAULT_R10_RELEASE,
   discoverBiblicalConnections,
@@ -3637,16 +3639,22 @@ export async function handleGetPassageCompactV1(ctx, params = {}) {
       freqByStrongs.set(tok.strongs, (freqByStrongs.get(tok.strongs) || 0) + 1);
     }
 
-    const normalizedXrefs = rawXrefs.map((x) => (
-      Array.isArray(x)
-        ? {
-            target_vid: Number(x[0]),
-            target_ref: x[1] ?? null,
-            phrase: x[2] ?? null,
-            votes: x[3] !== undefined && x[3] !== null ? Number(x[3]) : null,
-          }
-        : x
-    ));
+    const normalizedXrefs = rawXrefs.map((x) => {
+      if (!Array.isArray(x)) return x;
+      const flags = x[3] !== undefined && x[3] !== null ? Number(x[3]) : null;
+      return {
+        target_vid: Number(x[0]),
+        target_ref: x[1] ?? null,
+        phrase: x[2] ?? null,
+        flags,
+        ...(flags !== null
+          ? {
+              reciprocal: Boolean(flags & 1),
+              cross_testament: Boolean(flags & 2),
+            }
+          : {}),
+      };
+    });
 
     const enrichedEvents = rawEvents.map((evId) => {
       const ev = eventById?.get(evId) || null;
@@ -3979,6 +3987,254 @@ export async function handleResolveFastLookupV1(ctx, params = {}) {
     status: 'ok',
     query: rawQuery,
     matches,
+  };
+}
+
+export async function handleDiscoverPatternsV1(ctx, params = {}) {
+  const limit = params.limit !== undefined ? Math.min(25, Math.max(1, finiteOr(params.limit, 12))) : 12;
+  const disc = await handleDiscoverBiblicalConnectionsV1(ctx, { ...params, limit });
+  if (disc.status !== 'ok' && disc.status !== 'partial') {
+    return disc;
+  }
+
+  const nodeCatalog = new Map();
+  for (const rc of disc.parsed_query?.resolved_concepts || []) {
+    for (const w of rc.lemmas || []) {
+      const id = w.strongs ? `lemma:${w.strongs}` : (w.lemma_key || '');
+      if (id && !nodeCatalog.has(id)) {
+        nodeCatalog.set(id, {
+          id,
+          label: `${w.lemma_script || id} (${w.gloss || ''})`.trim(),
+          script: w.lemma_script,
+          transliteration: w.transliteration,
+          gloss: w.gloss,
+        });
+      }
+    }
+  }
+  const edges = [];
+  for (const c of disc.strongest_connections || []) {
+    for (const w of c.original_words || []) {
+      if (w.strongs && !nodeCatalog.has(`lemma:${w.strongs}`)) {
+        nodeCatalog.set(`lemma:${w.strongs}`, {
+          id: `lemma:${w.strongs}`,
+          label: `${w.lemma_script || w.strongs} (${w.gloss || ''})`.trim(),
+          script: w.lemma_script,
+          transliteration: w.transliteration,
+          gloss: w.gloss,
+        });
+      }
+    }
+    const pRefs = (c.passages || []).map(p => p.ref).filter(Boolean);
+    const fromNode = c.original_words?.[0]?.strongs
+      ? `lemma:${c.original_words[0].strongs}`
+      : (pRefs[0] ? `passage:${pRefs[0]}` : c.connection_id);
+    const toNode = c.original_words?.[1]?.strongs
+      ? `lemma:${c.original_words[1].strongs}`
+      : (pRefs[pRefs.length - 1] && pRefs[pRefs.length - 1] !== pRefs[0]
+          ? `passage:${pRefs[pRefs.length - 1]}`
+          : (c.cluster_id || c.evidence_id));
+    edges.push({
+      evidence_id: c.evidence_id,
+      evidence_type: c.evidence_type || c.predicate,
+      epistemic_class: c.epistemic_class,
+      tier: c.evidence_tier,
+      from_node: fromNode,
+      to_node: toNode,
+      witness_refs: pRefs,
+      summary: c.title,
+      score: c.score,
+      limitation: c.uncertainty_note,
+    });
+  }
+
+  const anchors = [
+    ...(Array.isArray(params.concepts) ? params.concepts.map(String) : []),
+    ...((disc.parsed_query?.extracted_terms || []).slice(0, 6)),
+  ];
+  const patterns = synthesizeEvidencePatterns({
+    anchors,
+    edges,
+    nodeCatalog,
+    maxPatterns: Math.min(8, Math.max(3, limit)),
+  });
+
+  return {
+    schema_version: 1,
+    status: disc.status,
+    release_id: disc.release_id,
+    evidence_release_id: disc.evidence_release_id,
+    query_intent: disc.query_intent,
+    parsed_query: disc.parsed_query,
+    network: {
+      pattern_count: patterns.length,
+      node_count: nodeCatalog.size,
+      edge_count: edges.length,
+      patterns,
+    },
+    strongest_connections: disc.strongest_connections,
+    controls_and_alternatives: disc.controls_and_alternatives,
+    pagination: disc.pagination,
+  };
+}
+
+export async function handleComparePatternsV1(ctx, params = {}) {
+  const targetsRaw = parseOptionalListParam(params.targets) || parseOptionalListParam(params.passages) || [];
+  if (targetsRaw.length < 2) {
+    return { schema_version: 1, status: 'invalid_request', error: 'At least 2 targets are required for compare_patterns.' };
+  }
+  const targets = targetsRaw.slice(0, 4);
+  const reader = createWorkerR10Reader(ctx);
+  const releaseId = params.release_id ? String(params.release_id).trim() : DEFAULT_R10_RELEASE;
+  const limit = params.limit !== undefined ? Math.min(15, Math.max(3, finiteOr(params.limit, 8))) : 8;
+
+  const perTarget = await Promise.all(
+    targets.slice(0, 2).map(t => discoverBiblicalConnections(reader, { query: t, mode: 'compare', limit }, releaseId)),
+  );
+  const combined = await discoverBiblicalConnections(reader, {
+    query: targets.slice(0, 3).join(' '),
+    mode: 'compare',
+    compare_targets: targets,
+    limit,
+  }, releaseId);
+
+  const lemmaSets = perTarget.map(r => new Set(
+    (r.parsed_query?.resolved_concepts || []).flatMap(rc => (rc.lemmas || []).map(l => l.strongs).filter(Boolean)),
+  ));
+  const sharedLemmas = [...lemmaSets[0]].filter(s => lemmaSets[1]?.has(s));
+  const motifSets = perTarget.map(r => new Set((r.related_discoveries?.additional_motifs || []).map(m => m.motif_id)));
+  const sharedMotifs = [...motifSets[0]].filter(m => motifSets[1]?.has(m));
+
+  const ep0 = perTarget[0]?.parsed_query?.explicit_passages?.[0];
+  const ep1 = perTarget[1]?.parsed_query?.explicit_passages?.[0];
+  let structuralAlignment = null;
+  let crossTestamentAlignment = null;
+
+  if (ep0?.verse_id > 0 && ep1?.verse_id > 0) {
+    const loadVerseBundle = async (vid) => {
+      const hex = Math.floor((vid - 1) / 64).toString(16).padStart(3, '0');
+      const chunk = await ctx.loadJsonShard(ctx.env, `${FAST_R10_ASSET_BASE}/fast-verses/chunk-${hex}.json.gz`);
+      const vB64 = chunk?.verses?.[String(vid)];
+      const verse = vB64 ? await decodeB64GzWithCtx(ctx, vB64, `/r10/v:${releaseId}:${vid}`) : null;
+      const rawFrames = chunk?.frames?.[String(vid)] || [];
+      const frames = rawFrames.map(([pred, subj, obj, other]) => ({
+        pred: String(pred || ''),
+        subj: Array.isArray(subj) ? subj : [],
+        obj: Array.isArray(obj) ? obj : [],
+        other: Array.isArray(other) ? other : [],
+      }));
+      return { verse, frames };
+    };
+    const [b0, b1] = await Promise.all([loadVerseBundle(ep0.verse_id), loadVerseBundle(ep1.verse_id)]);
+
+    const otVerse = ep0.testament === 'OT' ? { ep: ep0, data: b0 } : (ep1.testament === 'OT' ? { ep: ep1, data: b1 } : null);
+    const ntVerse = ep0.testament === 'NT' ? { ep: ep0, data: b0 } : (ep1.testament === 'NT' ? { ep: ep1, data: b1 } : null);
+    const lxxEquivByBs = new Map();
+    if (otVerse && ntVerse && otVerse.data.verse?.toks && ntVerse.data.verse?.toks) {
+      const otStrongs = [...new Set(otVerse.data.verse.toks.map(t => t.s).filter(s => s && !/^H900/.test(s)))].slice(0, 8);
+      const profs = await Promise.all(otStrongs.map(s => loadFastProfileByStrongs(ctx, s)));
+      const lxxForBipartite = new Map();
+      for (const p of profs) {
+        if (!p?.lxx_relations?.length) continue;
+        lxxEquivByBs.set(p.bs, new Set(p.lxx_relations.map(x => x.target_strongs).filter(Boolean)));
+        lxxForBipartite.set(p.bs, p.lxx_relations.map(x => ({ target_bs: x.target_strongs, count: x.count || 1 })));
+      }
+      const otTokens = otVerse.data.verse.toks.filter(t => t.s && !/^H900/.test(t.s)).map(t => ({ bs: t.s, script: t.lm || t.sf, gloss: t.g, idf: 2.5 }));
+      const ntTokens = ntVerse.data.verse.toks.filter(t => t.s).map(t => ({ bs: t.s, script: t.lm || t.sf, gloss: t.g, idf: 2.5 }));
+      crossTestamentAlignment = scoreCrossTestamentPair({
+        sourceVid: otVerse.ep.verse_id,
+        targetVid: ntVerse.ep.verse_id,
+        sourceRef: otVerse.ep.ref,
+        targetRef: ntVerse.ep.ref,
+        otTokens,
+        ntTokens,
+        lxxEquivMap: lxxForBipartite,
+      });
+    }
+    if (b0.frames.length > 0 && b1.frames.length > 0) {
+      structuralAlignment = compareStructuredRoleFrames(b0.frames, b1.frames, lxxEquivByBs);
+    }
+  }
+
+  return {
+    schema_version: 1,
+    status: 'ok',
+    release_id: combined.release_id,
+    evidence_release_id: combined.evidence_release_id,
+    targets,
+    shared_lemmas: sharedLemmas,
+    shared_motifs: sharedMotifs,
+    structural_role_alignment: structuralAlignment,
+    cross_testament_alignment: crossTestamentAlignment,
+    combined_connections: combined.strongest_connections,
+    divergences_and_controls: [
+      ...(perTarget[0]?.controls_and_alternatives || []),
+      ...(perTarget[1]?.controls_and_alternatives || []),
+      ...(combined.controls_and_alternatives || []),
+    ].slice(0, 8),
+  };
+}
+
+export async function handleTraceEvidenceV1(ctx, params = {}) {
+  const reader = createWorkerR10Reader(ctx);
+  const releaseId = params.release_id ? String(params.release_id).trim() : DEFAULT_R10_RELEASE;
+  const evidenceId = String(params.evidence_id || '').trim();
+  const fromTarget = String(params.from || '').trim();
+  const toTarget = String(params.to || '').trim();
+
+  if (evidenceId) {
+    const evRes = await getConnectionEvidence(reader, evidenceId, releaseId);
+    if (evRes.status !== 'ok' || !evRes.evidence) return evRes;
+    const motifsData = await ctx.loadJsonShard(ctx.env, `${FAST_R10_ASSET_BASE}/motifs-and-patterns.json.gz`);
+    const linkedMotifs = new Set();
+    for (const w of evRes.evidence.original_words || []) {
+      for (const mid of motifsData?.r13_motifs_by_bs?.[w.strongs] || []) linkedMotifs.add(mid);
+    }
+    for (const p of evRes.evidence.passages || []) {
+      for (const mid of motifsData?.r13_motifs_by_vid?.[String(p.verse_id)] || []) linkedMotifs.add(mid);
+    }
+    return {
+      schema_version: 1,
+      status: 'ok',
+      release_id: evRes.release_id,
+      evidence_release_id: evRes.evidence_release_id,
+      evidence_id: evidenceId,
+      evidence: evRes.evidence,
+      passage_details: evRes.passage_details,
+      connected_motif_ids: [...linkedMotifs].slice(0, 8),
+      independent_witnesses: (evRes.evidence.provenance?.source_record_ids || []).slice(0, 10),
+      counterexamples_and_limits: evRes.evidence.limitations || [],
+      provenance: evRes.evidence.provenance,
+    };
+  }
+
+  if (fromTarget && toTarget) {
+    const maxHops = Math.min(4, Math.max(1, finiteOr(params.max_hops, 3)));
+    const bridgeRes = await discoverBiblicalConnections(reader, {
+      query: `${fromTarget} ${toTarget}`,
+      concepts: [fromTarget, toTarget],
+      mode: 'bridge',
+      max_hops: maxHops,
+      limit: Math.min(12, Math.max(3, finiteOr(params.limit, 8))),
+    }, releaseId);
+    return {
+      schema_version: 1,
+      status: bridgeRes.status,
+      release_id: bridgeRes.release_id,
+      evidence_release_id: bridgeRes.evidence_release_id,
+      from: fromTarget,
+      to: toTarget,
+      max_hops: maxHops,
+      connection_paths: bridgeRes.connection_paths,
+      strongest_connections: bridgeRes.strongest_connections,
+      counterexamples_and_limits: bridgeRes.controls_and_alternatives,
+    };
+  }
+
+  return {
+    schema_version: 1,
+    status: 'invalid_request',
+    error: 'Provide evidence_id or both from and to targets.',
   };
 }
 

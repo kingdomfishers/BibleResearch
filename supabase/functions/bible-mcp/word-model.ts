@@ -9,10 +9,12 @@ export interface CompactConnection {
   id: string;
   relation: string;
   epistemic: string;
+  evidence_type?: string;
   tier?: number;
   title: string;
   why: string;
   refs: string[];
+  matched_endpoints?: string[];
   target?: {
     strongs?: string;
     script?: string;
@@ -21,6 +23,7 @@ export interface CompactConnection {
   };
   witness?: string;
   uncertainty?: string;
+  score_breakdown?: Record<string, unknown>;
 }
 
 export interface CompactWord {
@@ -28,6 +31,8 @@ export interface CompactWord {
   lemma: string;
   strongs: string;
   lemma_key?: string;
+  sense_status?: string;
+  lemma_candidates?: string[];
   transliteration: string;
   gloss: string;
   senses?: Array<{ key?: string; gloss: string; note?: string }>;
@@ -481,12 +486,17 @@ export function compactWordFromData(opts: CompactWordOptions): CompactWord {
 
   const senses = compactSenses(profile?.senses ?? wordRow?.senses, profile?.homograph_siblings, strongs);
   const lxx = compactLxx(profile?.lxx ?? profile?.lxx_relations ?? profile?.lxx_equivalents ?? wordRow?.lxx, strongs);
+  const senseStatus = firstNonEmpty(token?.sense_status, profile?.sense_status);
+  const lemmaCandidates = asArray(token?.lemma_candidates)
+    .filter((x): x is string => typeof x === 'string' && x.trim().length > 0);
 
   const out: CompactWord = {
     ...(form ? { form } : {}),
     lemma,
     strongs,
     ...(lemmaKey ? { lemma_key: lemmaKey } : {}),
+    ...(senseStatus ? { sense_status: senseStatus } : {}),
+    ...(lemmaCandidates.length > 0 ? { lemma_candidates: lemmaCandidates } : {}),
     transliteration,
     gloss,
     ...(senses ? { senses } : {}),
@@ -710,18 +720,26 @@ export function normalizeDiscoveryConnection(rawConn: Record<string, unknown>): 
     firstNonEmpty(rawConn.uncertainty, rawConn.caveat, rawConn.epistemic_note, rawLimits[0]),
     180,
   );
+  const evidenceType = firstNonEmpty(rawConn.evidence_type);
+  const matchedEndpoints = asArray(rawConn.matched_concepts ?? rawConn.matched_endpoints ?? rawConn.endpoint_matches)
+    .filter((x): x is string => typeof x === 'string' && x.trim().length > 0)
+    .slice(0, 8);
+  const scoreBreakdown = asRecord(rawConn.score_breakdown);
 
   return {
     id,
     relation: relationRaw,
     epistemic,
+    ...(evidenceType ? { evidence_type: evidenceType } : {}),
     ...(tier !== undefined ? { tier } : {}),
     title,
     why,
     refs,
+    ...(matchedEndpoints.length > 0 ? { matched_endpoints: matchedEndpoints } : {}),
     ...(target ? { target } : {}),
     ...(witness ? { witness } : {}),
     ...(uncertainty ? { uncertainty } : {}),
+    ...(scoreBreakdown ? { score_breakdown: scoreBreakdown } : {}),
   };
 }
 

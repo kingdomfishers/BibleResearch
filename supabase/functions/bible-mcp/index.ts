@@ -37,6 +37,9 @@ const corpusRpcs = new Set([
   'discover_relationship_paths_v1',
   'discover_biblical_connections_v1',
   'discover_biblical_connections_v2',
+  'discover_patterns_v1',
+  'compare_patterns_v1',
+  'trace_evidence_v1',
   'get_connection_evidence_v1',
   'expand_biblical_connection_v1',
   'get_passage_compact_v1',
@@ -64,6 +67,9 @@ const allowedRpcs = new Set([
   'discover_relationship_paths_v1',
   'discover_biblical_connections_v1',
   'discover_biblical_connections_v2',
+  'discover_patterns_v1',
+  'compare_patterns_v1',
+  'trace_evidence_v1',
   'get_connection_evidence_v1',
   'expand_biblical_connection_v1',
   'get_passage_compact_v1',
@@ -107,6 +113,9 @@ const singlePacketRpcs = new Set([
   'discover_relationship_paths_v1',
   'discover_biblical_connections_v1',
   'discover_biblical_connections_v2',
+  'discover_patterns_v1',
+  'compare_patterns_v1',
+  'trace_evidence_v1',
   'get_connection_evidence_v1',
   'expand_biblical_connection_v1',
   'get_passage_compact_v1',
@@ -134,6 +143,9 @@ const corpusOnlyRpcs = new Set([
   'discover_relationship_paths_v1',
   'discover_biblical_connections_v1',
   'discover_biblical_connections_v2',
+  'discover_patterns_v1',
+  'compare_patterns_v1',
+  'trace_evidence_v1',
   'get_connection_evidence_v1',
   'expand_biblical_connection_v1',
   'get_passage_compact_v1',
@@ -199,7 +211,11 @@ export function createDatabaseReader(
         const corpUrl = `${corpusBase}/v1/rpc/${name}`;
         let corpRes = await fetcher(corpUrl, corpReq);
         const retryableCorpusStatuses =
-          name === 'discover_biblical_connections_v1' || name === 'discover_biblical_connections_v2'
+          name === 'discover_biblical_connections_v1' ||
+          name === 'discover_biblical_connections_v2' ||
+          name === 'discover_patterns_v1' ||
+          name === 'compare_patterns_v1' ||
+          name === 'trace_evidence_v1'
             ? [502, 504]
             : [500, 502, 503, 504];
         for (let attempt = 0; attempt < 2 && retryableCorpusStatuses.includes(corpRes.status); attempt++) {

@@ -16,6 +16,13 @@ import { registerDlmReadTools } from './dlm-notes.ts';
 import { PATTERN_PROMPTS } from './pattern-prompts.ts';
 import { WORKFLOW_INSTRUCTIONS, WORKFLOW_VERSION } from './research-workflow.ts';
 import { RESEARCH_PROFILES, RESEARCH_TOOL_NAMES, WORKFLOW_ROUTES } from './workflow-contract.ts';
+import {
+  queryMcpFeastsCalendar,
+  queryMcpGenealogy,
+  queryMcpPlaces,
+  queryMcpSacredArchitecture,
+  queryMcpTribeLineage,
+} from './context-atlas.ts';
 
 // === @section:types ===
 export type RpcName =
@@ -25,6 +32,7 @@ export type RpcName =
   | 'lookup_syntax_tree_v1' | 'compare_hebrew_septuagint_passage_v1' | 'lookup_hebrew_septuagint_alignments_v1' | 'audit_evidence_coverage_v1'
   | 'query_relationships_v2' | 'resolve_research_concept_v1' | 'discover_relationship_paths_v1'
   | 'discover_biblical_connections_v1' | 'discover_biblical_connections_v2' | 'get_connection_evidence_v1' | 'expand_biblical_connection_v1'
+  | 'discover_patterns_v1' | 'compare_patterns_v1' | 'trace_evidence_v1'
   | 'get_passage_compact_v1' | 'get_word_profiles_batch_v1' | 'resolve_fast_lookup_v1' | 'lookup_concept_properties_v1'
   | 'research_word_lens_v1' | 'research_word_bridge_v1' | 'research_passage_lens_v1' |
   'get_dlm_notes_for_verse_v1' | 'verify_dlm_lemma_occurrence_v1' |
@@ -480,10 +488,55 @@ function registerEvidenceTools(server: McpServer, read: DatabaseReader): void {
   });
 }
 
+// === @section:logic:context-atlas-tool ===
+function registerContextAtlasTool(server: McpServer): void {
+  server.registerTool('get_biblical_context', {
+    title: 'Query biblical context atlas (genealogy, tribes, places, architecture, feasts)',
+    description:
+      'Epistemic-honest context lookup separating Scripture-attested facts from scholarly proposals across five topics: genealogy (bounded 1-2 gen family trees with verse disambiguation), tribe (Genesis 10 Table of Nations & 12 tribes with origin/settlement coords), place (biblical places with OpenBible/Pleiades provenance), architecture (Tabernacle, 1st/2nd Temple, Jerusalem gates & elevations), and feast (Torah moedim & Purim/Hanukkah with Hillel II Hebrew calendar dates).',
+    inputSchema: z.strictObject({
+      topic: z.enum(['genealogy', 'tribe', 'place', 'architecture', 'feast']),
+      query: z.string().trim().max(128).optional(),
+      strongs: z.string().trim().max(24).optional(),
+      passage: z.string().trim().max(64).optional(),
+      plan: z.string().trim().max(32).optional(),
+      gregorian_year: z.number().int().min(1900).max(2200).optional(),
+      limit: z.number().int().min(1).max(30).optional().default(10),
+    }),
+    outputSchema: z.record(z.string(), z.unknown()),
+    ...publicRead,
+  }, async ({ topic, query, strongs, passage, plan, gregorian_year, limit }) => {
+    try {
+      let payload: Record<string, unknown>;
+      switch (topic) {
+        case 'genealogy':
+          payload = await queryMcpGenealogy({ person: query, strongs, passage, limit });
+          break;
+        case 'tribe':
+          payload = queryMcpTribeLineage({ query, strongs, limit });
+          break;
+        case 'place':
+          payload = await queryMcpPlaces({ query, strongs, limit });
+          break;
+        case 'architecture':
+          payload = queryMcpSacredArchitecture({ plan, element: query, strongs, passage });
+          break;
+        case 'feast':
+          payload = queryMcpFeastsCalendar({ feast: query, strongs, gregorian_year });
+          break;
+      }
+      return { content: textContent(JSON.stringify(payload)), structuredContent: payload };
+    } catch {
+      return { isError: true, content: textContent('The biblical context atlas is temporarily unavailable.') };
+    }
+  });
+}
+
 // === @section:logic:server ===
 export function createResearchServer(read: DatabaseReader): McpServer {
   const server = new McpServer({ name: 'BibleResearch', version: WORKFLOW_VERSION }, { instructions: SERVER_INSTRUCTIONS });
   registerResearchTools(server, read);
+  registerContextAtlasTool(server);
   registerResearchLenses(server, read);
   registerDlmReadTools(server, read);
   registerFormationTools(server, read);

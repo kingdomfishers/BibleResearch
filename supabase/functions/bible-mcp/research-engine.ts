@@ -12,6 +12,13 @@ import {
   type ParsedPassage,
 } from './bible-ref.ts';
 import { computeGematria, type GematriaResult } from './gematria.ts';
+import {
+  queryMcpFeastsCalendar,
+  queryMcpGenealogy,
+  queryMcpPlaces,
+  queryMcpSacredArchitecture,
+  queryMcpTribeLineage,
+} from './context-atlas.ts';
 import { NOTE_SECURITY_NOTICE, formatCompactNote } from './notes-tools.ts';
 import {
   cleanTransliteration,
@@ -110,6 +117,67 @@ export const ResearchOpSchema = z.discriminatedUnion('op', [
     refs: z.array(z.string().trim().min(1).max(64)).min(2).max(6),
     limit: z.number().int().min(1).max(50).optional(),
   }),
+  z.strictObject({
+    op: z.literal('genealogy'),
+    id: z.string().trim().min(1).max(64).optional(),
+    person: z.string().trim().min(1).max(128).optional(),
+    strongs: z.string().trim().min(1).max(24).optional(),
+    passage: z.string().trim().min(1).max(64).optional(),
+    generations: z.number().int().min(1).max(2).optional(),
+    limit: z.number().int().min(1).max(30).optional(),
+  }),
+  z.strictObject({
+    op: z.literal('tribe_lineage'),
+    id: z.string().trim().min(1).max(64).optional(),
+    query: z.string().trim().min(1).max(128).optional(),
+    strongs: z.string().trim().min(1).max(24).optional(),
+    branch: z.string().trim().min(1).max(48).optional(),
+    limit: z.number().int().min(1).max(30).optional(),
+  }),
+  z.strictObject({
+    op: z.literal('sacred_architecture'),
+    id: z.string().trim().min(1).max(64).optional(),
+    plan: z.string().trim().min(1).max(32).optional(),
+    element: z.string().trim().min(1).max(128).optional(),
+    strongs: z.string().trim().min(1).max(24).optional(),
+    passage: z.string().trim().min(1).max(64).optional(),
+  }),
+  z.strictObject({
+    op: z.literal('feasts_calendar'),
+    id: z.string().trim().min(1).max(64).optional(),
+    feast: z.string().trim().min(1).max(128).optional(),
+    strongs: z.string().trim().min(1).max(24).optional(),
+    gregorian_year: z.number().int().min(1900).max(2200).optional(),
+    tradition: z.enum(['israel', 'diaspora']).optional(),
+    omer_rule: z.enum(['rabbinic_nisan_16', 'boethusian_sunday']).optional(),
+  }),
+  z.strictObject({
+    op: z.literal('discover_patterns'),
+    id: z.string().trim().min(1).max(64).optional(),
+    query: z.string().trim().min(1).max(400),
+    concepts: z.array(z.string().trim().min(1).max(80)).max(8).optional(),
+    mode: z.enum(['discover', 'expand', 'bridge', 'compare', 'explain', 'challenge']).optional(),
+    evidence_types: z.array(z.string().trim().min(1).max(64)).max(12).optional(),
+    include_orthographic: z.boolean().optional(),
+    limit: z.number().int().min(1).max(25).optional(),
+    detail: z.enum(['summary', 'full']).optional(),
+  }),
+  z.strictObject({
+    op: z.literal('compare_patterns'),
+    id: z.string().trim().min(1).max(64).optional(),
+    targets: z.array(z.string().trim().min(1).max(120)).min(2).max(4),
+    limit: z.number().int().min(1).max(15).optional(),
+    detail: z.enum(['summary', 'full']).optional(),
+  }),
+  z.strictObject({
+    op: z.literal('trace_evidence'),
+    id: z.string().trim().min(1).max(64).optional(),
+    evidence_id: z.string().trim().min(1).max(220).optional(),
+    from: z.string().trim().min(1).max(120).optional(),
+    to: z.string().trim().min(1).max(120).optional(),
+    max_hops: z.number().int().min(1).max(4).optional(),
+    detail: z.enum(['summary', 'full']).optional(),
+  }),
 ]);
 
 export type ResearchOp =
@@ -124,7 +192,14 @@ export type ResearchOp =
   | { op: 'geography_search'; id?: string; place: string; limit?: number }
   | { op: 'passage_compare'; id?: string; passages: string[]; limit?: number }
   | { op: 'notes_search'; id?: string; passage?: string; word?: string; include_dlm?: boolean; limit?: number }
-  | { op: 'set_combine'; id?: string; combine: 'intersect' | 'union' | 'difference'; refs: string[]; limit?: number };
+  | { op: 'set_combine'; id?: string; combine: 'intersect' | 'union' | 'difference'; refs: string[]; limit?: number }
+  | { op: 'genealogy'; id?: string; person?: string; strongs?: string; passage?: string; generations?: number; limit?: number }
+  | { op: 'tribe_lineage'; id?: string; query?: string; strongs?: string; branch?: string; limit?: number }
+  | { op: 'sacred_architecture'; id?: string; plan?: string; element?: string; strongs?: string; passage?: string }
+  | { op: 'feasts_calendar'; id?: string; feast?: string; strongs?: string; gregorian_year?: number; tradition?: 'israel' | 'diaspora'; omer_rule?: 'rabbinic_nisan_16' | 'boethusian_sunday' }
+  | { op: 'discover_patterns'; id?: string; query: string; concepts?: string[]; mode?: 'discover' | 'expand' | 'bridge' | 'compare' | 'explain' | 'challenge'; evidence_types?: string[]; include_orthographic?: boolean; limit?: number; detail?: 'summary' | 'full' }
+  | { op: 'compare_patterns'; id?: string; targets: string[]; limit?: number; detail?: 'summary' | 'full' }
+  | { op: 'trace_evidence'; id?: string; evidence_id?: string; from?: string; to?: string; max_hops?: number; detail?: 'summary' | 'full' };
 
 const OperationsBatchSchema = z.array(ResearchOpSchema).min(1).max(8);
 
@@ -427,21 +502,79 @@ async function executeEvidence(
   if (!raw) {
     return { status: 'not_found', evidence_id: op.evidence_id };
   }
-  const tokens = asArray(raw.tokens).slice(0, 40);
-  const passages = asArray(raw.passages ?? raw.verses).slice(0, 12);
+  const status = firstNonEmpty(raw.status, 'ok');
+  const ev = asRecord(raw.evidence) ?? raw;
+  const passageDetails = asArray(raw.passage_details)
+    .map((item) => asRecord(item))
+    .filter((item): item is Record<string, unknown> => item !== null);
+  const evPassages = asArray(ev.passages ?? ev.verses)
+    .map((item) => asRecord(item))
+    .filter((item): item is Record<string, unknown> => item !== null);
+
+  const hydratedPassages: Record<string, unknown>[] = [];
+  const seenPassageRefs = new Set<string>();
+  for (const pd of passageDetails.slice(0, 12)) {
+    const pObj = asRecord(pd.passage) ?? pd;
+    const ref = firstNonEmpty(pObj.ref);
+    const vid = typeof pObj.verse_id === 'number' ? pObj.verse_id : undefined;
+    const key = ref || (vid ? `vid:${vid}` : '');
+    if (key) seenPassageRefs.add(key);
+    const origToks = asArray(pd.original_tokens).slice(0, 40);
+    hydratedPassages.push({
+      ...(ref ? { ref } : {}),
+      ...(vid !== undefined ? { verse_id: vid } : {}),
+      ...(typeof pObj.book === 'number' ? { book: pObj.book } : {}),
+      ...(typeof pObj.chapter === 'number' ? { chapter: pObj.chapter } : {}),
+      ...(typeof pObj.verse === 'number' ? { verse: pObj.verse } : {}),
+      ...(pObj.mt_ref ? { mt_ref: pObj.mt_ref } : {}),
+      ...(pObj.is_psalm_heading ? { is_psalm_heading: true } : {}),
+      ...(pd.english_text ? { english_text: trimText(pd.english_text, 400) } : {}),
+      ...(pd.english_edition ? { english_edition: pd.english_edition } : {}),
+      ...(origToks.length > 0 ? { original_tokens: origToks } : {}),
+    });
+  }
+  for (const p of evPassages) {
+    if (hydratedPassages.length >= 12) break;
+    const ref = firstNonEmpty(p.ref);
+    const vid = typeof p.verse_id === 'number' ? p.verse_id : undefined;
+    const key = ref || (vid ? `vid:${vid}` : '');
+    if (key && seenPassageRefs.has(key)) continue;
+    if (key) seenPassageRefs.add(key);
+    hydratedPassages.push(p);
+  }
+
+  const tokens = asArray(ev.tokens ?? ev.original_tokens ?? raw.tokens).slice(0, 40);
+  const originalWords = asArray(ev.original_words).slice(0, 20);
+  const matchedTerms = asArray(ev.matched_terms).slice(0, 20);
+  const limitations = asArray(ev.limitations).filter((x): x is string => typeof x === 'string').slice(0, 6);
+  const relation = firstNonEmpty(ev.predicate, ev.relation, raw.relation);
+  const epistemic = firstNonEmpty(ev.epistemic_class, ev.epistemic, raw.epistemic);
+  const releaseId = firstNonEmpty(raw.release_id, raw.evidence_release_id);
+  const title = firstNonEmpty(ev.title, raw.title);
+  const summary = firstNonEmpty(ev.why, ev.explanation, ev.summary, raw.why, raw.summary);
+  const orth = ev.orthographic_analysis ?? ev.orthographic_decomposition ?? raw.orthographic_analysis ?? raw.orthographic_decomposition;
+
   return {
-    status: firstNonEmpty(raw.status, 'ok'),
-    evidence_id: firstNonEmpty(raw.evidence_id, op.evidence_id),
-    ...(raw.release_id ? { release_id: raw.release_id } : {}),
-    ...(raw.relation ? { relation: raw.relation } : {}),
-    ...(raw.epistemic ? { epistemic: raw.epistemic } : {}),
-    ...(raw.title ? { title: trimText(raw.title, 180) } : {}),
-    ...(raw.summary || raw.why ? { summary: trimText(firstNonEmpty(raw.why, raw.summary), 400) } : {}),
+    status,
+    evidence_id: firstNonEmpty(raw.evidence_id, ev.evidence_id, op.evidence_id),
+    ...(releaseId ? { release_id: releaseId } : {}),
+    ...(raw.error ? { error: raw.error } : {}),
+    ...(raw.mismatch ? { mismatch: raw.mismatch } : {}),
+    ...(relation ? { relation } : {}),
+    ...(epistemic ? { epistemic } : {}),
+    ...(typeof ev.evidence_tier === 'number' ? { evidence_tier: ev.evidence_tier } : {}),
+    ...(ev.evidence_type ? { evidence_type: ev.evidence_type } : {}),
+    ...(title ? { title: trimText(title, 180) } : {}),
+    ...(summary ? { summary: trimText(summary, 400) } : {}),
+    ...(originalWords.length > 0 ? { original_words: originalWords } : {}),
+    ...(matchedTerms.length > 0 ? { matched_terms: matchedTerms } : {}),
     ...(tokens.length > 0 ? { tokens } : {}),
-    ...(passages.length > 0 ? { passages } : {}),
-    ...(raw.orthographic_decomposition ? { orthographic_decomposition: raw.orthographic_decomposition } : {}),
-    ...(raw.number_classification ? { number_classification: raw.number_classification } : {}),
-    ...(raw.provenance ? { provenance: raw.provenance } : {}),
+    ...(hydratedPassages.length > 0 ? { passages: hydratedPassages } : {}),
+    ...(orth ? { orthographic_analysis: orth } : {}),
+    ...(ev.number_classification ? { number_classification: ev.number_classification } : {}),
+    ...(ev.r12_metadata ? { r12_metadata: ev.r12_metadata } : {}),
+    ...(ev.provenance ? { provenance: ev.provenance } : {}),
+    ...(limitations.length > 0 ? { limitations } : {}),
   };
 }
 
@@ -930,34 +1063,59 @@ async function executeGeographySearch(
   op: Extract<ResearchOp, { op: 'geography_search' }>,
 ): Promise<Record<string, unknown>> {
   const limit = clampLimit(op.limit, ctx.defaultLimit, 50);
-  const rows = await callRpc(
-    ctx.read,
-    'query_places_by_name',
-    { query: op.place },
-    limit,
-    0,
-  );
+  const [rows, atlasResult] = await Promise.all([
+    callRpc(ctx.read, 'query_places_by_name', { query: op.place }, limit, 0).catch(() => []),
+    queryMcpPlaces({ query: op.place, limit: Math.min(limit, 30) }).catch(() => null),
+  ]);
+  const atlasPlaces = asArray(atlasResult?.places)
+    .map((item) => asRecord(item))
+    .filter((item): item is Record<string, unknown> => item !== null);
+  const atlasByName = new Map<string, Record<string, unknown>>();
+  for (const ap of atlasPlaces) {
+    const nameKey = firstNonEmpty(ap.name).toLowerCase();
+    if (nameKey && !atlasByName.has(nameKey)) atlasByName.set(nameKey, ap);
+    for (const alias of asArray(ap.aliases)) {
+      if (typeof alias === 'string' && alias.trim() && !atlasByName.has(alias.trim().toLowerCase())) {
+        atlasByName.set(alias.trim().toLowerCase(), ap);
+      }
+    }
+  }
+
   const placesRaw = extractRowsOrField(rows, 'places', 'items', 'results');
-  const places = placesRaw.slice(0, limit).map((p) => {
-    const lat = typeof p.lat === 'number' && Number.isFinite(p.lat)
+  const seenNames = new Set<string>();
+  const places: Record<string, unknown>[] = placesRaw.slice(0, limit).map((p) => {
+    const placeName = firstNonEmpty(p.place, p.name, p.ancient_name);
+    const atlasMatch = atlasByName.get(placeName.toLowerCase()) ?? null;
+    if (placeName) seenNames.add(placeName.toLowerCase());
+
+    const dbLat = typeof p.lat === 'number' && Number.isFinite(p.lat)
       ? p.lat
       : typeof p.latitude === 'number' && Number.isFinite(p.latitude)
         ? p.latitude
         : null;
-    const lon = typeof p.lon === 'number' && Number.isFinite(p.lon)
+    const dbLon = typeof p.lon === 'number' && Number.isFinite(p.lon)
       ? p.lon
       : typeof p.lng === 'number' && Number.isFinite(p.lng)
         ? p.lng
         : typeof p.longitude === 'number' && Number.isFinite(p.longitude)
           ? p.longitude
           : null;
+    const lat = dbLat ?? (typeof atlasMatch?.latitude === 'number' ? atlasMatch.latitude : null);
+    const lon = dbLon ?? (typeof atlasMatch?.longitude === 'number' ? atlasMatch.longitude : null);
+
     return {
-      place: firstNonEmpty(p.place, p.name, p.ancient_name),
-      place_type: firstNonEmpty(p.place_type, p.type, 'unknown'),
+      place: placeName,
+      place_type: firstNonEmpty(p.place_type, p.type, atlasMatch?.feature_type, 'unknown'),
       modern_name: firstNonEmpty(p.modern_name, p.modern) || null,
       lat,
       lon,
       ...(p.is_non_physical !== undefined ? { is_non_physical: p.is_non_physical } : {}),
+      ...(atlasMatch ? {
+        strongs: atlasMatch.strongs ?? [],
+        precision: atlasMatch.precision ?? null,
+        provenance: atlasMatch.provenance ?? null,
+        source: 'database+context_atlas',
+      } : { source: 'database' }),
       linked_passages: asArray(p.linked_passages ?? p.passages ?? p.refs).slice(0, 12).map((raw) => {
         const link = asRecord(raw);
         return link
@@ -969,10 +1127,35 @@ async function executeGeographySearch(
     };
   });
 
+  for (const ap of atlasPlaces) {
+    if (places.length >= limit) break;
+    const name = firstNonEmpty(ap.name);
+    if (!name || seenNames.has(name.toLowerCase())) continue;
+    seenNames.add(name.toLowerCase());
+    places.push({
+      place: name,
+      place_lookup: ap.place_lookup ?? null,
+      place_type: firstNonEmpty(ap.feature_type, 'unknown'),
+      aliases: ap.aliases ?? [],
+      lat: typeof ap.latitude === 'number' ? ap.latitude : null,
+      lon: typeof ap.longitude === 'number' ? ap.longitude : null,
+      precision: ap.precision ?? null,
+      strongs: ap.strongs ?? [],
+      verse_count: ap.verse_count ?? 0,
+      provenance: ap.provenance ?? null,
+      source: 'context_atlas',
+      linked_passages: [],
+      coverage: 'Static OpenBible/Pleiades corpus index entry; no verse-role links attached in this row.',
+      events: [],
+    });
+  }
+
   return {
     status: places.length > 0 ? 'ok' : 'not_found',
     query: op.place,
     places,
+    ...(atlasResult?.source ? { atlas_source: atlasResult.source } : {}),
+    ...(atlasResult?.provenance_sources ? { provenance_sources: atlasResult.provenance_sources } : {}),
   };
 }
 
@@ -1383,6 +1566,128 @@ export async function executeResearch(
           storedIds = res.storedIds;
           break;
         }
+        case 'genealogy':
+          output = await queryMcpGenealogy(op);
+          break;
+        case 'tribe_lineage':
+          output = queryMcpTribeLineage(op);
+          break;
+        case 'sacred_architecture':
+          output = queryMcpSacredArchitecture(op);
+          break;
+        case 'feasts_calendar':
+          output = queryMcpFeastsCalendar(op);
+          break;
+        case 'discover_patterns': {
+          const rows = await callRpc(
+            read,
+            'discover_patterns_v1',
+            {
+              query: op.query,
+              ...(op.concepts ? { concepts: op.concepts } : {}),
+              ...(op.mode ? { mode: op.mode } : {}),
+              filters: {
+                ...(op.evidence_types ? { evidence_types: op.evidence_types } : {}),
+                ...(op.include_orthographic !== undefined ? { include_orthographic: op.include_orthographic } : {}),
+              },
+              limit: Math.min(25, op.limit ?? Math.min(defaultLimit, 12)),
+            },
+            1,
+            0,
+          );
+          const payload = extractFirstObject(rows) ?? {};
+          const full = op.detail === 'full';
+          const net = asRecord(payload.network) ?? {};
+          const rawPatterns = asArray(net.patterns).map(p => asRecord(p)).filter((p): p is Record<string, unknown> => p !== null);
+          const conns = asArray(payload.strongest_connections)
+            .map(c => normalizeDiscoveryConnection(asRecord(c) ?? {}))
+            .filter((c): c is CompactConnection => c !== null);
+          output = full
+            ? payload
+            : {
+                status: firstNonEmpty(payload.status, 'ok'),
+                query_intent: payload.query_intent,
+                ...(payload.evidence_release_id ? { evidence_release_id: payload.evidence_release_id } : {}),
+                pattern_count: net.pattern_count ?? rawPatterns.length,
+                patterns: rawPatterns.slice(0, 6).map(p => ({
+                  pattern_id: p.pattern_id,
+                  pattern_type: p.pattern_type,
+                  title: p.title,
+                  summary: p.summary,
+                  anchor_coverage: p.anchor_coverage,
+                  witness_refs: asArray(p.witness_refs).slice(0, 5),
+                  explicit_vs_inferred: p.explicit_vs_inferred,
+                  counterexamples_and_limits: asArray(p.counterexamples_and_limits).slice(0, 3),
+                  distinctiveness_score: p.distinctiveness_score,
+                })),
+                top_connections: conns.slice(0, 8),
+                controls_and_alternatives: asArray(payload.controls_and_alternatives).slice(0, 4),
+              };
+          break;
+        }
+        case 'compare_patterns': {
+          const rows = await callRpc(
+            read,
+            'compare_patterns_v1',
+            { targets: op.targets, limit: Math.min(15, op.limit ?? 8) },
+            1,
+            0,
+          );
+          const payload = extractFirstObject(rows) ?? {};
+          const full = op.detail === 'full';
+          const combined = asArray(payload.combined_connections)
+            .map(c => normalizeDiscoveryConnection(asRecord(c) ?? {}))
+            .filter((c): c is CompactConnection => c !== null);
+          output = full
+            ? payload
+            : {
+                status: firstNonEmpty(payload.status, 'ok'),
+                targets: payload.targets ?? op.targets,
+                shared_lemmas: payload.shared_lemmas ?? [],
+                shared_motifs: payload.shared_motifs ?? [],
+                structural_role_alignment: payload.structural_role_alignment ?? null,
+                cross_testament_alignment: payload.cross_testament_alignment ?? null,
+                combined_connections: combined.slice(0, 6),
+                divergences_and_controls: asArray(payload.divergences_and_controls).slice(0, 4),
+              };
+          break;
+        }
+        case 'trace_evidence': {
+          const rows = await callRpc(
+            read,
+            'trace_evidence_v1',
+            {
+              ...(op.evidence_id ? { evidence_id: op.evidence_id } : {}),
+              ...(op.from ? { from: op.from } : {}),
+              ...(op.to ? { to: op.to } : {}),
+              ...(op.max_hops !== undefined ? { max_hops: op.max_hops } : {}),
+            },
+            1,
+            0,
+          );
+          const payload = extractFirstObject(rows) ?? {};
+          const full = op.detail === 'full';
+          const ev = asRecord(payload.evidence);
+          output = full || !ev
+            ? payload
+            : {
+                status: firstNonEmpty(payload.status, 'ok'),
+                evidence_id: payload.evidence_id ?? op.evidence_id,
+                title: ev.title,
+                summary: ev.summary,
+                evidence_type: ev.evidence_type ?? ev.predicate,
+                evidence_tier: ev.evidence_tier,
+                epistemic_class: ev.epistemic_class,
+                score_breakdown: ev.score_breakdown ?? null,
+                connected_motif_ids: payload.connected_motif_ids ?? [],
+                independent_witnesses: payload.independent_witnesses ?? [],
+                original_words: ev.original_words ?? [],
+                passage_details: asArray(payload.passage_details).slice(0, 4),
+                counterexamples_and_limits: payload.counterexamples_and_limits ?? ev.limitations ?? [],
+                provenance: payload.provenance ?? ev.provenance,
+              };
+          break;
+        }
       }
 
       } catch {
@@ -1416,12 +1721,12 @@ export async function executeResearch(
     };
   }
 
-  if (/^r1[012]:/i.test(query)) {
+  if (/^r1[0123]:/i.test(query)) {
     const evidence = await executeEvidence(read, { op: 'evidence', evidence_id: query });
     return {
-      status: evidence.status === 'not_found' ? 'not_found' : 'ok',
-      mode: 'shorthand_evidence',
       ...evidence,
+      status: firstNonEmpty(evidence.status, 'ok'),
+      mode: 'shorthand_evidence',
     };
   }
 

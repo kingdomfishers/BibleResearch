@@ -23,6 +23,9 @@ import { gunzipSync } from 'node:zlib';
 import {
   fnv1a64Hex,
   handleDiscoverBiblicalConnectionsV1,
+  handleDiscoverPatternsV1,
+  handleComparePatternsV1,
+  handleTraceEvidenceV1,
   handleDiscoverRelationshipPathsV1,
   handleExpandBiblicalConnectionV1,
   handleGetConnectionEvidenceV1,
@@ -2641,6 +2644,22 @@ const corpusWorker = {
         }
         if (op === 'discover_biblical_connections_v1' || op === 'discover_biblical_connections_v2') {
           return jsonResponse(await handleDiscoverBiblicalConnectionsV1({ env, loadJsonShard, loadJsonShardWithBytes, decodeB64GzJson: (b64, cacheKey) => decodeB64GzJson(env, b64, cacheKey) }, params), 200, 'public, max-age=300');
+        }
+        if (op === 'discover_patterns_v1' || op === 'compare_patterns_v1' || op === 'trace_evidence_v1') {
+          const r13Ctx = {
+            env,
+            loadJsonShard,
+            loadJsonShardWithBytes,
+            decodeB64GzJson: (b64, cacheKey) => decodeB64GzJson(env, b64, cacheKey),
+            decodeB64Gz: (b64, cacheKey) => decodeB64GzJson(env, b64, cacheKey),
+          };
+          if (op === 'discover_patterns_v1') {
+            return jsonResponse(await handleDiscoverPatternsV1(r13Ctx, params), 200, 'public, max-age=300');
+          }
+          if (op === 'compare_patterns_v1') {
+            return jsonResponse(await handleComparePatternsV1(r13Ctx, params), 200, 'public, max-age=300');
+          }
+          return jsonResponse(await handleTraceEvidenceV1(r13Ctx, params), 200, 'public, max-age=300');
         }
         if (op === 'get_connection_evidence_v1') {
           return jsonResponse(await handleGetConnectionEvidenceV1({ env, loadJsonShard, loadJsonShardWithBytes, decodeB64GzJson: (b64, cacheKey) => decodeB64GzJson(env, b64, cacheKey) }, params), 200, 'public, max-age=300');

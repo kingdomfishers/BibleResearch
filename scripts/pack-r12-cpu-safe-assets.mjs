@@ -15,8 +15,14 @@ import zlib from 'node:zlib';
 import crypto from 'node:crypto';
 import assert from 'node:assert/strict';
 import { computeBucketHex, fnv1a64Hex } from '../src/relationships/adjacency-loader.ts';
+import { buildCorpusWordplayIndex } from '../src/relationships/wordplay-engine.ts';
+import { computeHighPmiCollocations, mineMultiPassageMotifs } from '../src/relationships/motif-discovery.ts';
+import { compareStructuredRoleFrames, extractScripturalInterpretations } from '../src/relationships/symbolic-patterns.ts';
 
-const root = path.resolve(process.argv[2] || '.artifacts-r12/staging-bundle');
+const args = process.argv.slice(2);
+const versesOnly = args.includes('--verses-only');
+const positionalArg = args.find((a) => !a.startsWith('--'));
+const root = path.resolve(positionalArg || '.artifacts-r12/staging-bundle');
 assert.ok(root.toLowerCase().includes('staging'), `Staging bundle required, got: ${root}`);
 
 const r10Dir = path.join(root, 'v2/relationships/r11-v1.0/r10');
@@ -28,6 +34,26 @@ fs.mkdirSync(backupDir, { recursive: true });
 const readGzJson = (filePath) => JSON.parse(zlib.gunzipSync(fs.readFileSync(filePath)));
 const decodeB64Gz = (b64) => JSON.parse(zlib.gunzipSync(Buffer.from(b64, 'base64')));
 const encodeB64Gz = (obj) => zlib.gzipSync(JSON.stringify(obj), { level: 9 }).toString('base64');
+
+function readStaticTable(tableName) {
+  const tblDir = path.resolve('.artifacts/static-corpus/tables', tableName);
+  if (!fs.existsSync(tblDir)) return [];
+  const rows = [];
+  for (const f of fs.readdirSync(tblDir).sort()) {
+    if (!f.includes('.jsonl')) continue;
+    const rawBuf = fs.readFileSync(path.join(tblDir, f));
+    const txt = (rawBuf[0] === 0x1f && rawBuf[1] === 0x8b ? zlib.gunzipSync(rawBuf) : rawBuf).toString('utf8');
+    for (const line of txt.split('\n')) {
+      if (line.trim()) rows.push(JSON.parse(line));
+    }
+  }
+  return rows;
+}
+
+function padStrongsBase(raw) {
+  const m = /^([HG])0*(\d+)[A-Z]*$/i.exec(String(raw || '').trim());
+  return m ? `${m[1].toUpperCase()}${m[2].padStart(4, '0')}` : '';
+}
 
 function writeGzJsonAtomic(filePath, data, level = 1) {
   const raw = Buffer.from(JSON.stringify(data));
@@ -96,8 +122,48 @@ for (const f of verseFiles) {
 assert.equal(verseMap.size, 31203, `Expected 31203 verses in verseMap, got ${verseMap.size}`);
 console.log(`Loaded ${verseMap.size} verses (${Date.now() - tStart} ms).`);
 
-console.log('Loading orthographic shards...');
 const orthMap = new Map();
+const pilot = readGzJson(path.join(r10Dir, 'r12-pilot.json.gz'));
+assert.ok((pilot.pilot_anchors?.length || 0) >= 48, `Expected >= 48 pilot_anchors`);
+assert.equal(Object.keys(pilot.anchors || {}).length, pilot.pilot_anchors.length, `Expected all pilot_anchors in pilot.anchors`);
+
+const lemmaPosByKey = new Map();
+for (const l of readStaticTable('lemmas')) {
+  if (l?.lemma_key) lemmaPosByKey.set(String(l.lemma_key).toLowerCase(), String(l.primary_pos || ''));
+}
+
+let enrichedCount = 0;
+let orthAttachedCount = 0;
+let pilotAttachedCount = 0;
+let r13SelfInterpretations = [];
+let minedMotifsRes = { motifs: [], motifIdsByBs: new Map(), motifIdsByVid: new Map() };
+let r13WordplayCount = 0;
+let r13CollocCount = 0;
+const baseProfByBs = new Map();
+const fastProfilesDir = path.join(r10Dir, 'fast-profiles');
+let maxFastProfileOuterBytes = 0;
+let maxFastProfileRawBytes = 0;
+let maxFastProfileShard = '';
+let totalSubBuckets = 0;
+let addedSynonymKeys = 0;
+let addedSynonymEntries = 0;
+let lookupCount = 0;
+
+if (versesOnly) {
+  console.log('--verses-only: loading base profiles from 64 lemma-profiles shards (skipping fast-profiles rebuild)...');
+  const lemmaProfDir = path.join(r10Dir, 'lemma-profiles');
+  for (const f of fs.readdirSync(lemmaProfDir).filter((x) => x.endsWith('.json.gz')).sort()) {
+    const d = readGzJson(path.join(lemmaProfDir, f));
+    const entries = d.schema_version === 'r10-packed-1'
+      ? Object.entries(d.entries || {}).map(([k, ptr]) => [k, decodePackedRecord(ptr)])
+      : Object.entries(d.entries || {});
+    for (const [key, prof] of entries) {
+      baseProfByBs.set(key, prof);
+    }
+  }
+  assert.equal(baseProfByBs.size, 19566, `Expected 19566 base profiles, got ${baseProfByBs.size}`);
+} else {
+console.log('Loading orthographic shards...');
 const orthDir = path.join(r10Dir, 'orthographic');
 const orthFiles = fs.readdirSync(orthDir).filter((f) => f.endsWith('.json.gz')).sort();
 assert.equal(orthFiles.length, 64, `Expected 64 orthographic shards, found ${orthFiles.length}`);
@@ -111,10 +177,7 @@ for (const f of orthFiles) {
 }
 console.log(`Loaded ${orthMap.size} orthographic entries with homographs.`);
 
-console.log('Loading and compacting r12-pilot.json.gz...');
-const pilot = readGzJson(path.join(r10Dir, 'r12-pilot.json.gz'));
-assert.ok((pilot.pilot_anchors?.length || 0) >= 48, `Expected >= 48 pilot_anchors`);
-assert.equal(Object.keys(pilot.anchors || {}).length, pilot.pilot_anchors.length, `Expected all pilot_anchors in pilot.anchors`);
+console.log('Compacting r12-pilot.json.gz...');
 
 function compactPilotAnchor(a) {
   return {
@@ -603,8 +666,8 @@ console.log({
   verifiedOrth,
 });
 
-// 3. Load and enrich all 19,566 canonical LemmaProfiles from lemma-profiles/
-console.log('Loading & enriching lemma-profiles...');
+// 3. Load all 19,566 canonical LemmaProfiles and STEP formation tables, then run Algorithms A, B, C
+console.log('Loading lemma-profiles & static STEP tables...');
 const profileBuckets = Array.from({ length: 1024 }, (_, idx) => ({
   hex: idx.toString(16).padStart(3, '0'),
   profiles: {},
@@ -616,12 +679,8 @@ const lemmaProfDir = path.join(r10Dir, 'lemma-profiles');
 const lemmaProfFiles = fs.readdirSync(lemmaProfDir).filter((f) => f.endsWith('.json.gz')).sort();
 assert.equal(lemmaProfFiles.length, 64, `Expected 64 lemma-profiles shards, found ${lemmaProfFiles.length}`);
 
-let enrichedCount = 0;
-let orthAttachedCount = 0;
-let pilotAttachedCount = 0;
 const seenProfileKeys = new Set();
-const baseProfByBs = new Map();
-
+const rawProfilesList = [];
 for (const f of lemmaProfFiles) {
   const d = readGzJson(path.join(lemmaProfDir, f));
   const entries = d.schema_version === 'r10-packed-1'
@@ -632,56 +691,249 @@ for (const f of lemmaProfFiles) {
     assert.ok(!seenProfileKeys.has(prof.bs), `Duplicate profile ${prof.bs}`);
     seenProfileKeys.add(prof.bs);
     baseProfByBs.set(prof.bs, prof);
-
-    const firstOccPassages = [];
-    for (const vid of (prof.all_vids || []).slice(0, 25)) {
-      const v = verseMap.get(vid);
-      if (v) {
-        firstOccPassages.push({
-          verse_id: vid,
-          ref: v.ref,
-          ...(v.mt_ref !== undefined && v.mt_ref !== null ? { mt_ref: v.mt_ref } : {}),
-          book: v.book,
-          chapter: v.chapter,
-          verse: v.verse,
-          testament: v.book <= 39 ? 'OT' : 'NT',
-          snippet: v.en,
-          is_psalm_heading: v.book === 19 && v.verse === 0,
-        });
-      }
-    }
-
-    const enriched = {
-      ...prof,
-      first_occ_passages: firstOccPassages,
-    };
-    const orthEntry = orthMap.get(prof.bs);
-    if (orthEntry) {
-      enriched.orth_entry = {
-        bs: orthEntry.bs,
-        script: orthEntry.script,
-        cons: orthEntry.cons,
-        homographs: orthEntry.homographs,
-      };
-      orthAttachedCount++;
-    }
-    const pilotAnchor = compactedPilotMap.get(prof.bs);
-    if (pilotAnchor) {
-      enriched.r12_pilot_anchor = pilotAnchor;
-      pilotAttachedCount++;
-    }
-
-    const bucketHex = computeBucketHex('fnv1a64_mod1024', 1024, prof.bs);
-    const bucket = bucketByHex.get(bucketHex);
-    assert.ok(bucket, `Invalid profile bucket hex ${bucketHex} for ${prof.bs}`);
-    bucket.profiles[prof.bs] = encodeB64Gz(enriched);
-    enrichedCount++;
+    rawProfilesList.push(prof);
   }
 }
+assert.equal(rawProfilesList.length, 19566, `Expected 19566 profiles, got ${rawProfilesList.length}`);
+
+const tblLemmas = readStaticTable('lemmas');
+const tblRootLinks = readStaticTable('lemma_root_links');
+const tblRoots = readStaticTable('lexical_roots');
+const tblFormations = readStaticTable('lexical_formations');
+
+const lemmaMetaById = new Map();
+const rootKeyById = new Map();
+for (const r of tblRoots) rootKeyById.set(r.id, r.root_key);
+for (const l of tblLemmas) {
+  lemmaMetaById.set(l.id, {
+    lemma_key: l.lemma_key,
+    bs: padStrongsBase(l.base_strongs),
+    primary_pos: l.primary_pos || '',
+    script: l.lemma_script || '',
+  });
+}
+const rootKeysByBs = new Map();
+for (const rl of tblRootLinks) {
+  const lm = lemmaMetaById.get(rl.lemma_id);
+  const rk = rootKeyById.get(rl.root_id);
+  if (!lm?.bs || !rk) continue;
+  let arr = rootKeysByBs.get(lm.bs);
+  if (!arr) { arr = []; rootKeysByBs.set(lm.bs, arr); }
+  if (!arr.includes(rk)) arr.push(rk);
+}
+const formationTargetsByBs = new Map();
+for (const fm of tblFormations) {
+  const lm = lemmaMetaById.get(fm.lemma_id);
+  if (!lm?.bs) continue;
+  const refs = String(fm.evidence_note || '').match(/\b[HG]\d{3,5}\b/g) || [];
+  let arr = formationTargetsByBs.get(lm.bs);
+  if (!arr) { arr = []; formationTargetsByBs.set(lm.bs, arr); }
+  for (const rawBs of refs) {
+    const tBs = padStrongsBase(rawBs);
+    if (tBs && tBs !== lm.bs && !arr.includes(tBs)) arr.push(tBs);
+  }
+}
+
+console.log('Running Algorithms A (wordplay), B (collocations + motifs), C (self-interpretations)...');
+const verseLookupForWp = new Map();
+const versesForInterp = [];
+const vidToChapter = new Map();
+const dfMapAll = new Map();
+for (const p of rawProfilesList) dfMapAll.set(p.bs, p.total_verses || 0);
+
+for (const [vid, v] of verseMap) {
+  vidToChapter.set(vid, `${v.book}:${v.chapter}`);
+  verseLookupForWp.set(vid, {
+    verse_id: vid,
+    book: v.book,
+    strongsList: (v.toks || []).map((t) => t?.s).filter(Boolean),
+    englishText: v.en || '',
+  });
+  versesForInterp.push({
+    verse_id: vid,
+    book: v.book,
+    chapter: v.chapter,
+    verse: v.verse,
+    ref: v.ref,
+    en: v.en || '',
+    toks: (v.toks || []).map((t) => ({ wn: t.wn, sf: t.sf, lm: t.lm, s: t.s, g: t.g, cl: t.cl })),
+  });
+}
+
+// Assign previously declared variables instead of shadowing inside the non-versesOnly block
+r13SelfInterpretations = extractScripturalInterpretations(versesForInterp, dfMapAll);
+const wordplayIndex = buildCorpusWordplayIndex(
+  rawProfilesList.map((p) => ({
+    bs: p.bs,
+    script: p.sc || '',
+    gloss: p.gl || '',
+    total_verses: p.total_verses || 0,
+    all_vids: p.all_vids || [],
+    root_keys: rootKeysByBs.get(p.bs) || [],
+    formation_targets: formationTargetsByBs.get(p.bs) || [],
+  })),
+  verseLookupForWp,
+  { maxPerLemma: 10, maxVerseFreqForPureOrth: 850 },
+);
+const collocIndex = computeHighPmiCollocations(
+  rawProfilesList.map((p) => ({
+    bs: p.bs,
+    script: p.sc,
+    gloss: p.gl,
+    total_verses: p.total_verses || 0,
+    all_vids: p.all_vids || [],
+  })),
+  verseMap.size,
+  { maxPerLemma: 12, maxDf: 2500 },
+);
+const lxxMapForMotifs = new Map();
+for (const p of rawProfilesList) {
+  if (Array.isArray(p.lxx_relations) && p.lxx_relations.length > 0) {
+    lxxMapForMotifs.set(
+      p.bs,
+      p.lxx_relations
+        .filter((lx) => lx?.target_strongs && (lx.count || 0) >= 2)
+        .map((lx) => ({ target_bs: lx.target_strongs, count: lx.count || 0 })),
+    );
+  }
+}
+const interpEdgesForMotifs = [];
+for (const si of r13SelfInterpretations) {
+  for (const sym of si.symbol_strongs) {
+    for (const refBs of si.referent_strongs) {
+      interpEdgesForMotifs.push({ from_bs: sym, to_bs: refBs, verse_id: si.verse_id, cue: `${si.ref} ${si.cue_kind}` });
+    }
+  }
+}
+minedMotifsRes = mineMultiPassageMotifs({
+  profiles: rawProfilesList.map((p) => ({
+    bs: p.bs,
+    script: p.sc,
+    gloss: p.gl,
+    total_verses: p.total_verses || 0,
+    all_vids: p.all_vids || [],
+  })),
+  collocMap: collocIndex,
+  wordplayMap: wordplayIndex,
+  lxxMap: lxxMapForMotifs,
+  interpretationEdges: interpEdgesForMotifs,
+  vidToChapter,
+  maxMotifs: 750,
+});
+r13WordplayCount = wordplayIndex.size;
+r13CollocCount = collocIndex.size;
+console.log(`Algorithms complete: wordplay=${wordplayIndex.size} lemmas, colloc=${collocIndex.size} lemmas, selfInterp=${r13SelfInterpretations.length}, motifs=${minedMotifsRes.motifs.length}.`);
+
+for (const prof of rawProfilesList) {
+  const firstOccPassages = [];
+  for (const vid of (prof.all_vids || []).slice(0, 25)) {
+    const v = verseMap.get(vid);
+    if (v) {
+      firstOccPassages.push({
+        verse_id: vid,
+        ref: v.ref,
+        ...(v.mt_ref !== undefined && v.mt_ref !== null ? { mt_ref: v.mt_ref } : {}),
+        book: v.book,
+        chapter: v.chapter,
+        verse: v.verse,
+        testament: v.book <= 39 ? 'OT' : 'NT',
+        snippet: v.en,
+        is_psalm_heading: v.book === 19 && v.verse === 0,
+      });
+    }
+  }
+
+  const enriched = {
+    ...prof,
+    first_occ_passages: firstOccPassages,
+  };
+  const orthEntry = orthMap.get(prof.bs);
+  const wpEdges = wordplayIndex.get(prof.bs) || [];
+  const collocEdges = collocIndex.get(prof.bs) || [];
+  const profMotifIds = minedMotifsRes.motifIdsByBs.get(prof.bs) || [];
+
+  if (orthEntry || wpEdges.length > 0) {
+    const consOverlaps = wpEdges
+      .filter((e) => !e.proven_common_root)
+      .slice(0, 8)
+      .map((e) => ({
+        bs: e.target_bs,
+        sc: e.target_script,
+        gl: baseProfByBs.get(e.target_bs)?.gl || '',
+        shared: e.shared_consonants,
+        kind: e.overlap_kind,
+        evidence_type: e.evidence_type,
+        witness_vids: e.witness_vids,
+        score: e.score,
+      }));
+    const sharedRootLinks = wpEdges
+      .filter((e) => e.proven_common_root)
+      .slice(0, 6)
+      .map((e) => ({
+        bs: e.target_bs,
+        sc: e.target_script,
+        gl: baseProfByBs.get(e.target_bs)?.gl || '',
+        root_key: e.shared_root_key || null,
+        evidence_type: e.evidence_type,
+      }));
+    enriched.orth_entry = {
+      bs: orthEntry?.bs || prof.bs,
+      script: orthEntry?.script || prof.sc,
+      cons: orthEntry?.cons || '',
+      homographs: orthEntry?.homographs || [],
+      ...(consOverlaps.length > 0 ? { consonantal_overlaps: consOverlaps } : {}),
+      ...(sharedRootLinks.length > 0 ? { shared_root: sharedRootLinks } : {}),
+    };
+    orthAttachedCount++;
+  }
+  if (wpEdges.length > 0) {
+    enriched.r13_wordplay = wpEdges.slice(0, 10).map((e) => ({
+      target_bs: e.target_bs,
+      target_script: e.target_script,
+      target_gloss: baseProfByBs.get(e.target_bs)?.gl || '',
+      evidence_type: e.evidence_type,
+      overlap_kind: e.overlap_kind,
+      epistemic_class: e.epistemic_class,
+      proven_common_root: e.proven_common_root,
+      ...(e.shared_root_key ? { shared_root_key: e.shared_root_key } : {}),
+      shared_consonants: e.shared_consonants,
+      edit_distance: e.edit_distance,
+      proximity_same_verse: e.proximity_same_verse,
+      proximity_adjacent_verse: e.proximity_adjacent_verse,
+      has_explicit_cue: e.has_explicit_cue,
+      witness_vids: e.witness_vids,
+      witness_refs: e.witness_vids.map((vid) => verseMap.get(vid)?.ref).filter(Boolean),
+      score: e.score,
+    }));
+  }
+  if (collocEdges.length > 0) {
+    enriched.r13_colloc = collocEdges.map((c) => [
+      c.target_bs,
+      c.shared_count,
+      Math.round(c.npmi * 100),
+      c.sample_vids.slice(0, 3),
+    ]);
+  }
+  if (profMotifIds.length > 0) {
+    enriched.r13_motif_ids = profMotifIds;
+  }
+
+  const pilotAnchor = compactedPilotMap.get(prof.bs);
+  if (pilotAnchor) {
+    enriched.r12_pilot_anchor = pilotAnchor;
+    pilotAttachedCount++;
+  }
+
+  const bucketHex = computeBucketHex('fnv1a64_mod1024', 1024, prof.bs);
+  const bucket = bucketByHex.get(bucketHex);
+  assert.ok(bucket, `Invalid profile bucket hex ${bucketHex} for ${prof.bs}`);
+  bucket.profiles[prof.bs] = encodeB64Gz(enriched);
+  enrichedCount++;
+}
 assert.equal(enrichedCount, 19566, `Expected 19566 profiles, got ${enrichedCount}`);
-assert.equal(orthAttachedCount, orthMap.size, `Expected all ${orthMap.size} orth entries attached, got ${orthAttachedCount}`);
+assert.ok(orthAttachedCount >= orthMap.size, `Expected >= ${orthMap.size} orth entries attached, got ${orthAttachedCount}`);
 assert.equal(pilotAttachedCount, pilot.pilot_anchors.length, `Expected ${pilot.pilot_anchors.length} pilot anchors attached, got ${pilotAttachedCount}`);
-console.log(`Enriched ${enrichedCount} profiles (orth: ${orthAttachedCount}, pilot: ${pilotAttachedCount}).`);
+console.log(`Enriched ${enrichedCount} profiles (orth+wordplay: ${orthAttachedCount}, pilot: ${pilotAttachedCount}).`);
 
 // 4. Load lemma-lookup and route entries into the 1,024 buckets + 16 sub-buckets
 console.log('Loading & routing lemma-lookup entries...');
@@ -689,7 +941,6 @@ const lookupDir = path.join(r10Dir, 'lemma-lookup');
 const lookupFiles = fs.readdirSync(lookupDir).filter((f) => f.endsWith('.json.gz')).sort();
 assert.equal(lookupFiles.length, 64, `Expected 64 lemma-lookup shards, found ${lookupFiles.length}`);
 
-let lookupCount = 0;
 for (let i = 0; i < lookupFiles.length; i++) {
   const f = lookupFiles[i];
   const d = readGzJson(path.join(lookupDir, f));
@@ -725,8 +976,8 @@ const SYNONYM_AND_PHRASE_MAPPINGS = {
   yeast: ['H2557', 'H7603', 'G2219'],
   leaven: ['H2557', 'H7603', 'G2219'],
   unleavened: ['H4682', 'G0106'],
-  resurrect: ['G0386', 'G1453', 'H2421'],
-  resurrection: ['G0386', 'G1453', 'H2421'],
+  resurrect: ['G0386', 'G1453', 'H6965'],
+  resurrection: ['G0386', 'G1453', 'H6965'],
   rainbow: ['H7198', 'G2463'],
   crimson: ['H8144', 'H8438', 'G2847'],
   scarlet: ['H8144', 'H8438', 'G2847'],
@@ -795,10 +1046,17 @@ const SYNONYM_AND_PHRASE_MAPPINGS = {
   'day of atonement': ['H3117', 'H3725'],
   'burning bush': ['H5572', 'G0942'],
   'valley of dry bones': ['H1237', 'H6106', 'H3002'],
+  almond: ['H8247', 'H8246'],
+  watch: ['H8245'],
+  watching: ['H8245'],
+  pitch: ['H3724', 'H3722'],
+  ark: ['H8392', 'H0727', 'G2787'],
+  smoke: ['H6227', 'G2586'],
+  adam: ['H0120'],
+  ground: ['H0127'],
+  blood: ['H1818', 'G0129'],
 };
 
-let addedSynonymKeys = 0;
-let addedSynonymEntries = 0;
 for (const [term, bsList] of Object.entries(SYNONYM_AND_PHRASE_MAPPINGS)) {
   const normKey = term.toLowerCase().trim();
   const bucketHex = computeBucketHex('fnv1a64_mod1024', 1024, normKey);
@@ -806,7 +1064,10 @@ for (const [term, bsList] of Object.entries(SYNONYM_AND_PHRASE_MAPPINGS)) {
   const bucket = bucketByHex.get(bucketHex);
   if (!bucket) continue;
   const subMap = bucket.subLookup[subIdxNum];
-  const existing = Array.isArray(subMap[normKey]) ? subMap[normKey] : [];
+  const rawExisting = Array.isArray(subMap[normKey]) ? subMap[normKey] : [];
+  const existing = (normKey === 'resurrect' || normKey === 'resurrection')
+    ? rawExisting.filter((c) => c.bs !== 'H2421')
+    : rawExisting;
   const existingBs = new Set(existing.map((c) => c.bs));
   if (existing.length === 0) addedSynonymKeys++;
   const merged = [...existing];
@@ -835,12 +1096,6 @@ console.log(`Enriched lookup with ${addedSynonymKeys} new synonym/phrase keys (+
 
 // 5. Rewrite existing 1,024 fast-profiles/shard-000..3ff.json.gz
 console.log('Writing 1,024 fast-profiles shards...');
-const fastProfilesDir = path.join(r10Dir, 'fast-profiles');
-let maxFastProfileOuterBytes = 0;
-let maxFastProfileRawBytes = 0;
-let maxFastProfileShard = '';
-let totalSubBuckets = 0;
-
 for (const bucket of profileBuckets) {
   const shardPath = path.join(fastProfilesDir, `shard-${bucket.hex}.json.gz`);
   assert.ok(fs.existsSync(shardPath), `Missing existing fast-profiles shard: ${shardPath}`);
@@ -866,8 +1121,135 @@ for (const bucket of profileBuckets) {
   }
 }
 console.log(`Wrote 1,024 fast-profiles shards (${totalSubBuckets} non-empty sub-buckets, max outer=${maxFastProfileOuterBytes} B [${maxFastProfileShard}], max raw=${maxFastProfileRawBytes} B).`);
+}
 
-// 6. Load xrefs/book-01..66 and motifs/events chronologically, then embed into 488 fast-verses/chunk-*.json.gz
+// 6. Load xrefs/book-01..66, R8 grammatical roles & clause frames, chapter-lite lemma_keys, and motifs/events
+console.log('Building IDF tables, LXX/root bridges, chapter-lite lemma_keys, and R8 clause frames...');
+const PACK_FUNC_OR_STOP_STRONGS = new Set([
+  'H0853','H0854','H4480','H0413','H5921','H0518','H3588','H0834','H1931','H0859','H0589','H0595','H2088','H2063','H0428','H3605','H3808','H3541','H3651',
+  'G3588','G2532','G1161','G0846','G1722','G1519','G3754','G1473','G4771','G3778','G3739','G5100','G5101','G1438','G1063','G1537','G0575','G2596','G3326','G4012','G4314','G5228','G3361','G3756','G3761','G0235','G5613',
+  // Greek copula & auxiliary inflections (Defect 5F)
+  'G1510','G1488','G1498','G1511','G1526','G2070','G2076','G2258','G2468','G2531','G5600','G5607',
+  // Ultra-common generic verbs/modifiers
+  'H0559','H1696','H6213','H1961','H0935','H5414','H1980','H7200','H3947','H3318','H8085','H3045','H5975','H2142','H6996',
+  'G3004','G1096','G4160','G2192','G2064','G2036','G1832','G1492','G0191','G1325','G2983','G1410','G2309','G3421','G3398',
+  'H3967','H0505','H6240','H7239','G1540','G5507',
+  'H3068','H3069','H0430','H3478','H1121','H0001','H0376','H0802','H3117','H8141','H1697','H1004','H0776','H4428','H5971',
+  'G2316','G2962','G0444','G1093','G3962','G5207','G2250','G3551','G2424','G5547','G3956','G4183','G3173',
+]);
+const PACK_FUNC_CLASSES = new Set([
+  'conjunction','preposition','article','particle','pronoun','interjection','adverb',
+  'cj','prep','ptcl','adv','rel','om','intj','pron','det',
+]);
+const PHRASE_STOPWORDS = new Set([
+  'the','a','an','of','in','on','to','for','and','or','he','she','it','they','we','you','me','my','his','her','its','our','your','their',
+  'is','are','was','were','be','been','being','will','shall','would','should','have','has','had','that','this','these','those','who','whom',
+  'which','from','with','by','at','as','into','unto','not','no','but','also','all','one','two','let','said','says','say','god','lord',
+]);
+
+function idfOfBs(bs) {
+  const tv = baseProfByBs.get(bs)?.total_verses || 1000;
+  return Math.max(0.5, Math.min(4.5, Math.log(31203 / Math.max(1, tv)) - 2.2));
+}
+
+function phraseSpecificityBonus(phrase) {
+  const words = String(phrase || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .split(/\s+/)
+    .filter((w) => w.length >= 3 && !PHRASE_STOPWORDS.has(w));
+  if (words.length >= 3) return 0.55;
+  if (words.length === 2) return 0.25;
+  return 0;
+}
+
+const verseContentMap = new Map(); // vid -> { set: Set<string>, list: string[] }
+const vidByBookChVs = new Map();
+const chapterVidsMap = new Map(); // "book:chapter" -> number[]
+for (const [vid, v] of verseMap) {
+  vidByBookChVs.set(`${v.book}:${v.chapter}:${v.verse}`, vid);
+  const ck = `${v.book}:${v.chapter}`;
+  let chArr = chapterVidsMap.get(ck);
+  if (!chArr) { chArr = []; chapterVidsMap.set(ck, chArr); }
+  chArr.push(vid);
+  const set = new Set();
+  const list = [];
+  for (const t of v.toks || []) {
+    const s = t?.s;
+    if (!s || PACK_FUNC_OR_STOP_STRONGS.has(s) || PACK_FUNC_CLASSES.has(String(t.cl || '').toLowerCase())) continue;
+    if (!set.has(s)) { set.add(s); list.push(s); }
+  }
+  verseContentMap.set(vid, { set, list });
+}
+for (const arr of chapterVidsMap.values()) arr.sort((a, b) => a - b);
+
+// Bidirectional direct LXX bridge map (NO transitive root-sibling drift!)
+const lxxBridgeMap = new Map(); // bs -> Set<string>
+function addBridgeEdge(a, b) {
+  if (!a || !b || a === b || PACK_FUNC_OR_STOP_STRONGS.has(a) || PACK_FUNC_OR_STOP_STRONGS.has(b)) return;
+  let sa = lxxBridgeMap.get(a); if (!sa) { sa = new Set(); lxxBridgeMap.set(a, sa); } sa.add(b);
+  let sb = lxxBridgeMap.get(b); if (!sb) { sb = new Set(); lxxBridgeMap.set(b, sb); } sb.add(a);
+}
+for (const [bs, p] of baseProfByBs) {
+  if (PACK_FUNC_OR_STOP_STRONGS.has(bs) || (p.total_verses || 9999) > 600) continue;
+  for (const lr of p.lxx_relations || []) {
+    const ts = lr.target_strongs;
+    const tp = baseProfByBs.get(ts);
+    if (!ts || !tp || PACK_FUNC_OR_STOP_STRONGS.has(ts) || (tp.total_verses || 9999) > 550) continue;
+    if ((lr.count || 0) >= 2 || lr.type === 'lxx_swete_witness' || lr.type === 'bcv_lxx_bridge' || lr.type === 'word_alignment') {
+      addBridgeEdge(bs, ts);
+    }
+  }
+  for (const lr of p.lexical_relations || []) {
+    if (!['shares_root','aramaic_cognate_parallel','derived_from_root_anchor','source_provided_lexical_equivalent'].includes(lr.type)) continue;
+    const ts = lr.target_strongs;
+    const tp = baseProfByBs.get(ts);
+    if (!ts || !tp || PACK_FUNC_OR_STOP_STRONGS.has(ts) || (tp.total_verses || 9999) > 550) continue;
+    addBridgeEdge(bs, ts);
+  }
+}
+
+function parseEndVerse(refStr) {
+  const m = String(refStr || '').match(/:(\d+)\s*-\s*(\d+)\s*$/);
+  return m ? { startV: Number(m[1]), endV: Number(m[2]) } : null;
+}
+
+function computeSpanOverlap(fromVid, toVid, toEndV, toStartV) {
+  const fromContent = verseContentMap.get(fromVid);
+  if (!fromContent || fromContent.list.length === 0) return { lexCount: 0, lxxCount: 0, idfOverlap: 0 };
+  const spanLen = toEndV && toStartV && toEndV > toStartV ? Math.min(10, toEndV - toStartV) : 0;
+  const targetSet = new Set();
+  const targetBook = verseMap.get(toVid)?.book;
+  for (let dv = 0; dv <= spanLen; dv++) {
+    const tv = verseMap.get(toVid + dv);
+    if (!tv || tv.book !== targetBook) break;
+    const tc = verseContentMap.get(toVid + dv);
+    if (tc) for (const s of tc.list) targetSet.add(s);
+  }
+  if (targetSet.size === 0) return { lexCount: 0, lxxCount: 0, idfOverlap: 0 };
+  let lexCount = 0;
+  let lxxCount = 0;
+  let idfOverlap = 0;
+  for (const s of fromContent.list) {
+    if (targetSet.has(s)) {
+      lexCount++;
+      idfOverlap += idfOfBs(s);
+      continue;
+    }
+    const bridges = lxxBridgeMap.get(s);
+    if (!bridges) continue;
+    let bridged = false;
+    for (const b of bridges) {
+      if (targetSet.has(b)) { bridged = true; break; }
+    }
+    if (bridged) {
+      lxxCount++;
+      idfOverlap += idfOfBs(s);
+    }
+  }
+  return { lexCount, lxxCount, idfOverlap: Math.min(14.0, idfOverlap) };
+}
+
 console.log('Indexing xrefs and events for fast-verses chunks...');
 const xrefsDir = path.join(r10Dir, 'xrefs');
 const xrefFiles = fs.readdirSync(xrefsDir).filter((f) => f.endsWith('.json.gz')).sort();
@@ -896,12 +1278,23 @@ for (const xf of xrefFiles) {
 }
 
 const embeddedXrefsByVid = new Map();
+const xrefTargetSetByVid = new Map();
 let totalEmbeddedXrefs = 0;
 for (const [vid, entry] of rawByVid) {
   const v = verseMap.get(vid);
   const fromBook = v?.book || 1;
   const fromTestament = fromBook <= 39;
   const candByTarget = new Map();
+  const scoreXrefCand = (toVid, toRef, phrase, reciprocal, crossTestament, toStartV, toEndV) => {
+    const targetDeg = vidDegree.get(toVid) || 1;
+    const { lexCount, lxxCount, idfOverlap } = computeSpanOverlap(vid, toVid, toEndV, toStartV);
+    const pBonus = phraseSpecificityBonus(phrase);
+    const corroborated = idfOverlap >= 2.0 || (lexCount + lxxCount) >= 2 || (crossTestament && lxxCount >= 1);
+    const degDenom = corroborated ? Math.log2(4 + targetDeg * 0.12) : Math.log2(2 + targetDeg);
+    const xTestWeight = crossTestament ? (lexCount + lxxCount >= 1 || pBonus > 0 ? 2.15 : 1.75) : 1.0;
+    const score = ((reciprocal ? 2.6 : 1.0) * xTestWeight * (1 + idfOverlap * 0.5 + pBonus)) / degDenom;
+    return { score, lexCount, lxxCount, idfOverlap };
+  };
   for (const o of entry.out || []) {
     const phrase = String(o.phrase || '').slice(0, 60);
     for (const t of o.targets || []) {
@@ -910,11 +1303,13 @@ for (const [vid, entry] of rawByVid) {
       const reciprocal = Boolean(outSetByVid.get(toVid)?.has(vid));
       const crossTestament = fromTestament !== (Number(t.to_b) <= 39);
       const flags = (reciprocal ? 1 : 0) | (crossTestament ? 2 : 0);
-      const targetDeg = vidDegree.get(toVid) || 1;
-      const score = ((reciprocal ? 3 : 1) * (crossTestament ? 1.8 : 1.0)) / Math.log2(2 + targetDeg);
+      const parsedRange = parseEndVerse(t.to_ref);
+      const toStartV = Number(t.to_v || parsedRange?.startV || 0);
+      const toEndV = Number(t.to_end_v || parsedRange?.endV || toStartV);
+      const { score, lexCount, lxxCount, idfOverlap } = scoreXrefCand(toVid, t.to_ref, phrase, reciprocal, crossTestament, toStartV, toEndV);
       const prev = candByTarget.get(toVid);
       if (!prev || score > prev.score || (score === prev.score && phrase.length > prev.phrase.length)) {
-        candByTarget.set(toVid, { toVid, toRef: t.to_ref, phrase, flags, score });
+        candByTarget.set(toVid, { toVid, toRef: t.to_ref, phrase, flags, score, lexCount, lxxCount, idf10: Math.round(idfOverlap * 10) });
       }
     }
   }
@@ -923,36 +1318,388 @@ for (const [vid, entry] of rawByVid) {
     if (!toVid || toVid === vid) continue;
     const reciprocal = Boolean(outSetByVid.get(vid)?.has(toVid));
     const crossTestament = fromTestament !== (Number(inc.from_b) <= 39);
+    const incPhrase = String(inc.phrase || '').slice(0, 60);
+    const parsedRange = parseEndVerse(inc.from_ref);
+    const toStartV = Number(inc.from_v || parsedRange?.startV || 0);
+    const toEndV = Number(inc.from_end_v || parsedRange?.endV || toStartV);
     const existing = candByTarget.get(toVid);
     if (existing) {
       existing.flags |= 1; // mutual link
-      existing.score = Math.max(
-        existing.score,
-        (3 * (crossTestament ? 1.8 : 1.0)) / Math.log2(2 + (vidDegree.get(toVid) || 1)),
-      );
+      const rescored = scoreXrefCand(toVid, existing.toRef, existing.phrase || incPhrase, true, crossTestament, toStartV, toEndV);
+      if (rescored.score > existing.score) {
+        existing.score = rescored.score;
+        existing.lexCount = Math.max(existing.lexCount, rescored.lexCount);
+        existing.lxxCount = Math.max(existing.lxxCount, rescored.lxxCount);
+        existing.idf10 = Math.max(existing.idf10, Math.round(rescored.idfOverlap * 10));
+      }
       continue;
     }
     const flags = (reciprocal ? 1 : 0) | (crossTestament ? 2 : 0) | 4;
-    const targetDeg = vidDegree.get(toVid) || 1;
-    const score = ((reciprocal ? 3 : 1) * (crossTestament ? 1.8 : 1.0)) / Math.log2(2 + targetDeg);
+    const { score, lexCount, lxxCount, idfOverlap } = scoreXrefCand(toVid, inc.from_ref, incPhrase, reciprocal, crossTestament, toStartV, toEndV);
     candByTarget.set(toVid, {
       toVid,
       toRef: inc.from_ref,
-      phrase: String(inc.phrase || '').slice(0, 60),
+      phrase: incPhrase,
       flags,
       score,
+      lexCount,
+      lxxCount,
+      idf10: Math.round(idfOverlap * 10),
     });
   }
   if (candByTarget.size > 0) {
-    const top20 = [...candByTarget.values()]
+    const topXrefs = [...candByTarget.values()]
       .sort((a, b) => b.score - a.score || a.toVid - b.toVid)
-      .slice(0, 20)
-      .map((x) => [x.toVid, x.toRef, x.phrase, x.flags]);
-    embeddedXrefsByVid.set(vid, top20);
-    totalEmbeddedXrefs += top20.length;
+      .slice(0, 28)
+      .map((x) => [x.toVid, x.toRef, x.phrase, x.flags, x.lexCount, x.lxxCount, x.idf10]);
+    embeddedXrefsByVid.set(vid, topXrefs);
+    xrefTargetSetByVid.set(vid, new Set(topXrefs.map((x) => x[0])));
+    totalEmbeddedXrefs += topXrefs.length;
   }
 }
-console.log(`Indexed top-20 xrefs across ${embeddedXrefsByVid.size} verses (${totalEmbeddedXrefs} links).`);
+console.log(`Indexed evidence-weighted top-28 xrefs across ${embeddedXrefsByVid.size} verses (${totalEmbeddedXrefs} links).`);
+
+// Load chapter-lite per-verse stem lemma_keys so homograph proper-name checks inspect the actual verse token
+const verseStemLemmaKeys = new Map(); // vid -> Map<baseStrongs, Set<lowerLemmaKey>>
+const r8Dir = path.join(root, 'v2/relationships/r8-v1.2');
+const r8ChapterLiteDir = path.join(r8Dir, 'chapter-lite');
+const packedChCache = new Map();
+const readPackedCh = ([blob, start, len]) => {
+  const bp = path.join(r8Dir, blob);
+  let buf = packedChCache.get(bp);
+  if (!buf) { buf = fs.readFileSync(bp); packedChCache.set(bp, buf); }
+  const slice = buf.subarray(start, start + len);
+  const raw = slice[0] === 0x1f && slice[1] === 0x8b ? zlib.gunzipSync(slice) : slice;
+  return JSON.parse(raw);
+};
+if (fs.existsSync(r8ChapterLiteDir)) {
+  for (const sf of fs.readdirSync(r8ChapterLiteDir).filter((x) => x.endsWith('.json.gz')).sort()) {
+    const shard = readGzJson(path.join(r8ChapterLiteDir, sf));
+    const entryPairs = shard.entries ? Object.entries(shard.entries).map(([k, ptr]) => [k, readPackedCh(ptr)]) : [];
+    for (const [chKey, chData] of entryPairs) {
+      const [bkStr, chStr] = chKey.split(':');
+      for (const [vsStr, vObj] of Object.entries(chData || {})) {
+        const vid = vidByBookChVs.get(`${bkStr}:${chStr}:${vsStr}`);
+        if (!vid || !Array.isArray(vObj?.t)) continue;
+        let m = verseStemLemmaKeys.get(vid);
+        if (!m) { m = new Map(); verseStemLemmaKeys.set(vid, m); }
+        for (const row of vObj.t) {
+          const bs = padStrongsBase(row?.[3]);
+          if (!bs) continue;
+          const morphArr = Array.isArray(row?.[4]) ? row[4] : [];
+          for (const part of morphArr) {
+            if (!Array.isArray(part) || part.length < 2) continue;
+            const role = String(part[0] || '');
+            const lk = String(part[1] || '').toLowerCase();
+            if (!lk || /^lemma:h90/.test(lk)) continue;
+            if (role === 'stem' || role === '' || morphArr.length === 1) {
+              let s = m.get(bs); if (!s) { s = new Set(); m.set(bs, s); }
+              s.add(lk);
+            }
+          }
+        }
+      }
+    }
+  }
+}
+packedChCache.clear();
+console.log(`Loaded exact chapter-lite stem lemma_keys for ${verseStemLemmaKeys.size} verses.`);
+
+// Build Stream A (clause-aligned rare-lemma scene), Stream B (verified proper-name pericope bridge), Stream C (forward progression)
+const conceptIdxForUsfm = readGzJson(path.join(r10Dir, 'concept-index.json.gz'));
+const usfmToBook = new Map((conceptIdxForUsfm.book_names || []).map((b) => [String(b.usfm).toUpperCase(), b.id]));
+const verseRoles = new Map();
+const verseClauseFrames = new Map(); // vid -> CompactClauseFrame[]
+const r8PassagesDir = path.join(root, 'v2/relationships/r8-v1.2/passages');
+if (fs.existsSync(r8PassagesDir)) {
+  for (const f of fs.readdirSync(r8PassagesDir)) {
+    if (!f.endsWith('.json.gz')) continue;
+    const d = readGzJson(path.join(r8PassagesDir, f));
+    for (const pObj of Object.values(d.passages || {})) {
+      const m = String(pObj.reference || '').match(/^([1-3A-Z]+)\s+(\d+):(\d+)/i);
+      if (!m) continue;
+      const bk = usfmToBook.get(m[1].toUpperCase());
+      if (!bk) continue;
+      const rVid = vidByBookChVs.get(`${bk}:${m[2]}:${m[3]}`);
+      if (!rVid) continue;
+      let rm = verseRoles.get(rVid);
+      if (!rm) { rm = new Map(); verseRoles.set(rVid, rm); }
+      const cFrames = [];
+      for (const fr of pObj.frames || []) {
+        const predBs = padStrongsBase(String(fr.predicate?.lemma_id || '').replace(/^lemma:/, ''));
+        const subj = [];
+        const obj = [];
+        const other = [];
+        if (predBs && !PACK_FUNC_OR_STOP_STRONGS.has(predBs)) {
+          let s = rm.get(predBs); if (!s) { s = new Set(); rm.set(predBs, s); } s.add('pred');
+        }
+        for (const r of fr.roles || []) {
+          const rBs = padStrongsBase(String(r.lemma_id || '').replace(/^lemma:/, ''));
+          if (rBs && r.role) {
+            let s = rm.get(rBs); if (!s) { s = new Set(); rm.set(rBs, s); } s.add(r.role);
+            if (!PACK_FUNC_OR_STOP_STRONGS.has(rBs)) {
+              const roleLc = String(r.role).toLowerCase();
+              if (roleLc.includes('subj') || roleLc.includes('agent')) subj.push(rBs);
+              else if (roleLc.includes('obj')) obj.push(rBs);
+              else other.push(rBs);
+            }
+          }
+        }
+        if (cFrames.length < 4 && ((predBs && !PACK_FUNC_OR_STOP_STRONGS.has(predBs)) || subj.length > 0 || obj.length > 0)) {
+          cFrames.push({ pred: predBs || '', subj: subj.slice(0, 3), obj: obj.slice(0, 3), other: other.slice(0, 3) });
+        }
+      }
+      if (cFrames.length > 0) verseClauseFrames.set(rVid, cFrames);
+    }
+  }
+}
+console.log(`Loaded R8 grammatical roles & clause frames for ${verseRoles.size} verses.`);
+
+const lemmaSceneTargets = new Map();
+for (const [bs, p] of baseProfByBs) {
+  if (PACK_FUNC_OR_STOP_STRONGS.has(bs) || (p.total_verses || 9999) > 520) continue;
+  const arr = [{ key: `L:${bs}`, originBs: bs, idf: idfOfBs(bs) }];
+  const seenKey = new Set([`L:${bs}`]);
+  const cands = [];
+  for (const lr of p.lxx_relations || []) {
+    const ts = lr.target_strongs;
+    const tp = baseProfByBs.get(ts);
+    if (!ts || !tp || PACK_FUNC_OR_STOP_STRONGS.has(ts) || (tp.total_verses || 9999) > 450) continue;
+    const cnt = lr.count || 0;
+    const share = cnt / Math.max(1, p.total_verses || 1);
+    if (cnt >= 3 && share >= 0.12) {
+      cands.push({ ts, score: cnt * (bs[0] === 'H' && ts[0] === 'G' ? 1 : 0.8), idf: (idfOfBs(bs) + idfOfBs(ts)) * 0.5 + 0.35 });
+    }
+  }
+  cands.sort((a, b) => b.score - a.score);
+  for (const c of cands.slice(0, 2)) {
+    const key = `B:${c.ts}`;
+    if (!seenKey.has(key)) {
+      seenKey.add(key);
+      arr.push({ key, originBs: bs, idf: c.idf });
+    }
+  }
+  if (bs[0] === 'G' && !seenKey.has(`B:${bs}`)) {
+    arr.push({ key: `B:${bs}`, originBs: bs, idf: idfOfBs(bs) });
+  }
+  lemmaSceneTargets.set(bs, arr);
+}
+
+const scenePostings = new Map();
+const verseSceneTargets = new Map();
+for (const [vid, v] of verseMap) {
+  const vc = verseContentMap.get(vid);
+  if (!vc || vc.list.length < 2) continue;
+  const targets = [];
+  for (const bs of vc.list) {
+    const targs = lemmaSceneTargets.get(bs);
+    if (!targs) continue;
+    for (const tg of targs) {
+      targets.push(tg);
+      let lst = scenePostings.get(tg.key);
+      if (!lst) { lst = []; scenePostings.set(tg.key, lst); }
+      lst.push({ vid, book: v.book, originBs: bs, idf: tg.idf });
+    }
+  }
+  if (targets.length > 0) verseSceneTargets.set(vid, targets);
+}
+
+const embeddedScenesByVid = new Map();
+let streamACount = 0;
+let streamBCount = 0;
+let streamCCount = 0;
+
+for (const [vid, v] of verseMap) {
+  const srcTargets = verseSceneTargets.get(vid);
+  if (!srcTargets) continue;
+  const rolesV = verseRoles.get(vid);
+  const framesV = verseClauseFrames.get(vid) || [];
+  const candMap = new Map();
+  for (const sc of srcTargets) {
+    const lst = scenePostings.get(sc.key);
+    if (!lst || lst.length < 2 || lst.length > 480) continue;
+    for (let k = 0; k < lst.length; k++) {
+      const hit = lst[k];
+      if (hit.book === v.book) continue;
+      let acc = candMap.get(hit.vid);
+      if (!acc) {
+        acc = { vid: hit.vid, book: hit.book, srcSet: new Set(), tgtSet: new Set(), pairs: [], idfSum: 0, roleHits: 0, maxMinFreq: 0 };
+        candMap.set(hit.vid, acc);
+      }
+      if (!acc.srcSet.has(sc.originBs) && !acc.tgtSet.has(hit.originBs)) {
+        acc.srcSet.add(sc.originBs);
+        acc.tgtSet.add(hit.originBs);
+        acc.idfSum += (sc.idf + hit.idf) * 0.5;
+        const f1 = baseProfByBs.get(sc.originBs)?.total_verses || 999;
+        const f2 = baseProfByBs.get(hit.originBs)?.total_verses || 999;
+        acc.maxMinFreq = Math.max(acc.maxMinFreq, Math.min(f1, f2));
+        const r1 = rolesV?.get(sc.originBs);
+        const r2 = verseRoles.get(hit.vid)?.get(hit.originBs);
+        if (r1 && r2) {
+          for (const r of r1) {
+            if (r !== 'pred' && r2.has(r)) { acc.roleHits++; break; }
+          }
+        }
+        if (acc.pairs.length < 4) acc.pairs.push(`${sc.originBs}-${hit.originBs}`);
+      }
+    }
+  }
+  if (candMap.size === 0) continue;
+  const fromOt = v.book <= 39;
+  const qualified = [];
+  for (const acc of candMap.values()) {
+    if (acc.srcSet.size < 2 || acc.tgtSet.size < 2) continue;
+    const isXtest = fromOt !== (acc.book <= 39);
+    const framesTgt = verseClauseFrames.get(acc.vid) || [];
+    const clauseAlign = (framesV.length > 0 && framesTgt.length > 0)
+      ? compareStructuredRoleFrames(framesV, framesTgt, lxxBridgeMap)
+      : { score: 0, aligned_roles: [] };
+    const clauseHits = clauseAlign.aligned_roles.length;
+    const strongTriad = acc.srcSet.size >= 3 && acc.tgtSet.size >= 3 && acc.idfSum >= 7.8;
+    const alignedRarePair = acc.srcSet.size >= 2 && acc.tgtSet.size >= 2 && acc.idfSum >= 7.0 && (clauseHits >= 2 || acc.roleHits >= 2 || acc.srcSet.size >= 3) && acc.maxMinFreq <= 140;
+    if (strongTriad || alignedRarePair) {
+      const score = acc.idfSum + Math.max(acc.roleHits, clauseHits) * 2.2 + (acc.srcSet.size >= 3 ? 2.5 : 0) + (isXtest ? 1.2 : 0);
+      qualified.push({ ...acc, roleHits: Math.max(acc.roleHits, clauseHits), isXtest, score });
+    }
+  }
+  if (qualified.length === 0) continue;
+  qualified.sort((a, b) => b.score - a.score || a.vid - b.vid);
+  const picked = [];
+  for (const q of qualified) {
+    if (q.isXtest && picked.filter((x) => x.isXtest).length < 2) picked.push(q);
+  }
+  for (const q of qualified) {
+    if (picked.length >= 2) break;
+    if (!picked.some((x) => x.vid === q.vid)) picked.push(q);
+  }
+  if (picked.length > 0) {
+    const tuples = picked.map((q) => [1, q.vid, verseMap.get(q.vid)?.ref || `Verse ${q.vid}`, Math.round(q.idfSum * 10), q.roleHits, q.pairs.join(','), 1]);
+    embeddedScenesByVid.set(vid, tuples);
+    streamACount += tuples.length;
+  }
+}
+
+// Stream B: Rare proper-name cross-testament/genealogy bridge verified on actual verse token lemma_key & target proper-name POS (Defect 5H)
+function isProperNamePos(pos) {
+  return /-(?:P|T|L)$|--(?:P|T|L)$/.test(String(pos || ''));
+}
+const rareCrossTestProperTargets = new Map();
+for (const [bs, p] of baseProfByBs) {
+  const isProp = p.entity_kind === 'proper_name' || isProperNamePos(p.pos);
+  if (!isProp || (p.total_verses || 999) > 40 || (p.total_verses || 0) === 0) continue;
+  const isPersonal = /-[MF]-P$/.test(p.pos || '');
+  const srcOt = bs[0] === 'H';
+  const targets = [];
+  for (const lr of [...(p.lexical_relations || []), ...(p.lxx_relations || [])]) {
+    const ts = lr.target_strongs;
+    const tp = baseProfByBs.get(ts);
+    if (!ts || !tp || (ts[0] === 'H') === srcOt || (tp.total_verses || 999) > 40) continue;
+    const tgtIsProp = tp.entity_kind === 'proper_name' || isProperNamePos(tp.pos);
+    if (!tgtIsProp) continue;
+    for (const tVid of (tp.all_vids || []).slice(0, 3)) {
+      const tRef = verseMap.get(tVid)?.ref;
+      if (tRef) targets.push({ targetBs: ts, targetVid: tVid, targetRef: tRef, isPersonal, targetTotal: tp.total_verses || 99 });
+    }
+  }
+  if (targets.length > 0) {
+    targets.sort((a, b) => a.targetTotal - b.targetTotal || a.targetVid - b.targetVid);
+    rareCrossTestProperTargets.set(bs, targets.slice(0, 4));
+  }
+}
+const streamBCandsByVid = new Map();
+for (const [srcBs, targets] of rareCrossTestProperTargets) {
+  const srcProf = baseProfByBs.get(srcBs);
+  for (const anchorVid of srcProf?.all_vids || []) {
+    const av = verseMap.get(anchorVid);
+    if (!av || (av.book > 19 && av.book !== 44)) continue;
+    const tokLkSet = verseStemLemmaKeys.get(anchorVid)?.get(srcBs);
+    if (tokLkSet && tokLkSet.size > 0) {
+      const hasPropToken = [...tokLkSet].some((lk) => {
+        const pos = lemmaPosByKey.get(lk);
+        return !pos || isProperNamePos(pos);
+      });
+      if (!hasPropToken) continue;
+    }
+    const chVids = chapterVidsMap.get(`${av.book}:${av.chapter}`) || [];
+    for (const nearVid of chVids) {
+      const dist = Math.abs(nearVid - anchorVid);
+      if (nearVid === anchorVid || dist > 22) continue;
+      if (verseContentMap.get(nearVid)?.set.has(srcBs)) continue;
+      let list = streamBCandsByVid.get(nearVid);
+      if (!list) { list = []; streamBCandsByVid.set(nearVid, list); }
+      for (const tg of targets) {
+        list.push({ srcBs, anchorVid, anchorRef: av.ref, dist, ...tg });
+      }
+    }
+  }
+}
+for (const [nearVid, list] of streamBCandsByVid) {
+  list.sort((a, b) =>
+    Number(b.isPersonal) - Number(a.isPersonal) ||
+    a.targetTotal - b.targetTotal ||
+    a.dist - b.dist ||
+    a.targetVid - b.targetVid
+  );
+  const existing = embeddedScenesByVid.get(nearVid) || [];
+  const countBySrc = new Map();
+  let added = 0;
+  for (const cand of list) {
+    if (added >= 2) break;
+    if (existing.some((x) => x[1] === cand.targetVid)) continue;
+    const srcUsed = countBySrc.get(cand.srcBs) || 0;
+    const maxForSrc = (cand.isPersonal && cand.targetTotal <= 5) ? 2 : 1;
+    if (srcUsed >= maxForSrc) continue;
+    countBySrc.set(cand.srcBs, srcUsed + 1);
+    existing.push([2, cand.targetVid, cand.targetRef, cand.srcBs, cand.targetBs, cand.anchorVid, cand.anchorRef]);
+    added++;
+    streamBCount++;
+  }
+  if (existing.length > 0) embeddedScenesByVid.set(nearVid, existing);
+}
+
+// Stream C: Same-chapter forward progression (strictly j > i, toVid > fromVid)
+const FORMULA_SKIP_STRONGS = new Set(['H3205','H8034','H2421','H0259','H8147','H7969','G1080','G3686']);
+for (const chVids of chapterVidsMap.values()) {
+  if (chVids.length < 2) continue;
+  for (let i = 0; i < chVids.length; i++) {
+    const vid = chVids[i];
+    const c1 = verseContentMap.get(vid);
+    if (!c1 || c1.list.length < 2) continue;
+    const xrSet = xrefTargetSetByVid.get(vid);
+    let best = null;
+    for (let j = i + 1; j <= Math.min(chVids.length - 1, i + 8); j++) {
+      const nVid = chVids[j];
+      if (xrSet?.has(nVid)) continue;
+      const c2 = verseContentMap.get(nVid);
+      if (!c2) continue;
+      const shared = [];
+      let sumIdf = 0;
+      for (const s of c1.list) {
+        if (FORMULA_SKIP_STRONGS.has(s)) continue;
+        const tv = baseProfByBs.get(s)?.total_verses || 999;
+        if (tv > 220) continue;
+        if (c2.set.has(s)) {
+          shared.push(s);
+          sumIdf += idfOfBs(s);
+        }
+      }
+      if (shared.length >= 2 && sumIdf >= 4.5) {
+        const dist = nVid - vid;
+        const sc = sumIdf - dist * 0.15;
+        if (!best || sc > best.sc) best = { vid: nVid, sc, shared: shared.slice(0, 3).join(','), dist };
+      }
+    }
+    if (best) {
+      const existing = embeddedScenesByVid.get(vid) || [];
+      if (!existing.some((x) => x[1] === best.vid)) {
+        existing.push([3, best.vid, verseMap.get(best.vid)?.ref || `Verse ${best.vid}`, best.shared, best.dist]);
+        embeddedScenesByVid.set(vid, existing);
+        streamCCount++;
+      }
+    }
+  }
+}
+console.log(`Built scenes for ${embeddedScenesByVid.size} verses (StreamA=${streamACount}, StreamB=${streamBCount}, StreamC=${streamCCount}).`);
 
 const expPath = path.join(r10Dir, 'explicit-and-typology.json.gz');
 const expBackupPath = path.join(backupDir, 'explicit-and-typology.json.gz');
@@ -969,14 +1716,21 @@ const mp = mpRaw.schema_version === 'r10-lazy-motifs-1'
     }
   : mpRaw;
 
-function parseEventStartYear(ev) {
-  const m = String(ev?.start_date || '').match(/-?\d+/);
-  return m ? parseInt(m[0], 10) : 999999;
+function parseEventSortKey(ev) {
+  const s = String(ev?.start_date || '').trim();
+  const m = s.match(/^(-?\d+)(?:-(\d{1,2}))?(?:-(\d{1,2}))?/);
+  if (!m) return { yr: 999999, mo: 99, dy: 99 };
+  const yr = parseInt(m[1], 10);
+  const mo = m[2] ? parseInt(m[2], 10) : 1;
+  const dy = m[3] ? parseInt(m[3], 10) : 1;
+  return { yr, mo: yr < 0 ? 13 - mo : mo, dy: yr < 0 ? 32 - dy : dy };
 }
 const sortedEvents = [...(mp.events || [])].sort((a, b) => {
-  const ya = parseEventStartYear(a);
-  const yb = parseEventStartYear(b);
-  if (ya !== yb) return ya - yb;
+  const ka = parseEventSortKey(a);
+  const kb = parseEventSortKey(b);
+  if (ka.yr !== kb.yr) return ka.yr - kb.yr;
+  if (ka.mo !== kb.mo) return ka.mo - kb.mo;
+  if (ka.dy !== kb.dy) return ka.dy - kb.dy;
   const va = a.passages?.[0]?.verse_id ?? 999999;
   const vb = b.passages?.[0]?.verse_id ?? 999999;
   return va - vb || String(a.event_id).localeCompare(String(b.event_id));
@@ -984,6 +1738,7 @@ const sortedEvents = [...(mp.events || [])].sort((a, b) => {
 
 const eventSeq = {};
 const eventsByExactVid = new Map();
+const eventsBySpanVid = new Map();
 const eventsByChapter = new Map();
 for (let i = 0; i < sortedEvents.length; i++) {
   const ev = sortedEvents[i];
@@ -992,13 +1747,21 @@ for (let i = 0; i < sortedEvents.length; i++) {
     next: i + 1 < sortedEvents.length ? sortedEvents[i + 1].event_id : null,
     title: ev.title,
     start_date: ev.start_date || null,
-    sample_vids: (ev.passages || []).slice(0, 4).map((p) => p.verse_id),
+    sample_vids: (ev.passages || []).slice(0, 8).map((p) => p.verse_id),
   };
+  const chMinMax = new Map();
   for (const p of ev.passages || []) {
     if (p.verse_id) {
       let arr = eventsByExactVid.get(p.verse_id);
       if (!arr) { arr = []; eventsByExactVid.set(p.verse_id, arr); }
       if (!arr.includes(ev.event_id)) arr.push(ev.event_id);
+      if (p.book && p.chapter) {
+        const ck = `${p.book}:${p.chapter}`;
+        const cur = chMinMax.get(ck) || { min: p.verse_id, max: p.verse_id };
+        cur.min = Math.min(cur.min, p.verse_id);
+        cur.max = Math.max(cur.max, p.verse_id);
+        chMinMax.set(ck, cur);
+      }
     }
     if (p.book && p.chapter) {
       const ck = `${p.book}:${p.chapter}`;
@@ -1007,13 +1770,24 @@ for (let i = 0; i < sortedEvents.length; i++) {
       if (!arr.includes(ev.event_id)) arr.push(ev.event_id);
     }
   }
+  for (const { min, max } of chMinMax.values()) {
+    if (max > min && max - min <= 12) {
+      for (let sv = min; sv <= max; sv++) {
+        let arr = eventsBySpanVid.get(sv);
+        if (!arr) { arr = []; eventsBySpanVid.set(sv, arr); }
+        if (!arr.includes(ev.event_id)) arr.push(ev.event_id);
+      }
+    }
+  }
 }
 
-console.log('Writing 488 fast-verses chunks (with embedded xrefs + event IDs)...');
-const verseChunks = Array.from({ length: 488 }, () => ({ summaries: {}, verses: {}, xrefs: {}, events: {} }));
+console.log('Writing 488 fast-verses chunks (with embedded xrefs + event IDs + scenes + clause frames)...');
+const verseChunks = Array.from({ length: 488 }, () => ({ summaries: {}, verses: {}, xrefs: {}, events: {}, scenes: {}, frames: {} }));
 let versesAssigned = 0;
 let versesWithXrefs = 0;
 let versesWithEvents = 0;
+let versesWithScenes = 0;
+let versesWithFrames = 0;
 for (const [vid, v] of verseMap) {
   const chunkIdx = Math.floor((vid - 1) / 64);
   assert.ok(chunkIdx >= 0 && chunkIdx < 488, `Chunk index out of bounds: ${chunkIdx} for vid=${vid}`);
@@ -1025,13 +1799,24 @@ for (const [vid, v] of verseMap) {
     chunk.xrefs[vid] = xrList;
     versesWithXrefs++;
   }
+  const scList = embeddedScenesByVid.get(vid);
+  if (scList?.length) {
+    chunk.scenes[vid] = scList;
+    versesWithScenes++;
+  }
+  const cfList = verseClauseFrames.get(vid);
+  if (cfList?.length) {
+    chunk.frames[vid] = cfList.map((f) => [f.pred, f.subj, f.obj, f.other]);
+    versesWithFrames++;
+  }
+  // Defect 5H: Only attach exact event verses + tight contiguous span (never blind whole-chapter pollution!)
   const evList = [];
   for (const eid of eventsByExactVid.get(vid) || []) {
     if (!evList.includes(eid)) evList.push(eid);
     if (evList.length >= 3) break;
   }
   if (evList.length < 3) {
-    for (const eid of eventsByChapter.get(`${v.book}:${v.chapter}`) || []) {
+    for (const eid of eventsBySpanVid.get(vid) || []) {
       if (!evList.includes(eid)) evList.push(eid);
       if (evList.length >= 3) break;
     }
@@ -1043,7 +1828,7 @@ for (const [vid, v] of verseMap) {
   versesAssigned++;
 }
 assert.equal(versesAssigned, 31203, `Expected 31203 verses assigned, got ${versesAssigned}`);
-console.log(`Attached xrefs to ${versesWithXrefs} verses and events to ${versesWithEvents} verses.`);
+console.log(`Attached xrefs=${versesWithXrefs}, events=${versesWithEvents}, scenes=${versesWithScenes}, frames=${versesWithFrames}.`);
 
 let maxFastVerseOuterBytes = 0;
 let maxFastVerseRawBytes = 0;
@@ -1053,7 +1838,7 @@ for (let c = 0; c < 488; c++) {
   const hex = c.toString(16).padStart(3, '0');
   const chunkPath = path.join(verseDir, `chunk-${hex}.json.gz`);
   assert.ok(fs.existsSync(chunkPath), `Missing existing fast-verses chunk: ${chunkPath}`);
-  const { summaries, verses, xrefs, events } = verseChunks[c];
+  const { summaries, verses, xrefs, events, scenes, frames } = verseChunks[c];
   writtenVerses += Object.keys(verses).length;
   const { rawBytes, gzBytes } = writeGzJsonAtomic(chunkPath, {
     schema_version: 'r10-b64gz-1',
@@ -1061,6 +1846,8 @@ for (let c = 0; c < 488; c++) {
     verses,
     xrefs,
     events,
+    scenes,
+    frames,
   }, 1);
   if (gzBytes > maxFastVerseOuterBytes) {
     maxFastVerseOuterBytes = gzBytes;
@@ -1133,9 +1920,13 @@ assert.equal(filteredRecords.length, 24, `Expected 24 filtered explicit records,
 const expSizes = writeGzJsonAtomic(expPath, {
   ...expSrc,
   records: filteredRecords,
+  ...(r13SelfInterpretations.length > 0 ? { r13_self_interpretations: r13SelfInterpretations } : {}),
 }, 1);
 
 const eventKeywords = [...new Set((mp.events || []).flatMap((e) => e.keywords || []).map((k) => String(k).toLowerCase()))];
+const r13MotifById = Object.fromEntries(minedMotifsRes.motifs.map((m) => [m.motif_id, m]));
+const r13MotifsByBs = Object.fromEntries(minedMotifsRes.motifIdsByBs);
+const r13MotifsByVid = Object.fromEntries(minedMotifsRes.motifIdsByVid);
 const mpSizes = writeGzJsonAtomic(mpPath, {
   schema_version: 'r10-lazy-motifs-1',
   motifs: mp.motifs,
@@ -1144,6 +1935,9 @@ const mpSizes = writeGzJsonAtomic(mpPath, {
   event_by_chapter: Object.fromEntries(eventsByChapter),
   motif_pairs_b64gz: encodeB64Gz(mp.motif_pairs || {}),
   events_b64gz: encodeB64Gz(sortedEvents),
+  r13_motifs_b64gz: encodeB64Gz(r13MotifById),
+  r13_motifs_by_bs: r13MotifsByBs,
+  r13_motifs_by_vid: r13MotifsByVid,
 }, 1);
 
 // 9. Update fast-manifest.json.gz
@@ -1159,11 +1953,14 @@ const fastManifestObj = {
   motifs_event_keywords: eventKeywords,
   verse_xrefs_embedded: true,
   verse_events_embedded: true,
+  verse_scenes_embedded: true,
+  verse_frames_embedded: true,
   witness_version: 'r12-witnesses-1',
   r12_pilot: 'r12-pilot.json.gz',
   r12_pilot_embedded: true,
-  r12_version: 'r12-discovery-2',
-  r12_score_version: pilot.score_version || 'r12-ranker-v2',
+  r12_version: 'r13-discovery-1',
+  r13_version: 'r13-discovery-1',
+  r12_score_version: 'r13-ranker-v1',
   r12_pilot_anchors: pilot.pilot_anchors.length,
   r12_pilot_anchors_list: pilot.pilot_anchors,
   r12_external_sources: pilot.external_sources || [],
@@ -1187,6 +1984,11 @@ let verifiedProfiles = 0;
 let verifiedLookup = 0;
 let verifiedPilotProfiles = 0;
 let verifiedOrthProfiles = 0;
+if (versesOnly) {
+  const fpFiles = fs.readdirSync(fastProfilesDir).filter((f) => f.endsWith('.json.gz'));
+  assert.equal(fpFiles.length, 1024, `Expected 1024 fast-profiles shards, got ${fpFiles.length}`);
+  verifiedProfiles = baseProfByBs.size;
+} else {
 for (let i = 0; i < 1024; i++) {
   const hex = i.toString(16).padStart(3, '0');
   const d = readGzJson(path.join(fastProfilesDir, `shard-${hex}.json.gz`));
@@ -1202,7 +2004,11 @@ for (let i = 0; i < 1024; i++) {
       verifiedPilotProfiles++;
     }
     if (prof.orth_entry) {
-      assert.ok(prof.orth_entry.homographs.length > 0);
+      assert.ok(
+        (prof.orth_entry.homographs?.length || 0) > 0 ||
+        (prof.orth_entry.consonantal_overlaps?.length || 0) > 0 ||
+        (prof.orth_entry.shared_root?.length || 0) > 0,
+      );
       verifiedOrthProfiles++;
     }
     verifiedProfiles++;
@@ -1220,7 +2026,8 @@ for (let i = 0; i < 1024; i++) {
 assert.equal(verifiedProfiles, 19566);
 assert.ok(verifiedLookup >= 456129 + addedSynonymKeys);
 assert.equal(verifiedPilotProfiles, pilot.pilot_anchors.length);
-assert.equal(verifiedOrthProfiles, orthMap.size);
+assert.ok(verifiedOrthProfiles >= orthMap.size);
+}
 
 let verifiedVerses = 0;
 let verifiedXrefVerses = 0;
@@ -1274,14 +2081,19 @@ for (const p of files.sort()) {
 const assetSha256 = digest.digest('hex');
 
 const summary = {
-  release: 'r12-discovery-2',
+  release: 'r13-discovery-1',
   staging_root: root,
   total_files: files.length,
   max_individual_file_bytes: maxIndividualFileBytes,
   max_individual_file_path: maxIndividualFilePath,
   profiles_enriched: enrichedCount,
   orth_entries_attached: orthAttachedCount,
+  r13_wordplay_lemmas: r13WordplayCount,
+  r13_colloc_lemmas: r13CollocCount,
+  r13_self_interpretations: r13SelfInterpretations.length,
+  r13_motifs: minedMotifsRes.motifs.length,
   pilot_anchors_attached: pilotAttachedCount,
+  verses_with_embedded_frames: versesWithFrames,
   lookup_entries_routed: verifiedLookup,
   synonym_keys_added: addedSynonymKeys,
   synonym_entries_added: addedSynonymEntries,
@@ -1289,6 +2101,10 @@ const summary = {
   verses_written: writtenVerses,
   verses_with_embedded_xrefs: versesWithXrefs,
   verses_with_embedded_events: versesWithEvents,
+  verses_with_embedded_scenes: versesWithScenes,
+  scenes_stream_a: streamACount,
+  scenes_stream_b: streamBCount,
+  scenes_stream_c: streamCCount,
   evidence_book_coords_written: evBookVersesTotal,
   fast_profiles_max_outer_bytes: maxFastProfileOuterBytes,
   fast_profiles_max_raw_bytes: maxFastProfileRawBytes,
