@@ -1,0 +1,751 @@
+{
+  "release": {
+    "date": "2026-11-23",
+    "corpus_release": "r13-discovery-1",
+    "worker_version": "edd49ef6-44d8-4d0f-b398-f778568aa04c",
+    "source_commit": "838da3d84e1bcdb19ab9e5fff3dd1fb591474b09",
+    "asset_sha256": "366e3acdd2debbefc1de234ef39b684271b6c2cdca3cdfce69dfc9b4b6d49b6b",
+    "mcp_version": "2.0.0"
+  },
+  "method": {
+    "description": "Live connected production MCP, read-only; 44 cases + 10 focused evidence/contract assertions; targets predeclared before invoking tool. Word/passage/natural hits are first rank where evidence ID/title or witness refs includes target substring. This only measures target retrieval, not relevance or correct claim.",
+    "caveats": [
+      "No identical R12 corpus endpoint or paired R12 benchmark run; no numeric before/after claims.",
+      "Result matching sometimes accepts a tangential mention; do not treat hit@K as relevance precision.",
+      "C01 reports all endpoints connected despite no inspected complete original 3-edge proof across Genesis 2/4/9.",
+      "C10 is a negative control; expected_connected=false.",
+      "Not a blinded research holdout; sample includes previously explored examples.",
+      "No benchmark duration / latency recorded and no independent graded relevance labels."
+    ]
+  },
+  "kpis": {
+    "retrieval_cases": 34,
+    "at5": 23,
+    "at10": 27,
+    "at25": 31,
+    "connection_api_correct": 6,
+    "multi_anchor_total": 10,
+    "evidence_pass": 3,
+    "evidence_total": 10
+  },
+  "queries": [
+    {
+      "id": "W01",
+      "category": "word_seed",
+      "tool": "get_Word",
+      "args": {
+        "word": "H8247",
+        "connections": 25,
+        "etymology": 3,
+        "realworld": 0
+      },
+      "target": "r13:wp:H8247:H8245",
+      "first_matching_rank": 1,
+      "top1_id": "r13:wp:H8247:H8245"
+    },
+    {
+      "id": "W02",
+      "category": "word_seed",
+      "tool": "get_Word",
+      "args": {
+        "word": "H8245",
+        "connections": 25,
+        "etymology": 3,
+        "realworld": 0
+      },
+      "target": "r13:wp:H8245:H8247",
+      "first_matching_rank": 1,
+      "top1_id": "r13:wp:H8245:H8247"
+    },
+    {
+      "id": "W03",
+      "category": "word_seed",
+      "tool": "get_Word",
+      "args": {
+        "word": "H5146",
+        "connections": 25,
+        "etymology": 3,
+        "realworld": 0
+      },
+      "target": "r13:wp:H5146:H5162",
+      "first_matching_rank": 3,
+      "top1_id": "r11:gram:H5146:grammatical_subject_of:H3205"
+    },
+    {
+      "id": "W04",
+      "category": "word_seed",
+      "tool": "get_Word",
+      "args": {
+        "word": "H0120",
+        "connections": 25,
+        "etymology": 3,
+        "realworld": 0
+      },
+      "target": "r10:wordplay:adam_adamah_gen2_7",
+      "first_matching_rank": 2,
+      "top1_id": "r13:wp:H0120:H0108"
+    },
+    {
+      "id": "W05",
+      "category": "word_seed",
+      "tool": "get_Word",
+      "args": {
+        "word": "H1818",
+        "connections": 25,
+        "etymology": 3,
+        "realworld": 0
+      },
+      "target": "r13:wp:H1818:H0127",
+      "first_matching_rank": 5,
+      "top1_id": "r10:typo:exod12_passover_blood_christ_1cor5_7"
+    },
+    {
+      "id": "W06",
+      "category": "word_seed",
+      "tool": "get_Word",
+      "args": {
+        "word": "H8246",
+        "connections": 25,
+        "etymology": 3,
+        "realworld": 0
+      },
+      "target": "H8247",
+      "first_matching_rank": 12,
+      "top1_id": "r11:gram:H8246:modifies:H1375"
+    },
+    {
+      "id": "W07",
+      "category": "word_seed",
+      "tool": "get_Word",
+      "args": {
+        "word": "H0894",
+        "connections": 25,
+        "etymology": 3,
+        "realworld": 0
+      },
+      "target": "H1101",
+      "first_matching_rank": null,
+      "top1_id": "r13:motif:r13:motif:tri:H0894:H3414:H6667"
+    },
+    {
+      "id": "W08",
+      "category": "word_seed",
+      "tool": "get_Word",
+      "args": {
+        "word": "H1101",
+        "connections": 25,
+        "etymology": 3,
+        "realworld": 0
+      },
+      "target": "H0894",
+      "first_matching_rank": null,
+      "top1_id": "r11:gram:H1101:grammatical_object_of:H8193"
+    },
+    {
+      "id": "W09",
+      "category": "word_seed",
+      "tool": "get_Word",
+      "args": {
+        "word": "H8144",
+        "connections": 25,
+        "etymology": 3,
+        "realworld": 0
+      },
+      "target": "Joshua 2:21",
+      "first_matching_rank": 17,
+      "top1_id": "r11:gram:H8144:possessive_construction_with:H8438"
+    },
+    {
+      "id": "W10",
+      "category": "word_seed",
+      "tool": "get_Word",
+      "args": {
+        "word": "H8615",
+        "connections": 25,
+        "etymology": 3,
+        "realworld": 0
+      },
+      "target": "Joshua 2:18",
+      "first_matching_rank": 1,
+      "top1_id": "r11:gram:H8615:grammatical_object_of:H7194"
+    },
+    {
+      "id": "W11",
+      "category": "word_seed",
+      "tool": "get_Word",
+      "args": {
+        "word": "H7307",
+        "connections": 25,
+        "etymology": 3,
+        "realworld": 0
+      },
+      "target": "G4151",
+      "first_matching_rank": 1,
+      "top1_id": "r10:xlang:ruach_pneuma_anemos"
+    },
+    {
+      "id": "W12",
+      "category": "word_seed",
+      "tool": "get_Word",
+      "args": {
+        "word": "H4501",
+        "connections": 25,
+        "etymology": 3,
+        "realworld": 0
+      },
+      "target": "Zechariah 4:2",
+      "first_matching_rank": 1,
+      "top1_id": "r10:xlang:menorah_luchnia"
+    },
+    {
+      "id": "P01",
+      "category": "passage_seed",
+      "tool": "get_Passage",
+      "args": {
+        "passage": "Jeremiah 1:11-12",
+        "depth": 25,
+        "word_depth": 0,
+        "etymology": 0,
+        "realworld": 0
+      },
+      "target": "r13:wp:H8247:H8245",
+      "first_matching_rank": 3,
+      "top1_id": "r13:interp:19074:vis"
+    },
+    {
+      "id": "P02",
+      "category": "passage_seed",
+      "tool": "get_Passage",
+      "args": {
+        "passage": "Genesis 5:29",
+        "depth": 25,
+        "word_depth": 0,
+        "etymology": 0,
+        "realworld": 0
+      },
+      "target": "r13:wp:H5146:H5162",
+      "first_matching_rank": 2,
+      "top1_id": "r11:xref:135:73"
+    },
+    {
+      "id": "P03",
+      "category": "passage_seed",
+      "tool": "get_Passage",
+      "args": {
+        "passage": "Genesis 11:9",
+        "depth": 25,
+        "word_depth": 0,
+        "etymology": 0,
+        "realworld": 0
+      },
+      "target": "H1101",
+      "first_matching_rank": 3,
+      "top1_id": "r12:entity:276:25170"
+    },
+    {
+      "id": "P04",
+      "category": "passage_seed",
+      "tool": "get_Passage",
+      "args": {
+        "passage": "Genesis 2:7",
+        "depth": 25,
+        "word_depth": 0,
+        "etymology": 0,
+        "realworld": 0
+      },
+      "target": "r10:wordplay:adam_adamah_gen2_7",
+      "first_matching_rank": 1,
+      "top1_id": "r10:wordplay:adam_adamah_gen2_7"
+    },
+    {
+      "id": "P05",
+      "category": "passage_seed",
+      "tool": "get_Passage",
+      "args": {
+        "passage": "Genesis 4:10-11",
+        "depth": 25,
+        "word_depth": 0,
+        "etymology": 0,
+        "realworld": 0
+      },
+      "target": "r13:wp:H1818:H0127",
+      "first_matching_rank": 10,
+      "top1_id": "r13:wp:H0127:H1818"
+    },
+    {
+      "id": "P06",
+      "category": "passage_seed",
+      "tool": "get_Passage",
+      "args": {
+        "passage": "Exodus 25:33",
+        "depth": 25,
+        "word_depth": 0,
+        "etymology": 0,
+        "realworld": 0
+      },
+      "target": "H8246",
+      "first_matching_rank": 4,
+      "top1_id": "r11:xref:2229:2624"
+    },
+    {
+      "id": "P07",
+      "category": "passage_seed",
+      "tool": "get_Passage",
+      "args": {
+        "passage": "Zechariah 4:10",
+        "depth": 25,
+        "word_depth": 0,
+        "etymology": 0,
+        "realworld": 0
+      },
+      "target": "Revelation 5:6",
+      "first_matching_rank": 1,
+      "top1_id": "r10:ident:rev5_6_eyes_spirits"
+    },
+    {
+      "id": "P08",
+      "category": "passage_seed",
+      "tool": "get_Passage",
+      "args": {
+        "passage": "Revelation 5:6",
+        "depth": 25,
+        "word_depth": 0,
+        "etymology": 0,
+        "realworld": 0
+      },
+      "target": "r10:ident:rev5_6_eyes_spirits",
+      "first_matching_rank": 1,
+      "top1_id": "r10:ident:rev5_6_eyes_spirits"
+    },
+    {
+      "id": "P09",
+      "category": "passage_seed",
+      "tool": "get_Passage",
+      "args": {
+        "passage": "Revelation 1:20",
+        "depth": 25,
+        "word_depth": 0,
+        "etymology": 0,
+        "realworld": 0
+      },
+      "target": "r10:ident:rev1_20_lampstands_churches_control",
+      "first_matching_rank": 1,
+      "top1_id": "r10:ident:rev1_20_lampstands_churches_control"
+    },
+    {
+      "id": "P10",
+      "category": "passage_seed",
+      "tool": "get_Passage",
+      "args": {
+        "passage": "Luke 8:11",
+        "depth": 25,
+        "word_depth": 0,
+        "etymology": 0,
+        "realworld": 0
+      },
+      "target": "G3056",
+      "first_matching_rank": 7,
+      "top1_id": "r11:xref:25365:23675"
+    },
+    {
+      "id": "P11",
+      "category": "passage_seed",
+      "tool": "get_Passage",
+      "args": {
+        "passage": "Genesis 6:14",
+        "depth": 25,
+        "word_depth": 0,
+        "etymology": 0,
+        "realworld": 0
+      },
+      "target": "Exodus 2:3",
+      "first_matching_rank": 2,
+      "top1_id": "r11:xref:152:30544"
+    },
+    {
+      "id": "P12",
+      "category": "passage_seed",
+      "tool": "get_Passage",
+      "args": {
+        "passage": "Ezekiel 37:5-10",
+        "depth": 25,
+        "word_depth": 0,
+        "etymology": 0,
+        "realworld": 0
+      },
+      "target": "Revelation 11:11",
+      "first_matching_rank": 3,
+      "top1_id": "r13:interp:21519:dem"
+    },
+    {
+      "id": "N01",
+      "category": "natural_query",
+      "tool": "research",
+      "args": {
+        "query": "almond watching menorah seven eyes seven spirits",
+        "limit": 25
+      },
+      "target": "r10:ident:rev5_6_eyes_spirits",
+      "first_matching_rank": 4,
+      "top1_id": "r11:intersect:pericope:19074:19075"
+    },
+    {
+      "id": "N02",
+      "category": "natural_query",
+      "tool": "research",
+      "args": {
+        "query": "Adam ground blood Abel Jesus",
+        "limit": 25
+      },
+      "target": "r10:wordplay:adam_adamah_gen2_7",
+      "first_matching_rank": 16,
+      "top1_id": "r11:gram:H1254:grammatical_object_of:H0120"
+    },
+    {
+      "id": "N03",
+      "category": "natural_query",
+      "tool": "research",
+      "args": {
+        "query": "scarlet",
+        "limit": 25
+      },
+      "target": "Joshua 2:21",
+      "first_matching_rank": 17,
+      "top1_id": "r11:gram:H8144:possessive_construction_with:H8438"
+    },
+    {
+      "id": "N04",
+      "category": "natural_query",
+      "tool": "research",
+      "args": {
+        "query": "scarlet Tamar Rahab Matthew 1",
+        "limit": 25
+      },
+      "target": "Matthew 1:5",
+      "first_matching_rank": 2,
+      "top1_id": "r11:intersect:pericope:1148:1144"
+    },
+    {
+      "id": "N05",
+      "category": "natural_query",
+      "tool": "research",
+      "args": {
+        "query": "well",
+        "limit": 25
+      },
+      "target": "Genesis 24:13",
+      "first_matching_rank": 6,
+      "top1_id": "r10:ident:rev5_6_eyes_spirits"
+    },
+    {
+      "id": "N06",
+      "category": "natural_query",
+      "tool": "research",
+      "args": {
+        "query": "seed is the word of God",
+        "limit": 25
+      },
+      "target": "Luke 8:11",
+      "first_matching_rank": 1,
+      "top1_id": "r11:intersect:verse:G4703:G3056:25365"
+    },
+    {
+      "id": "N07",
+      "category": "natural_query",
+      "tool": "research",
+      "args": {
+        "query": "breath",
+        "limit": 25
+      },
+      "target": "Genesis 7:22",
+      "first_matching_rank": 3,
+      "top1_id": "r10:ident:rev5_6_eyes_spirits"
+    },
+    {
+      "id": "N08",
+      "category": "natural_query",
+      "tool": "research",
+      "args": {
+        "query": "Babel confusion language Genesis 11",
+        "limit": 25
+      },
+      "target": "Genesis 11:9",
+      "first_matching_rank": 5,
+      "top1_id": "r11:gram:G1258:modifies:G2398"
+    },
+    {
+      "id": "N09",
+      "category": "natural_query",
+      "tool": "research",
+      "args": {
+        "query": "three days resurrection",
+        "limit": 25
+      },
+      "target": "Hosea 6:2",
+      "first_matching_rank": null,
+      "top1_id": "r11:cluster:H7969:torah_ritual_and_covenant_law"
+    },
+    {
+      "id": "N10",
+      "category": "natural_query",
+      "tool": "research",
+      "args": {
+        "query": "lily",
+        "limit": 25
+      },
+      "target": "Psalms 45:0",
+      "first_matching_rank": 7,
+      "top1_id": "r11:gram:H7799:possessive_construction_with:H4639"
+    },
+    {
+      "id": "C01",
+      "category": "multi_anchor",
+      "tool": "get_Connection",
+      "args": {
+        "items": [
+          "H0120",
+          "H1818",
+          "H0127"
+        ],
+        "connections": 25
+      },
+      "expected_connected": true,
+      "returned_connected": true,
+      "complete_multi_anchor_count": 2,
+      "direct_pairwise_count": 7,
+      "indirect_path_count": 2,
+      "api_connectivity_pass": true
+    },
+    {
+      "id": "C02",
+      "category": "multi_anchor",
+      "tool": "get_Connection",
+      "args": {
+        "items": [
+          "H8247",
+          "H8245",
+          "H8246"
+        ],
+        "connections": 25
+      },
+      "expected_connected": true,
+      "returned_connected": false,
+      "complete_multi_anchor_count": 0,
+      "direct_pairwise_count": 3,
+      "indirect_path_count": 5,
+      "api_connectivity_pass": false
+    },
+    {
+      "id": "C03",
+      "category": "multi_anchor",
+      "tool": "get_Connection",
+      "args": {
+        "items": [
+          "Jeremiah 1:11-12",
+          "Exodus 25:33-37",
+          "Zechariah 4:2-14",
+          "Revelation 5:6"
+        ],
+        "connections": 25
+      },
+      "expected_connected": true,
+      "returned_connected": false,
+      "complete_multi_anchor_count": 0,
+      "direct_pairwise_count": 17,
+      "indirect_path_count": 0,
+      "api_connectivity_pass": false
+    },
+    {
+      "id": "C04",
+      "category": "multi_anchor",
+      "tool": "get_Connection",
+      "args": {
+        "items": [
+          "Genesis 6:14",
+          "Leviticus 16:30",
+          "Exodus 2:3",
+          "1 Peter 3:20-21"
+        ],
+        "connections": 25
+      },
+      "expected_connected": true,
+      "returned_connected": false,
+      "complete_multi_anchor_count": 0,
+      "direct_pairwise_count": 7,
+      "indirect_path_count": 0,
+      "api_connectivity_pass": false
+    },
+    {
+      "id": "C05",
+      "category": "multi_anchor",
+      "tool": "get_Connection",
+      "args": {
+        "items": [
+          "Genesis 2:7",
+          "Ezekiel 37:5-10",
+          "John 20:22",
+          "Revelation 11:11"
+        ],
+        "connections": 25
+      },
+      "expected_connected": true,
+      "returned_connected": false,
+      "complete_multi_anchor_count": 0,
+      "direct_pairwise_count": 22,
+      "indirect_path_count": 0,
+      "api_connectivity_pass": false
+    },
+    {
+      "id": "C06",
+      "category": "multi_anchor",
+      "tool": "get_Connection",
+      "args": {
+        "items": [
+          "H5146",
+          "H5162"
+        ],
+        "connections": 25
+      },
+      "expected_connected": true,
+      "returned_connected": true,
+      "complete_multi_anchor_count": 7,
+      "direct_pairwise_count": 6,
+      "indirect_path_count": 1,
+      "api_connectivity_pass": true
+    },
+    {
+      "id": "C07",
+      "category": "multi_anchor",
+      "tool": "get_Connection",
+      "args": {
+        "items": [
+          "H0894",
+          "H1101"
+        ],
+        "connections": 25
+      },
+      "expected_connected": true,
+      "returned_connected": true,
+      "complete_multi_anchor_count": 3,
+      "direct_pairwise_count": 3,
+      "indirect_path_count": 0,
+      "api_connectivity_pass": true
+    },
+    {
+      "id": "C08",
+      "category": "multi_anchor",
+      "tool": "get_Connection",
+      "args": {
+        "items": [
+          "G4703",
+          "G3056"
+        ],
+        "connections": 25
+      },
+      "expected_connected": true,
+      "returned_connected": true,
+      "complete_multi_anchor_count": 4,
+      "direct_pairwise_count": 4,
+      "indirect_path_count": 0,
+      "api_connectivity_pass": true
+    },
+    {
+      "id": "C09",
+      "category": "multi_anchor",
+      "tool": "get_Connection",
+      "args": {
+        "items": [
+          "H1818",
+          "H0127"
+        ],
+        "connections": 25
+      },
+      "expected_connected": true,
+      "returned_connected": true,
+      "complete_multi_anchor_count": 11,
+      "direct_pairwise_count": 9,
+      "indirect_path_count": 2,
+      "api_connectivity_pass": true
+    },
+    {
+      "id": "C10",
+      "category": "multi_anchor",
+      "tool": "get_Connection",
+      "args": {
+        "items": [
+          "H1904",
+          "H3629"
+        ],
+        "connections": 25
+      },
+      "expected_connected": false,
+      "returned_connected": false,
+      "complete_multi_anchor_count": 0,
+      "direct_pairwise_count": 0,
+      "indirect_path_count": 0,
+      "api_connectivity_pass": true
+    }
+  ],
+  "evidence_contract": [
+    {
+      "id": "E01",
+      "pass": false,
+      "claim": "Almond–watch proof must include Jeremiah 1:11 AND 1:12",
+      "observed": "Evidence r13:wp:H8247:H8245 only contains Jeremiah 1:11; H8245 isn't highlighted."
+    },
+    {
+      "id": "E02",
+      "pass": false,
+      "claim": "Watch/holy must not be labeled attested wordplay without a real exegetical cue",
+      "observed": "r13:wp:H8245:H6918 is direct_textual_evidence / attested_textual_wordplay, showing only Isaiah 29:19 with H6918 highlighted."
+    },
+    {
+      "id": "E03",
+      "pass": false,
+      "claim": "Blood/east consonantal similarity is not established wordplay",
+      "observed": "r13:wp:H1818:H6924 is direct_textual_evidence / attested_textual_wordplay, Leviticus 16:14; 2 shared consonants."
+    },
+    {
+      "id": "E04",
+      "pass": false,
+      "claim": "Babylon/Pekod must not assert documented common root without a valid source",
+      "observed": "r13:wp:H0894:H6489 states documented_root_family, proven_common_root=true, shared_consonants=\"\"."
+    },
+    {
+      "id": "E05",
+      "pass": false,
+      "claim": "Ezekiel 37:5 bones and breath should not be identified as equivalent",
+      "observed": "r13:interp:21519:dem relation=explicit_identification and type=explicit_biblical_interpretation; text describes entry of breath into bones."
+    },
+    {
+      "id": "E06",
+      "pass": true,
+      "claim": "Noah/comfort original occurrence pair attested in Gen 5:29",
+      "observed": "r13:wp:H5146:H5162 evidence Genesis 5:29 highlights H5146 and H5162."
+    },
+    {
+      "id": "E07",
+      "pass": false,
+      "claim": "Canonical token parity: Jeremiah 1:11 position 4",
+      "observed": "get_Passage Strong H0413, research(evidence) Strong H2967 for the same Hebrew form אֵלַי."
+    },
+    {
+      "id": "E08",
+      "pass": true,
+      "claim": "Evidence retrieval hydrates original words and witnesses",
+      "observed": "r13 wordplay evidence has original_tokens and provenance; completeness and exact identity are separately failed."
+    },
+    {
+      "id": "E09",
+      "pass": true,
+      "claim": "Evidence-backed chain traversals attach known edges",
+      "observed": "H8247→H8245 attached edge r13:wp:H8247:H8245 with direct_textual_evidence and Jeremiah 1:11."
+    },
+    {
+      "id": "E10",
+      "pass": false,
+      "claim": "Jeremiah 1:11 and Exodus 25:33 LXX token alignments",
+      "observed": "research(lxx, mode=compare) both return 0 documented and 0 candidate word alignments; verse-level pairing exists."
+    }
+  ]
+}
