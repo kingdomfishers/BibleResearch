@@ -11582,6 +11582,523 @@
       ],
       "pairwise_count": 6,
       "indirect_count": 1
+    },
+    {
+      "id": "C07",
+      "category": "multi_anchor",
+      "tool": "get_Connection",
+      "args": {
+        "items": [
+          "H0894",
+          "H1101"
+        ],
+        "connections": 25
+      },
+      "expected": true,
+      "baseline_rank": null,
+      "first_matching_rank": null,
+      "status": "ok",
+      "ms": 6295,
+      "top1": "intersect:H0894+H1101",
+      "top": [
+        {
+          "rank": 1,
+          "id": "intersect:H0894+H1101",
+          "title": "H0894 + H1101 co-occur in 1 verse(s)",
+          "relation": "same_verse_co_attestation",
+          "epistemic": "documented_collocation_or_cooccurrence",
+          "refs": [
+            "Genesis 11:9"
+          ]
+        },
+        {
+          "rank": 2,
+          "id": "r11:intersect:verse:H0894:H1101:276",
+          "title": "Direct textual convergence: \"H0894\" + \"H1101\" in Genesis 11:9",
+          "relation": "verified_lexical_grammatical",
+          "epistemic": "direct_textual_evidence",
+          "refs": [
+            "Genesis 11:9"
+          ]
+        },
+        {
+          "rank": 3,
+          "id": "r13:wp:H0894:H1101",
+          "title": "Attested biblical wordplay: בָּבֶ֫ל, בָּבֶל (H0894) ↔ בָּלַל (H1101)",
+          "relation": "orthographic_wordplay",
+          "epistemic": "direct_textual_evidence",
+          "refs": [
+            "Genesis 11:9"
+          ]
+        },
+        {
+          "rank": 4,
+          "id": "r13:wp:H1101:H0894",
+          "title": "Attested biblical wordplay: בָּלַל (H1101) ↔ בָּבֶ֫ל, בָּבֶל (H0894)",
+          "relation": "orthographic_wordplay",
+          "epistemic": "direct_textual_evidence",
+          "refs": [
+            "Genesis 11:9"
+          ]
+        },
+        {
+          "rank": 5,
+          "id": "r13:beam:H0894-H1101",
+          "title": "Multi-hop pattern (wordplay): Babylon → to mix",
+          "relation": "multihop_proof_path",
+          "epistemic": "shared_motif_evidence",
+          "refs": [
+            "Genesis 11:9"
+          ]
+        },
+        {
+          "rank": 6,
+          "id": "r11:intersect:pericope:276:274",
+          "title": "Close pericope proximity: \"H0894\" (Genesis 11:9) ↔ \"H1101\" (Genesis 11:7)",
+          "relation": "shared_motif",
+          "epistemic": "shared_motif_evidence",
+          "refs": [
+            "Genesis 11:9",
+            "Genesis 11:7"
+          ]
+        }
+      ],
+      "connected": true,
+      "complete_multi_anchor": [
+        {
+          "id": "intersect:H0894+H1101",
+          "refs": [
+            "Genesis 11:9"
+          ]
+        },
+        {
+          "id": "r11:intersect:verse:H0894:H1101:276",
+          "refs": [
+            "Genesis 11:9"
+          ],
+          "target": {
+            "strongs": "H1101",
+            "script": "בָּלַל",
+            "transliteration": "ba.lal",
+            "gloss": "to mix"
+          }
+        },
+        {
+          "id": "r13:wp:H0894:H1101",
+          "refs": [
+            "Genesis 11:9"
+          ],
+          "target": {
+            "strongs": "H1101",
+            "script": "בָּלַל",
+            "transliteration": "bll",
+            "gloss": "to mix"
+          }
+        },
+        {
+          "id": "r13:wp:H1101:H0894",
+          "refs": [
+            "Genesis 11:9"
+          ],
+          "target": {
+            "strongs": "H0894",
+            "script": "בָּבֶ֫ל, בָּבֶל",
+            "transliteration": "bbl bbl",
+            "gloss": "Babylon"
+          }
+        },
+        {
+          "id": "r13:beam:H0894-H1101",
+          "refs": [
+            "Genesis 11:9"
+          ],
+          "target": {
+            "strongs": "H1101",
+            "script": "בָּלַל",
+            "transliteration": "ba.lal",
+            "gloss": "to mix"
+          }
+        },
+        {
+          "id": "r11:intersect:pericope:276:274",
+          "refs": [
+            "Genesis 11:9",
+            "Genesis 11:7"
+          ],
+          "target": {
+            "strongs": "H1101",
+            "script": "בָּלַל",
+            "transliteration": "ba.lal",
+            "gloss": "to mix"
+          }
+        }
+      ],
+      "pairwise_count": 5,
+      "indirect_count": 1
+    },
+    {
+      "id": "C08",
+      "category": "multi_anchor",
+      "tool": "get_Connection",
+      "args": {
+        "items": [
+          "G4703",
+          "G3056"
+        ],
+        "connections": 25
+      },
+      "expected": true,
+      "baseline_rank": null,
+      "first_matching_rank": null,
+      "status": "ok",
+      "ms": 6299,
+      "top1": "intersect:G4703+G3056",
+      "top": [
+        {
+          "rank": 1,
+          "id": "intersect:G4703+G3056",
+          "title": "G4703 + G3056 co-occur in 1 verse(s)",
+          "relation": "same_verse_co_attestation",
+          "epistemic": "documented_collocation_or_cooccurrence",
+          "refs": [
+            "Luke 8:11"
+          ]
+        },
+        {
+          "rank": 2,
+          "id": "r11:intersect:verse:G4703:G3056:25365",
+          "title": "Direct textual convergence: \"G4703\" + \"G3056\" in Luke 8:11",
+          "relation": "verified_lexical_grammatical",
+          "epistemic": "direct_textual_evidence",
+          "refs": [
+            "Luke 8:11"
+          ]
+        },
+        {
+          "rank": 3,
+          "id": "r11:intersect:pericope:25365:25366",
+          "title": "Close pericope proximity: \"G4703\" (Luke 8:11) ↔ \"G3056\" (Luke 8:12)",
+          "relation": "shared_motif",
+          "epistemic": "shared_motif_evidence",
+          "refs": [
+            "Luke 8:11",
+            "Luke 8:12"
+          ]
+        },
+        {
+          "rank": 4,
+          "id": "r11:intersect:pericope:25365:25367",
+          "title": "Close pericope proximity: \"G4703\" (Luke 8:11) ↔ \"G3056\" (Luke 8:13)",
+          "relation": "shared_motif",
+          "epistemic": "shared_motif_evidence",
+          "refs": [
+            "Luke 8:11",
+            "Luke 8:13"
+          ]
+        }
+      ],
+      "connected": true,
+      "complete_multi_anchor": [
+        {
+          "id": "intersect:G4703+G3056",
+          "refs": [
+            "Luke 8:11"
+          ]
+        },
+        {
+          "id": "r11:intersect:verse:G4703:G3056:25365",
+          "refs": [
+            "Luke 8:11"
+          ],
+          "target": {
+            "strongs": "G3056",
+            "script": "λόγος",
+            "transliteration": "logos",
+            "gloss": "word"
+          }
+        },
+        {
+          "id": "r11:intersect:pericope:25365:25366",
+          "refs": [
+            "Luke 8:11",
+            "Luke 8:12"
+          ],
+          "target": {
+            "strongs": "G3056",
+            "script": "λόγος",
+            "transliteration": "logos",
+            "gloss": "word"
+          }
+        },
+        {
+          "id": "r11:intersect:pericope:25365:25367",
+          "refs": [
+            "Luke 8:11",
+            "Luke 8:13"
+          ],
+          "target": {
+            "strongs": "G3056",
+            "script": "λόγος",
+            "transliteration": "logos",
+            "gloss": "word"
+          }
+        }
+      ],
+      "pairwise_count": 4,
+      "indirect_count": 0
+    },
+    {
+      "id": "C09",
+      "category": "multi_anchor",
+      "tool": "get_Connection",
+      "args": {
+        "items": [
+          "H1818",
+          "H0127"
+        ],
+        "connections": 25
+      },
+      "expected": true,
+      "baseline_rank": null,
+      "first_matching_rank": null,
+      "status": "ok",
+      "ms": 6298,
+      "top1": "intersect:H1818+H0127",
+      "top": [
+        {
+          "rank": 1,
+          "id": "intersect:H1818+H0127",
+          "title": "H1818 + H0127 co-occur in 4 verse(s)",
+          "relation": "same_verse_co_attestation",
+          "epistemic": "documented_collocation_or_cooccurrence",
+          "refs": [
+            "Genesis 4:10",
+            "Genesis 4:11",
+            "Deuteronomy 32:43",
+            "Isaiah 15:9"
+          ]
+        },
+        {
+          "rank": 2,
+          "id": "r11:intersect:verse:H1818:H0127:90",
+          "title": "Direct textual convergence: \"H1818\" + \"H0127\" in Genesis 4:10",
+          "relation": "verified_lexical_grammatical",
+          "epistemic": "direct_textual_evidence",
+          "refs": [
+            "Genesis 4:10"
+          ]
+        },
+        {
+          "rank": 3,
+          "id": "r11:intersect:verse:H1818:H0127:91",
+          "title": "Direct textual convergence: \"H1818\" + \"H0127\" in Genesis 4:11",
+          "relation": "verified_lexical_grammatical",
+          "epistemic": "direct_textual_evidence",
+          "refs": [
+            "Genesis 4:11"
+          ]
+        },
+        {
+          "rank": 4,
+          "id": "r11:intersect:verse:H1818:H0127:5802",
+          "title": "Direct textual convergence: \"H1818\" + \"H0127\" in Deuteronomy 32:43",
+          "relation": "verified_lexical_grammatical",
+          "epistemic": "direct_textual_evidence",
+          "refs": [
+            "Deuteronomy 32:43"
+          ]
+        },
+        {
+          "rank": 5,
+          "id": "r11:intersect:verse:H1818:H0127:18086",
+          "title": "Direct textual convergence: \"H1818\" + \"H0127\" in Isaiah 15:9",
+          "relation": "verified_lexical_grammatical",
+          "epistemic": "direct_textual_evidence",
+          "refs": [
+            "Isaiah 15:9"
+          ]
+        },
+        {
+          "rank": 6,
+          "id": "r13:beam:H1818-H0127",
+          "title": "Multi-hop pattern (wordplay): blood → land: soil",
+          "relation": "multihop_proof_path",
+          "epistemic": "shared_motif_evidence",
+          "refs": [
+            "Genesis 4:10",
+            "Genesis 4:11"
+          ]
+        },
+        {
+          "rank": 7,
+          "id": "r10:interp:gen4_10_11_blood_ground_echo",
+          "title": "Thematic / interpretive sound echo in Genesis 4:10–11: brother’s blood (דְּמֵי אָחִיךָ) crying from the ground (מִן־הָאֲדָמָה)",
+          "relation": "literary_correspondence",
+          "epistemic": "candidate_literary_pattern",
+          "refs": [
+            "Genesis 4:10",
+            "Genesis 4:11"
+          ]
+        },
+        {
+          "rank": 8,
+          "id": "r11:intersect:pericope:90:91",
+          "title": "Close pericope proximity: \"H1818\" (Genesis 4:10) ↔ \"H0127\" (Genesis 4:11)",
+          "relation": "shared_motif",
+          "epistemic": "shared_motif_evidence",
+          "refs": [
+            "Genesis 4:10",
+            "Genesis 4:11"
+          ]
+        },
+        {
+          "rank": 9,
+          "id": "r11:intersect:pericope:91:90",
+          "title": "Close pericope proximity: \"H1818\" (Genesis 4:11) ↔ \"H0127\" (Genesis 4:10)",
+          "relation": "shared_motif",
+          "epistemic": "shared_motif_evidence",
+          "refs": [
+            "Genesis 4:11",
+            "Genesis 4:10"
+          ]
+        }
+      ],
+      "connected": true,
+      "complete_multi_anchor": [
+        {
+          "id": "intersect:H1818+H0127",
+          "refs": [
+            "Genesis 4:10",
+            "Genesis 4:11",
+            "Deuteronomy 32:43",
+            "Isaiah 15:9"
+          ]
+        },
+        {
+          "id": "r11:intersect:verse:H1818:H0127:90",
+          "refs": [
+            "Genesis 4:10"
+          ],
+          "target": {
+            "strongs": "H0127",
+            "script": "אֲדָמָה",
+            "transliteration": "a.da.mah",
+            "gloss": "land: soil"
+          }
+        },
+        {
+          "id": "r11:intersect:verse:H1818:H0127:91",
+          "refs": [
+            "Genesis 4:11"
+          ],
+          "target": {
+            "strongs": "H0127",
+            "script": "אֲדָמָה",
+            "transliteration": "a.da.mah",
+            "gloss": "land: soil"
+          }
+        },
+        {
+          "id": "r11:intersect:verse:H1818:H0127:5802",
+          "refs": [
+            "Deuteronomy 32:43"
+          ],
+          "target": {
+            "strongs": "H0127",
+            "script": "אֲדָמָה",
+            "transliteration": "a.da.mah",
+            "gloss": "land: soil"
+          }
+        },
+        {
+          "id": "r11:intersect:verse:H1818:H0127:18086",
+          "refs": [
+            "Isaiah 15:9"
+          ],
+          "target": {
+            "strongs": "H0127",
+            "script": "אֲדָמָה",
+            "transliteration": "a.da.mah",
+            "gloss": "land: soil"
+          }
+        },
+        {
+          "id": "r13:beam:H1818-H0127",
+          "refs": [
+            "Genesis 4:10",
+            "Genesis 4:11"
+          ],
+          "target": {
+            "strongs": "H0127",
+            "script": "אֲדָמָה",
+            "transliteration": "a.da.mah",
+            "gloss": "land: soil"
+          }
+        },
+        {
+          "id": "r10:interp:gen4_10_11_blood_ground_echo",
+          "refs": [
+            "Genesis 4:10",
+            "Genesis 4:11"
+          ],
+          "target": {
+            "strongs": "H0127",
+            "script": "אֲדָמָה",
+            "transliteration": "a.da.mah",
+            "gloss": "land: soil"
+          }
+        },
+        {
+          "id": "r11:intersect:pericope:90:91",
+          "refs": [
+            "Genesis 4:10",
+            "Genesis 4:11"
+          ],
+          "target": {
+            "strongs": "H0127",
+            "script": "אֲדָמָה",
+            "transliteration": "a.da.mah",
+            "gloss": "land: soil"
+          }
+        },
+        {
+          "id": "r11:intersect:pericope:91:90",
+          "refs": [
+            "Genesis 4:11",
+            "Genesis 4:10"
+          ],
+          "target": {
+            "strongs": "H0127",
+            "script": "אֲדָמָה",
+            "transliteration": "a.da.mah",
+            "gloss": "land: soil"
+          }
+        }
+      ],
+      "pairwise_count": 7,
+      "indirect_count": 2
+    },
+    {
+      "id": "C10",
+      "category": "multi_anchor",
+      "tool": "get_Connection",
+      "args": {
+        "items": [
+          "H1904",
+          "H3629"
+        ],
+        "connections": 25
+      },
+      "expected": false,
+      "baseline_rank": null,
+      "first_matching_rank": null,
+      "status": "ok",
+      "ms": 6296,
+      "top": [],
+      "connected": false,
+      "complete_multi_anchor": [],
+      "pairwise_count": 0,
+      "indirect_count": 0
     }
   ]
 }
