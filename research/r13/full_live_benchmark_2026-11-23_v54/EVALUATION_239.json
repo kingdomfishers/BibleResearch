@@ -1,0 +1,4844 @@
+{
+  "summary": {
+    "run_date": "2026-11-23",
+    "release": "r13-discovery-3",
+    "supabase": "bible-mcp v54",
+    "method": "239 frozen cases, 190 unique MCP calls, mode bridge enabled on word queries; structured Strong's / verse reference screen only; assessability inherited from prior frozen evaluation",
+    "queries": 190,
+    "ok": 190,
+    "frozen": 239,
+    "positives": 215,
+    "negative": 24,
+    "assessable": 186,
+    "previous_at_k": 135,
+    "current_at_k": 124,
+    "current_in25": 137,
+    "late": 13,
+    "absent": 49,
+    "gains": 8,
+    "losses": 19,
+    "by_category": {
+      "linguistic_form": {
+        "total": 5,
+        "previous": 5,
+        "current": 5,
+        "gains": 0,
+        "losses": 0,
+        "late": 0,
+        "absent": 0
+      },
+      "linguistic_lexical": {
+        "total": 22,
+        "previous": 6,
+        "current": 9,
+        "gains": 4,
+        "losses": 1,
+        "late": 2,
+        "absent": 11
+      },
+      "linguistic_polysemy": {
+        "total": 3,
+        "previous": 1,
+        "current": 0,
+        "gains": 0,
+        "losses": 1,
+        "late": 0,
+        "absent": 3
+      },
+      "linguistic_translation": {
+        "total": 22,
+        "previous": 21,
+        "current": 18,
+        "gains": 0,
+        "losses": 3,
+        "late": 2,
+        "absent": 2
+      },
+      "direct_intertext": {
+        "total": 55,
+        "previous": 51,
+        "current": 47,
+        "gains": 1,
+        "losses": 5,
+        "late": 4,
+        "absent": 4
+      },
+      "narrative_chronology": {
+        "total": 8,
+        "previous": 5,
+        "current": 2,
+        "gains": 0,
+        "losses": 3,
+        "late": 1,
+        "absent": 5
+      },
+      "narrative_pattern": {
+        "total": 54,
+        "previous": 36,
+        "current": 34,
+        "gains": 1,
+        "losses": 3,
+        "late": 3,
+        "absent": 17
+      },
+      "narrative_genealogy": {
+        "total": 3,
+        "previous": 3,
+        "current": 3,
+        "gains": 0,
+        "losses": 0,
+        "late": 0,
+        "absent": 0
+      },
+      "real_world_material": {
+        "total": 8,
+        "previous": 4,
+        "current": 3,
+        "gains": 1,
+        "losses": 2,
+        "late": 1,
+        "absent": 4
+      },
+      "real_world_part_whole": {
+        "total": 2,
+        "previous": 1,
+        "current": 2,
+        "gains": 1,
+        "losses": 0,
+        "late": 0,
+        "absent": 0
+      },
+      "real_world_process": {
+        "total": 2,
+        "previous": 1,
+        "current": 0,
+        "gains": 0,
+        "losses": 1,
+        "late": 0,
+        "absent": 2
+      },
+      "real_world_property": {
+        "total": 2,
+        "previous": 1,
+        "current": 1,
+        "gains": 0,
+        "losses": 0,
+        "late": 0,
+        "absent": 1
+      }
+    }
+  },
+  "case_results": [
+    {
+      "id": "L001",
+      "category": "linguistic_form",
+      "polarity": "positive",
+      "query": "H0120",
+      "mode": "discover",
+      "tool": "word",
+      "k": 15,
+      "assessable": true,
+      "previous_rank": 1,
+      "rank": 2,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "H0127",
+        "adamah",
+        "ground"
+      ],
+      "expected": "Adamah ground H0127"
+    },
+    {
+      "id": "L002",
+      "category": "linguistic_form",
+      "polarity": "positive",
+      "query": "H0120",
+      "mode": "discover",
+      "tool": "word",
+      "k": 25,
+      "assessable": true,
+      "previous_rank": 8,
+      "rank": 13,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "H1818",
+        "dam",
+        "blood"
+      ],
+      "expected": "Dam blood H1818"
+    },
+    {
+      "id": "L003",
+      "category": "linguistic_lexical",
+      "polarity": "positive",
+      "query": "H1818",
+      "mode": "discover",
+      "tool": "word",
+      "k": 10,
+      "assessable": true,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "H5315",
+        "life",
+        "nephesh"
+      ],
+      "expected": "Life of flesh and blood"
+    },
+    {
+      "id": "L004",
+      "category": "linguistic_form",
+      "polarity": "positive",
+      "query": "H2233",
+      "mode": "discover",
+      "tool": "word",
+      "k": 15,
+      "assessable": true,
+      "previous_rank": 1,
+      "rank": 1,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "H2232",
+        "zara",
+        "sow"
+      ],
+      "expected": "Sowing seed verb H2232"
+    },
+    {
+      "id": "L005",
+      "category": "linguistic_lexical",
+      "polarity": "positive",
+      "query": "H2233",
+      "mode": "discover",
+      "tool": "word",
+      "k": 12,
+      "assessable": true,
+      "previous_rank": null,
+      "rank": 10,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "H0085",
+        "Abraham",
+        "offspring"
+      ],
+      "expected": "Offspring of Abraham"
+    },
+    {
+      "id": "L006",
+      "category": "linguistic_lexical",
+      "polarity": "positive",
+      "query": "H1285",
+      "mode": "discover",
+      "tool": "word",
+      "k": 10,
+      "assessable": true,
+      "previous_rank": 3,
+      "rank": 1,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "H3772",
+        "karat",
+        "cut"
+      ],
+      "expected": "Cutting a covenant H3772"
+    },
+    {
+      "id": "L007",
+      "category": "linguistic_lexical",
+      "polarity": "positive",
+      "query": "H1285",
+      "mode": "discover",
+      "tool": "word",
+      "k": 12,
+      "assessable": true,
+      "previous_rank": 24,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "H2142",
+        "remember",
+        "zakar"
+      ],
+      "expected": "Remember covenant H2142"
+    },
+    {
+      "id": "L008",
+      "category": "linguistic_lexical",
+      "polarity": "positive",
+      "query": "H1285",
+      "mode": "discover",
+      "tool": "word",
+      "k": 15,
+      "assessable": true,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "H7911",
+        "forget",
+        "shakach"
+      ],
+      "expected": "Forgetting covenant H7911"
+    },
+    {
+      "id": "L009",
+      "category": "linguistic_polysemy",
+      "polarity": "positive",
+      "query": "H7307",
+      "mode": "discover",
+      "tool": "word",
+      "k": 20,
+      "assessable": true,
+      "previous_rank": 16,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "H4325",
+        "water",
+        "wind"
+      ],
+      "expected": "Wind blowing over waters"
+    },
+    {
+      "id": "L010",
+      "category": "linguistic_polysemy",
+      "polarity": "positive",
+      "query": "H7307",
+      "mode": "discover",
+      "tool": "word",
+      "k": 15,
+      "assessable": true,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "H2416",
+        "breath",
+        "live"
+      ],
+      "expected": "Breath and giving life"
+    },
+    {
+      "id": "L011",
+      "category": "linguistic_polysemy",
+      "polarity": "positive",
+      "query": "H5869",
+      "mode": "discover",
+      "tool": "word",
+      "k": 20,
+      "assessable": true,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "H0875",
+        "spring",
+        "well"
+      ],
+      "expected": "Eye and spring senses of ayin"
+    },
+    {
+      "id": "L012",
+      "category": "linguistic_translation",
+      "polarity": "positive",
+      "query": "H5869",
+      "mode": "discover",
+      "tool": "word",
+      "k": 20,
+      "assessable": true,
+      "previous_rank": 1,
+      "rank": 1,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "G3788",
+        "ophthalmos",
+        "eyes"
+      ],
+      "expected": "Greek eye G3788 and prophetic eyes"
+    },
+    {
+      "id": "L013",
+      "category": "linguistic_lexical",
+      "polarity": "positive",
+      "query": "H4501",
+      "mode": "discover",
+      "tool": "word",
+      "k": 10,
+      "assessable": true,
+      "previous_rank": 17,
+      "rank": 6,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "H5216",
+        "ner",
+        "lamp"
+      ],
+      "expected": "Lamps H5216 mounted on lampstand"
+    },
+    {
+      "id": "L014",
+      "category": "linguistic_translation",
+      "polarity": "positive",
+      "query": "H4501",
+      "mode": "discover",
+      "tool": "word",
+      "k": 15,
+      "assessable": true,
+      "previous_rank": 1,
+      "rank": 1,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "G3087",
+        "luchnia",
+        "lampstand"
+      ],
+      "expected": "Greek lampstand G3087"
+    },
+    {
+      "id": "L015",
+      "category": "linguistic_translation",
+      "polarity": "positive",
+      "query": "H5216",
+      "mode": "discover",
+      "tool": "word",
+      "k": 15,
+      "assessable": true,
+      "previous_rank": 2,
+      "rank": 1,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "G3088",
+        "luchnos",
+        "lamp"
+      ],
+      "expected": "Greek oil lamp G3088"
+    },
+    {
+      "id": "L016",
+      "category": "linguistic_lexical",
+      "polarity": "positive",
+      "query": "H5216",
+      "mode": "discover",
+      "tool": "word",
+      "k": 15,
+      "assessable": true,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "H8081",
+        "shemen",
+        "oil"
+      ],
+      "expected": "Oil H8081 feeding lamps"
+    },
+    {
+      "id": "L017",
+      "category": "linguistic_translation",
+      "polarity": "positive",
+      "query": "H8438",
+      "mode": "discover",
+      "tool": "word",
+      "k": 15,
+      "assessable": true,
+      "previous_rank": 4,
+      "rank": 6,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "G2847",
+        "kokkinos",
+        "scarlet"
+      ],
+      "expected": "Scarlet color Greek G2847"
+    },
+    {
+      "id": "L018",
+      "category": "linguistic_translation",
+      "polarity": "positive",
+      "query": "H0231",
+      "mode": "discover",
+      "tool": "word",
+      "k": 10,
+      "assessable": true,
+      "previous_rank": 1,
+      "rank": 1,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "G5301",
+        "hyssop",
+        "hyssopos"
+      ],
+      "expected": "Greek hyssop G5301"
+    },
+    {
+      "id": "L019",
+      "category": "linguistic_lexical",
+      "polarity": "positive",
+      "query": "H0231",
+      "mode": "discover",
+      "tool": "word",
+      "k": 12,
+      "assessable": true,
+      "previous_rank": 14,
+      "rank": 5,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "H8438",
+        "scarlet",
+        "red"
+      ],
+      "expected": "Scarlet thread or material in purification"
+    },
+    {
+      "id": "L020",
+      "category": "linguistic_translation",
+      "polarity": "positive",
+      "query": "H4682",
+      "mode": "discover",
+      "tool": "word",
+      "k": 15,
+      "assessable": true,
+      "previous_rank": 3,
+      "rank": 3,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "G0106",
+        "azyma",
+        "unleavened"
+      ],
+      "expected": "Greek unleavened G0106"
+    },
+    {
+      "id": "L021",
+      "category": "linguistic_lexical",
+      "polarity": "positive",
+      "query": "H0784",
+      "mode": "discover",
+      "tool": "word",
+      "k": 10,
+      "assessable": true,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "H6227",
+        "smoke",
+        "ashan"
+      ],
+      "expected": "Smoke H6227 from fire"
+    },
+    {
+      "id": "L022",
+      "category": "linguistic_translation",
+      "polarity": "positive",
+      "query": "H3899",
+      "mode": "discover",
+      "tool": "word",
+      "k": 12,
+      "assessable": true,
+      "previous_rank": 1,
+      "rank": 8,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "G0740",
+        "artos",
+        "bread"
+      ],
+      "expected": "Greek bread G0740"
+    },
+    {
+      "id": "L023",
+      "category": "linguistic_translation",
+      "polarity": "positive",
+      "query": "H0216",
+      "mode": "discover",
+      "tool": "word",
+      "k": 15,
+      "assessable": true,
+      "previous_rank": 4,
+      "rank": 5,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "G5457",
+        "phos",
+        "light"
+      ],
+      "expected": "Greek light G5457"
+    },
+    {
+      "id": "L024",
+      "category": "linguistic_lexical",
+      "polarity": "positive",
+      "query": "H3722",
+      "mode": "discover",
+      "tool": "word",
+      "k": 20,
+      "assessable": true,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "H3727",
+        "kapporeth",
+        "mercy seat"
+      ],
+      "expected": "Atonement and mercy seat"
+    },
+    {
+      "id": "L025",
+      "category": "linguistic_translation",
+      "polarity": "positive",
+      "query": "H4325",
+      "mode": "discover",
+      "tool": "word",
+      "k": 20,
+      "assessable": true,
+      "previous_rank": 2,
+      "rank": 8,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "G5204",
+        "hydor",
+        "water"
+      ],
+      "expected": "Greek water G5204"
+    },
+    {
+      "id": "L026",
+      "category": "linguistic_lexical",
+      "polarity": "positive",
+      "query": "G3056",
+      "mode": "discover",
+      "tool": "word",
+      "k": 20,
+      "assessable": true,
+      "previous_rank": 11,
+      "rank": 13,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "G4487",
+        "rhema",
+        "utterance"
+      ],
+      "expected": "Rhema word G4487"
+    },
+    {
+      "id": "L027",
+      "category": "linguistic_lexical",
+      "polarity": "positive",
+      "query": "G3088",
+      "mode": "discover",
+      "tool": "word",
+      "k": 10,
+      "assessable": true,
+      "previous_rank": 17,
+      "rank": 16,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "G5459",
+        "phosphoros",
+        "morning star"
+      ],
+      "expected": "Morning star or light-bearer G5459"
+    },
+    {
+      "id": "L028",
+      "category": "linguistic_translation",
+      "polarity": "positive",
+      "query": "G3087",
+      "mode": "discover",
+      "tool": "word",
+      "k": 15,
+      "assessable": true,
+      "previous_rank": 2,
+      "rank": 2,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "H4501",
+        "menorah",
+        "lampstand"
+      ],
+      "expected": "Hebrew lampstand menorah H4501"
+    },
+    {
+      "id": "L029",
+      "category": "linguistic_lexical",
+      "polarity": "positive",
+      "query": "G2847",
+      "mode": "discover",
+      "tool": "word",
+      "k": 10,
+      "assessable": true,
+      "previous_rank": 4,
+      "rank": 12,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "G2053",
+        "erion",
+        "wool"
+      ],
+      "expected": "Scarlet wool G2053"
+    },
+    {
+      "id": "L030",
+      "category": "linguistic_translation",
+      "polarity": "positive",
+      "query": "G1953",
+      "mode": "discover",
+      "tool": "word",
+      "k": 20,
+      "assessable": true,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "H7911",
+        "shakach",
+        "forget"
+      ],
+      "expected": "Hebrew remembering or forgetting a covenant"
+    },
+    {
+      "id": "L031",
+      "category": "linguistic_lexical",
+      "polarity": "positive",
+      "query": "G5140",
+      "mode": "discover",
+      "tool": "word",
+      "k": 12,
+      "assessable": true,
+      "previous_rank": 1,
+      "rank": 1,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "G2250",
+        "hemera",
+        "day"
+      ],
+      "expected": "Three days G2250"
+    },
+    {
+      "id": "L032",
+      "category": "linguistic_lexical",
+      "polarity": "positive",
+      "query": "G1453",
+      "mode": "discover",
+      "tool": "word",
+      "k": 12,
+      "assessable": true,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "G0386",
+        "anastasis",
+        "resurrection"
+      ],
+      "expected": "Resurrection anastasis G0386"
+    },
+    {
+      "id": "L033",
+      "category": "linguistic_lexical",
+      "polarity": "positive",
+      "query": "G3957",
+      "mode": "discover",
+      "tool": "word",
+      "k": 12,
+      "assessable": true,
+      "previous_rank": 10,
+      "rank": 8,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "G0106",
+        "unleavened",
+        "azyma"
+      ],
+      "expected": "Unleavened bread festival"
+    },
+    {
+      "id": "L034",
+      "category": "linguistic_lexical",
+      "polarity": "positive",
+      "query": "H4682",
+      "mode": "discover",
+      "tool": "word",
+      "k": 15,
+      "assessable": true,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "H3318",
+        "come out",
+        "Egypt"
+      ],
+      "expected": "Departure from Egypt"
+    },
+    {
+      "id": "L035",
+      "category": "linguistic_lexical",
+      "polarity": "positive",
+      "query": "H5216",
+      "mode": "discover",
+      "tool": "word",
+      "k": 15,
+      "assessable": true,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "G5457",
+        "light",
+        "phos"
+      ],
+      "expected": "Light from a lamp"
+    },
+    {
+      "id": "L036",
+      "category": "linguistic_translation",
+      "polarity": "positive",
+      "query": "H2091",
+      "mode": "discover",
+      "tool": "word",
+      "k": 20,
+      "assessable": true,
+      "previous_rank": 10,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "G5553",
+        "gold",
+        "chrysion"
+      ],
+      "expected": "Gold in lampstand and heavenly city"
+    },
+    {
+      "id": "L037",
+      "category": "linguistic_lexical",
+      "polarity": "positive",
+      "query": "H3220",
+      "mode": "discover",
+      "tool": "word",
+      "k": 10,
+      "assessable": true,
+      "previous_rank": 2,
+      "rank": 2,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "H5488",
+        "reeds",
+        "Red Sea"
+      ],
+      "expected": "Red Sea or Sea of Reeds"
+    },
+    {
+      "id": "L038",
+      "category": "linguistic_translation",
+      "polarity": "positive",
+      "query": "H2416",
+      "mode": "discover",
+      "tool": "word",
+      "k": 20,
+      "assessable": true,
+      "previous_rank": 11,
+      "rank": 20,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "G2222",
+        "zoe",
+        "life"
+      ],
+      "expected": "Greek life G2222"
+    },
+    {
+      "id": "L039",
+      "category": "linguistic_translation",
+      "polarity": "positive",
+      "query": "H4194",
+      "mode": "discover",
+      "tool": "word",
+      "k": 15,
+      "assessable": true,
+      "previous_rank": 4,
+      "rank": 4,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "G2288",
+        "thanatos",
+        "death"
+      ],
+      "expected": "Greek death G2288"
+    },
+    {
+      "id": "L040",
+      "category": "linguistic_translation",
+      "polarity": "positive",
+      "query": "H1285",
+      "mode": "discover",
+      "tool": "word",
+      "k": 10,
+      "assessable": true,
+      "previous_rank": 9,
+      "rank": 17,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "G1242",
+        "diatheke",
+        "new covenant"
+      ],
+      "expected": "Greek covenant diatheke G1242"
+    },
+    {
+      "id": "L041",
+      "category": "linguistic_translation",
+      "polarity": "positive",
+      "query": "H3068",
+      "mode": "discover",
+      "tool": "word",
+      "k": 10,
+      "assessable": true,
+      "previous_rank": 6,
+      "rank": 11,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "G2962",
+        "kyrios",
+        "Lord"
+      ],
+      "expected": "Greek Lord kyrios G2962"
+    },
+    {
+      "id": "L042",
+      "category": "linguistic_translation",
+      "polarity": "positive",
+      "query": "H0157",
+      "mode": "discover",
+      "tool": "word",
+      "k": 10,
+      "assessable": true,
+      "previous_rank": 3,
+      "rank": 6,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "G0025",
+        "agapao",
+        "love"
+      ],
+      "expected": "Greek love agapao G0025"
+    },
+    {
+      "id": "L043",
+      "category": "linguistic_translation",
+      "polarity": "positive",
+      "query": "H0539",
+      "mode": "discover",
+      "tool": "word",
+      "k": 12,
+      "assessable": true,
+      "previous_rank": 3,
+      "rank": 3,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "G4100",
+        "pisteuo",
+        "believe"
+      ],
+      "expected": "Greek believe G4100"
+    },
+    {
+      "id": "L044",
+      "category": "linguistic_translation",
+      "polarity": "positive",
+      "query": "H7225",
+      "mode": "discover",
+      "tool": "word",
+      "k": 10,
+      "assessable": true,
+      "previous_rank": 3,
+      "rank": 3,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "G0746",
+        "arche",
+        "beginning"
+      ],
+      "expected": "Greek beginning arche G0746"
+    },
+    {
+      "id": "L045",
+      "category": "linguistic_translation",
+      "polarity": "positive",
+      "query": "H0430",
+      "mode": "discover",
+      "tool": "word",
+      "k": 15,
+      "assessable": true,
+      "previous_rank": 7,
+      "rank": 12,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "G2316",
+        "theos",
+        "God"
+      ],
+      "expected": "Greek God theos G2316"
+    },
+    {
+      "id": "L046",
+      "category": "linguistic_translation",
+      "polarity": "positive",
+      "query": "H7676",
+      "mode": "discover",
+      "tool": "word",
+      "k": 15,
+      "assessable": true,
+      "previous_rank": 4,
+      "rank": 3,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "G4521",
+        "sabbaton",
+        "Sabbath"
+      ],
+      "expected": "Greek Sabbath G4521"
+    },
+    {
+      "id": "L047",
+      "category": "linguistic_translation",
+      "polarity": "positive",
+      "query": "H8064",
+      "mode": "discover",
+      "tool": "word",
+      "k": 15,
+      "assessable": true,
+      "previous_rank": 4,
+      "rank": 9,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "G3772",
+        "ouranos",
+        "heaven"
+      ],
+      "expected": "Greek heaven ouranos G3772"
+    },
+    {
+      "id": "L048",
+      "category": "linguistic_polysemy",
+      "polarity": "positive",
+      "query": "H2233",
+      "mode": "discover",
+      "tool": "word",
+      "k": 20,
+      "assessable": false,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "offspring",
+        "grain",
+        "sow",
+        "descendant"
+      ],
+      "expected": "Physical seed versus descendants"
+    },
+    {
+      "id": "L049",
+      "category": "linguistic_polysemy",
+      "polarity": "positive",
+      "query": "H7307",
+      "mode": "discover",
+      "tool": "word",
+      "k": 20,
+      "assessable": false,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "spirit",
+        "wind",
+        "breath"
+      ],
+      "expected": "Spirit of God versus moving air"
+    },
+    {
+      "id": "L050",
+      "category": "linguistic_form",
+      "polarity": "positive",
+      "query": "H0127",
+      "mode": "discover",
+      "tool": "word",
+      "k": 15,
+      "assessable": true,
+      "previous_rank": 3,
+      "rank": 1,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "H0120",
+        "adam",
+        "human"
+      ],
+      "expected": "Man adam H0120"
+    },
+    {
+      "id": "L051",
+      "category": "linguistic_form",
+      "polarity": "positive",
+      "query": "H1818",
+      "mode": "discover",
+      "tool": "word",
+      "k": 20,
+      "assessable": true,
+      "previous_rank": 8,
+      "rank": 5,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "H0120",
+        "adam",
+        "man"
+      ],
+      "expected": "Man adam H0120"
+    },
+    {
+      "id": "L052",
+      "category": "linguistic_lexical",
+      "polarity": "positive",
+      "query": "H0231",
+      "mode": "discover",
+      "tool": "word",
+      "k": 15,
+      "assessable": true,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "G2053",
+        "scarlet wool",
+        "wool"
+      ],
+      "expected": "Hyssop and cleansing scarlet wool"
+    },
+    {
+      "id": "L053",
+      "category": "linguistic_lexical",
+      "polarity": "positive",
+      "query": "H1285",
+      "mode": "discover",
+      "tool": "word",
+      "k": 25,
+      "assessable": true,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "G1953",
+        "forgetfulness",
+        "James"
+      ],
+      "expected": "Greek forgetfulness in James 1"
+    },
+    {
+      "id": "L054",
+      "category": "linguistic_lexical",
+      "polarity": "positive",
+      "query": "H5237",
+      "mode": "discover",
+      "tool": "word",
+      "k": 20,
+      "assessable": false,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "foreigner",
+        "stranger",
+        "alien"
+      ],
+      "expected": "Stranger foreigner in separation laws"
+    },
+    {
+      "id": "L055",
+      "category": "linguistic_lexical",
+      "polarity": "positive",
+      "query": "G3088",
+      "mode": "discover",
+      "tool": "word",
+      "k": 12,
+      "assessable": true,
+      "previous_rank": 22,
+      "rank": 10,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "G5461",
+        "photizo",
+        "illuminate"
+      ],
+      "expected": "Lamp and illuminating G5461"
+    },
+    {
+      "id": "D001",
+      "category": "direct_intertext",
+      "polarity": "positive",
+      "query": "Genesis 1:1",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 10,
+      "assessable": true,
+      "previous_rank": 6,
+      "rank": 5,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "John 1:1",
+        "in the beginning",
+        "logos"
+      ],
+      "expected": "Beginning phrase of John prologue"
+    },
+    {
+      "id": "D002",
+      "category": "direct_intertext",
+      "polarity": "positive",
+      "query": "Genesis 1:3",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 15,
+      "assessable": true,
+      "previous_rank": 8,
+      "rank": 6,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "John 1:5",
+        "light darkness",
+        "true light"
+      ],
+      "expected": "Light and darkness in John prologue"
+    },
+    {
+      "id": "D003",
+      "category": "direct_intertext",
+      "polarity": "positive",
+      "query": "Genesis 1:26",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 10,
+      "assessable": true,
+      "previous_rank": 19,
+      "rank": 14,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "Genesis 9:6",
+        "image of God",
+        "blood"
+      ],
+      "expected": "Human image of God grounds blood protection"
+    },
+    {
+      "id": "D004",
+      "category": "direct_intertext",
+      "polarity": "positive",
+      "query": "Genesis 2:7",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 10,
+      "assessable": true,
+      "previous_rank": 4,
+      "rank": 7,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "1 Corinthians 15:45",
+        "last Adam",
+        "living being"
+      ],
+      "expected": "Adam and last Adam living spirit comparison"
+    },
+    {
+      "id": "D005",
+      "category": "direct_intertext",
+      "polarity": "positive",
+      "query": "Genesis 3:15",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 20,
+      "assessable": true,
+      "previous_rank": 1,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "Revelation 12:17",
+        "offspring",
+        "serpent"
+      ],
+      "expected": "Serpent opposition and offspring war"
+    },
+    {
+      "id": "D006",
+      "category": "direct_intertext",
+      "polarity": "positive",
+      "query": "Genesis 6:18",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 10,
+      "assessable": true,
+      "previous_rank": 1,
+      "rank": 2,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Genesis 9:9",
+        "Noah",
+        "covenant"
+      ],
+      "expected": "Noah covenant established after flood"
+    },
+    {
+      "id": "D007",
+      "category": "direct_intertext",
+      "polarity": "positive",
+      "query": "Genesis 8:1",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 15,
+      "assessable": true,
+      "previous_rank": 1,
+      "rank": 1,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Genesis 1:2",
+        "wind",
+        "waters"
+      ],
+      "expected": "Wind waters and renewed world in creation"
+    },
+    {
+      "id": "D008",
+      "category": "direct_intertext",
+      "polarity": "positive",
+      "query": "Genesis 9:13",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 20,
+      "assessable": true,
+      "previous_rank": 9,
+      "rank": 6,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Revelation 4:3",
+        "rainbow",
+        "bow"
+      ],
+      "expected": "Rainbow around divine throne"
+    },
+    {
+      "id": "D009",
+      "category": "direct_intertext",
+      "polarity": "positive",
+      "query": "Genesis 12:3",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 10,
+      "assessable": true,
+      "previous_rank": 1,
+      "rank": 1,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Galatians 3:8",
+        "Abraham",
+        "nations"
+      ],
+      "expected": "Blessing of nations in Galatians 3"
+    },
+    {
+      "id": "D010",
+      "category": "direct_intertext",
+      "polarity": "positive",
+      "query": "Genesis 15:6",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 10,
+      "assessable": true,
+      "previous_rank": 1,
+      "rank": 1,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Romans 4:3",
+        "counted as righteousness",
+        "believed"
+      ],
+      "expected": "Faith counted as righteousness"
+    },
+    {
+      "id": "D011",
+      "category": "direct_intertext",
+      "polarity": "positive",
+      "query": "Genesis 22:2",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 10,
+      "assessable": true,
+      "previous_rank": 1,
+      "rank": 1,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Hebrews 11:17",
+        "Isaac",
+        "offered"
+      ],
+      "expected": "Abraham offers Isaac in Hebrews 11"
+    },
+    {
+      "id": "D012",
+      "category": "direct_intertext",
+      "polarity": "positive",
+      "query": "Genesis 22:8",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 20,
+      "assessable": true,
+      "previous_rank": 5,
+      "rank": 11,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "John 1:29",
+        "Lamb of God",
+        "provision"
+      ],
+      "expected": "Provision of lamb and Lamb of God"
+    },
+    {
+      "id": "D013",
+      "category": "direct_intertext",
+      "polarity": "positive",
+      "query": "Genesis 28:12",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 10,
+      "assessable": true,
+      "previous_rank": 1,
+      "rank": 1,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "John 1:51",
+        "ascending",
+        "descending"
+      ],
+      "expected": "Angels ascending descending on Son of Man"
+    },
+    {
+      "id": "D014",
+      "category": "direct_intertext",
+      "polarity": "positive",
+      "query": "Exodus 3:6",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 10,
+      "assessable": true,
+      "previous_rank": 1,
+      "rank": 1,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Matthew 22:32",
+        "God of living",
+        "Abraham"
+      ],
+      "expected": "God of Abraham as God of living"
+    },
+    {
+      "id": "D015",
+      "category": "direct_intertext",
+      "polarity": "positive",
+      "query": "Exodus 12:5",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 10,
+      "assessable": true,
+      "previous_rank": 2,
+      "rank": 2,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "1 Corinthians 5:7",
+        "Passover",
+        "Christ"
+      ],
+      "expected": "Passover lamb and Christ sacrificed"
+    },
+    {
+      "id": "D016",
+      "category": "direct_intertext",
+      "polarity": "positive",
+      "query": "Exodus 12:13",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 10,
+      "assessable": true,
+      "previous_rank": 13,
+      "rank": 6,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Hebrews 11:28",
+        "sprinkling",
+        "Passover"
+      ],
+      "expected": "Faith at Passover blood marking"
+    },
+    {
+      "id": "D017",
+      "category": "direct_intertext",
+      "polarity": "positive",
+      "query": "Exodus 12:22",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 15,
+      "assessable": true,
+      "previous_rank": 7,
+      "rank": 4,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Hebrews 9:19",
+        "hyssop",
+        "sprinkling"
+      ],
+      "expected": "Hyssop and sprinkling in Hebrews"
+    },
+    {
+      "id": "D018",
+      "category": "direct_intertext",
+      "polarity": "positive",
+      "query": "Exodus 14:21",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 10,
+      "assessable": true,
+      "previous_rank": 1,
+      "rank": 1,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "1 Corinthians 10:2",
+        "sea",
+        "baptism"
+      ],
+      "expected": "Israel crossed sea baptized into Moses"
+    },
+    {
+      "id": "D019",
+      "category": "direct_intertext",
+      "polarity": "positive",
+      "query": "Exodus 16:4",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 10,
+      "assessable": true,
+      "previous_rank": 2,
+      "rank": 9,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "John 6:32",
+        "bread from heaven",
+        "manna"
+      ],
+      "expected": "Manna and true bread from heaven"
+    },
+    {
+      "id": "D020",
+      "category": "direct_intertext",
+      "polarity": "positive",
+      "query": "Exodus 17:6",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 10,
+      "assessable": true,
+      "previous_rank": 2,
+      "rank": 3,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "1 Corinthians 10:4",
+        "rock",
+        "Christ"
+      ],
+      "expected": "Rock struck in wilderness Christ reference"
+    },
+    {
+      "id": "D021",
+      "category": "direct_intertext",
+      "polarity": "positive",
+      "query": "Exodus 20:12",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 10,
+      "assessable": true,
+      "previous_rank": 6,
+      "rank": 6,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Ephesians 6:2",
+        "honor father",
+        "mother"
+      ],
+      "expected": "Honor father and mother cited"
+    },
+    {
+      "id": "D022",
+      "category": "direct_intertext",
+      "polarity": "positive",
+      "query": "Exodus 25:31",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 12,
+      "assessable": true,
+      "previous_rank": null,
+      "rank": 24,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "Hebrews 9:2",
+        "lampstand",
+        "tabernacle"
+      ],
+      "expected": "Tabernacle lampstand described in Hebrews"
+    },
+    {
+      "id": "D023",
+      "category": "direct_intertext",
+      "polarity": "positive",
+      "query": "Leviticus 16:15",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 10,
+      "assessable": true,
+      "previous_rank": 1,
+      "rank": 2,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Hebrews 9:7",
+        "high priest",
+        "once a year"
+      ],
+      "expected": "High priest entering sanctuary once yearly"
+    },
+    {
+      "id": "D024",
+      "category": "direct_intertext",
+      "polarity": "positive",
+      "query": "Leviticus 17:11",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 12,
+      "assessable": true,
+      "previous_rank": 2,
+      "rank": 2,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Hebrews 9:22",
+        "blood",
+        "forgiveness"
+      ],
+      "expected": "Blood shedding and forgiveness"
+    },
+    {
+      "id": "D025",
+      "category": "direct_intertext",
+      "polarity": "positive",
+      "query": "Numbers 21:9",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 10,
+      "assessable": true,
+      "previous_rank": 2,
+      "rank": 3,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "John 3:14",
+        "serpent",
+        "lifted"
+      ],
+      "expected": "Bronze serpent lifted and Son of Man"
+    },
+    {
+      "id": "D026",
+      "category": "direct_intertext",
+      "polarity": "positive",
+      "query": "Numbers 24:17",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 20,
+      "assessable": true,
+      "previous_rank": 1,
+      "rank": 1,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Matthew 2:2",
+        "star of Jacob",
+        "Magi"
+      ],
+      "expected": "Star from Jacob and star of Messiah"
+    },
+    {
+      "id": "D027",
+      "category": "direct_intertext",
+      "polarity": "positive",
+      "query": "Deuteronomy 6:4",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 10,
+      "assessable": true,
+      "previous_rank": 5,
+      "rank": 3,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Mark 12:29",
+        "Shema",
+        "one Lord"
+      ],
+      "expected": "Shema quoted by Jesus"
+    },
+    {
+      "id": "D028",
+      "category": "direct_intertext",
+      "polarity": "positive",
+      "query": "Deuteronomy 6:5",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 10,
+      "assessable": true,
+      "previous_rank": 8,
+      "rank": 8,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Mark 12:30",
+        "love the Lord",
+        "heart"
+      ],
+      "expected": "Love God with all heart commandment"
+    },
+    {
+      "id": "D029",
+      "category": "direct_intertext",
+      "polarity": "positive",
+      "query": "Deuteronomy 8:3",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 10,
+      "assessable": true,
+      "previous_rank": 1,
+      "rank": 1,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Matthew 4:4",
+        "bread alone",
+        "word"
+      ],
+      "expected": "Not by bread alone"
+    },
+    {
+      "id": "D030",
+      "category": "direct_intertext",
+      "polarity": "positive",
+      "query": "Deuteronomy 21:23",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 10,
+      "assessable": true,
+      "previous_rank": 1,
+      "rank": 1,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Galatians 3:13",
+        "curse",
+        "tree"
+      ],
+      "expected": "Hanged on tree and curse in Galatians"
+    },
+    {
+      "id": "D031",
+      "category": "direct_intertext",
+      "polarity": "positive",
+      "query": "Deuteronomy 25:4",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 10,
+      "assessable": true,
+      "previous_rank": 1,
+      "rank": 1,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "1 Corinthians 9:9",
+        "ox",
+        "muzzle"
+      ],
+      "expected": "Do not muzzle working ox"
+    },
+    {
+      "id": "D032",
+      "category": "direct_intertext",
+      "polarity": "positive",
+      "query": "Psalm 22:1",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 10,
+      "assessable": true,
+      "previous_rank": 1,
+      "rank": 1,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Matthew 27:46",
+        "forsaken",
+        "my God"
+      ],
+      "expected": "My God why have you forsaken me"
+    },
+    {
+      "id": "D033",
+      "category": "direct_intertext",
+      "polarity": "positive",
+      "query": "Psalm 22:18",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 10,
+      "assessable": true,
+      "previous_rank": 4,
+      "rank": 5,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "John 19:24",
+        "garments",
+        "lots"
+      ],
+      "expected": "Dividing garments casting lots"
+    },
+    {
+      "id": "D034",
+      "category": "direct_intertext",
+      "polarity": "positive",
+      "query": "Psalm 69:21",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 12,
+      "assessable": true,
+      "previous_rank": 17,
+      "rank": 19,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "John 19:29",
+        "sour wine",
+        "vinegar"
+      ],
+      "expected": "Sour wine given at crucifixion"
+    },
+    {
+      "id": "D035",
+      "category": "direct_intertext",
+      "polarity": "positive",
+      "query": "Psalm 110:1",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 10,
+      "assessable": true,
+      "previous_rank": 2,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "Mark 12:36",
+        "right hand",
+        "Lord"
+      ],
+      "expected": "Sit at my right hand quotation"
+    },
+    {
+      "id": "D036",
+      "category": "direct_intertext",
+      "polarity": "positive",
+      "query": "Psalm 118:22",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 10,
+      "assessable": true,
+      "previous_rank": 5,
+      "rank": 7,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "1 Peter 2:7",
+        "rejected stone",
+        "cornerstone"
+      ],
+      "expected": "Rejected stone became cornerstone"
+    },
+    {
+      "id": "D037",
+      "category": "direct_intertext",
+      "polarity": "positive",
+      "query": "Isaiah 7:14",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 10,
+      "assessable": true,
+      "previous_rank": 2,
+      "rank": 1,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Matthew 1:23",
+        "Immanuel",
+        "virgin"
+      ],
+      "expected": "Immanuel child cited"
+    },
+    {
+      "id": "D038",
+      "category": "direct_intertext",
+      "polarity": "positive",
+      "query": "Isaiah 9:2",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 10,
+      "assessable": true,
+      "previous_rank": 1,
+      "rank": 1,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Matthew 4:16",
+        "great light",
+        "darkness"
+      ],
+      "expected": "People in darkness saw great light"
+    },
+    {
+      "id": "D039",
+      "category": "direct_intertext",
+      "polarity": "positive",
+      "query": "Isaiah 40:3",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 10,
+      "assessable": true,
+      "previous_rank": 3,
+      "rank": 4,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Mark 1:3",
+        "wilderness",
+        "prepare way"
+      ],
+      "expected": "Voice crying in wilderness"
+    },
+    {
+      "id": "D040",
+      "category": "direct_intertext",
+      "polarity": "positive",
+      "query": "Isaiah 53:4",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 10,
+      "assessable": true,
+      "previous_rank": 3,
+      "rank": 6,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Matthew 8:17",
+        "infirmities",
+        "borne"
+      ],
+      "expected": "Servant bore sicknesses"
+    },
+    {
+      "id": "D041",
+      "category": "direct_intertext",
+      "polarity": "positive",
+      "query": "Isaiah 53:7",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 10,
+      "assessable": true,
+      "previous_rank": 1,
+      "rank": 1,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Acts 8:32",
+        "sheep",
+        "slaughter"
+      ],
+      "expected": "Silent sheep before slaughter"
+    },
+    {
+      "id": "D042",
+      "category": "direct_intertext",
+      "polarity": "positive",
+      "query": "Isaiah 61:1",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 10,
+      "assessable": true,
+      "previous_rank": 2,
+      "rank": 3,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Luke 4:18",
+        "anointed",
+        "good news"
+      ],
+      "expected": "Spirit of Lord anointed to proclaim"
+    },
+    {
+      "id": "D043",
+      "category": "direct_intertext",
+      "polarity": "positive",
+      "query": "Jeremiah 31:31",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 10,
+      "assessable": true,
+      "previous_rank": 6,
+      "rank": 22,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "Hebrews 8:8",
+        "new covenant",
+        "Israel"
+      ],
+      "expected": "New covenant prophecy cited in Hebrews"
+    },
+    {
+      "id": "D044",
+      "category": "direct_intertext",
+      "polarity": "positive",
+      "query": "Hosea 11:1",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 10,
+      "assessable": true,
+      "previous_rank": 1,
+      "rank": 3,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Matthew 2:15",
+        "out of Egypt",
+        "son"
+      ],
+      "expected": "Out of Egypt I called my son"
+    },
+    {
+      "id": "D045",
+      "category": "direct_intertext",
+      "polarity": "positive",
+      "query": "Joel 2:28",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 10,
+      "assessable": true,
+      "previous_rank": 1,
+      "rank": 3,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Acts 2:17",
+        "pour out Spirit",
+        "all flesh"
+      ],
+      "expected": "Spirit poured on all flesh"
+    },
+    {
+      "id": "D046",
+      "category": "direct_intertext",
+      "polarity": "positive",
+      "query": "Amos 9:11",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 10,
+      "assessable": true,
+      "previous_rank": 1,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "Acts 15:16",
+        "David",
+        "tent"
+      ],
+      "expected": "Restoration of fallen tent of David"
+    },
+    {
+      "id": "D047",
+      "category": "direct_intertext",
+      "polarity": "positive",
+      "query": "Micah 5:2",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 10,
+      "assessable": true,
+      "previous_rank": 1,
+      "rank": 1,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Matthew 2:6",
+        "Bethlehem",
+        "ruler"
+      ],
+      "expected": "Ruler coming from Bethlehem"
+    },
+    {
+      "id": "D048",
+      "category": "direct_intertext",
+      "polarity": "positive",
+      "query": "Habakkuk 2:4",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 10,
+      "assessable": true,
+      "previous_rank": 1,
+      "rank": 1,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Romans 1:17",
+        "faith",
+        "live"
+      ],
+      "expected": "Righteous by faith"
+    },
+    {
+      "id": "D049",
+      "category": "direct_intertext",
+      "polarity": "positive",
+      "query": "Zechariah 9:9",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 10,
+      "assessable": true,
+      "previous_rank": 2,
+      "rank": 3,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Matthew 21:5",
+        "donkey",
+        "king"
+      ],
+      "expected": "King riding on donkey"
+    },
+    {
+      "id": "D050",
+      "category": "direct_intertext",
+      "polarity": "positive",
+      "query": "Zechariah 12:10",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 10,
+      "assessable": true,
+      "previous_rank": 9,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "John 19:37",
+        "pierced",
+        "look upon"
+      ],
+      "expected": "Look on the one pierced"
+    },
+    {
+      "id": "D051",
+      "category": "direct_intertext",
+      "polarity": "positive",
+      "query": "Malachi 3:1",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 10,
+      "assessable": true,
+      "previous_rank": 2,
+      "rank": 6,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Mark 1:2",
+        "messenger",
+        "prepare"
+      ],
+      "expected": "Messenger prepares the way"
+    },
+    {
+      "id": "D052",
+      "category": "direct_intertext",
+      "polarity": "positive",
+      "query": "Psalm 16:10",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 10,
+      "assessable": true,
+      "previous_rank": 1,
+      "rank": 2,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Acts 2:27",
+        "corruption",
+        "Holy One"
+      ],
+      "expected": "Holy One not see corruption"
+    },
+    {
+      "id": "D053",
+      "category": "direct_intertext",
+      "polarity": "positive",
+      "query": "Zechariah 13:7",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 10,
+      "assessable": true,
+      "previous_rank": 1,
+      "rank": 2,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Matthew 26:31",
+        "shepherd",
+        "scatter"
+      ],
+      "expected": "Strike shepherd sheep scatter"
+    },
+    {
+      "id": "D054",
+      "category": "direct_intertext",
+      "polarity": "positive",
+      "query": "Isaiah 6:9",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 12,
+      "assessable": true,
+      "previous_rank": 1,
+      "rank": 1,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Matthew 13:14",
+        "hearing",
+        "not understand"
+      ],
+      "expected": "Hearing without understanding"
+    },
+    {
+      "id": "D055",
+      "category": "direct_intertext",
+      "polarity": "positive",
+      "query": "Malachi 4:5",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 15,
+      "assessable": true,
+      "previous_rank": 5,
+      "rank": 5,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Luke 1:17",
+        "Elijah",
+        "turn hearts"
+      ],
+      "expected": "Elijah promise and John the Baptist"
+    },
+    {
+      "id": "S001",
+      "category": "narrative_chronology",
+      "polarity": "positive",
+      "query": "Exodus 12:15",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 25,
+      "assessable": true,
+      "previous_rank": 18,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "Exodus 14:21",
+        "Red Sea",
+        "crossing"
+      ],
+      "expected": "Feast of Unleavened Bread and sea-crossing sequence"
+    },
+    {
+      "id": "S002",
+      "category": "narrative_chronology",
+      "polarity": "positive",
+      "query": "Exodus 12:39",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 25,
+      "assessable": true,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "Exodus 14:29",
+        "sea",
+        "dry land"
+      ],
+      "expected": "Hasty bread and deliverance through sea"
+    },
+    {
+      "id": "S003",
+      "category": "narrative_chronology",
+      "polarity": "positive",
+      "query": "Exodus 13:3",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 20,
+      "assessable": true,
+      "previous_rank": 2,
+      "rank": 2,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Deuteronomy 16:3",
+        "affliction",
+        "remember"
+      ],
+      "expected": "Remembering Exodus with unleavened bread"
+    },
+    {
+      "id": "S004",
+      "category": "narrative_pattern",
+      "polarity": "positive",
+      "query": "Exodus 14:21",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 25,
+      "assessable": true,
+      "previous_rank": 2,
+      "rank": 2,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Genesis 1:9",
+        "dry land",
+        "waters gathered"
+      ],
+      "expected": "Waters separated dry land appears in creation"
+    },
+    {
+      "id": "S005",
+      "category": "narrative_pattern",
+      "polarity": "positive",
+      "query": "Exodus 14:21",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 25,
+      "assessable": true,
+      "previous_rank": 2,
+      "rank": 2,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Genesis 8:1",
+        "wind",
+        "waters"
+      ],
+      "expected": "Wind over water at creation and flood"
+    },
+    {
+      "id": "S006",
+      "category": "narrative_pattern",
+      "polarity": "positive",
+      "query": "Exodus 14:30",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 15,
+      "assessable": true,
+      "previous_rank": 1,
+      "rank": 1,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "1 Corinthians 10:2",
+        "baptized",
+        "Moses"
+      ],
+      "expected": "Deliverance through sea as baptism"
+    },
+    {
+      "id": "S007",
+      "category": "narrative_pattern",
+      "polarity": "positive",
+      "query": "Joshua 3:16",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 15,
+      "assessable": true,
+      "previous_rank": 1,
+      "rank": 1,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Exodus 14:21",
+        "Red Sea",
+        "divided waters"
+      ],
+      "expected": "Jordan crossing as parallel to Red Sea"
+    },
+    {
+      "id": "S008",
+      "category": "narrative_pattern",
+      "polarity": "positive",
+      "query": "2 Kings 2:8",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 15,
+      "assessable": true,
+      "previous_rank": 6,
+      "rank": 25,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "Joshua 3:16",
+        "Jordan",
+        "waters divided"
+      ],
+      "expected": "Elijah parts Jordan and Joshua crossing"
+    },
+    {
+      "id": "S009",
+      "category": "narrative_pattern",
+      "polarity": "positive",
+      "query": "2 Kings 2:14",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 12,
+      "assessable": true,
+      "previous_rank": 1,
+      "rank": 2,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "2 Kings 2:8",
+        "mantle",
+        "divided"
+      ],
+      "expected": "Elisha repeats Elijah water-parting"
+    },
+    {
+      "id": "S010",
+      "category": "narrative_pattern",
+      "polarity": "positive",
+      "query": "Numbers 20:11",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 15,
+      "assessable": true,
+      "previous_rank": 6,
+      "rank": 4,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Exodus 17:6",
+        "rock",
+        "water"
+      ],
+      "expected": "Water from rock in two wilderness episodes"
+    },
+    {
+      "id": "S011",
+      "category": "narrative_pattern",
+      "polarity": "positive",
+      "query": "Numbers 11:7",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 15,
+      "assessable": true,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "Exodus 16:4",
+        "manna",
+        "heaven bread"
+      ],
+      "expected": "Manna provision in wilderness"
+    },
+    {
+      "id": "S012",
+      "category": "narrative_chronology",
+      "polarity": "positive",
+      "query": "Leviticus 23:5",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 15,
+      "assessable": true,
+      "previous_rank": 1,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "Exodus 12:6",
+        "fourteenth day",
+        "Passover"
+      ],
+      "expected": "Passover date and original Exodus institution"
+    },
+    {
+      "id": "S013",
+      "category": "narrative_chronology",
+      "polarity": "positive",
+      "query": "Leviticus 23:6",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 12,
+      "assessable": true,
+      "previous_rank": 11,
+      "rank": 18,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "Exodus 12:15",
+        "seven days",
+        "unleavened"
+      ],
+      "expected": "Seven days of Unleavened Bread"
+    },
+    {
+      "id": "S014",
+      "category": "narrative_chronology",
+      "polarity": "positive",
+      "query": "Numbers 33:3",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 20,
+      "assessable": true,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "Numbers 33:8",
+        "sea",
+        "departed"
+      ],
+      "expected": "Egypt departure then sea crossing in itinerary"
+    },
+    {
+      "id": "S015",
+      "category": "narrative_chronology",
+      "polarity": "positive",
+      "query": "Joshua 5:10",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 15,
+      "assessable": true,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "Exodus 12:6",
+        "Passover",
+        "Egypt"
+      ],
+      "expected": "Passover in promised land echoes Exodus"
+    },
+    {
+      "id": "S016",
+      "category": "narrative_pattern",
+      "polarity": "positive",
+      "query": "1 Kings 19:8",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 25,
+      "assessable": true,
+      "previous_rank": 5,
+      "rank": 5,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Exodus 24:18",
+        "forty days",
+        "Moses"
+      ],
+      "expected": "Forty days journey to Horeb and Moses forty days"
+    },
+    {
+      "id": "S017",
+      "category": "narrative_pattern",
+      "polarity": "positive",
+      "query": "Genesis 40:13",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 25,
+      "assessable": true,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "Hosea 6:2",
+        "third day",
+        "restoration"
+      ],
+      "expected": "Third day restored cupbearer"
+    },
+    {
+      "id": "S018",
+      "category": "narrative_pattern",
+      "polarity": "positive",
+      "query": "Hosea 6:2",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 25,
+      "assessable": true,
+      "previous_rank": 1,
+      "rank": 1,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "1 Corinthians 15:4",
+        "third day",
+        "raised"
+      ],
+      "expected": "Raised on third day and Christ's resurrection"
+    },
+    {
+      "id": "S019",
+      "category": "narrative_pattern",
+      "polarity": "positive",
+      "query": "Jonah 1:17",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 10,
+      "assessable": true,
+      "previous_rank": 1,
+      "rank": 2,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Matthew 12:40",
+        "three days",
+        "Jonah"
+      ],
+      "expected": "Jonah three days and Son of Man three days"
+    },
+    {
+      "id": "S020",
+      "category": "narrative_pattern",
+      "polarity": "positive",
+      "query": "2 Kings 20:5",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 25,
+      "assessable": true,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "Hosea 6:2",
+        "third day",
+        "revive"
+      ],
+      "expected": "Healing and third-day temple ascent"
+    },
+    {
+      "id": "S021",
+      "category": "narrative_pattern",
+      "polarity": "positive",
+      "query": "Hosea 6:2",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 25,
+      "assessable": true,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "2 Kings 20:5",
+        "third day",
+        "heal"
+      ],
+      "expected": "Hezekiah third-day recovery"
+    },
+    {
+      "id": "S022",
+      "category": "narrative_pattern",
+      "polarity": "positive",
+      "query": "1 Kings 17:22",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 20,
+      "assessable": true,
+      "previous_rank": 12,
+      "rank": 11,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Luke 7:15",
+        "widow",
+        "raised son"
+      ],
+      "expected": "Elijah revives a widow's son and Jesus raises son"
+    },
+    {
+      "id": "S023",
+      "category": "narrative_pattern",
+      "polarity": "positive",
+      "query": "2 Kings 4:34",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 25,
+      "assessable": true,
+      "previous_rank": 9,
+      "rank": 8,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Acts 9:40",
+        "raised",
+        "Tabitha"
+      ],
+      "expected": "Elisha restores boy and Peter raises Tabitha"
+    },
+    {
+      "id": "S024",
+      "category": "narrative_pattern",
+      "polarity": "positive",
+      "query": "Ezekiel 37:7",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 25,
+      "assessable": true,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "John 11:43",
+        "Lazarus",
+        "come out"
+      ],
+      "expected": "Dry bones restored and Lazarus called forth"
+    },
+    {
+      "id": "S025",
+      "category": "narrative_pattern",
+      "polarity": "positive",
+      "query": "Ezekiel 37:12",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 25,
+      "assessable": true,
+      "previous_rank": 3,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "Matthew 27:52",
+        "graves",
+        "raised"
+      ],
+      "expected": "Graves opened resurrection imagery"
+    },
+    {
+      "id": "S026",
+      "category": "narrative_pattern",
+      "polarity": "positive",
+      "query": "Isaiah 26:19",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 20,
+      "assessable": true,
+      "previous_rank": 4,
+      "rank": 9,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "John 5:28",
+        "dead shall live",
+        "graves"
+      ],
+      "expected": "Dead rise and voice awakens tombs"
+    },
+    {
+      "id": "S027",
+      "category": "narrative_pattern",
+      "polarity": "positive",
+      "query": "Exodus 12:13",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 25,
+      "assessable": true,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "Joshua 2:18",
+        "scarlet cord",
+        "house"
+      ],
+      "expected": "Marked house survives danger and Rahab scarlet cord"
+    },
+    {
+      "id": "S028",
+      "category": "narrative_genealogy",
+      "polarity": "positive",
+      "query": "Joshua 2:18",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 20,
+      "assessable": true,
+      "previous_rank": 5,
+      "rank": 4,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Matthew 1:5",
+        "Rahab",
+        "Salmon"
+      ],
+      "expected": "Rahab identified in Matthew genealogy"
+    },
+    {
+      "id": "S029",
+      "category": "narrative_genealogy",
+      "polarity": "positive",
+      "query": "Genesis 38:29",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 15,
+      "assessable": true,
+      "previous_rank": 4,
+      "rank": 9,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Matthew 1:3",
+        "Perez",
+        "Tamar"
+      ],
+      "expected": "Tamar's Perez in Matthew genealogy"
+    },
+    {
+      "id": "S030",
+      "category": "narrative_pattern",
+      "polarity": "positive",
+      "query": "Genesis 38:28",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 25,
+      "assessable": true,
+      "previous_rank": 7,
+      "rank": 6,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Joshua 2:18",
+        "scarlet cord",
+        "thread"
+      ],
+      "expected": "Scarlet thread in Tamar twins and Rahab cord"
+    },
+    {
+      "id": "S031",
+      "category": "narrative_genealogy",
+      "polarity": "positive",
+      "query": "Genesis 38:30",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 15,
+      "assessable": true,
+      "previous_rank": 2,
+      "rank": 6,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Matthew 1:3",
+        "Perez",
+        "Zerah"
+      ],
+      "expected": "Perez and Zerah in Judah genealogy"
+    },
+    {
+      "id": "S032",
+      "category": "narrative_pattern",
+      "polarity": "positive",
+      "query": "Exodus 25:31",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 15,
+      "assessable": true,
+      "previous_rank": 1,
+      "rank": 1,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Zechariah 4:2",
+        "seven lamps",
+        "lampstand"
+      ],
+      "expected": "Tabernacle menorah and Zechariah lampstand"
+    },
+    {
+      "id": "S033",
+      "category": "narrative_pattern",
+      "polarity": "positive",
+      "query": "Zechariah 4:2",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 15,
+      "assessable": true,
+      "previous_rank": 1,
+      "rank": 1,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Revelation 1:12",
+        "lampstands",
+        "golden"
+      ],
+      "expected": "Lampstand in Revelation vision"
+    },
+    {
+      "id": "S034",
+      "category": "narrative_pattern",
+      "polarity": "positive",
+      "query": "Zechariah 4:10",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 15,
+      "assessable": true,
+      "previous_rank": 1,
+      "rank": 1,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Revelation 5:6",
+        "seven eyes",
+        "spirits"
+      ],
+      "expected": "Seven eyes of LORD and Lamb's seven eyes"
+    },
+    {
+      "id": "S035",
+      "category": "narrative_pattern",
+      "polarity": "positive",
+      "query": "Zechariah 4:6",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 25,
+      "assessable": true,
+      "previous_rank": 9,
+      "rank": 10,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Revelation 4:5",
+        "seven lamps",
+        "seven spirits"
+      ],
+      "expected": "Spirit in lampstand vision and seven lamps at throne"
+    },
+    {
+      "id": "S036",
+      "category": "narrative_pattern",
+      "polarity": "positive",
+      "query": "Exodus 27:20",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 15,
+      "assessable": true,
+      "previous_rank": 23,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "Zechariah 4:12",
+        "olive oil",
+        "lamp"
+      ],
+      "expected": "Oil for lamps and Zechariah's olive branches"
+    },
+    {
+      "id": "S037",
+      "category": "narrative_pattern",
+      "polarity": "positive",
+      "query": "Matthew 5:15",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 12,
+      "assessable": true,
+      "previous_rank": 3,
+      "rank": 1,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Luke 11:33",
+        "lamp",
+        "basket"
+      ],
+      "expected": "Lamp not hidden under basket"
+    },
+    {
+      "id": "S038",
+      "category": "narrative_pattern",
+      "polarity": "positive",
+      "query": "Luke 11:34",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 12,
+      "assessable": true,
+      "previous_rank": 1,
+      "rank": 5,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Matthew 6:22",
+        "eye",
+        "lamp of the body"
+      ],
+      "expected": "Eye as lamp of body"
+    },
+    {
+      "id": "S039",
+      "category": "narrative_pattern",
+      "polarity": "positive",
+      "query": "2 Peter 1:19",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 20,
+      "assessable": true,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "Revelation 22:16",
+        "morning star",
+        "daystar"
+      ],
+      "expected": "Morning star and bright morning star"
+    },
+    {
+      "id": "S040",
+      "category": "narrative_pattern",
+      "polarity": "positive",
+      "query": "Revelation 1:20",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 10,
+      "assessable": true,
+      "previous_rank": 5,
+      "rank": 7,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Revelation 2:1",
+        "seven churches",
+        "lampstand"
+      ],
+      "expected": "Lampstands signify seven churches"
+    },
+    {
+      "id": "S041",
+      "category": "narrative_pattern",
+      "polarity": "positive",
+      "query": "Revelation 4:5",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 12,
+      "assessable": true,
+      "previous_rank": 16,
+      "rank": 23,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "Revelation 5:6",
+        "seven eyes",
+        "seven spirits"
+      ],
+      "expected": "Seven lamps and seven Spirits linked to Lamb's eyes"
+    },
+    {
+      "id": "S042",
+      "category": "narrative_pattern",
+      "polarity": "positive",
+      "query": "Isaiah 6:3",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 12,
+      "assessable": true,
+      "previous_rank": 1,
+      "rank": 1,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Revelation 4:8",
+        "holy holy holy",
+        "Lord"
+      ],
+      "expected": "Holy holy holy in Revelation throne worship"
+    },
+    {
+      "id": "S043",
+      "category": "narrative_pattern",
+      "polarity": "positive",
+      "query": "Ezekiel 1:26",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 20,
+      "assessable": true,
+      "previous_rank": 1,
+      "rank": 1,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Revelation 4:2",
+        "throne",
+        "heaven"
+      ],
+      "expected": "Throne and appearance of human-like figure"
+    },
+    {
+      "id": "S044",
+      "category": "narrative_pattern",
+      "polarity": "positive",
+      "query": "Ezekiel 1:28",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 15,
+      "assessable": true,
+      "previous_rank": 1,
+      "rank": 2,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Revelation 4:3",
+        "rainbow",
+        "throne"
+      ],
+      "expected": "Rainbow around divine glory and throne"
+    },
+    {
+      "id": "S045",
+      "category": "narrative_pattern",
+      "polarity": "positive",
+      "query": "Exodus 19:18",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 20,
+      "assessable": true,
+      "previous_rank": 23,
+      "rank": 13,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Revelation 15:8",
+        "smoke",
+        "glory"
+      ],
+      "expected": "Smoke and fire in Revelation heavenly worship"
+    },
+    {
+      "id": "S046",
+      "category": "narrative_pattern",
+      "polarity": "positive",
+      "query": "Genesis 15:17",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 20,
+      "assessable": true,
+      "previous_rank": 7,
+      "rank": 6,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Exodus 19:18",
+        "fire",
+        "smoke"
+      ],
+      "expected": "Smoking furnace flaming torch and Sinai smoke"
+    },
+    {
+      "id": "S047",
+      "category": "narrative_pattern",
+      "polarity": "positive",
+      "query": "Leviticus 16:12",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 15,
+      "assessable": true,
+      "previous_rank": 2,
+      "rank": 2,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Revelation 8:3",
+        "incense",
+        "altar"
+      ],
+      "expected": "Incense before God and heavenly altar incense"
+    },
+    {
+      "id": "S048",
+      "category": "narrative_pattern",
+      "polarity": "positive",
+      "query": "Psalm 141:2",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 12,
+      "assessable": true,
+      "previous_rank": 1,
+      "rank": 1,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Revelation 5:8",
+        "prayers",
+        "incense"
+      ],
+      "expected": "Prayer as incense and saints' prayers as incense"
+    },
+    {
+      "id": "S049",
+      "category": "narrative_pattern",
+      "polarity": "positive",
+      "query": "Isaiah 11:2",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 25,
+      "assessable": true,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "Revelation 4:5",
+        "seven spirits",
+        "Spirit"
+      ],
+      "expected": "Sevenfold Spirit and seven spirits of Revelation"
+    },
+    {
+      "id": "S050",
+      "category": "narrative_pattern",
+      "polarity": "positive",
+      "query": "Ezekiel 47:1",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 15,
+      "assessable": true,
+      "previous_rank": 3,
+      "rank": 1,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Revelation 22:1",
+        "river of life",
+        "throne"
+      ],
+      "expected": "River from temple and water of life from throne"
+    },
+    {
+      "id": "S051",
+      "category": "narrative_pattern",
+      "polarity": "positive",
+      "query": "Genesis 2:10",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 20,
+      "assessable": true,
+      "previous_rank": 9,
+      "rank": 5,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Revelation 22:1",
+        "river",
+        "water of life"
+      ],
+      "expected": "River of Eden and New Jerusalem river"
+    },
+    {
+      "id": "S052",
+      "category": "narrative_pattern",
+      "polarity": "positive",
+      "query": "Genesis 3:24",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 20,
+      "assessable": true,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "Revelation 22:14",
+        "tree of life",
+        "enter gates"
+      ],
+      "expected": "Restricted tree of life becomes accessible"
+    },
+    {
+      "id": "S053",
+      "category": "narrative_pattern",
+      "polarity": "positive",
+      "query": "Genesis 2:9",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 15,
+      "assessable": true,
+      "previous_rank": 3,
+      "rank": 3,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Revelation 22:2",
+        "tree of life",
+        "fruit"
+      ],
+      "expected": "Tree of life in New Jerusalem"
+    },
+    {
+      "id": "S054",
+      "category": "narrative_pattern",
+      "polarity": "positive",
+      "query": "Genesis 3:17",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 15,
+      "assessable": true,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "Revelation 22:3",
+        "no curse",
+        "ground"
+      ],
+      "expected": "Curse of ground and absence of curse"
+    },
+    {
+      "id": "S055",
+      "category": "narrative_pattern",
+      "polarity": "positive",
+      "query": "Genesis 1:3",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 20,
+      "assessable": true,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "Revelation 21:23",
+        "Lamb",
+        "lamp"
+      ],
+      "expected": "Light of creation and Lamb as lamp"
+    },
+    {
+      "id": "S056",
+      "category": "narrative_pattern",
+      "polarity": "positive",
+      "query": "Genesis 11:9",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 25,
+      "assessable": true,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "Acts 2:6",
+        "languages",
+        "tongues"
+      ],
+      "expected": "Babel languages and Pentecost speech"
+    },
+    {
+      "id": "S057",
+      "category": "narrative_pattern",
+      "polarity": "positive",
+      "query": "Genesis 4:10",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 10,
+      "assessable": true,
+      "previous_rank": 4,
+      "rank": 4,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Hebrews 12:24",
+        "Abel",
+        "blood"
+      ],
+      "expected": "Abel's blood and Jesus' sprinkled blood"
+    },
+    {
+      "id": "S058",
+      "category": "narrative_chronology",
+      "polarity": "positive",
+      "query": "Leviticus 23:15",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 25,
+      "assessable": true,
+      "previous_rank": 11,
+      "rank": 13,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Acts 2:1",
+        "Pentecost",
+        "fifty days"
+      ],
+      "expected": "Weeks count and Pentecost"
+    },
+    {
+      "id": "S059",
+      "category": "narrative_pattern",
+      "polarity": "positive",
+      "query": "Numbers 6:25",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 25,
+      "assessable": true,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "Revelation 22:4",
+        "face",
+        "shine"
+      ],
+      "expected": "Face shines and servants see God's face"
+    },
+    {
+      "id": "S060",
+      "category": "narrative_pattern",
+      "polarity": "positive",
+      "query": "Exodus 34:29",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 12,
+      "assessable": true,
+      "previous_rank": 17,
+      "rank": 14,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "2 Corinthians 3:7",
+        "Moses",
+        "glory"
+      ],
+      "expected": "Moses radiant face and New Covenant veil"
+    },
+    {
+      "id": "S061",
+      "category": "narrative_pattern",
+      "polarity": "positive",
+      "query": "Jeremiah 31:33",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 10,
+      "assessable": true,
+      "previous_rank": 3,
+      "rank": 4,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Hebrews 10:16",
+        "law in hearts",
+        "covenant"
+      ],
+      "expected": "Law written on hearts cited in Hebrews"
+    },
+    {
+      "id": "S062",
+      "category": "narrative_pattern",
+      "polarity": "positive",
+      "query": "Deuteronomy 30:6",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 20,
+      "assessable": true,
+      "previous_rank": 9,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "Romans 2:29",
+        "circumcision of heart",
+        "spirit"
+      ],
+      "expected": "Circumcision of heart"
+    },
+    {
+      "id": "S063",
+      "category": "narrative_pattern",
+      "polarity": "positive",
+      "query": "Genesis 17:11",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 20,
+      "assessable": true,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "Colossians 2:11",
+        "circumcision",
+        "without hands"
+      ],
+      "expected": "Circumcision and putting off flesh in Christ"
+    },
+    {
+      "id": "S064",
+      "category": "narrative_pattern",
+      "polarity": "positive",
+      "query": "Psalm 51:7",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 15,
+      "assessable": true,
+      "previous_rank": 2,
+      "rank": 2,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Numbers 19:18",
+        "hyssop",
+        "clean"
+      ],
+      "expected": "Hyssop cleansing linked to ritual purification"
+    },
+    {
+      "id": "S065",
+      "category": "narrative_pattern",
+      "polarity": "positive",
+      "query": "John 19:29",
+      "mode": "discover",
+      "tool": "passage",
+      "k": 20,
+      "assessable": true,
+      "previous_rank": 7,
+      "rank": 5,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "Exodus 12:22",
+        "hyssop",
+        "Passover"
+      ],
+      "expected": "Hyssop at crucifixion and Passover application"
+    },
+    {
+      "id": "W001",
+      "category": "real_world_material",
+      "polarity": "positive",
+      "query": "G3088",
+      "mode": "bridge",
+      "tool": "word",
+      "k": 20,
+      "assessable": true,
+      "previous_rank": 23,
+      "rank": 8,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "H8081",
+        "olive oil",
+        "fuel"
+      ],
+      "expected": "Ancient lamp may use olive oil as fuel"
+    },
+    {
+      "id": "W002",
+      "category": "real_world_part_whole",
+      "polarity": "positive",
+      "query": "H4501",
+      "mode": "bridge",
+      "tool": "word",
+      "k": 12,
+      "assessable": true,
+      "previous_rank": 17,
+      "rank": 8,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "H5216",
+        "lamps",
+        "light holder"
+      ],
+      "expected": "Lampstand holds multiple lamps"
+    },
+    {
+      "id": "W003",
+      "category": "real_world_process",
+      "polarity": "positive",
+      "query": "H4501",
+      "mode": "bridge",
+      "tool": "word",
+      "k": 25,
+      "assessable": false,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "fire",
+        "combustion",
+        "light"
+      ],
+      "expected": "Lampstand connects to light and combustion"
+    },
+    {
+      "id": "W004",
+      "category": "real_world_process",
+      "polarity": "positive",
+      "query": "H0784",
+      "mode": "bridge",
+      "tool": "word",
+      "k": 12,
+      "assessable": true,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "H6227",
+        "smoke",
+        "ashan"
+      ],
+      "expected": "Fire produces smoke in Sinai scene"
+    },
+    {
+      "id": "W005",
+      "category": "real_world_process",
+      "polarity": "positive",
+      "query": "H0784",
+      "mode": "bridge",
+      "tool": "word",
+      "k": 15,
+      "assessable": false,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "light",
+        "illuminate",
+        "night"
+      ],
+      "expected": "Fire provides illumination at night"
+    },
+    {
+      "id": "W006",
+      "category": "real_world_material",
+      "polarity": "positive",
+      "query": "H8081",
+      "mode": "bridge",
+      "tool": "word",
+      "k": 12,
+      "assessable": true,
+      "previous_rank": 24,
+      "rank": 15,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "H5216",
+        "lamp",
+        "olive oil"
+      ],
+      "expected": "Oil sustains sanctuary lamps"
+    },
+    {
+      "id": "W007",
+      "category": "real_world_part_whole",
+      "polarity": "positive",
+      "query": "Zechariah 4:12",
+      "mode": "bridge",
+      "tool": "passage",
+      "k": 20,
+      "assessable": true,
+      "previous_rank": 5,
+      "rank": 1,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "H4501",
+        "olive",
+        "oil"
+      ],
+      "expected": "Olive branches feed lampstand vision"
+    },
+    {
+      "id": "W008",
+      "category": "real_world_property",
+      "polarity": "positive",
+      "query": "H4325",
+      "mode": "bridge",
+      "tool": "word",
+      "k": 20,
+      "assessable": true,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "well",
+        "H0875",
+        "water source"
+      ],
+      "expected": "Water found in wells"
+    },
+    {
+      "id": "W009",
+      "category": "real_world_property",
+      "polarity": "positive",
+      "query": "H0875",
+      "mode": "bridge",
+      "tool": "word",
+      "k": 25,
+      "assessable": true,
+      "previous_rank": 23,
+      "rank": 15,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "spring",
+        "water source",
+        "H5869"
+      ],
+      "expected": "Well and spring as water sources"
+    },
+    {
+      "id": "W010",
+      "category": "real_world_property",
+      "polarity": "positive",
+      "query": "H5869",
+      "mode": "bridge",
+      "tool": "word",
+      "k": 20,
+      "assessable": false,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "spring",
+        "water source",
+        "hydrology"
+      ],
+      "expected": "Ayin spring sense connects to water sources"
+    },
+    {
+      "id": "W011",
+      "category": "real_world_property",
+      "polarity": "positive",
+      "query": "H5869",
+      "mode": "bridge",
+      "tool": "word",
+      "k": 20,
+      "assessable": false,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "visual organ",
+        "vision",
+        "eye"
+      ],
+      "expected": "Eye as visual organ is not water spring"
+    },
+    {
+      "id": "W012",
+      "category": "real_world_material",
+      "polarity": "positive",
+      "query": "H2091",
+      "mode": "bridge",
+      "tool": "word",
+      "k": 25,
+      "assessable": true,
+      "previous_rank": 17,
+      "rank": 6,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "H5178",
+        "bronze",
+        "metal"
+      ],
+      "expected": "Gold and bronze are metallic materials"
+    },
+    {
+      "id": "W013",
+      "category": "real_world_material",
+      "polarity": "positive",
+      "query": "H2091",
+      "mode": "bridge",
+      "tool": "word",
+      "k": 12,
+      "assessable": true,
+      "previous_rank": 3,
+      "rank": 4,
+      "at_k": true,
+      "query_status": "ok",
+      "terms": [
+        "H4501",
+        "golden lampstand",
+        "material"
+      ],
+      "expected": "Gold as material of lampstand"
+    },
+    {
+      "id": "W014",
+      "category": "real_world_material",
+      "polarity": "positive",
+      "query": "H5178",
+      "mode": "bridge",
+      "tool": "word",
+      "k": 12,
+      "assessable": false,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "altar",
+        "bronze",
+        "brass"
+      ],
+      "expected": "Bronze as altar material"
+    },
+    {
+      "id": "W015",
+      "category": "real_world_material",
+      "polarity": "positive",
+      "query": "silver",
+      "mode": "bridge",
+      "tool": "word",
+      "k": 20,
+      "assessable": false,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "tabernacle",
+        "base",
+        "socket"
+      ],
+      "expected": "Silver used for sanctuary fittings"
+    },
+    {
+      "id": "W016",
+      "category": "real_world_material",
+      "polarity": "positive",
+      "query": "H0068",
+      "mode": "bridge",
+      "tool": "word",
+      "k": 25,
+      "assessable": false,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "foundation",
+        "cornerstone",
+        "stone"
+      ],
+      "expected": "Stone foundation and cornerstone imagery"
+    },
+    {
+      "id": "W017",
+      "category": "real_world_material",
+      "polarity": "positive",
+      "query": "Genesis 6:14",
+      "mode": "bridge",
+      "tool": "passage",
+      "k": 25,
+      "assessable": true,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "Exodus 25:10",
+        "wood",
+        "ark"
+      ],
+      "expected": "Wood as construction material of distinct biblical arks"
+    },
+    {
+      "id": "W018",
+      "category": "real_world_material",
+      "polarity": "positive",
+      "query": "cedar",
+      "mode": "bridge",
+      "tool": "word",
+      "k": 20,
+      "assessable": false,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "temple",
+        "wood",
+        "cedar"
+      ],
+      "expected": "Cedar as construction material for Temple"
+    },
+    {
+      "id": "W019",
+      "category": "real_world_part_whole",
+      "polarity": "positive",
+      "query": "pomegranate",
+      "mode": "bridge",
+      "tool": "word",
+      "k": 25,
+      "assessable": false,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "temple",
+        "garment",
+        "bells"
+      ],
+      "expected": "Pomegranate motifs on priest garments and columns"
+    },
+    {
+      "id": "W020",
+      "category": "real_world_process",
+      "polarity": "positive",
+      "query": "wheat",
+      "mode": "bridge",
+      "tool": "word",
+      "k": 25,
+      "assessable": false,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "seed",
+        "grain",
+        "germination"
+      ],
+      "expected": "Wheat grain planted and dying seed imagery"
+    },
+    {
+      "id": "W021",
+      "category": "real_world_material",
+      "polarity": "positive",
+      "query": "barley",
+      "mode": "bridge",
+      "tool": "word",
+      "k": 20,
+      "assessable": false,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "bread",
+        "loaves",
+        "grain"
+      ],
+      "expected": "Barley used to make loaves"
+    },
+    {
+      "id": "W022",
+      "category": "real_world_process",
+      "polarity": "positive",
+      "query": "H2233",
+      "mode": "bridge",
+      "tool": "word",
+      "k": 20,
+      "assessable": false,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "plant",
+        "germination",
+        "sow"
+      ],
+      "expected": "Seed is sown and grows as plant"
+    },
+    {
+      "id": "W023",
+      "category": "real_world_process",
+      "polarity": "positive",
+      "query": "fig tree",
+      "mode": "bridge",
+      "tool": "word",
+      "k": 20,
+      "assessable": false,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "fruit",
+        "bearing",
+        "tree"
+      ],
+      "expected": "Fig tree produces fruit and can be fruitless"
+    },
+    {
+      "id": "W024",
+      "category": "real_world_part_whole",
+      "polarity": "positive",
+      "query": "vine",
+      "mode": "bridge",
+      "tool": "word",
+      "k": 25,
+      "assessable": false,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "grapes",
+        "branches",
+        "fruit"
+      ],
+      "expected": "Vine bears grapes and metaphor of branches"
+    },
+    {
+      "id": "W025",
+      "category": "real_world_process",
+      "polarity": "positive",
+      "query": "yeast",
+      "mode": "bridge",
+      "tool": "word",
+      "k": 20,
+      "assessable": false,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "flour",
+        "dough",
+        "leaven"
+      ],
+      "expected": "Leaven changes dough"
+    },
+    {
+      "id": "W026",
+      "category": "real_world_process",
+      "polarity": "positive",
+      "query": "Jeremiah 18:6",
+      "mode": "bridge",
+      "tool": "passage",
+      "k": 15,
+      "assessable": true,
+      "previous_rank": 3,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "potter",
+        "clay",
+        "vessel"
+      ],
+      "expected": "Potter shapes clay as vessel"
+    },
+    {
+      "id": "W027",
+      "category": "real_world_material",
+      "polarity": "positive",
+      "query": "wool",
+      "mode": "bridge",
+      "tool": "word",
+      "k": 20,
+      "assessable": true,
+      "previous_rank": 13,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "scarlet",
+        "G2847",
+        "red"
+      ],
+      "expected": "Scarlet-colored wool as ritual material"
+    },
+    {
+      "id": "W028",
+      "category": "real_world_property",
+      "polarity": "positive",
+      "query": "salt",
+      "mode": "bridge",
+      "tool": "word",
+      "k": 25,
+      "assessable": false,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "covenant of salt",
+        "preservation",
+        "salt of earth"
+      ],
+      "expected": "Salt and preservation in covenant and teaching images"
+    },
+    {
+      "id": "W029",
+      "category": "real_world_material",
+      "polarity": "positive",
+      "query": "iron",
+      "mode": "bridge",
+      "tool": "word",
+      "k": 20,
+      "assessable": false,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "axe",
+        "smith",
+        "iron"
+      ],
+      "expected": "Iron used in cutting tools and craftsmanship"
+    },
+    {
+      "id": "W030",
+      "category": "real_world_material",
+      "polarity": "positive",
+      "query": "Daniel 2:32",
+      "mode": "bridge",
+      "tool": "passage",
+      "k": 15,
+      "assessable": true,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "bronze",
+        "iron",
+        "gold"
+      ],
+      "expected": "Gold silver bronze iron statue materials"
+    },
+    {
+      "id": "W031",
+      "category": "real_world_property",
+      "polarity": "positive",
+      "query": "sun",
+      "mode": "bridge",
+      "tool": "word",
+      "k": 15,
+      "assessable": false,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "light",
+        "day",
+        "luminary"
+      ],
+      "expected": "Sun provides day light"
+    },
+    {
+      "id": "W032",
+      "category": "real_world_process",
+      "polarity": "positive",
+      "query": "H4501",
+      "mode": "bridge",
+      "tool": "word",
+      "k": 25,
+      "assessable": false,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "oil",
+        "flame",
+        "smoke"
+      ],
+      "expected": "Menorah to oil to flame to smoke as physical process"
+    },
+    {
+      "id": "W033",
+      "category": "real_world_process",
+      "polarity": "positive",
+      "query": "H3220",
+      "mode": "bridge",
+      "tool": "word",
+      "k": 25,
+      "assessable": false,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "dry ground",
+        "water",
+        "land"
+      ],
+      "expected": "Water divided exposes dry ground"
+    },
+    {
+      "id": "W034",
+      "category": "real_world_property",
+      "polarity": "positive",
+      "query": "H7307",
+      "mode": "bridge",
+      "tool": "word",
+      "k": 25,
+      "assessable": false,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "wind",
+        "water",
+        "breath"
+      ],
+      "expected": "Wind moves water without proving Spirit equals air"
+    },
+    {
+      "id": "W035",
+      "category": "real_world_property",
+      "polarity": "positive",
+      "query": "G3788",
+      "mode": "bridge",
+      "tool": "word",
+      "k": 20,
+      "assessable": false,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "sight",
+        "vision",
+        "light"
+      ],
+      "expected": "Eye as organ for sight and light"
+    },
+    {
+      "id": "W036",
+      "category": "real_world_property",
+      "polarity": "positive",
+      "query": "H2233",
+      "mode": "bridge",
+      "tool": "word",
+      "k": 25,
+      "assessable": false,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "offspring",
+        "botanical seed",
+        "plant"
+      ],
+      "expected": "Seed as plant reproduction and genealogical offspring"
+    },
+    {
+      "id": "W037",
+      "category": "real_world_process",
+      "polarity": "positive",
+      "query": "H0231",
+      "mode": "bridge",
+      "tool": "word",
+      "k": 15,
+      "assessable": false,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "sprinkling",
+        "blood",
+        "water"
+      ],
+      "expected": "Hyssop used as tool for sprinkling"
+    },
+    {
+      "id": "W038",
+      "category": "real_world_property",
+      "polarity": "positive",
+      "query": "G2053",
+      "mode": "bridge",
+      "tool": "word",
+      "k": 25,
+      "assessable": false,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "wool",
+        "fiber",
+        "textile"
+      ],
+      "expected": "Wool as animal-derived fiber"
+    },
+    {
+      "id": "W039",
+      "category": "real_world_process",
+      "polarity": "positive",
+      "query": "H8081",
+      "mode": "bridge",
+      "tool": "word",
+      "k": 25,
+      "assessable": false,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "anoint",
+        "lamp",
+        "oil"
+      ],
+      "expected": "Oil as substance used for anointing and lamps"
+    },
+    {
+      "id": "W040",
+      "category": "real_world_material",
+      "polarity": "positive",
+      "query": "Numbers 19:9",
+      "mode": "bridge",
+      "tool": "passage",
+      "k": 15,
+      "assessable": true,
+      "previous_rank": 2,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "heifer",
+        "ashes",
+        "purification"
+      ],
+      "expected": "Ashes of red heifer used for purification"
+    },
+    {
+      "id": "N001",
+      "category": "false_path_composition",
+      "polarity": "negative",
+      "query": "H1904",
+      "mode": "discover",
+      "tool": "word",
+      "assessable": true,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "H3284",
+        "ostrich"
+      ]
+    },
+    {
+      "id": "N002",
+      "category": "false_path_composition",
+      "polarity": "negative",
+      "query": "H5869",
+      "mode": "discover",
+      "tool": "word",
+      "assessable": true,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "G0032",
+        "angel"
+      ]
+    },
+    {
+      "id": "N003",
+      "category": "false_path_composition",
+      "polarity": "negative",
+      "query": "G3056",
+      "mode": "discover",
+      "tool": "word",
+      "assessable": true,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "H3629",
+        "kidney"
+      ]
+    },
+    {
+      "id": "N004",
+      "category": "false_path_composition",
+      "polarity": "negative",
+      "query": "H1285",
+      "mode": "discover",
+      "tool": "word",
+      "assessable": true,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "H0212",
+        "wheel"
+      ]
+    },
+    {
+      "id": "N005",
+      "category": "sense_contamination",
+      "polarity": "negative",
+      "query": "H7307",
+      "mode": "discover",
+      "tool": "word",
+      "assessable": false,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "wind",
+        "air",
+        "Spirit"
+      ]
+    },
+    {
+      "id": "N006",
+      "category": "sense_contamination",
+      "polarity": "negative",
+      "query": "H5869",
+      "mode": "discover",
+      "tool": "word",
+      "assessable": false,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "eye",
+        "spring",
+        "water"
+      ]
+    },
+    {
+      "id": "N007",
+      "category": "sense_contamination",
+      "polarity": "negative",
+      "query": "H2233",
+      "mode": "discover",
+      "tool": "word",
+      "assessable": false,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "seed",
+        "offspring",
+        "plant"
+      ]
+    },
+    {
+      "id": "N008",
+      "category": "false_self_intersection",
+      "polarity": "negative",
+      "query": "spirit wind",
+      "mode": "discover",
+      "tool": "word",
+      "assessable": true,
+      "previous_rank": 1,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "r11:intersect:verse:H7307:H7307:2"
+      ]
+    },
+    {
+      "id": "N009",
+      "category": "numerical_false_positive",
+      "polarity": "negative",
+      "query": "three days resurrection",
+      "mode": "discover",
+      "tool": "word",
+      "assessable": true,
+      "previous_rank": 24,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "Genesis 5:23",
+        "365 years"
+      ]
+    },
+    {
+      "id": "N010",
+      "category": "interpretive_overclaim",
+      "polarity": "negative",
+      "query": "Hosea 6:2",
+      "mode": "discover",
+      "tool": "passage",
+      "assessable": true,
+      "previous_rank": 1,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "explicit prediction of Jesus",
+        "direct quote"
+      ]
+    },
+    {
+      "id": "N011",
+      "category": "chronology_overclaim",
+      "polarity": "negative",
+      "query": "Exodus 12:15",
+      "mode": "discover",
+      "tool": "passage",
+      "assessable": true,
+      "previous_rank": 18,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "explicit festival of crossing",
+        "Sea festival"
+      ]
+    },
+    {
+      "id": "N012",
+      "category": "physical_overclaim",
+      "polarity": "negative",
+      "query": "H4501",
+      "mode": "discover",
+      "tool": "word",
+      "assessable": false,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "smoking lampstand in Zechariah",
+        "literal smoke"
+      ]
+    },
+    {
+      "id": "N013",
+      "category": "etymology_overclaim",
+      "polarity": "negative",
+      "query": "Adam dam",
+      "mode": "discover",
+      "tool": "word",
+      "assessable": false,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "proven same root",
+        "derived from blood"
+      ]
+    },
+    {
+      "id": "N014",
+      "category": "authorial_intent_overclaim",
+      "polarity": "negative",
+      "query": "scarlet Tamar Rahab",
+      "mode": "discover",
+      "tool": "word",
+      "assessable": false,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "explicit prophecy",
+        "identical referent"
+      ]
+    },
+    {
+      "id": "N015",
+      "category": "entity_conflation",
+      "polarity": "negative",
+      "query": "G3088",
+      "mode": "discover",
+      "tool": "word",
+      "assessable": false,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "same object as menorah",
+        "identical"
+      ]
+    },
+    {
+      "id": "N016",
+      "category": "false_symbolism",
+      "polarity": "negative",
+      "query": "H8081",
+      "mode": "discover",
+      "tool": "word",
+      "assessable": false,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "always symbolizes Spirit",
+        "certain identity"
+      ]
+    },
+    {
+      "id": "N017",
+      "category": "source_provenance",
+      "polarity": "negative",
+      "query": "G3088",
+      "mode": "discover",
+      "tool": "word",
+      "assessable": false,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "wd:combustion_fuel_agent",
+        "synthetic Wikidata GUID"
+      ]
+    },
+    {
+      "id": "N018",
+      "category": "quantity_overclaim",
+      "polarity": "negative",
+      "query": "Jonah 1:17",
+      "mode": "discover",
+      "tool": "passage",
+      "assessable": true,
+      "previous_rank": 1,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "exact 72 hours",
+        "universal rule"
+      ]
+    },
+    {
+      "id": "N019",
+      "category": "theology_overclaim",
+      "polarity": "negative",
+      "query": "Revelation 4:5",
+      "mode": "discover",
+      "tool": "passage",
+      "assessable": true,
+      "previous_rank": 16,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "seven gods",
+        "separate deities"
+      ]
+    },
+    {
+      "id": "N020",
+      "category": "typology_overclaim",
+      "polarity": "negative",
+      "query": "Exodus 14:21",
+      "mode": "discover",
+      "tool": "passage",
+      "assessable": true,
+      "previous_rank": 1,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "literal sacrament",
+        "Christian baptism ceremony"
+      ]
+    },
+    {
+      "id": "N021",
+      "category": "generic_hub",
+      "polarity": "negative",
+      "query": "H1285",
+      "mode": "discover",
+      "tool": "word",
+      "assessable": false,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "every word related",
+        "universal link"
+      ]
+    },
+    {
+      "id": "N022",
+      "category": "source_scope",
+      "polarity": "negative",
+      "query": "H1904",
+      "mode": "discover",
+      "tool": "word",
+      "assessable": false,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "Hagar daughter of David",
+        "same subject"
+      ]
+    },
+    {
+      "id": "N023",
+      "category": "source_provenance",
+      "polarity": "negative",
+      "query": "H2091",
+      "mode": "discover",
+      "tool": "word",
+      "assessable": false,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "synthetic claim ID",
+        "invented statement"
+      ]
+    },
+    {
+      "id": "N024",
+      "category": "structural_feature_inflation",
+      "polarity": "negative",
+      "query": "H5869",
+      "mode": "discover",
+      "tool": "word",
+      "assessable": false,
+      "previous_rank": null,
+      "rank": null,
+      "at_k": false,
+      "query_status": "ok",
+      "terms": [
+        "three independent mechanisms",
+        "perfect proof"
+      ]
+    }
+  ]
+}
