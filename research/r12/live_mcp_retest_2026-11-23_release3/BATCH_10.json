@@ -1,0 +1,4131 @@
+{
+  "schema": "r12-release3-compat-benchmark-v1",
+  "date": "2026-11-23",
+  "release": "r12-discovery-3",
+  "worker_version": "e44b4b5a-24c2-4bf7-8d88-10762c9e4f3d",
+  "note": "7-tool compatible benchmark, not identical old discovery v2 RPC; bridge mode not represented.",
+  "batch": 10,
+  "total": 14,
+  "results": [
+    {
+      "index": 9,
+      "q": "H0231",
+      "mode": "discover",
+      "via": "word",
+      "status": "ok",
+      "error": null,
+      "latency_ms": 2344,
+      "cards": [
+        {
+          "rank": 1,
+          "id": "r11:lxx:H0231:1",
+          "ep": "documented_lexical_relationship",
+          "title": "Septuagint (LXX) bridge: אֵזוֹב (H0231) → ὕσσωπος (G5301, \"hyssop\") across 9 passages",
+          "refs": [
+            "Exodus 12:22",
+            "Leviticus 14:4",
+            "Leviticus 14:6",
+            "Leviticus 14:49"
+          ],
+          "target": "G5301",
+          "why": "Ancient Greek Septuagint translates Hebrew אֵזוֹב (H0231) as Greek ὕσσωπος (G5301) in 9 occurrences (Exodus 12:22, Leviticus 14:4, Leviticus 14:6, Leviticus 14:49). Establishes documented Greek translation bridge."
+        },
+        {
+          "rank": 2,
+          "id": "r11:cluster:H0231:temple_and_sanctuary_architecture",
+          "ep": "direct_textual_evidence",
+          "title": "Temple & Sanctuary Architecture (Exodus 12 · Leviticus 14 · Numbers 19)",
+          "refs": [
+            "Exodus 12:22",
+            "Leviticus 14:4",
+            "Leviticus 14:6",
+            "Leviticus 14:49"
+          ],
+          "target": "H0231",
+          "why": "Attested in 8 verses (Exodus 12:22, Leviticus 14:4, Leviticus 14:6, Leviticus 14:49...) with surface forms: אֵז֗וֹב, וְאֵזֹֽב, הָאֵזֹ֑ב, הָ֨אֵזֹ֜ב. Co-occurs with: cedar, scarlet, worm, bird. Occurs in sanctuary or Temple architectural d..."
+        },
+        {
+          "rank": 3,
+          "id": "r11:gram:H0231:possessive_construction_with:H0092",
+          "ep": "direct_textual_evidence",
+          "title": "Genitive / construct connection: אֵזוֹב (e.zov) ↔ אֲגֻדָּה (\"band\", 1×)",
+          "refs": [
+            "Exodus 12:22"
+          ],
+          "target": "H0092",
+          "why": "Genitive / construct connection: אֵזוֹב (H0231, \"hyssop\") and אֲגֻדָּה (H0092, \"band\") across 1 indexed occurrences. 1 distinct canonical source clauses pass token-position verification; parallel editions are counted once."
+        },
+        {
+          "rank": 4,
+          "id": "r11:gram:H0231:grammatical_object_of:H3947",
+          "ep": "direct_textual_evidence",
+          "title": "Direct object of: אֵזוֹב (e.zov) ↔ לָקַח (\"to take: take\", 6×)",
+          "refs": [
+            "Leviticus 14:4",
+            "Leviticus 14:49",
+            "Leviticus 14:51"
+          ],
+          "target": "H3947",
+          "why": "Direct object of: אֵזוֹב (H0231, \"hyssop\") and לָקַח (H3947, \"to take: take\") across 6 indexed occurrences. 6 distinct canonical source clauses pass token-position verification; parallel editions are counted once."
+        },
+        {
+          "rank": 5,
+          "id": "r12:path:H0231:H6086",
+          "ep": "documented_collocation_or_cooccurrence",
+          "title": "3-hop: אֵזוֹב (H0231) → עֵץ (\"tree: wood\", H6086)",
+          "refs": [
+            "Leviticus 14:4",
+            "Leviticus 14:6",
+            "Leviticus 14:49",
+            "Leviticus 14:51"
+          ],
+          "target": "H6086",
+          "why": "3-hop path (direct endpoint witness): אֵזוֹב (hyssop) --[gram_possessive_construction_with]--> אֲגֻדָּה (band) ; אֲגֻדָּה (band) --[gram_possessive_construction_with]--> מוֹטָה (yoke) ; מוֹטָה (yoke) --[gram_possessive_construction_with]..."
+        },
+        {
+          "rank": 6,
+          "id": "r12:prop:H0231:G5301",
+          "ep": "external_world_bridge",
+          "title": "External concept equivalence: אֵזוֹב (hyssop) ↔ ὕσσωπος (\"hyssop\") via \"oewn:12226211-n\"",
+          "refs": [
+            "Exodus 12:22",
+            "Leviticus 14:4",
+            "John 19:29",
+            "Hebrews 9:19"
+          ],
+          "target": "G5301",
+          "why": "External concept equivalence (candidate mapping; OpenEnglishWordNet) linking H0231 (hyssop plant (likely Origanum syriacum)) and G5301 (hyssop plant) via shared property oewn:hypernym=oewn:12226211-n. Independent biblical support=0 (expl..."
+        },
+        {
+          "rank": 7,
+          "id": "r11:xref:4308:26807",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (OT↔NT): Numbers 19:18 → John 15:2-3 (\"take some hyssop, dip it in the water, and sprinkle\")",
+          "refs": [
+            "Numbers 19:18",
+            "John 15:2-3"
+          ],
+          "target": "H0231",
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Numbers 19:18 and John 15:2-3 via anchor phrase \"take some hyssop, dip it in the water, and sprinkle\" (thematic editorial cross-reference)."
+        },
+        {
+          "rank": 8,
+          "id": "r11:xref:14745:30224",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (OT↔NT): Psalms 51:7 → Hebrews 9:19 (\"Purify me with hyssop\")",
+          "refs": [
+            "Psalms 51:7",
+            "Hebrews 9:19"
+          ],
+          "target": "H0231",
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Psalms 51:7 and Hebrews 9:19 via anchor phrase \"Purify me with hyssop\" (thematic editorial cross-reference)."
+        },
+        {
+          "rank": 9,
+          "id": "r11:colloc:H0231:H0730",
+          "ep": "documented_collocation_or_cooccurrence",
+          "title": "Direct collocation: אֵזוֹב (\"hyssop\") ↔ אֶ֫רֶז (\"cedar\", 7×)",
+          "refs": [
+            "Exodus 12:22",
+            "Leviticus 14:4",
+            "Leviticus 14:6",
+            "Leviticus 14:49"
+          ],
+          "target": "H0730",
+          "why": "Corpus co-occurrence links אֵזוֹב (H0231, \"hyssop\") with אֶ֫רֶז (H0730, \"cedar\") across 7 shared contexts (Exodus 12:22, Leviticus 14:4, Leviticus 14:6, Leviticus 14:49, Leviticus 14:51, Leviticus 14:52)."
+        },
+        {
+          "rank": 10,
+          "id": "r11:colloc:H0231:H8144",
+          "ep": "documented_collocation_or_cooccurrence",
+          "title": "Direct collocation: אֵזוֹב (\"hyssop\") ↔ שָׁנִי (\"scarlet\", 6×)",
+          "refs": [
+            "Exodus 12:22",
+            "Leviticus 14:4",
+            "Leviticus 14:6",
+            "Leviticus 14:49"
+          ],
+          "target": "H8144",
+          "why": "Corpus co-occurrence links אֵזוֹב (H0231, \"hyssop\") with שָׁנִי (H8144, \"scarlet\") across 6 shared contexts (Exodus 12:22, Leviticus 14:4, Leviticus 14:6, Leviticus 14:49, Leviticus 14:51, Leviticus 14:52)."
+        },
+        {
+          "rank": 11,
+          "id": "r12:prop:H0231:G0288",
+          "ep": "external_world_bridge",
+          "title": "Physical/semantic bridge: אֵזוֹב (hyssop) ↔ ἄμπελος (\"vine\") via \"oewn:13104346-n\"",
+          "refs": [
+            "Exodus 12:22",
+            "Leviticus 14:4",
+            "Matthew 26:29",
+            "Mark 14:25"
+          ],
+          "target": "G0288",
+          "why": "External property bridge (candidate mapping; OpenEnglishWordNet) linking H0231 (hyssop plant (likely Origanum syriacum)) and G0288 (grapevine) via shared property oewn:hypernym_l2=oewn:13104346-n. Independent biblical support=0 (explorat..."
+        },
+        {
+          "rank": 12,
+          "id": "r11:cluster:H0231:torah_ritual_and_covenant_law",
+          "ep": "direct_textual_evidence",
+          "title": "Torah Ritual & Covenant Law (Numbers 19)",
+          "refs": [
+            "Numbers 19:18"
+          ],
+          "target": "H0231",
+          "why": "Attested in 1 verse (Numbers 19:18) with surface forms: אֵז֜וֹב. Co-occurs with: to dip, to sprinkle, grave, slain: killed."
+        },
+        {
+          "rank": 13,
+          "id": "r11:xref:14745:30218",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (OT↔NT): Psalms 51:7 → Hebrews 9:13-14 (\"and I will be clean\")",
+          "refs": [
+            "Psalms 51:7",
+            "Hebrews 9:13-14"
+          ],
+          "target": "H0231",
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Psalms 51:7 and Hebrews 9:13-14 via anchor phrase \"and I will be clean\" (thematic editorial cross-reference)."
+        },
+        {
+          "rank": 14,
+          "id": "r11:colloc:H0231:H8438",
+          "ep": "documented_collocation_or_cooccurrence",
+          "title": "Direct collocation: אֵזוֹב (\"hyssop\") ↔ תּוֹלָע (\"worm\", 6×)",
+          "refs": [
+            "Exodus 12:22",
+            "Leviticus 14:4",
+            "Leviticus 14:6",
+            "Leviticus 14:49"
+          ],
+          "target": "H8438",
+          "why": "Corpus co-occurrence links אֵזוֹב (H0231, \"hyssop\") with תּוֹלָע (H8438, \"worm\") across 6 shared contexts (Exodus 12:22, Leviticus 14:4, Leviticus 14:6, Leviticus 14:49, Leviticus 14:51, Leviticus 14:52)."
+        },
+        {
+          "rank": 15,
+          "id": "r12:prop:H0231:H1612",
+          "ep": "external_world_bridge",
+          "title": "Physical/semantic bridge: אֵזוֹב (hyssop) ↔ גֶּ֫פֶן (\"vine\") via \"oewn:13104346-n\"",
+          "refs": [
+            "Exodus 12:22",
+            "Leviticus 14:4",
+            "Genesis 40:9",
+            "Genesis 40:10"
+          ],
+          "target": "H1612",
+          "why": "External property bridge (candidate mapping; OpenEnglishWordNet) linking H0231 (hyssop plant (likely Origanum syriacum)) and H1612 (grapevine) via shared property oewn:hypernym_l2=oewn:13104346-n. Independent biblical support=0 (explorat..."
+        },
+        {
+          "rank": 16,
+          "id": "r11:cluster:H0231:poetic_imagery_and_similes",
+          "ep": "direct_textual_evidence",
+          "title": "Poetic Imagery & Similes (Psalms 51)",
+          "refs": [
+            "Psalms 51:7"
+          ],
+          "target": "H0231",
+          "why": "Attested in 1 verse (Psalms 51:7) with surface forms: בְאֵז֣וֹב. Co-occurs with: to whiten, snow, Washer's, be pure."
+        },
+        {
+          "rank": 17,
+          "id": "r11:colloc:H0231:H2881",
+          "ep": "documented_collocation_or_cooccurrence",
+          "title": "Direct collocation: אֵזוֹב (\"hyssop\") ↔ טָבַל (\"to dip\", 1×)",
+          "refs": [
+            "Numbers 19:18"
+          ],
+          "target": "H2881",
+          "why": "Corpus co-occurrence links אֵזוֹב (H0231, \"hyssop\") with טָבַל (H2881, \"to dip\") across 1 shared contexts (Numbers 19:18)."
+        },
+        {
+          "rank": 18,
+          "id": "r11:xref:1839:3118",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference: Exodus 12:22 → Leviticus 14:6-7 (\"a cluster of hyssop\")",
+          "refs": [
+            "Exodus 12:22",
+            "Leviticus 14:6-7"
+          ],
+          "target": "H0231",
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Exodus 12:22 and Leviticus 14:6-7 via anchor phrase \"a cluster of hyssop\" (same original lemma)."
+        },
+        {
+          "rank": 19,
+          "id": "r11:colloc:H0231:H5137",
+          "ep": "documented_collocation_or_cooccurrence",
+          "title": "Direct collocation: אֵזוֹב (\"hyssop\") ↔ נָזָה (\"to sprinkle\", 1×)",
+          "refs": [
+            "Numbers 19:18"
+          ],
+          "target": "H5137",
+          "why": "Corpus co-occurrence links אֵזוֹב (H0231, \"hyssop\") with נָזָה (H5137, \"to sprinkle\") across 1 shared contexts (Numbers 19:18)."
+        },
+        {
+          "rank": 20,
+          "id": "r12:orth:H0231:H2100",
+          "ep": "orthographic_similarity_only",
+          "title": "Orthographic similarity: אֵזוֹב (H0231) ↔ זוּב (H2100, matched \"זוב\")",
+          "refs": [
+            "Exodus 12:22",
+            "Exodus 3:8"
+          ],
+          "target": "H2100",
+          "why": "Unpointed/unaccented script similarity (hebrew_unpointed, score=0.879167, shared segment \"זוב\"). Shared spelling does not establish root, etymology, meaning, or intentional wordplay."
+        },
+        {
+          "rank": 21,
+          "id": "r12:orth:H0231:H2101",
+          "ep": "orthographic_similarity_only",
+          "title": "Orthographic similarity: אֵזוֹב (H0231) ↔ זוֹב (H2101, matched \"זוב\")",
+          "refs": [
+            "Exodus 12:22",
+            "Leviticus 15:2"
+          ],
+          "target": "H2101",
+          "why": "Unpointed/unaccented script similarity (hebrew_unpointed, score=0.879167, shared segment \"זוב\"). Shared spelling does not establish root, etymology, meaning, or intentional wordplay."
+        },
+        {
+          "rank": 22,
+          "id": "r11:xref:1839:4308",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference: Exodus 12:22 → Numbers 19:18 (\"a cluster of hyssop\")",
+          "refs": [
+            "Exodus 12:22",
+            "Numbers 19:18"
+          ],
+          "target": "H0231",
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Exodus 12:22 and Numbers 19:18 via anchor phrase \"a cluster of hyssop\" (same original lemma)."
+        },
+        {
+          "rank": 23,
+          "id": "r12:path:H0231:H2881",
+          "ep": "candidate_literary_pattern",
+          "title": "2-hop: אֵזוֹב (H0231) → טָבַל (\"to dip\", H2881)",
+          "refs": [
+            "Exodus 12:22",
+            "Leviticus 14:6",
+            "Leviticus 14:51",
+            "Numbers 19:18"
+          ],
+          "target": "H2881",
+          "why": "2-hop path (exploratory step chain): אֵזוֹב (hyssop) --[gram_possessive_construction_with]--> אֲגֻדָּה (band) ; אֲגֻדָּה (band) --[contextual_collocation]--> טָבַל (to dip)"
+        },
+        {
+          "rank": 24,
+          "id": "r12:path:H0231:G4472",
+          "ep": "candidate_literary_pattern",
+          "title": "2-hop: אֵזוֹב (H0231) → ῥαντίζω (\"to sprinkle\", G4472)",
+          "refs": [
+            "Hebrews 9:19",
+            "Leviticus 14:51",
+            "Numbers 19:18",
+            "Exodus 12:22"
+          ],
+          "target": "G4472",
+          "why": "2-hop path (exploratory step chain): אֵזוֹב (hyssop) —LXX→ ὕσσωπος (hyssop) ; ὕσσωπος (hyssop) --[contextual_collocation]--> ῥαντίζω (to sprinkle)"
+        },
+        {
+          "rank": 25,
+          "id": "r12:path:H0231:H3548",
+          "ep": "candidate_literary_pattern",
+          "title": "3-hop: אֵזוֹב (H0231) → כֹּהֵן (\"priest\", H3548)",
+          "refs": [
+            "Leviticus 14:4",
+            "Numbers 19:6",
+            "Exodus 12:22",
+            "Leviticus 14:6"
+          ],
+          "target": "H3548",
+          "why": "3-hop path (exploratory step chain): אֵזוֹב (hyssop) --[contextual_collocation]--> צִפּוֹר (bird) ; צִפּוֹר (bird) —object of→ טָבַל (to dip) ; טָבַל (to dip) —subject of→ כֹּהֵן (priest)"
+        }
+      ],
+      "case_scores": [
+        {
+          "id": "L018",
+          "polarity": "positive",
+          "category": "linguistic_translation",
+          "assessable": true,
+          "k": 10,
+          "old": 1,
+          "now": 1
+        },
+        {
+          "id": "L019",
+          "polarity": "positive",
+          "category": "linguistic_lexical",
+          "assessable": true,
+          "k": 12,
+          "old": 16,
+          "now": 14
+        },
+        {
+          "id": "L052",
+          "polarity": "positive",
+          "category": "linguistic_lexical",
+          "assessable": true,
+          "k": 15,
+          "old": null,
+          "now": null
+        }
+      ]
+    },
+    {
+      "index": 23,
+      "q": "G3957",
+      "mode": "discover",
+      "via": "word",
+      "status": "ok",
+      "error": null,
+      "latency_ms": 2343,
+      "cards": [
+        {
+          "rank": 1,
+          "id": "r10:typo:exod12_passover_blood_christ_1cor5_7",
+          "ep": "authorial_typology_or_quote",
+          "title": "Explicit NT Passover identification: 1 Cor 5:7 (\"Christ, our Passover, has been sacrificed\"), John 19:36, and 1 Pet 1:18–19",
+          "refs": [
+            "Exodus 12:7",
+            "Exodus 12:13",
+            "Exodus 12:46",
+            "1 Corinthians 5:7"
+          ],
+          "target": "H1818",
+          "why": "Exodus 12:7,13,22–23 records the Passover lamb’s blood (דָּם H1818) applied to the lintel and two doorposts (מְזוּזֹת / מַשְׁקוֹף / פֶּתַח) so the destroyer cannot enter. NT writers explicitly connect Jesus to the Passover lamb: 1 Cor 5:..."
+        },
+        {
+          "rank": 2,
+          "id": "r11:gram:G3957:grammatical_object_of:G5315",
+          "ep": "direct_textual_evidence",
+          "title": "Direct object of: πάσχα (pascha) ↔ φαγεῖν (\"to eat\", 6×)",
+          "refs": [
+            "John 18:28",
+            "Luke 22:11",
+            "Luke 22:15"
+          ],
+          "target": "G5315",
+          "why": "Direct object of: πάσχα (G3957, \"Passover lamb\") and φαγεῖν (G5315, \"to eat\") across 6 indexed occurrences. 6 distinct canonical source clauses pass token-position verification; parallel editions are counted once."
+        },
+        {
+          "rank": 3,
+          "id": "r11:gram:G3957:grammatical_object_of:G2090",
+          "ep": "direct_textual_evidence",
+          "title": "Direct object of: πάσχα (pascha) ↔ ἑτοιμάζω (\"to make ready\", 4×)",
+          "refs": [
+            "Luke 22:13",
+            "Luke 22:8",
+            "Matthew 26:19"
+          ],
+          "target": "G2090",
+          "why": "Direct object of: πάσχα (G3957, \"Passover lamb\") and ἑτοιμάζω (G2090, \"to make ready\") across 4 indexed occurrences. 4 distinct canonical source clauses pass token-position verification; parallel editions are counted once."
+        },
+        {
+          "rank": 4,
+          "id": "r11:lxx:G3957:0",
+          "ep": "documented_lexical_relationship",
+          "title": "Septuagint alignment witness: πάσχα (G3957) → פֶּ֫סַח",
+          "refs": [],
+          "target": "H6453",
+          "why": "Documented LXX lexical alignment linking πάσχα (G3957) with Greek witness פֶּ֫סַח."
+        },
+        {
+          "rank": 5,
+          "id": "r11:cluster:G3957:gospel_and_nt_teaching",
+          "ep": "direct_textual_evidence",
+          "title": "Gospel & NT Teaching (Matthew 26 · Mark 14 · Luke 2, 22)",
+          "refs": [
+            "Matthew 26:2",
+            "Matthew 26:17",
+            "Matthew 26:18",
+            "Matthew 26:19"
+          ],
+          "target": "G3957",
+          "why": "Attested in 25 verses (Matthew 26:2, Matthew 26:17, Matthew 26:18, Matthew 26:19...) with surface forms: πάσχα, Πάσχα. Co-occurs with: to eat, unleavened, to make ready, festival."
+        },
+        {
+          "rank": 6,
+          "id": "r11:gram:G3957:grammatical_object_of:G4160",
+          "ep": "direct_textual_evidence",
+          "title": "Direct object of: πάσχα (pascha) ↔ ποιέω (\"to do/make: do\", 2×)",
+          "refs": [
+            "Hebrews 11:28",
+            "Matthew 26:18"
+          ],
+          "target": "G4160",
+          "why": "Direct object of: πάσχα (G3957, \"Passover lamb\") and ποιέω (G4160, \"to do/make: do\") across 2 indexed occurrences. 2 distinct canonical source clauses pass token-position verification; parallel editions are counted once."
+        },
+        {
+          "rank": 7,
+          "id": "r11:xref:28562:1832",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (OT↔NT): 1 Corinthians 5:7 → Exodus 12:15 (\"Get rid of the old leaven\")",
+          "refs": [
+            "1 Corinthians 5:7",
+            "Exodus 12:15"
+          ],
+          "target": "G3957",
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links 1 Corinthians 5:7 and Exodus 12:15 via anchor phrase \"Get rid of the old leaven\" (thematic editorial cross-reference)."
+        },
+        {
+          "rank": 8,
+          "id": "r11:xref:28562:1874",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (OT↔NT): 1 Corinthians 5:7 → Exodus 13:6-7 (\"Get rid of the old leaven\")",
+          "refs": [
+            "1 Corinthians 5:7",
+            "Exodus 13:6-7"
+          ],
+          "target": "G3957",
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links 1 Corinthians 5:7 and Exodus 13:6-7 via anchor phrase \"Get rid of the old leaven\" (thematic editorial cross-reference)."
+        },
+        {
+          "rank": 9,
+          "id": "r11:colloc:G3957:G5315",
+          "ep": "documented_collocation_or_cooccurrence",
+          "title": "Direct collocation: πάσχα (\"Passover lamb\") ↔ φαγεῖν (\"to eat\", 7×)",
+          "refs": [
+            "Matthew 26:2",
+            "Matthew 26:17",
+            "Matthew 26:18",
+            "Matthew 26:19"
+          ],
+          "target": "G5315",
+          "why": "Corpus co-occurrence links πάσχα (G3957, \"Passover lamb\") with φαγεῖν (G5315, \"to eat\") across 7 shared contexts (Matthew 26:2, Matthew 26:17, Matthew 26:18, Matthew 26:19, Mark 14:1, Mark 14:12)."
+        },
+        {
+          "rank": 10,
+          "id": "r11:colloc:G3957:G0106",
+          "ep": "documented_collocation_or_cooccurrence",
+          "title": "Direct collocation: πάσχα (\"Passover lamb\") ↔ ἄζυμος (\"unleavened\", 5×)",
+          "refs": [
+            "Matthew 26:2",
+            "Matthew 26:17",
+            "Matthew 26:18",
+            "Matthew 26:19"
+          ],
+          "target": "G0106",
+          "why": "Corpus co-occurrence links πάσχα (G3957, \"Passover lamb\") with ἄζυμος (G0106, \"unleavened\") across 5 shared contexts (Matthew 26:2, Matthew 26:17, Matthew 26:18, Matthew 26:19, Mark 14:1, Mark 14:12)."
+        },
+        {
+          "rank": 11,
+          "id": "r11:cluster:G3957:epistolary_and_apocalyptic",
+          "ep": "direct_textual_evidence",
+          "title": "Epistolary & Apocalyptic Writings (1 Corinthians 5 · Hebrews 11)",
+          "refs": [
+            "1 Corinthians 5:7",
+            "Hebrews 11:28"
+          ],
+          "target": "G3957",
+          "why": "Attested in 2 verses (1 Corinthians 5:7, Hebrews 11:28) with surface forms: πάσχα. Co-occurs with: sprinkling, to destroy, to cleanse, to touch."
+        },
+        {
+          "rank": 12,
+          "id": "r11:colloc:G3957:G2090",
+          "ep": "documented_collocation_or_cooccurrence",
+          "title": "Direct collocation: πάσχα (\"Passover lamb\") ↔ ἑτοιμάζω (\"to make ready\", 6×)",
+          "refs": [
+            "Matthew 26:2",
+            "Matthew 26:17",
+            "Matthew 26:18",
+            "Matthew 26:19"
+          ],
+          "target": "G2090",
+          "why": "Corpus co-occurrence links πάσχα (G3957, \"Passover lamb\") with ἑτοιμάζω (G2090, \"to make ready\") across 6 shared contexts (Matthew 26:2, Matthew 26:17, Matthew 26:18, Matthew 26:19, Mark 14:1, Mark 14:12)."
+        },
+        {
+          "rank": 13,
+          "id": "r11:xref:24170:24865",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference: Matthew 26:2 → Mark 14:1-2 (\"know\")",
+          "refs": [
+            "Matthew 26:2",
+            "Mark 14:1-2"
+          ],
+          "target": "G3957",
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Matthew 26:2 and Mark 14:1-2 via anchor phrase \"know\" (same original lemma)."
+        },
+        {
+          "rank": 14,
+          "id": "r11:colloc:G3957:G4378",
+          "ep": "documented_collocation_or_cooccurrence",
+          "title": "Direct collocation: πάσχα (\"Passover lamb\") ↔ πρόσχυσις (\"sprinkling\", 1×)",
+          "refs": [
+            "1 Corinthians 5:7",
+            "Hebrews 11:28"
+          ],
+          "target": "G4378",
+          "why": "Corpus co-occurrence links πάσχα (G3957, \"Passover lamb\") with πρόσχυσις (G4378, \"sprinkling\") across 1 shared contexts (1 Corinthians 5:7, Hebrews 11:28)."
+        },
+        {
+          "rank": 15,
+          "id": "r11:xref:24170:25973",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference: Matthew 26:2 → Luke 22:1-15 (\"know\")",
+          "refs": [
+            "Matthew 26:2",
+            "Luke 22:1-15"
+          ],
+          "target": "G3957",
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Matthew 26:2 and Luke 22:1-15 via anchor phrase \"know\" (same original lemma)."
+        },
+        {
+          "rank": 16,
+          "id": "r11:colloc:G3957:G3645",
+          "ep": "documented_collocation_or_cooccurrence",
+          "title": "Direct collocation: πάσχα (\"Passover lamb\") ↔ ὀλοθρεύω (\"to destroy\", 1×)",
+          "refs": [
+            "1 Corinthians 5:7",
+            "Hebrews 11:28"
+          ],
+          "target": "G3645",
+          "why": "Corpus co-occurrence links πάσχα (G3957, \"Passover lamb\") with ὀλοθρεύω (G3645, \"to destroy\") across 1 shared contexts (1 Corinthians 5:7, Hebrews 11:28)."
+        },
+        {
+          "rank": 17,
+          "id": "r11:xref:24170:26737",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference: Matthew 26:2 → John 13:1 (\"know\")",
+          "refs": [
+            "Matthew 26:2",
+            "John 13:1"
+          ],
+          "target": "G3957",
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Matthew 26:2 and John 13:1 via anchor phrase \"know\" (same original lemma)."
+        },
+        {
+          "rank": 18,
+          "id": "r11:xref:24170:26215",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference: Matthew 26:2 → John 2:13 (\"Passover\")",
+          "refs": [
+            "Matthew 26:2",
+            "John 2:13"
+          ],
+          "target": "G3957",
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Matthew 26:2 and John 2:13 via anchor phrase \"Passover\" (same original lemma)."
+        },
+        {
+          "rank": 19,
+          "id": "r11:xref:28562:26945",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference: 1 Corinthians 5:7 → John 19:14 (\"Christ, our Passover lamb\")",
+          "refs": [
+            "1 Corinthians 5:7",
+            "John 19:14"
+          ],
+          "target": "G3957",
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links 1 Corinthians 5:7 and John 19:14 via anchor phrase \"Christ, our Passover lamb\" (same original lemma)."
+        },
+        {
+          "rank": 20,
+          "id": "r11:xref:28562:28568",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference: 1 Corinthians 5:7 → 1 Corinthians 5:13 (\"Get rid of the old leaven\")",
+          "refs": [
+            "1 Corinthians 5:7",
+            "1 Corinthians 5:13"
+          ],
+          "target": "G3957",
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links 1 Corinthians 5:7 and 1 Corinthians 5:13 via anchor phrase \"Get rid of the old leaven\" (thematic editorial cross-reference)."
+        },
+        {
+          "rank": 21,
+          "id": "r11:occ:G3957:24170",
+          "ep": "direct_textual_evidence",
+          "title": "Attested occurrence: πάσχα (pascha) in Matthew 26:2",
+          "refs": [
+            "Matthew 26:2"
+          ],
+          "target": "G3957",
+          "why": "Attested biblical occurrence of πάσχα (G3957, \"Passover lamb\") in Matthew 26:2: \"“You know that after two days the Passover is coming, and the Son of Man will be delivered up to be crucified.”\"."
+        },
+        {
+          "rank": 22,
+          "id": "r11:occ:G3957:24185",
+          "ep": "direct_textual_evidence",
+          "title": "Attested occurrence: πάσχα (pascha) in Matthew 26:17",
+          "refs": [
+            "Matthew 26:17"
+          ],
+          "target": "G3957",
+          "why": "Attested biblical occurrence of πάσχα (G3957, \"Passover lamb\") in Matthew 26:17: \"Now on the first day of unleavened bread, the disciples came to Jesus, saying to him, “Where do you want us to prepare for you to eat the Passover?”\"."
+        },
+        {
+          "rank": 23,
+          "id": "r11:occ:G3957:24186",
+          "ep": "direct_textual_evidence",
+          "title": "Attested occurrence: πάσχα (pascha) in Matthew 26:18",
+          "refs": [
+            "Matthew 26:18"
+          ],
+          "target": "G3957",
+          "why": "Attested biblical occurrence of πάσχα (G3957, \"Passover lamb\") in Matthew 26:18: \"He said, “Go into the city to a certain person, and tell him, ‘The Teacher says, “My time is at hand. I will keep the Passover at your house with my discip..."
+        },
+        {
+          "rank": 24,
+          "id": "r11:occ:G3957:24187",
+          "ep": "direct_textual_evidence",
+          "title": "Attested occurrence: πάσχα (pascha) in Matthew 26:19",
+          "refs": [
+            "Matthew 26:19"
+          ],
+          "target": "G3957",
+          "why": "Attested biblical occurrence of πάσχα (G3957, \"Passover lamb\") in Matthew 26:19: \"The disciples did as Jesus commanded them, and they prepared the Passover.\"."
+        },
+        {
+          "rank": 25,
+          "id": "r11:occ:G3957:24865",
+          "ep": "direct_textual_evidence",
+          "title": "Attested occurrence: πάσχα (pascha) in Mark 14:1",
+          "refs": [
+            "Mark 14:1"
+          ],
+          "target": "G3957",
+          "why": "Attested biblical occurrence of πάσχα (G3957, \"Passover lamb\") in Mark 14:1: \"It was now two days before the Passover and the Feast of Unleavened Bread, and the chief priests and the scribes sought how they might seize him by deception a..."
+        }
+      ],
+      "case_scores": [
+        {
+          "id": "L033",
+          "polarity": "positive",
+          "category": "linguistic_lexical",
+          "assessable": true,
+          "k": 12,
+          "old": 13,
+          "now": 10
+        }
+      ]
+    },
+    {
+      "index": 37,
+      "q": "Genesis 1:1",
+      "mode": "discover",
+      "via": "passage",
+      "status": "ok",
+      "error": null,
+      "latency_ms": 2345,
+      "cards": [
+        {
+          "rank": 1,
+          "id": "r10:corresp:gen1_to_rev4_rev21_creation_spirits",
+          "ep": "verified_cross_reference",
+          "title": "Genesis 1 creation (Spirit over waters, light, sevenfold completion) and Revelation 4–5 & 21–22 (throne of Creator, seven Spirits, new cr...",
+          "refs": [
+            "Genesis 1:1",
+            "Genesis 1:2",
+            "Genesis 2:2",
+            "Revelation 4:5"
+          ],
+          "target": "H7307",
+          "why": "Genesis 1 opens with God creating heavens/earth, the Spirit/wind (רוּחַ אֱלֹהִים) hovering over the waters (v.2), light out of darkness (v.3), and sevenfold completion (Gen 2:1–3). Revelation 4:5–11 explicitly worships the Creator (\"you..."
+        },
+        {
+          "rank": 2,
+          "id": "r11:xref:1:30968",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (reciprocal) (OT↔NT): Genesis 1:1 ↔ Revelation 10:6 (\"God\")",
+          "refs": [
+            "Genesis 1:1",
+            "Revelation 10:6"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) reciprocally links Genesis 1:1 and Revelation 10:6 via anchor phrase \"God\" (0 shared lemmas, 2 LXX alignment bridges)."
+        },
+        {
+          "rank": 3,
+          "id": "r11:xref:1:30073",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (reciprocal) (OT↔NT): Genesis 1:1 ↔ Hebrews 1:10 (\"beginning\")",
+          "refs": [
+            "Genesis 1:1",
+            "Hebrews 1:10"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) reciprocally links Genesis 1:1 and Hebrews 1:10 via anchor phrase \"beginning\" (0 shared lemmas, 2 LXX alignment bridges)."
+        },
+        {
+          "rank": 4,
+          "id": "r11:xref:1:29581",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (OT↔NT): Genesis 1:1 → Colossians 1:16-17 (\"God\")",
+          "refs": [
+            "Genesis 1:1",
+            "Colossians 1:16-17"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Genesis 1:1 and Colossians 1:16-17 via anchor phrase \"God\" (0 shared lemmas, 3 LXX alignment bridges, 1 matching grammatical role; aligned lemmas: H7225-G0746..."
+        },
+        {
+          "rank": 5,
+          "id": "r12:scene:1:23881",
+          "ep": "shared_motif_evidence",
+          "title": "Structural & lexical scene correspondence (OT↔NT): Genesis 1:1 ↔ Matthew 19:4",
+          "refs": [
+            "Genesis 1:1",
+            "Matthew 19:4"
+          ],
+          "why": "Cross-book alignment between Genesis 1:1 and Matthew 19:4 sharing rare attested lemmas/LXX equivalents (H7225-G0746,H1254-G2936, 1 shared MACULA grammatical role(s), IDF=9.1). Candidate literary/scene parallel; inspect both contexts befo..."
+        },
+        {
+          "rank": 6,
+          "id": "r11:xref:1:26152",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (reciprocal) (OT↔NT): Genesis 1:1 ↔ John 1:1-3 (\"beginning\")",
+          "refs": [
+            "Genesis 1:1",
+            "John 1:1-3"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) reciprocally links Genesis 1:1 and John 1:1-3 via anchor phrase \"beginning\" (0 shared lemmas, 1 LXX alignment bridge)."
+        },
+        {
+          "rank": 7,
+          "id": "r12:scene:1:30384",
+          "ep": "shared_motif_evidence",
+          "title": "Structural & lexical scene correspondence (OT↔NT): Genesis 1:1 ↔ James 1:18",
+          "refs": [
+            "Genesis 1:1",
+            "James 1:18"
+          ],
+          "why": "Cross-book alignment between Genesis 1:1 and James 1:18 sharing rare attested lemmas/LXX equivalents (H7225-G0536,H1254-G2938, IDF=9.4). Candidate literary/scene parallel; inspect both contexts before inferring authorial dependence."
+        },
+        {
+          "rank": 8,
+          "id": "r11:xref:1:30880",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (reciprocal) (OT↔NT): Genesis 1:1 ↔ Revelation 4:11 (\"God\")",
+          "refs": [
+            "Genesis 1:1",
+            "Revelation 4:11"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) reciprocally links Genesis 1:1 and Revelation 4:11 via anchor phrase \"God\" (0 shared lemmas, 1 LXX alignment bridge)."
+        },
+        {
+          "rank": 9,
+          "id": "r12:entity:1:25369",
+          "ep": "shared_motif_evidence",
+          "title": "Pericope named-entity bridge (OT↔NT): H4723 (Genesis 1:10) ↔ G5281 (Luke 8:15)",
+          "refs": [
+            "Genesis 1:1",
+            "Genesis 1:10",
+            "Luke 8:15"
+          ],
+          "why": "Chapter pericope verse Genesis 1:10 (near Genesis 1:1) attests rare proper name H4723, linked across testaments via STEP/LXX lexical alignment to G5281 in Luke 8:15. Connects episode context to later genealogy or reception witness."
+        },
+        {
+          "rank": 10,
+          "id": "r11:gram:H1254:grammatical_subject_of:H0430",
+          "ep": "direct_textual_evidence",
+          "title": "Has grammatical subject: בָּרָא (ba.ra) ↔ אֱלֹהִים (\"God\", 4×)",
+          "refs": [
+            "Deuteronomy 4:32",
+            "Genesis 1:1",
+            "Genesis 1:21"
+          ],
+          "target": "H0430",
+          "why": "Has grammatical subject: בָּרָא (H1254, \"to create (divine creation)\") and אֱלֹהִים (H0430, \"God\") across 4 indexed occurrences. 4 distinct canonical source clauses pass token-position verification; parallel editions are counted once."
+        },
+        {
+          "rank": 11,
+          "id": "r11:xref:1:27534",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (reciprocal) (OT↔NT): Genesis 1:1 ↔ Acts 14:15 (\"God\")",
+          "refs": [
+            "Genesis 1:1",
+            "Acts 14:15"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) reciprocally links Genesis 1:1 and Acts 14:15 via anchor phrase \"God\" (0 shared lemmas, 1 LXX alignment bridge)."
+        },
+        {
+          "rank": 12,
+          "id": "r12:event:1:event:1",
+          "ep": "shared_motif_evidence",
+          "title": "Biblical narrative sequence: Creation of all things → Creation of Adam and Eve (Genesis 1:1)",
+          "refs": [
+            "Genesis 1:1",
+            "Genesis 1:2",
+            "Genesis 2:4"
+          ],
+          "why": "Genesis 1:1 belongs to canonical narrative episode \"Creation of all things\" (-4003) (within episode context including Genesis 1:2), followed in canonical narrative sequence by \"Creation of Adam and Eve\" (Genesis 2:4). Canonical narrative..."
+        },
+        {
+          "rank": 13,
+          "id": "r11:xref:1:24705",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (OT↔NT): Genesis 1:1 → Mark 10:6 (\"the beginning of creation\")",
+          "refs": [
+            "Genesis 1:1",
+            "Mark 10:6"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Genesis 1:1 and Mark 10:6 via anchor phrase \"the beginning of creation\" (0 shared lemmas, 2 LXX alignment bridges)."
+        },
+        {
+          "rank": 14,
+          "id": "r11:xref:1:24846",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (OT↔NT): Genesis 1:1 → Mark 13:19 (\"beginning\")",
+          "refs": [
+            "Genesis 1:1",
+            "Mark 13:19"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Genesis 1:1 and Mark 13:19 via anchor phrase \"beginning\" (0 shared lemmas, 2 LXX alignment bridges)."
+        },
+        {
+          "rank": 15,
+          "id": "r11:xref:3:28966",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (reciprocal) (OT↔NT): Genesis 1:3 ↔ 2 Corinthians 4:6 (\"Let\") (same-chapter pericope context near Genesi...",
+          "refs": [
+            "Genesis 1:3",
+            "2 Corinthians 4:6"
+          ],
+          "why": "Same-chapter pericope context (Genesis 1:3, 2v from Genesis 1:1): Modern editorial cross-reference index (CrossReferences.org / OpenBible) reciprocally links Genesis 1:3 and 2 Corinthians 4:6 via anchor phrase \"Let\" (0 shared lemmas, 1 L..."
+        },
+        {
+          "rank": 16,
+          "id": "r11:xref:1:30861",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (OT↔NT): Genesis 1:1 → Revelation 3:14 (\"God\")",
+          "refs": [
+            "Genesis 1:1",
+            "Revelation 3:14"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Genesis 1:1 and Revelation 3:14 via anchor phrase \"God\" (0 shared lemmas, 2 LXX alignment bridges)."
+        },
+        {
+          "rank": 17,
+          "id": "r10:xlang:ruach_pneuma_anemos",
+          "ep": "documented_lexical_relationship",
+          "title": "Cross-language bridge: Hebrew רוּחַ (ruach H7307) ↔ Greek πνεῦμα (pneuma G4151) & ἄνεμος (anemos G0417)",
+          "refs": [
+            "Genesis 1:2",
+            "Ezekiel 37:9",
+            "John 3:8",
+            "Revelation 7:1"
+          ],
+          "target": "G4151",
+          "why": "Hebrew רוּחַ encompasses spirit, breath, wind, and compass quarter/side; LXX and NT translate it primarily with πνεῦμα (Spirit/breath/wind, e.g., John 3:8; Acts 2:2) and with ἄνεμος when emphasizing wind/four compass winds (e.g., Matt 24..."
+        },
+        {
+          "rank": 18,
+          "id": "r11:xref:1:15421",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (reciprocal): Genesis 1:1 ↔ Psalms 89:11-12 (\"God\")",
+          "refs": [
+            "Genesis 1:1",
+            "Psalms 89:11-12"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) reciprocally links Genesis 1:1 and Psalms 89:11-12 via anchor phrase \"God\" (2 shared lemmas, 0 LXX alignment bridges)."
+        },
+        {
+          "rank": 19,
+          "id": "r10:corresp:gen1_2_gen8_1_ruach_water_wind",
+          "ep": "verified_cross_reference",
+          "title": "Genesis 1:2 and Genesis 8:1 co-locate רוּחַ (Spirit / wind) over הַמָּיִם (waters) in creation and post-flood renewal",
+          "refs": [
+            "Genesis 1:2",
+            "Genesis 8:1",
+            "Psalms 104:30"
+          ],
+          "target": "H4325",
+          "why": "In Genesis 1:2, the Spirit/wind of God (רוּחַ אֱלֹהִים) hovers over the face of the waters (פְּנֵי הַמָּיִם). In Genesis 8:1, God causes a wind (רוּחַ) to pass over the earth so the waters (הַמָּיִם) subside—using the same H7307 + H4325..."
+        },
+        {
+          "rank": 20,
+          "id": "r11:gram:H1254:grammatical_object_of:H0776",
+          "ep": "direct_textual_evidence",
+          "title": "Has direct object: בָּרָא (ba.ra) ↔ אֶ֫רֶץ (\"land: country/planet\", 1×)",
+          "refs": [
+            "Genesis 1:1"
+          ],
+          "target": "H0776",
+          "why": "Has direct object: בָּרָא (H1254, \"to create (divine creation)\") and אֶ֫רֶץ (H0776, \"land: country/planet\") across 1 indexed occurrences. 1 distinct canonical source clauses pass token-position verification; parallel editions are counted..."
+        },
+        {
+          "rank": 21,
+          "id": "r11:xref:3:26156",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (OT↔NT): Genesis 1:3 → John 1:5-9 (\"Let\") (same-chapter pericope context near Genesis 1:1)",
+          "refs": [
+            "Genesis 1:3",
+            "John 1:5-9"
+          ],
+          "why": "Same-chapter pericope context (Genesis 1:3, 2v from Genesis 1:1): Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Genesis 1:3 and John 1:5-9 via anchor phrase \"Let\" (0 shared lemmas, 1 LXX alignment bridge)."
+        },
+        {
+          "rank": 22,
+          "id": "r11:lxx:H1254:0",
+          "ep": "documented_lexical_relationship",
+          "title": "Septuagint alignment witness: בָּרָא (H1254) → ποιέω",
+          "refs": [],
+          "target": "G4160",
+          "why": "Documented LXX lexical alignment linking בָּרָא (H1254) with Greek witness ποιέω."
+        },
+        {
+          "rank": 23,
+          "id": "r11:xref:1:17641",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference: Genesis 1:1 → Ecclesiastes 12:1 (\"God\")",
+          "refs": [
+            "Genesis 1:1",
+            "Ecclesiastes 12:1"
+          ],
+          "target": "H1254",
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Genesis 1:1 and Ecclesiastes 12:1 via anchor phrase \"God\" (same original lemma)."
+        },
+        {
+          "rank": 24,
+          "id": "r11:xref:1:18563",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference: Genesis 1:1 → Isaiah 40:26 (\"God\")",
+          "refs": [
+            "Genesis 1:1",
+            "Isaiah 40:26"
+          ],
+          "target": "H1254",
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Genesis 1:1 and Isaiah 40:26 via anchor phrase \"God\" (same original lemma)."
+        },
+        {
+          "rank": 25,
+          "id": "r11:cluster:H7225:temple_and_sanctuary_architecture",
+          "ep": "direct_textual_evidence",
+          "title": "Temple & Sanctuary Architecture (Exodus 23, 34 · Leviticus 2 · Ezekiel 20, 44, 48)",
+          "refs": [
+            "Exodus 23:19",
+            "Exodus 34:26",
+            "Leviticus 2:12",
+            "Ezekiel 20:40"
+          ],
+          "target": "H7225",
+          "why": "Attested in 6 verses (Exodus 23:19, Exodus 34:26, Leviticus 2:12, Ezekiel 20:40...) with surface forms: רֵאשִׁ֗ית, רֵאשִׁ֛ית, וְרֵאשִׁית֩, וְרֵאשִׁ֤ית. Co-occurs with: firstfruit, kid, to boil, milk. Occurs in sanctuary or Temple archite..."
+        }
+      ],
+      "case_scores": [
+        {
+          "id": "D001",
+          "polarity": "positive",
+          "category": "direct_intertext",
+          "assessable": true,
+          "k": 10,
+          "old": 14,
+          "now": 6
+        }
+      ]
+    },
+    {
+      "index": 51,
+      "q": "Exodus 12:5",
+      "mode": "discover",
+      "via": "passage",
+      "status": "ok",
+      "error": null,
+      "latency_ms": 2348,
+      "cards": [
+        {
+          "rank": 1,
+          "id": "r11:xref:1822:3389",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (reciprocal): Exodus 12:5 ↔ Leviticus 22:19-24 (\"unblemished\")",
+          "refs": [
+            "Exodus 12:5",
+            "Leviticus 22:19-24"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) reciprocally links Exodus 12:5 and Leviticus 22:19-24 via anchor phrase \"unblemished\" (4 shared lemmas, 0 LXX alignment bridges; aligned lemmas: H7716-H3775,H8549-H..."
+        },
+        {
+          "rank": 2,
+          "id": "r10:typo:exod12_passover_blood_christ_1cor5_7",
+          "ep": "authorial_typology_or_quote",
+          "title": "Explicit NT Passover identification: 1 Cor 5:7 (\"Christ, our Passover, has been sacrificed\"), John 19:36, and 1 Pet 1:18–19",
+          "refs": [
+            "Exodus 12:7",
+            "Exodus 12:13",
+            "Exodus 12:46",
+            "1 Corinthians 5:7"
+          ],
+          "target": "H1818",
+          "why": "Exodus 12:7,13,22–23 records the Passover lamb’s blood (דָּם H1818) applied to the lintel and two doorposts (מְזוּזֹת / מַשְׁקוֹף / פֶּתַח) so the destroyer cannot enter. NT writers explicitly connect Jesus to the Passover lamb: 1 Cor 5:..."
+        },
+        {
+          "rank": 3,
+          "id": "r11:xref:1822:2749",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (reciprocal): Exodus 12:5 ↔ Leviticus 1:3-10 (\"unblemished\")",
+          "refs": [
+            "Exodus 12:5",
+            "Leviticus 1:3-10"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) reciprocally links Exodus 12:5 and Leviticus 1:3-10 via anchor phrase \"unblemished\" (3 shared lemmas, 0 LXX alignment bridges)."
+        },
+        {
+          "rank": 4,
+          "id": "r12:scene:1822:27314",
+          "ep": "shared_motif_evidence",
+          "title": "Structural & lexical scene correspondence (OT↔NT): Exodus 12:5 ↔ Acts 8:32",
+          "refs": [
+            "Exodus 12:5",
+            "Acts 8:32"
+          ],
+          "why": "Cross-book alignment between Exodus 12:5 and Acts 8:32 sharing rare attested lemmas/LXX equivalents (H7716-G4263,H3532-G0286, 1 shared MACULA grammatical role(s), IDF=9.2). Candidate literary/scene parallel; inspect both contexts before..."
+        },
+        {
+          "rank": 5,
+          "id": "r11:xref:1822:30493",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (OT↔NT): Exodus 12:5 → 1 Peter 1:19 (\"lamb without blemish or spot\")",
+          "refs": [
+            "Exodus 12:5",
+            "1 Peter 1:19"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Exodus 12:5 and 1 Peter 1:19 via anchor phrase \"lamb without blemish or spot\" (0 shared lemmas, 2 LXX alignment bridges)."
+        },
+        {
+          "rank": 6,
+          "id": "r12:scene:1822:24154",
+          "ep": "shared_motif_evidence",
+          "title": "Structural & lexical scene correspondence (OT↔NT): Exodus 12:5 ↔ Matthew 25:32",
+          "refs": [
+            "Exodus 12:5",
+            "Matthew 25:32"
+          ],
+          "why": "Cross-book alignment between Exodus 12:5 and Matthew 25:32 sharing rare attested lemmas/LXX equivalents (H7716-G4263,H5795-G2056, IDF=9.3). Candidate literary/scene parallel; inspect both contexts before inferring authorial dependence."
+        },
+        {
+          "rank": 7,
+          "id": "r11:xref:1822:2957",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference: Exodus 12:5 → Leviticus 9:3 (\"year old and without blemish\")",
+          "refs": [
+            "Exodus 12:5",
+            "Leviticus 9:3"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Exodus 12:5 and Leviticus 9:3 via anchor phrase \"year old and without blemish\" (3 shared lemmas, 0 LXX alignment bridges)."
+        },
+        {
+          "rank": 8,
+          "id": "r11:xref:1822:30492",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (OT↔NT): Exodus 12:5 → 1 Peter 1:18-19 (\"unblemished\")",
+          "refs": [
+            "Exodus 12:5",
+            "1 Peter 1:18-19"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Exodus 12:5 and 1 Peter 1:18-19 via anchor phrase \"unblemished\" (0 shared lemmas, 2 LXX alignment bridges)."
+        },
+        {
+          "rank": 9,
+          "id": "r12:path:H3532:H8549",
+          "ep": "documented_collocation_or_cooccurrence",
+          "title": "3-hop: כֶּ֫בֶשׂ (H3532) → תָּמִים (\"unblemished\", H8549)",
+          "refs": [
+            "Exodus 12:5",
+            "Leviticus 4:32",
+            "Leviticus 9:3",
+            "Leviticus 14:10"
+          ],
+          "target": "H8549",
+          "why": "3-hop path (direct endpoint witness): כֶּ֫בֶשׂ (lamb) —LXX→ ἀμνός (lamb) ; ἀμνός (lamb) —modifies→ ἄμωμος (blameless) ; ἄμωμος (blameless) —LXX→ תָּמִים (unblemished)"
+        },
+        {
+          "rank": 10,
+          "id": "r12:event:1822:event:125",
+          "ep": "shared_motif_evidence",
+          "title": "Chapter-level narrative context: Exodus from Egypt → Wilderness Wanderings (near Exodus 12:5)",
+          "refs": [
+            "Exodus 12:5",
+            "Exodus 12:39",
+            "Exodus 13:18"
+          ],
+          "why": "Exodus 12:5 occurs in the same chapter context as canonical narrative episode \"Exodus from Egypt\" (-1490) (including Exodus 12:39), followed in canonical narrative sequence by \"Wilderness Wanderings\" (Exodus 13:18); verse-level membershi..."
+        },
+        {
+          "rank": 11,
+          "id": "r11:xref:1822:5366",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (reciprocal): Exodus 12:5 ↔ Deuteronomy 17:1 (\"unblemished\")",
+          "refs": [
+            "Exodus 12:5",
+            "Deuteronomy 17:1"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) reciprocally links Exodus 12:5 and Deuteronomy 17:1 via anchor phrase \"unblemished\" (1 shared lemma, 0 LXX alignment bridges)."
+        },
+        {
+          "rank": 12,
+          "id": "r12:orth:H3532:H3535",
+          "ep": "orthographic_similarity_only",
+          "title": "Orthographic similarity: כֶּ֫בֶשׂ (H3532) ↔ כִּבְשָׂה (H3535, matched \"כבש\")",
+          "refs": [
+            "Leviticus 14:10",
+            "Numbers 6:14",
+            "Exodus 12:5",
+            "Genesis 21:28"
+          ],
+          "target": "H3535",
+          "why": "Unpointed/unaccented script similarity (hebrew_unpointed, score=0.974264, shared segment \"כבש\", co-occurs in 2 canonical verse(s)). Shared spelling does not establish root, etymology, meaning, or intentional wordplay."
+        },
+        {
+          "rank": 13,
+          "id": "r12:path:H3532:H7716",
+          "ep": "documented_collocation_or_cooccurrence",
+          "title": "3-hop: כֶּ֫בֶשׂ (H3532) → שֶׂה (\"sheep\", H7716)",
+          "refs": [
+            "Exodus 12:5",
+            "Numbers 15:11",
+            "Deuteronomy 14:4"
+          ],
+          "target": "H7716",
+          "why": "3-hop path (direct endpoint witness): כֶּ֫בֶשׂ (lamb) —LXX→ ἀρήν (lamb) ; ἀρήν (lamb) —LXX→ כֶּ֫שֶׂב (sheep) ; כֶּ֫שֶׂב (sheep) --[gram_possessive_construction_with]--> שֶׂה (sheep)"
+        },
+        {
+          "rank": 14,
+          "id": "r11:xref:1822:30218",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (OT↔NT): Exodus 12:5 → Hebrews 9:13-14 (\"unblemished\")",
+          "refs": [
+            "Exodus 12:5",
+            "Hebrews 9:13-14"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Exodus 12:5 and Hebrews 9:13-14 via anchor phrase \"unblemished\" (0 shared lemmas, 1 LXX alignment bridge)."
+        },
+        {
+          "rank": 15,
+          "id": "r11:gram:H2145:grammatical_subject_of:H4135",
+          "ep": "direct_textual_evidence",
+          "title": "Subject of: זָכָר (za.khar) ↔ מוּל (\"to circumcise\", 5×)",
+          "refs": [
+            "Exodus 12:48",
+            "Genesis 17:10",
+            "Genesis 34:15"
+          ],
+          "target": "H4135",
+          "why": "Subject of: זָכָר (H2145, \"male\") and מוּל (H4135, \"to circumcise\") across 5 indexed occurrences. 5 distinct canonical source clauses pass token-position verification; parallel editions are counted once."
+        },
+        {
+          "rank": 16,
+          "id": "r12:path:H3532:H3641",
+          "ep": "documented_collocation_or_cooccurrence",
+          "title": "3-hop: כֶּ֫בֶשׂ (H3532) → כַּלְנֵ֑ה (\"Calneh\", H3641)",
+          "refs": [
+            "Exodus 12:5",
+            "Leviticus 23:12",
+            "Numbers 28:11",
+            "Numbers 28:19"
+          ],
+          "target": "H3641",
+          "why": "3-hop path (direct endpoint witness): כֶּ֫בֶשׂ (lamb) —LXX→ ἀρήν (lamb) ; ἀρήν (lamb) —LXX→ מְרִיא (fatling) ; מְרִיא (fatling) --[gram_possessive_construction_with]--> כַּלְנֵ֑ה (Calneh)"
+        },
+        {
+          "rank": 17,
+          "id": "r11:xref:1822:3415",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference: Exodus 12:5 → Leviticus 23:12 (\"year-old male\")",
+          "refs": [
+            "Exodus 12:5",
+            "Leviticus 23:12"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Exodus 12:5 and Leviticus 23:12 via anchor phrase \"year-old male\" (2 shared lemmas, 0 LXX alignment bridges)."
+        },
+        {
+          "rank": 18,
+          "id": "r11:xref:1823:24876",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (OT↔NT): Exodus 12:6 → Mark 14:12 (\"the first day of the Feast of Unleavened Bread\") (same-chapter peric...",
+          "refs": [
+            "Exodus 12:6",
+            "Mark 14:12"
+          ],
+          "why": "Same-chapter pericope context (Exodus 12:6, 1v from Exodus 12:5): Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Exodus 12:6 and Mark 14:12 via anchor phrase \"the first day of the Feast of Unleavened Bread..."
+        },
+        {
+          "rank": 19,
+          "id": "r11:xref:1823:25979",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (OT↔NT): Exodus 12:6 → Luke 22:7 (\"Then came the day of Unleavened Bread on which the Passover \") (same-...",
+          "refs": [
+            "Exodus 12:6",
+            "Luke 22:7"
+          ],
+          "why": "Same-chapter pericope context (Exodus 12:6, 1v from Exodus 12:5): Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Exodus 12:6 and Luke 22:7 via anchor phrase \"Then came the day of Unleavened Bread on which..."
+        },
+        {
+          "rank": 20,
+          "id": "r11:lxx:H7716:0",
+          "ep": "documented_lexical_relationship",
+          "title": "Septuagint alignment witness: שֶׂה (H7716) → πρόβατον",
+          "refs": [],
+          "target": "G4263",
+          "why": "Documented LXX lexical alignment linking שֶׂה (H7716) with Greek witness πρόβατον."
+        },
+        {
+          "rank": 21,
+          "id": "r11:lex:H7716:0",
+          "ep": "documented_lexical_relationship",
+          "title": "Lexical relation (shares root): שֶׂה (H7716) ↔ זֶה (H2089)",
+          "refs": [],
+          "target": "H2089",
+          "why": "Morphological and root derivation analysis links שֶׂה (H7716) to זֶה (H2089) (\"lamb\")."
+        },
+        {
+          "rank": 22,
+          "id": "r11:cluster:H3532:temple_and_sanctuary_architecture",
+          "ep": "direct_textual_evidence",
+          "title": "Temple & Sanctuary Architecture (Exodus 29 · Numbers 7 · 2 Chronicles 29)",
+          "refs": [
+            "Exodus 29:38",
+            "Exodus 29:39",
+            "Exodus 29:40",
+            "Exodus 29:41"
+          ],
+          "target": "H3532",
+          "why": "Attested in 14 verses (Exodus 29:38, Exodus 29:39, Exodus 29:40, Exodus 29:41...) with surface forms: כְּבָשִׂ֧ים, הַכֶּ֥בֶשׂ, הַכֶּ֣בֶשׂ, לַכֶּ֖בֶשׂ. Co-occurs with: ram, hin, bullock, oil. Occurs in sanctuary or Temple architectural de..."
+        },
+        {
+          "rank": 23,
+          "id": "r11:xref:1822:21785",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference: Exodus 12:5 → Ezekiel 46:13 (\"year-old lamb\")",
+          "refs": [
+            "Exodus 12:5",
+            "Ezekiel 46:13"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Exodus 12:5 and Ezekiel 46:13 via anchor phrase \"year-old lamb\" (2 shared lemmas, 0 LXX alignment bridges)."
+        },
+        {
+          "rank": 24,
+          "id": "r11:gram:H2145:possessive_construction_with:H4904",
+          "ep": "direct_textual_evidence",
+          "title": "Genitive / construct connection: זָכָר (za.khar) ↔ מִשְׁכָּב (\"bed\", 5×)",
+          "refs": [
+            "Judges 21:11",
+            "Judges 21:12",
+            "Numbers 31:17"
+          ],
+          "target": "H4904",
+          "why": "Genitive / construct connection: זָכָר (H2145, \"male\") and מִשְׁכָּב (H4904, \"bed\") across 5 indexed occurrences. 5 distinct canonical source clauses pass token-position verification; parallel editions are counted once."
+        },
+        {
+          "rank": 25,
+          "id": "r11:xref:1822:28562",
+          "ep": "editorial_cross_reference",
+          "title": "Exodus 12:5 -> 1 Corinthians 5:7 (\"Christ, our Passover lamb\")",
+          "refs": [
+            "Exodus 12:5",
+            "1 Corinthians 5:7"
+          ],
+          "why": "Cross-testament CrossReferences.org link (6 witness votes) around \"Christ, our Passover lamb\"."
+        }
+      ],
+      "case_scores": [
+        {
+          "id": "D015",
+          "polarity": "positive",
+          "category": "direct_intertext",
+          "assessable": true,
+          "k": 10,
+          "old": 1,
+          "now": 2
+        }
+      ]
+    },
+    {
+      "index": 65,
+      "q": "Deuteronomy 8:3",
+      "mode": "discover",
+      "via": "passage",
+      "status": "ok",
+      "error": null,
+      "latency_ms": 2347,
+      "cards": [
+        {
+          "rank": 1,
+          "id": "r11:xref:5141:23330",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (reciprocal) (OT↔NT): Deuteronomy 8:3 ↔ Matthew 4:4 (\"live\")",
+          "refs": [
+            "Deuteronomy 8:3",
+            "Matthew 4:4"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) reciprocally links Deuteronomy 8:3 and Matthew 4:4 via anchor phrase \"live\" (0 shared lemmas, 5 LXX alignment bridges; aligned lemmas: H3899-G0740,H0905-G3441,H6310..."
+        },
+        {
+          "rank": 2,
+          "id": "r11:xref:5141:25176",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (reciprocal) (OT↔NT): Deuteronomy 8:3 ↔ Luke 4:4 (\"live\")",
+          "refs": [
+            "Deuteronomy 8:3",
+            "Luke 4:4"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) reciprocally links Deuteronomy 8:3 and Luke 4:4 via anchor phrase \"live\" (0 shared lemmas, 4 LXX alignment bridges)."
+        },
+        {
+          "rank": 3,
+          "id": "r12:scene:5141:29554",
+          "ep": "shared_motif_evidence",
+          "title": "Structural & lexical scene correspondence (OT↔NT): Deuteronomy 8:3 ↔ Philippians 4:12",
+          "refs": [
+            "Deuteronomy 8:3",
+            "Philippians 4:12"
+          ],
+          "why": "Cross-book alignment between Deuteronomy 8:3 and Philippians 4:12 sharing rare attested lemmas/LXX equivalents (H6031-G5013,H7456-G3983, 1 shared MACULA grammatical role(s), IDF=9.2). Candidate literary/scene parallel; inspect both conte..."
+        },
+        {
+          "rank": 4,
+          "id": "r12:scene:5141:26398",
+          "ep": "shared_motif_evidence",
+          "title": "Structural & lexical scene correspondence (OT↔NT): Deuteronomy 8:3 ↔ John 6:35",
+          "refs": [
+            "Deuteronomy 8:3",
+            "John 6:35"
+          ],
+          "why": "Cross-book alignment between Deuteronomy 8:3 and John 6:35 sharing rare attested lemmas/LXX equivalents (H7456-G3983,H3899-G0740, 1 shared MACULA grammatical role(s), IDF=8.2). Candidate literary/scene parallel; inspect both contexts bef..."
+        },
+        {
+          "rank": 5,
+          "id": "r11:xref:5141:26394",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (OT↔NT): Deuteronomy 8:3 → John 6:31 (\"ate the manna\")",
+          "refs": [
+            "Deuteronomy 8:3",
+            "John 6:31"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Deuteronomy 8:3 and John 6:31 via anchor phrase \"ate the manna\" (0 shared lemmas, 3 LXX alignment bridges)."
+        },
+        {
+          "rank": 6,
+          "id": "r11:xref:5141:28671",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (reciprocal) (OT↔NT): Deuteronomy 8:3 ↔ 1 Corinthians 10:3 (\"gave you manna\")",
+          "refs": [
+            "Deuteronomy 8:3",
+            "1 Corinthians 10:3"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) reciprocally links Deuteronomy 8:3 and 1 Corinthians 10:3 via anchor phrase \"gave you manna\" (0 shared lemmas, 1 LXX alignment bridge)."
+        },
+        {
+          "rank": 7,
+          "id": "r11:xref:5141:5154",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference: Deuteronomy 8:3 → Deuteronomy 8:16 (\"fed you\")",
+          "refs": [
+            "Deuteronomy 8:3",
+            "Deuteronomy 8:16"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Deuteronomy 8:3 and Deuteronomy 8:16 via anchor phrase \"fed you\" (4 shared lemmas, 0 LXX alignment bridges)."
+        },
+        {
+          "rank": 8,
+          "id": "r11:gram:H4478:grammatical_second_object_of:H0398",
+          "ep": "direct_textual_evidence",
+          "title": "Second object of: מָן (man) ↔ אָכַל (\"to eat\", 2×)",
+          "refs": [
+            "Deuteronomy 8:16",
+            "Deuteronomy 8:3"
+          ],
+          "target": "H0398",
+          "why": "Second object of: מָן (H4478, \"manna\") and אָכַל (H0398, \"to eat\") across 2 indexed occurrences. 2 distinct canonical source clauses pass token-position verification; parallel editions are counted once."
+        },
+        {
+          "rank": 9,
+          "id": "r11:xref:5143:28733",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (reciprocal) (OT↔NT): Deuteronomy 8:5 ↔ 1 Corinthians 11:32 (\"as a man\") (same-chapter pericope context...",
+          "refs": [
+            "Deuteronomy 8:5",
+            "1 Corinthians 11:32"
+          ],
+          "why": "Same-chapter pericope context (Deuteronomy 8:5, 2v from Deuteronomy 8:3): Modern editorial cross-reference index (CrossReferences.org / OpenBible) reciprocally links Deuteronomy 8:5 and 1 Corinthians 11:32 via anchor phrase \"as a man\" (0..."
+        },
+        {
+          "rank": 10,
+          "id": "r11:xref:5141:15209",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference: Deuteronomy 8:3 → Psalms 78:23-25 (\"gave you manna\")",
+          "refs": [
+            "Deuteronomy 8:3",
+            "Psalms 78:23-25"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Deuteronomy 8:3 and Psalms 78:23-25 via anchor phrase \"gave you manna\" (3 shared lemmas, 0 LXX alignment bridges)."
+        },
+        {
+          "rank": 11,
+          "id": "r11:xref:5140:30623",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (OT↔NT): Deuteronomy 8:2 → 2 Peter 3:1-2 (\"Remember\") (same-chapter pericope context near Deuteronomy 8:3)",
+          "refs": [
+            "Deuteronomy 8:2",
+            "2 Peter 3:1-2"
+          ],
+          "why": "Same-chapter pericope context (Deuteronomy 8:2, 1v from Deuteronomy 8:3): Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Deuteronomy 8:2 and 2 Peter 3:1-2 via anchor phrase \"Remember\" (0 shared lemmas, 3 L..."
+        },
+        {
+          "rank": 12,
+          "id": "r11:xref:5141:30998",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (OT↔NT): Deuteronomy 8:3 → Revelation 12:6 (\"where God had prepared a place for her\")",
+          "refs": [
+            "Deuteronomy 8:3",
+            "Revelation 12:6"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Deuteronomy 8:3 and Revelation 12:6 via anchor phrase \"where God had prepared a place for her\" (0 shared lemmas, 1 LXX alignment bridge)."
+        },
+        {
+          "rank": 13,
+          "id": "r11:xref:5141:1950",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference: Deuteronomy 8:3 → Exodus 16:2-35 (\"gave you manna\")",
+          "refs": [
+            "Deuteronomy 8:3",
+            "Exodus 16:2-35"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Deuteronomy 8:3 and Exodus 16:2-35 via anchor phrase \"gave you manna\" (4 shared lemmas, 0 LXX alignment bridges)."
+        },
+        {
+          "rank": 14,
+          "id": "r11:lxx:H4478:0",
+          "ep": "documented_lexical_relationship",
+          "title": "Septuagint (LXX) bridge: מָן (H4478) → μάννα (G3131, \"manna\") across 7 passages",
+          "refs": [
+            "Numbers 11:6",
+            "Numbers 11:7",
+            "Numbers 11:9",
+            "Deuteronomy 8:3"
+          ],
+          "target": "G3131",
+          "why": "Ancient Greek Septuagint translates Hebrew מָן (H4478) as Greek μάννα (G3131) in 7 occurrences (Numbers 11:6, Numbers 11:7, Numbers 11:9, Deuteronomy 8:3). Establishes documented Greek translation bridge."
+        },
+        {
+          "rank": 15,
+          "id": "r11:xref:5141:24563",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (OT↔NT): Deuteronomy 8:3 → Mark 6:42 (\"They all ate and were satisfied\")",
+          "refs": [
+            "Deuteronomy 8:3",
+            "Mark 6:42"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Deuteronomy 8:3 and Mark 6:42 via anchor phrase \"They all ate and were satisfied\" (0 shared lemmas, 1 LXX alignment bridge)."
+        },
+        {
+          "rank": 16,
+          "id": "r11:xref:5140:30443",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (OT↔NT): Deuteronomy 8:2 → James 4:6-10 (\"humble\") (same-chapter pericope context near Deuteronomy 8:3)",
+          "refs": [
+            "Deuteronomy 8:2",
+            "James 4:6-10"
+          ],
+          "why": "Same-chapter pericope context (Deuteronomy 8:2, 1v from Deuteronomy 8:3): Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Deuteronomy 8:2 and James 4:6-10 via anchor phrase \"humble\" (0 shared lemmas, 2 LXX..."
+        },
+        {
+          "rank": 17,
+          "id": "r11:xref:5141:15737",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (reciprocal): Deuteronomy 8:3 ↔ Psalms 105:40 (\"gave you manna\")",
+          "refs": [
+            "Deuteronomy 8:3",
+            "Psalms 105:40"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) reciprocally links Deuteronomy 8:3 and Psalms 105:40 via anchor phrase \"gave you manna\" (1 shared lemma, 0 LXX alignment bridges)."
+        },
+        {
+          "rank": 18,
+          "id": "r11:gram:H4478:grammatical_object_of:H0398",
+          "ep": "direct_textual_evidence",
+          "title": "Direct object of: מָן (man) ↔ אָכַל (\"to eat\", 2×)",
+          "refs": [
+            "Exodus 16:35"
+          ],
+          "target": "H0398",
+          "why": "Direct object of: מָן (H4478, \"manna\") and אָכַל (H0398, \"to eat\") across 2 indexed occurrences. 2 distinct canonical source clauses pass token-position verification; parallel editions are counted once."
+        },
+        {
+          "rank": 19,
+          "id": "r11:lxx:H4478:1",
+          "ep": "documented_lexical_relationship",
+          "title": "Septuagint (LXX) bridge: מָן (H4478) → μάν (G8245, \"manna\") across 10 passages",
+          "refs": [
+            "Exodus 16:31",
+            "Exodus 16:33",
+            "Exodus 16:35",
+            "Numbers 11:6"
+          ],
+          "target": "G8245",
+          "why": "Ancient Greek Septuagint translates Hebrew מָן (H4478) as Greek μάν (G8245) in 10 occurrences (Exodus 16:31, Exodus 16:33, Exodus 16:35, Numbers 11:6). Establishes documented Greek translation bridge."
+        },
+        {
+          "rank": 20,
+          "id": "r11:cluster:H4478:temple_and_sanctuary_architecture",
+          "ep": "direct_textual_evidence",
+          "title": "Temple & Sanctuary Architecture (Exodus 16)",
+          "refs": [
+            "Exodus 16:31"
+          ],
+          "target": "H4478",
+          "why": "Attested in 1 verse (Exodus 16:31) with surface forms: מָ֑ן. Co-occurs with: flatbread, coriander, taste, white. Occurs in sanctuary or Temple architectural descriptions and sacred vessel ornamentation."
+        },
+        {
+          "rank": 21,
+          "id": "r11:xref:5141:15210",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference: Deuteronomy 8:3 → Psalms 78:24 (\"rained down manna\")",
+          "refs": [
+            "Deuteronomy 8:3",
+            "Psalms 78:24"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Deuteronomy 8:3 and Psalms 78:24 via anchor phrase \"rained down manna\" (2 shared lemmas, 0 LXX alignment bridges)."
+        },
+        {
+          "rank": 22,
+          "id": "r11:cluster:H6031:temple_and_sanctuary_architecture",
+          "ep": "direct_textual_evidence",
+          "title": "Temple & Sanctuary Architecture (Exodus 15, 32 · Judges 20 · 1 Kings 2, 8)",
+          "refs": [
+            "Exodus 15:21",
+            "Exodus 32:18",
+            "Judges 20:5",
+            "1 Kings 2:26"
+          ],
+          "target": "H6031",
+          "why": "Attested in 5 verses (Exodus 15:21, Exodus 32:18, Judges 20:5, 1 Kings 2:26...) with surface forms: וַתַּ֥עַן, עֲנ֣וֹת, עַנּ֔וֹת, עִנּ֖וּ. Co-occurs with: weakness, to rise up, to shoot, Miriam. Occurs in sanctuary or Temple architectura..."
+        },
+        {
+          "rank": 23,
+          "id": "r11:xref:5141:5686",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference: Deuteronomy 8:3 → Deuteronomy 29:6 (\"ate no bread\")",
+          "refs": [
+            "Deuteronomy 8:3",
+            "Deuteronomy 29:6"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Deuteronomy 8:3 and Deuteronomy 29:6 via anchor phrase \"ate no bread\" (3 shared lemmas, 0 LXX alignment bridges)."
+        },
+        {
+          "rank": 24,
+          "id": "r11:gram:H6031:grammatical_object_of:H5315",
+          "ep": "direct_textual_evidence",
+          "title": "Has direct object: עָנָה (a.nah) ↔ נֶ֫פֶשׁ (\"soul\", 6×)",
+          "refs": [
+            "Leviticus 16:29",
+            "Leviticus 16:31",
+            "Leviticus 23:27"
+          ],
+          "target": "H5315",
+          "why": "Has direct object: עָנָה (H6031, \"to afflict\") and נֶ֫פֶשׁ (H5315, \"soul\") across 6 indexed occurrences. 6 distinct canonical source clauses pass token-position verification; parallel editions are counted once."
+        },
+        {
+          "rank": 25,
+          "id": "r11:lxx:H7456:0",
+          "ep": "documented_lexical_relationship",
+          "title": "Septuagint alignment witness: רָעֵב (H7456) → πεινάω",
+          "refs": [],
+          "target": "G3983",
+          "why": "Documented LXX lexical alignment linking רָעֵב (H7456) with Greek witness πεινάω."
+        }
+      ],
+      "case_scores": [
+        {
+          "id": "D029",
+          "polarity": "positive",
+          "category": "direct_intertext",
+          "assessable": true,
+          "k": 10,
+          "old": 9,
+          "now": 1
+        }
+      ]
+    },
+    {
+      "index": 79,
+      "q": "Jeremiah 31:31",
+      "mode": "discover",
+      "via": "passage",
+      "status": "ok",
+      "error": null,
+      "latency_ms": 2345,
+      "cards": [
+        {
+          "rank": 1,
+          "id": "r11:xref:19839:28948",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (reciprocal) (OT↔NT): Jeremiah 31:31 ↔ 2 Corinthians 3:6 (\"I will make a new covenant\")",
+          "refs": [
+            "Jeremiah 31:31",
+            "2 Corinthians 3:6"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) reciprocally links Jeremiah 31:31 and 2 Corinthians 3:6 via anchor phrase \"I will make a new covenant\" (0 shared lemmas, 3 LXX alignment bridges)."
+        },
+        {
+          "rank": 2,
+          "id": "r11:xref:19839:24196",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (reciprocal) (OT↔NT): Jeremiah 31:31 ↔ Matthew 26:28 (\"I will make a new covenant\")",
+          "refs": [
+            "Jeremiah 31:31",
+            "Matthew 26:28"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) reciprocally links Jeremiah 31:31 and Matthew 26:28 via anchor phrase \"I will make a new covenant\" (0 shared lemmas, 2 LXX alignment bridges)."
+        },
+        {
+          "rank": 3,
+          "id": "r11:xref:19839:30336",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (reciprocal) (OT↔NT): Jeremiah 31:31 ↔ Hebrews 12:24 (\"I will make a new covenant\")",
+          "refs": [
+            "Jeremiah 31:31",
+            "Hebrews 12:24"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) reciprocally links Jeremiah 31:31 and Hebrews 12:24 via anchor phrase \"I will make a new covenant\" (0 shared lemmas, 2 LXX alignment bridges)."
+        },
+        {
+          "rank": 4,
+          "id": "r11:xref:19839:25992",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (OT↔NT): Jeremiah 31:31 → Luke 22:20 (\"I will make a new covenant\")",
+          "refs": [
+            "Jeremiah 31:31",
+            "Luke 22:20"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Jeremiah 31:31 and Luke 22:20 via anchor phrase \"I will make a new covenant\" (0 shared lemmas, 3 LXX alignment bridges)."
+        },
+        {
+          "rank": 5,
+          "id": "r11:xref:19839:28726",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (OT↔NT): Jeremiah 31:31 → 1 Corinthians 11:25 (\"I will make a new covenant\")",
+          "refs": [
+            "Jeremiah 31:31",
+            "1 Corinthians 11:25"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Jeremiah 31:31 and 1 Corinthians 11:25 via anchor phrase \"I will make a new covenant\" (0 shared lemmas, 3 LXX alignment bridges)."
+        },
+        {
+          "rank": 6,
+          "id": "r11:xref:19839:30198",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (OT↔NT): Jeremiah 31:31 → Hebrews 8:6-13 (\"I will make a new covenant\")",
+          "refs": [
+            "Jeremiah 31:31",
+            "Hebrews 8:6-13"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Jeremiah 31:31 and Hebrews 8:6-13 via anchor phrase \"I will make a new covenant\" (0 shared lemmas, 3 LXX alignment bridges)."
+        },
+        {
+          "rank": 7,
+          "id": "r12:scene:19839:22624",
+          "ep": "shared_motif_evidence",
+          "title": "Structural & lexical scene correspondence: Jeremiah 31:31 ↔ Amos 9:12",
+          "refs": [
+            "Jeremiah 31:31",
+            "Amos 9:12"
+          ],
+          "why": "Cross-book alignment between Jeremiah 31:31 and Amos 9:12 sharing rare attested lemmas/LXX equivalents (H5002-H5002,H3772-H3423, 2 shared MACULA grammatical role(s), IDF=6.2). Candidate literary/scene parallel; inspect both contexts befo..."
+        },
+        {
+          "rank": 8,
+          "id": "r11:xref:19841:28945",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (reciprocal) (OT↔NT): Jeremiah 31:33 ↔ 2 Corinthians 3:3-8 (\"I will put My law in their minds and inscri...",
+          "refs": [
+            "Jeremiah 31:33",
+            "2 Corinthians 3:3-8"
+          ],
+          "why": "Same-chapter pericope context (Jeremiah 31:33, 2v from Jeremiah 31:31): Modern editorial cross-reference index (CrossReferences.org / OpenBible) reciprocally links Jeremiah 31:33 and 2 Corinthians 3:3-8 via anchor phrase \"I will put My l..."
+        },
+        {
+          "rank": 9,
+          "id": "r11:xref:19841:30202",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (reciprocal) (OT↔NT): Jeremiah 31:33 ↔ Hebrews 8:10 (\"I will put My law in their minds and inscribe it o...",
+          "refs": [
+            "Jeremiah 31:33",
+            "Hebrews 8:10"
+          ],
+          "why": "Same-chapter pericope context (Jeremiah 31:33, 2v from Jeremiah 31:31): Modern editorial cross-reference index (CrossReferences.org / OpenBible) reciprocally links Jeremiah 31:33 and Hebrews 8:10 via anchor phrase \"I will put My law in t..."
+        },
+        {
+          "rank": 10,
+          "id": "r11:xref:19839:30220",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (OT↔NT): Jeremiah 31:31 → Hebrews 9:15 (\"I will make a new covenant\")",
+          "refs": [
+            "Jeremiah 31:31",
+            "Hebrews 9:15"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Jeremiah 31:31 and Hebrews 9:15 via anchor phrase \"I will make a new covenant\" (0 shared lemmas, 3 LXX alignment bridges)."
+        },
+        {
+          "rank": 11,
+          "id": "r12:scene:19839:19061",
+          "ep": "shared_motif_evidence",
+          "title": "Structural & lexical scene correspondence: Jeremiah 31:31 ↔ Isaiah 66:22",
+          "refs": [
+            "Jeremiah 31:31",
+            "Isaiah 66:22"
+          ],
+          "why": "Cross-book alignment between Jeremiah 31:31 and Isaiah 66:22 sharing rare attested lemmas/LXX equivalents (H5002-H5002,H2319-H2319, 1 shared MACULA grammatical role(s), IDF=6.5). Candidate literary/scene parallel; inspect both contexts b..."
+        },
+        {
+          "rank": 12,
+          "id": "r11:xref:19840:30201",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (reciprocal) (OT↔NT): Jeremiah 31:32 ↔ Hebrews 8:9 (\"a covenant they broke\") (same-chapter pericope cont...",
+          "refs": [
+            "Jeremiah 31:32",
+            "Hebrews 8:9"
+          ],
+          "why": "Same-chapter pericope context (Jeremiah 31:32, 1v from Jeremiah 31:31): Modern editorial cross-reference index (CrossReferences.org / OpenBible) reciprocally links Jeremiah 31:32 and Hebrews 8:9 via anchor phrase \"a covenant they broke\"..."
+        },
+        {
+          "rank": 13,
+          "id": "r11:xref:19839:30200",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (OT↔NT): Jeremiah 31:31 → Hebrews 8:8 (\"said\")",
+          "refs": [
+            "Jeremiah 31:31",
+            "Hebrews 8:8"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Jeremiah 31:31 and Hebrews 8:8 via anchor phrase \"said\" (0 shared lemmas, 3 LXX alignment bridges)."
+        },
+        {
+          "rank": 14,
+          "id": "r11:xref:19839:19888",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (reciprocal): Jeremiah 31:31 ↔ Jeremiah 32:40 (\"I will make a new covenant\")",
+          "refs": [
+            "Jeremiah 31:31",
+            "Jeremiah 32:40"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) reciprocally links Jeremiah 31:31 and Jeremiah 32:40 via anchor phrase \"I will make a new covenant\" (2 shared lemmas, 0 LXX alignment bridges)."
+        },
+        {
+          "rank": 15,
+          "id": "r11:xref:19839:24888",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (OT↔NT): Jeremiah 31:31 → Mark 14:24 (\"I will make a new covenant\")",
+          "refs": [
+            "Jeremiah 31:31",
+            "Mark 14:24"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Jeremiah 31:31 and Mark 14:24 via anchor phrase \"I will make a new covenant\" (0 shared lemmas, 2 LXX alignment bridges)."
+        },
+        {
+          "rank": 16,
+          "id": "r11:xref:19839:30249",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (OT↔NT): Jeremiah 31:31 → Hebrews 10:16-17 (\"I will make a new covenant\")",
+          "refs": [
+            "Jeremiah 31:31",
+            "Hebrews 10:16-17"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Jeremiah 31:31 and Hebrews 10:16-17 via anchor phrase \"I will make a new covenant\" (0 shared lemmas, 2 LXX alignment bridges)."
+        },
+        {
+          "rank": 17,
+          "id": "r11:xref:19839:30361",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (OT↔NT): Jeremiah 31:31 → Hebrews 13:20 (\"I will make a new covenant\")",
+          "refs": [
+            "Jeremiah 31:31",
+            "Hebrews 13:20"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Jeremiah 31:31 and Hebrews 13:20 via anchor phrase \"I will make a new covenant\" (0 shared lemmas, 2 LXX alignment bridges)."
+        },
+        {
+          "rank": 18,
+          "id": "r11:xref:19839:20287",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference: Jeremiah 31:31 → Jeremiah 50:4-5 (\"with the house of Israel and with the house of Judah\")",
+          "refs": [
+            "Jeremiah 31:31",
+            "Jeremiah 50:4-5"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Jeremiah 31:31 and Jeremiah 50:4-5 via anchor phrase \"with the house of Israel and with the house of Judah\" (3 shared lemmas, 0 LXX alignment bridges)."
+        },
+        {
+          "rank": 19,
+          "id": "r11:xref:19839:28338",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (OT↔NT): Jeremiah 31:31 → Romans 11:27 (\"My covenant\")",
+          "refs": [
+            "Jeremiah 31:31",
+            "Romans 11:27"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Jeremiah 31:31 and Romans 11:27 via anchor phrase \"My covenant\" (0 shared lemmas, 2 LXX alignment bridges)."
+        },
+        {
+          "rank": 20,
+          "id": "r11:xref:19839:29341",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (OT↔NT): Jeremiah 31:31 → Ephesians 2:12 (\"the covenants of the promise\")",
+          "refs": [
+            "Jeremiah 31:31",
+            "Ephesians 2:12"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Jeremiah 31:31 and Ephesians 2:12 via anchor phrase \"the covenants of the promise\" (0 shared lemmas, 2 LXX alignment bridges)."
+        },
+        {
+          "rank": 21,
+          "id": "r11:gram:H3772:grammatical_object_of:H1285",
+          "ep": "direct_textual_evidence",
+          "title": "Has direct object: כָּרַת (ka.rat) ↔ בְּרִית (\"covenant\", 60×)",
+          "refs": [
+            "1 Chronicles 11:3",
+            "1 Kings 20:34",
+            "1 Kings 5:12"
+          ],
+          "target": "H1285",
+          "why": "Has direct object: כָּרַת (H3772, \"to cut: cut\") and בְּרִית (H1285, \"covenant\") across 60 indexed occurrences. 56 distinct canonical source clauses pass token-position verification; parallel editions are counted once."
+        },
+        {
+          "rank": 22,
+          "id": "r11:cluster:H3772:temple_and_sanctuary_architecture",
+          "ep": "direct_textual_evidence",
+          "title": "Temple & Sanctuary Architecture (Exodus 8, 12, 30, 31 · Leviticus 17 · Numbers 13, 19)",
+          "refs": [
+            "Exodus 8:9",
+            "Exodus 12:15",
+            "Exodus 12:19",
+            "Exodus 30:33"
+          ],
+          "target": "H3772",
+          "why": "Attested in 59 verses (Exodus 8:9, Exodus 12:15, Exodus 12:19, Exodus 30:33...) with surface forms: לְהַכְרִית֙, וְנִכְרְתָ֞ה, וְנִכְרַ֖ת, וְנִכְרְתָ֛ה. Co-occurs with: covenant, place, with, tree: wood. Occurs in sanctuary or Temple arc..."
+        },
+        {
+          "rank": 23,
+          "id": "r11:lxx:H3772:0",
+          "ep": "documented_lexical_relationship",
+          "title": "Septuagint alignment witness: כָּרַת (H3772) → διατίθημι",
+          "refs": [],
+          "target": "G1303",
+          "why": "Documented LXX lexical alignment linking כָּרַת (H3772) with Greek witness διατίθημι."
+        },
+        {
+          "rank": 24,
+          "id": "r11:cluster:H5002:temple_and_sanctuary_architecture",
+          "ep": "direct_textual_evidence",
+          "title": "Temple & Sanctuary Architecture (1 Samuel 2 · Ezekiel 12, 14, 16, 18)",
+          "refs": [
+            "1 Samuel 2:30",
+            "Ezekiel 12:25",
+            "Ezekiel 14:11",
+            "Ezekiel 16:30"
+          ],
+          "target": "H5002",
+          "why": "Attested in 24 verses (1 Samuel 2:30, Ezekiel 12:25, Ezekiel 14:11, Ezekiel 16:30...) with surface forms: נְאֻם, נְאֻ֖ם, נְאֻם֙, נְאֻ֣ם. Co-occurs with: YHWH/God, Lord, Israel, place. Occurs in sanctuary or Temple architectural descripti..."
+        },
+        {
+          "rank": 25,
+          "id": "r11:colloc:H3772:H1285",
+          "ep": "documented_collocation_or_cooccurrence",
+          "title": "Direct collocation: כָּרַת (\"to cut: cut\") ↔ בְּרִית (\"covenant\", 31×)",
+          "refs": [
+            "Genesis 9:11",
+            "Genesis 15:18",
+            "Genesis 17:14",
+            "Genesis 21:27"
+          ],
+          "target": "H1285",
+          "why": "Corpus co-occurrence links כָּרַת (H3772, \"to cut: cut\") with בְּרִית (H1285, \"covenant\") across 31 shared contexts (Genesis 9:11, Genesis 15:18, Genesis 17:14, Genesis 21:27, Genesis 21:32, Genesis 26:28)."
+        }
+      ],
+      "case_scores": [
+        {
+          "id": "D043",
+          "polarity": "positive",
+          "category": "direct_intertext",
+          "assessable": true,
+          "k": 10,
+          "old": 16,
+          "now": 6
+        }
+      ]
+    },
+    {
+      "index": 93,
+      "q": "Exodus 12:39",
+      "mode": "discover",
+      "via": "passage",
+      "status": "ok",
+      "error": null,
+      "latency_ms": 2208,
+      "cards": [
+        {
+          "rank": 1,
+          "id": "r10:typo:exod12_passover_blood_christ_1cor5_7",
+          "ep": "authorial_typology_or_quote",
+          "title": "Explicit NT Passover identification: 1 Cor 5:7 (\"Christ, our Passover, has been sacrificed\"), John 19:36, and 1 Pet 1:18–19",
+          "refs": [
+            "Exodus 12:7",
+            "Exodus 12:13",
+            "Exodus 12:46",
+            "1 Corinthians 5:7"
+          ],
+          "target": "H1818",
+          "why": "Exodus 12:7,13,22–23 records the Passover lamb’s blood (דָּם H1818) applied to the lintel and two doorposts (מְזוּזֹת / מַשְׁקוֹף / פֶּתַח) so the destroyer cannot enter. NT writers explicitly connect Jesus to the Passover lamb: 1 Cor 5:..."
+        },
+        {
+          "rank": 2,
+          "id": "r12:scene:1856:23836",
+          "ep": "shared_motif_evidence",
+          "title": "Structural & lexical scene correspondence (OT↔NT): Exodus 12:39 ↔ Matthew 17:19",
+          "refs": [
+            "Exodus 12:39",
+            "Matthew 17:19"
+          ],
+          "why": "Cross-book alignment between Exodus 12:39 and Matthew 17:19 sharing rare attested lemmas/LXX equivalents (H1644-G1544,H3201-G1410, 2 shared MACULA grammatical role(s), IDF=7.3). Candidate literary/scene parallel; inspect both contexts be..."
+        },
+        {
+          "rank": 3,
+          "id": "r12:scene:1856:24425",
+          "ep": "shared_motif_evidence",
+          "title": "Structural & lexical scene correspondence (OT↔NT): Exodus 12:39 ↔ Mark 3:23",
+          "refs": [
+            "Exodus 12:39",
+            "Mark 3:23"
+          ],
+          "why": "Cross-book alignment between Exodus 12:39 and Mark 3:23 sharing rare attested lemmas/LXX equivalents (H1644-G1544,H3201-G1410, 2 shared MACULA grammatical role(s), IDF=7.3). Candidate literary/scene parallel; inspect both contexts before..."
+        },
+        {
+          "rank": 4,
+          "id": "r12:scene:1856:22299",
+          "ep": "shared_motif_evidence",
+          "title": "Structural & lexical scene correspondence: Exodus 12:39 ↔ Hosea 7:4",
+          "refs": [
+            "Exodus 12:39",
+            "Hosea 7:4"
+          ],
+          "why": "Cross-book alignment between Exodus 12:39 and Hosea 7:4 sharing rare attested lemmas/LXX equivalents (H0644-H0644,H1217-H1217,H2556-H2556, 1 shared MACULA grammatical role(s), IDF=13.5). Candidate literary/scene parallel; inspect both co..."
+        },
+        {
+          "rank": 5,
+          "id": "r12:prog:1856:1851",
+          "ep": "shared_motif_evidence",
+          "title": "Same-chapter narrative progression: Exodus 12:39 → Exodus 12:34",
+          "refs": [
+            "Exodus 12:39",
+            "Exodus 12:34"
+          ],
+          "why": "Exodus 12:39 and Exodus 12:34 (5 verse(s) apart in the same chapter) share rare domain vocabulary (H1217,H2556), marking consecutive itinerary, ritual, or structural progression."
+        },
+        {
+          "rank": 6,
+          "id": "r12:event:1856:event:125",
+          "ep": "shared_motif_evidence",
+          "title": "Biblical narrative sequence: Exodus from Egypt → Wilderness Wanderings (Exodus 12:39)",
+          "refs": [
+            "Exodus 12:39",
+            "Exodus 12:40",
+            "Exodus 13:18"
+          ],
+          "why": "Exodus 12:39 belongs to canonical narrative episode \"Exodus from Egypt\" (-1490) (within episode context including Exodus 12:40), followed in canonical narrative sequence by \"Wilderness Wanderings\" (Exodus 13:18). Canonical narrative sequ..."
+        },
+        {
+          "rank": 7,
+          "id": "r11:gram:H1217:grammatical_object_of:H0644",
+          "ep": "direct_textual_evidence",
+          "title": "Direct object of: בָּצֵק (ba.tseq) ↔ אָפָה (\"to bake\", 1×)",
+          "refs": [
+            "Exodus 12:39"
+          ],
+          "target": "H0644",
+          "why": "Direct object of: בָּצֵק (H1217, \"dough\") and אָפָה (H0644, \"to bake\") across 1 indexed occurrences. 1 distinct canonical source clauses pass token-position verification; parallel editions are counted once."
+        },
+        {
+          "rank": 8,
+          "id": "r11:xref:1856:1808",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference: Exodus 12:39 → Exodus 11:1 (\"driven out\")",
+          "refs": [
+            "Exodus 12:39",
+            "Exodus 11:1"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Exodus 12:39 and Exodus 11:1 via anchor phrase \"driven out\" (2 shared lemmas, 0 LXX alignment bridges)."
+        },
+        {
+          "rank": 9,
+          "id": "r11:xref:1856:1657",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference: Exodus 12:39 → Exodus 6:1 (\"driven out\")",
+          "refs": [
+            "Exodus 12:39",
+            "Exodus 6:1"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Exodus 12:39 and Exodus 6:1 via anchor phrase \"driven out\" (1 shared lemma, 0 LXX alignment bridges)."
+        },
+        {
+          "rank": 10,
+          "id": "r11:xref:1857:29218",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (OT↔NT): Exodus 12:40 → Galatians 3:16-17 (\"430 years\") (same-chapter pericope context near Exodus 12:39)",
+          "refs": [
+            "Exodus 12:40",
+            "Galatians 3:16-17"
+          ],
+          "why": "Same-chapter pericope context (Exodus 12:40, 1v from Exodus 12:39): Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Exodus 12:40 and Galatians 3:16-17 via anchor phrase \"430 years\" (0 shared lemmas, 2 LXX a..."
+        },
+        {
+          "rank": 11,
+          "id": "r11:xref:1857:29219",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (OT↔NT): Exodus 12:40 → Galatians 3:17 (\"430 years later\") (same-chapter pericope context near Exodus 12...",
+          "refs": [
+            "Exodus 12:40",
+            "Galatians 3:17"
+          ],
+          "why": "Same-chapter pericope context (Exodus 12:40, 1v from Exodus 12:39): Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Exodus 12:40 and Galatians 3:17 via anchor phrase \"430 years later\" (0 shared lemmas, 2 LX..."
+        },
+        {
+          "rank": 12,
+          "id": "r12:orth:H4682:H4714",
+          "ep": "orthographic_similarity_only",
+          "title": "Orthographic similarity: מַצָּה (H4682) ↔ מִצְרַ֫יִם (H4714, matched \"מצ\")",
+          "refs": [
+            "Exodus 12:17",
+            "Exodus 12:39",
+            "Genesis 19:3",
+            "Genesis 10:6"
+          ],
+          "target": "H4714",
+          "why": "Unpointed/unaccented script similarity (hebrew_unpointed, score=0.665098, shared segment \"מצ\", co-occurs in 5 canonical verse(s)). Shared spelling does not establish root, etymology, meaning, or intentional wordplay."
+        },
+        {
+          "rank": 13,
+          "id": "r11:gram:H5692:grammatical_second_object_of:H0644",
+          "ep": "direct_textual_evidence",
+          "title": "Second object of: עֻגָה (ug.gah) ↔ אָפָה (\"to bake\", 1×)",
+          "refs": [
+            "Exodus 12:39"
+          ],
+          "target": "H0644",
+          "why": "Second object of: עֻגָה (H5692, \"bun\") and אָפָה (H0644, \"to bake\") across 1 indexed occurrences. 1 distinct canonical source clauses pass token-position verification; parallel editions are counted once."
+        },
+        {
+          "rank": 14,
+          "id": "r11:xref:1856:1850",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference: Exodus 12:39 → Exodus 12:33 (\"driven out\")",
+          "refs": [
+            "Exodus 12:39",
+            "Exodus 12:33"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Exodus 12:39 and Exodus 12:33 via anchor phrase \"driven out\" (1 shared lemma, 0 LXX alignment bridges)."
+        },
+        {
+          "rank": 15,
+          "id": "r11:lxx:H1217:0",
+          "ep": "documented_lexical_relationship",
+          "title": "Septuagint (LXX) bridge: בָּצֵק (H1217) → σταῖς (G9151, \"dough\") across 4 passages",
+          "refs": [
+            "Exodus 12:34",
+            "Exodus 12:39",
+            "2 Samuel 13:8",
+            "Jeremiah 7:18"
+          ],
+          "target": "G9151",
+          "why": "Ancient Greek Septuagint translates Hebrew בָּצֵק (H1217) as Greek σταῖς (G9151) in 4 occurrences (Exodus 12:34, Exodus 12:39, 2 Samuel 13:8, Jeremiah 7:18). Establishes documented Greek translation bridge."
+        },
+        {
+          "rank": 16,
+          "id": "r11:xref:1856:5921",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference: Exodus 12:39 → Joshua 4:10 (\"hurried\")",
+          "refs": [
+            "Exodus 12:39",
+            "Joshua 4:10"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Exodus 12:39 and Joshua 4:10 via anchor phrase \"hurried\"."
+        },
+        {
+          "rank": 17,
+          "id": "r11:cluster:H4682:temple_and_sanctuary_architecture",
+          "ep": "direct_textual_evidence",
+          "title": "Temple & Sanctuary Architecture (Genesis 19 · Exodus 12, 29, 34 · Leviticus 10)",
+          "refs": [
+            "Genesis 19:3",
+            "Exodus 12:15",
+            "Exodus 29:2",
+            "Exodus 29:23"
+          ],
+          "target": "H4682",
+          "why": "Attested in 9 verses (Genesis 19:3, Exodus 12:15, Exodus 29:2, Exodus 29:23...) with surface forms: וּמַצּ֥וֹת, מַצּ֣וֹת, מַצּ֗וֹת, מַצֹּת֙. Co-occurs with: to eat, flatbread, bun, to bake. Occurs in sanctuary or Temple architectural des..."
+        },
+        {
+          "rank": 18,
+          "id": "r11:cluster:H0644:temple_and_sanctuary_architecture",
+          "ep": "direct_textual_evidence",
+          "title": "Temple & Sanctuary Architecture (Genesis 19, 40, 41 · 1 Samuel 28 · Ezekiel 46)",
+          "refs": [
+            "Genesis 19:3",
+            "Genesis 40:5",
+            "Genesis 40:17",
+            "Genesis 41:10"
+          ],
+          "target": "H0644",
+          "why": "Attested in 6 verses (Genesis 19:3, Genesis 40:5, Genesis 40:17, Genesis 41:10...) with surface forms: אָפָ֖ה, וְהָאֹפֶ֗ה, אֹפֶ֑ה, הָאֹפִֽים. Co-occurs with: unleavened bread, place, Pharaoh, stall. Occurs in sanctuary or Temple architec..."
+        },
+        {
+          "rank": 19,
+          "id": "r12:path:H4682:H5560",
+          "ep": "documented_collocation_or_cooccurrence",
+          "title": "2-hop: מַצָּה (H4682) → סֹ֫לֶת (\"fine flour\", H5560)",
+          "refs": [
+            "Exodus 29:2",
+            "Leviticus 2:4",
+            "Leviticus 2:5",
+            "Leviticus 7:12"
+          ],
+          "target": "H5560",
+          "why": "2-hop path (direct endpoint witness): מַצָּה (unleavened bread) --[gram_possessive_construction_with]--> חַלָּה (bun) ; חַלָּה (bun) --[gram_possessive_construction_with]--> סֹ֫לֶת (fine flour)"
+        },
+        {
+          "rank": 20,
+          "id": "r11:lxx:H4682:0",
+          "ep": "documented_lexical_relationship",
+          "title": "Septuagint alignment witness: מַצָּה (H4682) → ἄζυμος",
+          "refs": [],
+          "target": "G0106",
+          "why": "Documented LXX lexical alignment linking מַצָּה (H4682) with Greek witness ἄζυμος."
+        },
+        {
+          "rank": 21,
+          "id": "r11:xref:1857:27484",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (OT↔NT): Exodus 12:40 → Acts 13:17 (\"stay\") (same-chapter pericope context near Exodus 12:39)",
+          "refs": [
+            "Exodus 12:40",
+            "Acts 13:17"
+          ],
+          "why": "Same-chapter pericope context (Exodus 12:40, 1v from Exodus 12:39): Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Exodus 12:40 and Acts 13:17 via anchor phrase \"stay\" (0 shared lemmas, 1 LXX alignment bri..."
+        },
+        {
+          "rank": 22,
+          "id": "r11:gram:H0644:possessive_construction_with:H8269",
+          "ep": "direct_textual_evidence",
+          "title": "Genitive / construct connection: אָפָה (a.phah) ↔ שַׂר (\"ruler\", 5×)",
+          "refs": [
+            "Genesis 40:16",
+            "Genesis 40:2",
+            "Genesis 40:20"
+          ],
+          "target": "H8269",
+          "why": "Genitive / construct connection: אָפָה (H0644, \"to bake\") and שַׂר (H8269, \"ruler\") across 5 indexed occurrences. 5 distinct canonical source clauses pass token-position verification; parallel editions are counted once."
+        },
+        {
+          "rank": 23,
+          "id": "r12:prop:H4682:G0106",
+          "ep": "external_world_bridge",
+          "title": "External concept equivalence: מַצָּה (unleavened bread) ↔ ἄζυμος (\"unleavened\") via \"bread\"",
+          "refs": [
+            "Genesis 19:3",
+            "Exodus 12:8",
+            "Matthew 26:17",
+            "Mark 14:1"
+          ],
+          "target": "G0106",
+          "why": "External concept equivalence (candidate mapping; OpenEnglishWordNet) linking H4682 (unleavened bread) and G0106 (unleavened / unleavened bread) via shared property oewn:hypernym=bread. Independent biblical support=0 (exploratory hypothes..."
+        },
+        {
+          "rank": 24,
+          "id": "r12:path:H4682:H7126",
+          "ep": "documented_collocation_or_cooccurrence",
+          "title": "2-hop: מַצָּה (H4682) → קָרַב (\"to present: come\", H7126)",
+          "refs": [
+            "Leviticus 2:4",
+            "Leviticus 7:12",
+            "Exodus 29:2"
+          ],
+          "target": "H7126",
+          "why": "2-hop path (direct endpoint witness): מַצָּה (unleavened bread) --[gram_possessive_construction_with]--> חַלָּה (bun) ; חַלָּה (bun) —object of→ קָרַב (to present: come)"
+        },
+        {
+          "rank": 25,
+          "id": "r11:lxx:H4682:2",
+          "ep": "documented_lexical_relationship",
+          "title": "Septuagint (LXX) bridge: מַצָּה (H4682) → ἄρτος (G0740, \"bread\") across 8 passages",
+          "refs": [
+            "Exodus 29:2",
+            "Exodus 29:23",
+            "Leviticus 2:4",
+            "Leviticus 8:26"
+          ],
+          "target": "G0740",
+          "why": "Ancient Greek Septuagint translates Hebrew מַצָּה (H4682) as Greek ἄρτος (G0740) in 8 occurrences (Exodus 29:2, Exodus 29:23, Leviticus 2:4, Leviticus 8:26). Establishes documented Greek translation bridge."
+        }
+      ],
+      "case_scores": [
+        {
+          "id": "S002",
+          "polarity": "positive",
+          "category": "narrative_chronology",
+          "assessable": true,
+          "k": 25,
+          "old": null,
+          "now": null
+        }
+      ]
+    },
+    {
+      "index": 107,
+      "q": "Hosea 6:2",
+      "mode": "discover",
+      "via": "passage",
+      "status": "ok",
+      "error": null,
+      "latency_ms": 2205,
+      "cards": [
+        {
+          "rank": 1,
+          "id": "r11:xref:22286:28823",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (reciprocal) (OT↔NT): Hosea 6:2 ↔ 1 Corinthians 15:4 (\"He will revive us\")",
+          "refs": [
+            "Hosea 6:2",
+            "1 Corinthians 15:4"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) reciprocally links Hosea 6:2 and 1 Corinthians 15:4 via anchor phrase \"He will revive us\" (0 shared lemmas, 2 LXX alignment bridges)."
+        },
+        {
+          "rank": 2,
+          "id": "r11:xref:22290:23509",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (reciprocal) (OT↔NT): Hosea 6:6 ↔ Matthew 9:13 (\"I desire mercy\") (same-chapter pericope context near Ho...",
+          "refs": [
+            "Hosea 6:6",
+            "Matthew 9:13"
+          ],
+          "why": "Same-chapter pericope context (Hosea 6:6, 4v from Hosea 6:2): Modern editorial cross-reference index (CrossReferences.org / OpenBible) reciprocally links Hosea 6:6 and Matthew 9:13 via anchor phrase \"I desire mercy\" (0 shared lemmas, 4 L..."
+        },
+        {
+          "rank": 3,
+          "id": "r11:xref:22290:23613",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (reciprocal) (OT↔NT): Hosea 6:6 ↔ Matthew 12:7 (\"I desire mercy\") (same-chapter pericope context near Ho...",
+          "refs": [
+            "Hosea 6:6",
+            "Matthew 12:7"
+          ],
+          "why": "Same-chapter pericope context (Hosea 6:6, 4v from Hosea 6:2): Modern editorial cross-reference index (CrossReferences.org / OpenBible) reciprocally links Hosea 6:6 and Matthew 12:7 via anchor phrase \"I desire mercy\" (0 shared lemmas, 4 L..."
+        },
+        {
+          "rank": 4,
+          "id": "r11:xref:22286:18266",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (reciprocal): Hosea 6:2 ↔ Isaiah 26:19 (\"He will revive us\")",
+          "refs": [
+            "Hosea 6:2",
+            "Isaiah 26:19"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) reciprocally links Hosea 6:2 and Isaiah 26:19 via anchor phrase \"He will revive us\" (2 shared lemmas, 0 LXX alignment bridges)."
+        },
+        {
+          "rank": 5,
+          "id": "r11:xref:22286:23926",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (OT↔NT): Hosea 6:2 → Matthew 20:19 (\"third day\")",
+          "refs": [
+            "Hosea 6:2",
+            "Matthew 20:19"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Hosea 6:2 and Matthew 20:19 via anchor phrase \"third day\" (0 shared lemmas, 2 LXX alignment bridges)."
+        },
+        {
+          "rank": 6,
+          "id": "r11:xref:22286:24644",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (OT↔NT): Hosea 6:2 → Mark 8:31 (\"after three days rise again\")",
+          "refs": [
+            "Hosea 6:2",
+            "Mark 8:31"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Hosea 6:2 and Mark 8:31 via anchor phrase \"after three days rise again\" (0 shared lemmas, 1 LXX alignment bridge)."
+        },
+        {
+          "rank": 7,
+          "id": "r12:scene:22286:1271",
+          "ep": "shared_motif_evidence",
+          "title": "Structural & lexical scene correspondence: Hosea 6:2 ↔ Genesis 42:18",
+          "refs": [
+            "Hosea 6:2",
+            "Genesis 42:18"
+          ],
+          "why": "Cross-book alignment between Hosea 6:2 and Genesis 42:18 sharing rare attested lemmas/LXX equivalents (H2421-H2421,H7992-H7992, 1 shared MACULA grammatical role(s), IDF=6.2). Candidate literary/scene parallel; inspect both contexts befor..."
+        },
+        {
+          "rank": 8,
+          "id": "r11:xref:22286:24733",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (OT↔NT): Hosea 6:2 → Mark 10:34 (\"And after three days He will rise again\")",
+          "refs": [
+            "Hosea 6:2",
+            "Mark 10:34"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Hosea 6:2 and Mark 10:34 via anchor phrase \"And after three days He will rise again\" (0 shared lemmas, 1 LXX alignment bridge)."
+        },
+        {
+          "rank": 9,
+          "id": "r11:xref:22286:26653",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (OT↔NT): Hosea 6:2 → John 11:24 (\"know that he will rise again\")",
+          "refs": [
+            "Hosea 6:2",
+            "John 11:24"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Hosea 6:2 and John 11:24 via anchor phrase \"know that he will rise again\" (0 shared lemmas, 1 LXX alignment bridge)."
+        },
+        {
+          "rank": 10,
+          "id": "r11:xref:22286:26793",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (OT↔NT): Hosea 6:2 → John 14:19 (\"live in His presence\")",
+          "refs": [
+            "Hosea 6:2",
+            "John 14:19"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Hosea 6:2 and John 14:19 via anchor phrase \"live in His presence\" (0 shared lemmas, 1 LXX alignment bridge)."
+        },
+        {
+          "rank": 11,
+          "id": "r11:xref:22287:26451",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (reciprocal) (OT↔NT): Hosea 6:3 ↔ John 7:17 (\"press on to know\") (same-chapter pericope context near Hos...",
+          "refs": [
+            "Hosea 6:3",
+            "John 7:17"
+          ],
+          "why": "Same-chapter pericope context (Hosea 6:3, 1v from Hosea 6:2): Modern editorial cross-reference index (CrossReferences.org / OpenBible) reciprocally links Hosea 6:3 and John 7:17 via anchor phrase \"press on to know\" (0 shared lemmas, 1 LX..."
+        },
+        {
+          "rank": 12,
+          "id": "r11:xref:22286:28390",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (OT↔NT): Hosea 6:2 → Romans 14:8 (\"live in His presence\")",
+          "refs": [
+            "Hosea 6:2",
+            "Romans 14:8"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Hosea 6:2 and Romans 14:8 via anchor phrase \"live in His presence\" (0 shared lemmas, 1 LXX alignment bridge)."
+        },
+        {
+          "rank": 13,
+          "id": "r11:gram:H7992:grammatical_object_of:H2219",
+          "ep": "direct_textual_evidence",
+          "title": "Direct object of: שְׁלִישִׁי (she.li.shi) ↔ זָרָה (\"to scatter\", 2×)",
+          "refs": [
+            "Ezekiel 5:12",
+            "Ezekiel 5:2"
+          ],
+          "target": "H2219",
+          "why": "Direct object of: שְׁלִישִׁי (H7992, \"third\") and זָרָה (H2219, \"to scatter\") across 2 indexed occurrences. 2 distinct canonical source clauses pass token-position verification; parallel editions are counted once."
+        },
+        {
+          "rank": 14,
+          "id": "r11:lxx:H7992:0",
+          "ep": "documented_lexical_relationship",
+          "title": "Septuagint alignment witness: שְׁלִישִׁי (H7992) → τρίτος",
+          "refs": [],
+          "target": "G5154",
+          "why": "Documented LXX lexical alignment linking שְׁלִישִׁי (H7992) with Greek witness τρίτος."
+        },
+        {
+          "rank": 15,
+          "id": "r11:cluster:H7992:temple_and_sanctuary_architecture",
+          "ep": "direct_textual_evidence",
+          "title": "Temple & Sanctuary Architecture (Exodus 28, 39 · 1 Kings 3, 6 · 2 Kings 11, 20)",
+          "refs": [
+            "Exodus 28:19",
+            "Exodus 39:12",
+            "1 Kings 3:18",
+            "1 Kings 6:6"
+          ],
+          "target": "H7992",
+          "why": "Attested in 12 verses (Exodus 28:19, Exodus 39:12, 1 Kings 3:18, 1 Kings 6:6...) with surface forms: הַשְּׁלִישִׁ֑י, הַשְּׁלִישִׁי֙, וְהַ֨שְּׁלִישִׁ֔ית, הַשְּׁלִשִֽׁים. Co-occurs with: place, jacinth, agate, amethyst. Occurs in sanctuary..."
+        },
+        {
+          "rank": 16,
+          "id": "r11:lex:H7992:0",
+          "ep": "documented_lexical_relationship",
+          "title": "Lexical relation (shares root): שְׁלִישִׁי (H7992) ↔ תַּלְתִּי (H8523)",
+          "refs": [],
+          "target": "H8523",
+          "why": "Morphological and root derivation analysis links שְׁלִישִׁי (H7992) to תַּלְתִּי (H8523) (\"third\")."
+        },
+        {
+          "rank": 17,
+          "id": "r11:lex:H7992:1",
+          "ep": "documented_lexical_relationship",
+          "title": "Lexical relation (shares root): שְׁלִישִׁי (H7992) ↔ תְּלַת (H8531)",
+          "refs": [],
+          "target": "H8531",
+          "why": "Morphological and root derivation analysis links שְׁלִישִׁי (H7992) to תְּלַת (H8531) (\"third\")."
+        },
+        {
+          "rank": 18,
+          "id": "r11:xref:22286:22397",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (reciprocal): Hosea 6:2 ↔ Hosea 13:14 (\"He will revive us\")",
+          "refs": [
+            "Hosea 6:2",
+            "Hosea 13:14"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) reciprocally links Hosea 6:2 and Hosea 13:14 via anchor phrase \"He will revive us\"."
+        },
+        {
+          "rank": 19,
+          "id": "r11:xref:22286:1386",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference: Hosea 6:2 → Genesis 45:27 (\"the spirit of their father Jacob was revived\")",
+          "refs": [
+            "Hosea 6:2",
+            "Genesis 45:27"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Hosea 6:2 and Genesis 45:27 via anchor phrase \"the spirit of their father Jacob was revived\" (1 shared lemma, 0 LXX alignment bridges)."
+        },
+        {
+          "rank": 20,
+          "id": "r11:lxx:H7992:1",
+          "ep": "documented_lexical_relationship",
+          "title": "Septuagint (LXX) bridge: שְׁלִישִׁי (H7992) → τρίστεγος (G5152, \"third story\") across 3 passages",
+          "refs": [
+            "1 Samuel 20:12",
+            "1 Chronicles 26:11",
+            "Ezekiel 42:3"
+          ],
+          "target": "G5152",
+          "why": "Ancient Greek Septuagint translates Hebrew שְׁלִישִׁי (H7992) as Greek τρίστεγος (G5152) in 3 occurrences (1 Samuel 20:12, 1 Chronicles 26:11, Ezekiel 42:3). Establishes documented Greek translation bridge."
+        },
+        {
+          "rank": 21,
+          "id": "r11:cluster:H7992:prophetic_imagery_and_oracles",
+          "ep": "direct_textual_evidence",
+          "title": "Prophetic Imagery & Oracles (Isaiah 15, 19, 37 · Jeremiah 38, 48 · Ezekiel 5, 10, 21, 31)",
+          "refs": [
+            "Isaiah 15:5",
+            "Isaiah 19:24",
+            "Isaiah 37:30",
+            "Jeremiah 38:14"
+          ],
+          "target": "H7992",
+          "why": "Attested in 14 verses (Isaiah 15:5, Isaiah 19:24, Isaiah 37:30, Jeremiah 38:14...) with surface forms: שְׁלִ֣ישִׁיָּ֔ה, הַשְּׁלִישִׁ֗ית, הַשְּׁלִישִׁ֔י, שְׁלִשִׁ֗ית. Co-occurs with: Horonaim, Zoar, heifer, outcry."
+        },
+        {
+          "rank": 22,
+          "id": "r11:xref:22286:416",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference: Hosea 6:2 → Genesis 17:18 (\"live in His presence\")",
+          "refs": [
+            "Hosea 6:2",
+            "Genesis 17:18"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Hosea 6:2 and Genesis 17:18 via anchor phrase \"live in His presence\" (2 shared lemmas, 0 LXX alignment bridges)."
+        },
+        {
+          "rank": 23,
+          "id": "r11:lxx:H7992:3",
+          "ep": "documented_lexical_relationship",
+          "title": "Septuagint (LXX) bridge: שְׁלִישִׁי (H7992) → τρισσός (G9493, \"third rank\") across 3 passages",
+          "refs": [
+            "1 Samuel 20:12",
+            "1 Chronicles 26:11",
+            "Ezekiel 42:3"
+          ],
+          "target": "G9493",
+          "why": "Ancient Greek Septuagint translates Hebrew שְׁלִישִׁי (H7992) as Greek τρισσός (G9493) in 3 occurrences (1 Samuel 20:12, 1 Chronicles 26:11, Ezekiel 42:3). Establishes documented Greek translation bridge."
+        },
+        {
+          "rank": 24,
+          "id": "r11:xref:22286:552",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference: Hosea 6:2 → Genesis 22:4 (\"third day\")",
+          "refs": [
+            "Hosea 6:2",
+            "Genesis 22:4"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Hosea 6:2 and Genesis 22:4 via anchor phrase \"third day\" (1 shared lemma, 0 LXX alignment bridges)."
+        },
+        {
+          "rank": 25,
+          "id": "r11:cluster:H7992:historical_narrative",
+          "ep": "direct_textual_evidence",
+          "title": "Historical Narrative (Genesis 1, 2, 6, 22 · Joshua 9, 19 · Judges 20)",
+          "refs": [
+            "Genesis 1:13",
+            "Genesis 2:14",
+            "Genesis 6:16",
+            "Genesis 22:4"
+          ],
+          "target": "H7992",
+          "why": "Attested in 48 verses (Genesis 1:13, Genesis 2:14, Genesis 6:16, Genesis 22:4...) with surface forms: שְׁלִישִֽׁי, הַשְּׁלִישִׁי֙, וּשְׁלִשִׁ֖ים, הַשְּׁלִישִׁ֗י. Co-occurs with: second, fourth, firstborn, day."
+        }
+      ],
+      "case_scores": [
+        {
+          "id": "S018",
+          "polarity": "positive",
+          "category": "narrative_pattern",
+          "assessable": true,
+          "k": 25,
+          "old": 7,
+          "now": 1
+        },
+        {
+          "id": "S021",
+          "polarity": "positive",
+          "category": "narrative_pattern",
+          "assessable": true,
+          "k": 25,
+          "old": null,
+          "now": null
+        },
+        {
+          "id": "N010",
+          "polarity": "negative",
+          "category": "interpretive_overclaim",
+          "assessable": true,
+          "k": 25,
+          "old": 7,
+          "now": 1
+        }
+      ]
+    },
+    {
+      "index": 121,
+      "q": "Zechariah 4:6",
+      "mode": "discover",
+      "via": "passage",
+      "status": "ok",
+      "error": null,
+      "latency_ms": 2207,
+      "cards": [
+        {
+          "rank": 1,
+          "id": "r11:xref:23045:27037",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (OT↔NT): Zechariah 4:6 → Acts 1:8 (\"you will receive power\")",
+          "refs": [
+            "Zechariah 4:6",
+            "Acts 1:8"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Zechariah 4:6 and Acts 1:8 via anchor phrase \"you will receive power\" (0 shared lemmas, 4 LXX alignment bridges)."
+        },
+        {
+          "rank": 2,
+          "id": "r11:xref:23045:28499",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (OT↔NT): Zechariah 4:6 → 1 Corinthians 2:4-5 (\"Not by might nor by power, but by My Spirit\")",
+          "refs": [
+            "Zechariah 4:6",
+            "1 Corinthians 2:4-5"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Zechariah 4:6 and 1 Corinthians 2:4-5 via anchor phrase \"Not by might nor by power, but by My Spirit\" (0 shared lemmas, 4 LXX alignment bridges)."
+        },
+        {
+          "rank": 3,
+          "id": "r11:xref:23045:29076",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (reciprocal) (OT↔NT): Zechariah 4:6 ↔ 2 Corinthians 10:4-5 (\"Not by might nor by power, but by My Spirit\")",
+          "refs": [
+            "Zechariah 4:6",
+            "2 Corinthians 10:4-5"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) reciprocally links Zechariah 4:6 and 2 Corinthians 10:4-5 via anchor phrase \"Not by might nor by power, but by My Spirit\" (0 shared lemmas, 3 LXX alignment bridges)."
+        },
+        {
+          "rank": 4,
+          "id": "r10:corresp:zech4_menorah_oil_spirit_eyes",
+          "ep": "verified_cross_reference",
+          "title": "Zechariah 4:2–14 unites golden lampstand (menorah), seven lamps, olive oil, the LORD’s Spirit (ruach), and seven eyes",
+          "refs": [
+            "Zechariah 4:2",
+            "Zechariah 4:6",
+            "Zechariah 4:10",
+            "Zechariah 4:12"
+          ],
+          "target": "H7651",
+          "why": "Zechariah sees a solid gold lampstand (מְנוֹרָה H4501) with seven lamps (נֵר H5216) fed by two olive trees/oil (שֶׁמֶן/יִצְהָר H8081/H3323); v.6 declares \"not by might, nor by power, but by my Spirit (רוּחִי H7307)\"; v.10 identifies the..."
+        },
+        {
+          "rank": 5,
+          "id": "r10:ident:rev5_6_eyes_spirits",
+          "ep": "direct_textual_evidence",
+          "title": "Revelation 5:6 explicitly identifies the Lamb’s seven eyes with the seven Spirits of God",
+          "refs": [
+            "Revelation 5:6",
+            "Zechariah 4:10"
+          ],
+          "target": "G3788",
+          "why": "The Lamb has seven horns and seven eyes (ὀφθαλμοὺς ἑπτά), \"which are the seven Spirits of God sent out into all the earth\" (οἵ εἰσιν τὰ [ἑπτὰ] πνεύματα τοῦ θεοῦ ἀπεσταλμένοι εἰς πᾶσαν τὴν γῆν), echoing Zechariah 4:10."
+        },
+        {
+          "rank": 6,
+          "id": "r11:xref:23041:30810",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (reciprocal) (OT↔NT): Zechariah 4:2 ↔ Revelation 1:12-20 (\"lampstand\") (same-chapter pericope context ne...",
+          "refs": [
+            "Zechariah 4:2",
+            "Revelation 1:12-20"
+          ],
+          "why": "Same-chapter pericope context (Zechariah 4:2, 4v from Zechariah 4:6): Modern editorial cross-reference index (CrossReferences.org / OpenBible) reciprocally links Zechariah 4:2 and Revelation 1:12-20 via anchor phrase \"lampstand\" (0 share..."
+        },
+        {
+          "rank": 7,
+          "id": "r11:xref:23045:22974",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference: Zechariah 4:6 → Haggai 2:2-5 (\"Not by might nor by power, but by My Spirit\")",
+          "refs": [
+            "Zechariah 4:6",
+            "Haggai 2:2-5"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Zechariah 4:6 and Haggai 2:2-5 via anchor phrase \"Not by might nor by power, but by My Spirit\" (3 shared lemmas, 0 LXX alignment bridges)."
+        },
+        {
+          "rank": 8,
+          "id": "r12:scene:23045:22971",
+          "ep": "shared_motif_evidence",
+          "title": "Structural & lexical scene correspondence: Zechariah 4:6 ↔ Haggai 1:14",
+          "refs": [
+            "Zechariah 4:6",
+            "Haggai 1:14"
+          ],
+          "why": "Cross-book alignment between Zechariah 4:6 and Haggai 1:14 sharing rare attested lemmas/LXX equivalents (H2216-H2216,H7307-H7307,H6635-H6635, IDF=8.8). Candidate literary/scene parallel; inspect both contexts before inferring authorial d..."
+        },
+        {
+          "rank": 9,
+          "id": "r11:xref:23041:30874",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (reciprocal) (OT↔NT): Zechariah 4:2 ↔ Revelation 4:5 (\"seven lamps\") (same-chapter pericope context near...",
+          "refs": [
+            "Zechariah 4:2",
+            "Revelation 4:5"
+          ],
+          "why": "Same-chapter pericope context (Zechariah 4:2, 4v from Zechariah 4:6): Modern editorial cross-reference index (CrossReferences.org / OpenBible) reciprocally links Zechariah 4:2 and Revelation 4:5 via anchor phrase \"seven lamps\" (0 shared..."
+        },
+        {
+          "rank": 10,
+          "id": "r12:scene:23045:11746",
+          "ep": "shared_motif_evidence",
+          "title": "Structural & lexical scene correspondence: Zechariah 4:6 ↔ 2 Chronicles 26:13",
+          "refs": [
+            "Zechariah 4:6",
+            "2 Chronicles 26:13"
+          ],
+          "why": "Cross-book alignment between Zechariah 4:6 and 2 Chronicles 26:13 sharing rare attested lemmas/LXX equivalents (H2428-H2428,H3581-H3581,H6635-H6635, IDF=8.1). Candidate literary/scene parallel; inspect both contexts before inferring auth..."
+        },
+        {
+          "rank": 11,
+          "id": "r11:xref:23045:30486",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (OT↔NT): Zechariah 4:6 → 1 Peter 1:12 (\"Not by might nor by power, but by My Spirit\")",
+          "refs": [
+            "Zechariah 4:6",
+            "1 Peter 1:12"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Zechariah 4:6 and 1 Peter 1:12 via anchor phrase \"Not by might nor by power, but by My Spirit\" (0 shared lemmas, 1 LXX alignment bridge)."
+        },
+        {
+          "rank": 12,
+          "id": "r11:xref:23045:25780",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (OT↔NT): Zechariah 4:6 → Luke 17:20 (\"observable signs\")",
+          "refs": [
+            "Zechariah 4:6",
+            "Luke 17:20"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Zechariah 4:6 and Luke 17:20 via anchor phrase \"observable signs\" (0 shared lemmas, 1 LXX alignment bridge)."
+        },
+        {
+          "rank": 13,
+          "id": "r10:xlang:menorah_luchnia",
+          "ep": "documented_lexical_relationship",
+          "title": "Same-image cross-language bridge: Hebrew מְנוֹרָה (menorah H4501) ↔ LXX/NT Greek λυχνία (luchnia G3087)",
+          "refs": [
+            "Exodus 25:31",
+            "Zechariah 4:2",
+            "Revelation 11:4",
+            "Revelation 1:12"
+          ],
+          "target": "G3087",
+          "why": "LXX translates Exodus 25 & Zechariah 4 מְנוֹרָה (lampstand) using Greek λυχνία (G3087), the same Greek word used in Revelation 1:12–20 & 11:4 (linking Zech 4:3,11–14 to Rev 11:4 \"the two lampstands\")."
+        },
+        {
+          "rank": 14,
+          "id": "r10:xlang:ner_lampas",
+          "ep": "documented_lexical_relationship",
+          "title": "Same-image cross-language bridge: Hebrew נֵר / לַפִּיד (ner H5216 / lamp) ↔ Greek λαμπάς / λύχνος (lampas G2985 / luchnos G3088)",
+          "refs": [
+            "Zechariah 4:2",
+            "Ezekiel 1:13",
+            "Revelation 4:5"
+          ],
+          "target": "H3940",
+          "why": "Connects Zech 4:2 seven lamps (שִׁבְעָה נֵרֹתֶיהָ) and Ezek 1:13 burning torches (לַפִּידִים) with Revelation 4:5 seven burning lamps (ἑπτὰ λαμπάδες πυρός G2985)."
+        },
+        {
+          "rank": 15,
+          "id": "r11:xref:23042:28328",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (reciprocal) (OT↔NT): Zechariah 4:3 ↔ Romans 11:17-24 (\"two olive trees beside it, one on the right side...",
+          "refs": [
+            "Zechariah 4:3",
+            "Romans 11:17-24"
+          ],
+          "why": "Same-chapter pericope context (Zechariah 4:3, 3v from Zechariah 4:6): Modern editorial cross-reference index (CrossReferences.org / OpenBible) reciprocally links Zechariah 4:3 and Romans 11:17-24 via anchor phrase \"two olive trees beside..."
+        },
+        {
+          "rank": 16,
+          "id": "r11:gram:H2216:possessive_construction_with:H3027",
+          "ep": "direct_textual_evidence",
+          "title": "Genitive / construct connection: זְרֻבָּבֶ֫ל (ze.rub.ba.vel) ↔ יָד (\"hand\", 2×)",
+          "refs": [
+            "Zechariah 4:10",
+            "Zechariah 4:9"
+          ],
+          "target": "H3027",
+          "why": "Genitive / construct connection: זְרֻבָּבֶ֫ל (H2216, \"Zerubbabel\") and יָד (H3027, \"hand\") across 2 indexed occurrences. 2 distinct canonical source clauses pass token-position verification; parallel editions are counted once."
+        },
+        {
+          "rank": 17,
+          "id": "r11:xref:23045:22995",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference: Zechariah 4:6 → Haggai 2:23 (\"I have chosen you\")",
+          "refs": [
+            "Zechariah 4:6",
+            "Haggai 2:23"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Zechariah 4:6 and Haggai 2:23 via anchor phrase \"I have chosen you\" (2 shared lemmas, 0 LXX alignment bridges)."
+        },
+        {
+          "rank": 18,
+          "id": "r11:lxx:H2216:0",
+          "ep": "documented_lexical_relationship",
+          "title": "Septuagint alignment witness: זְרֻבָּבֶ֫ל (H2216) → Ζοροβάβελ",
+          "refs": [],
+          "target": "G2216",
+          "why": "Documented LXX lexical alignment linking זְרֻבָּבֶ֫ל (H2216) with Greek witness Ζοροβάβελ."
+        },
+        {
+          "rank": 19,
+          "id": "r11:lex:H2216:1",
+          "ep": "documented_lexical_relationship",
+          "title": "Lexical relation (shares root): זְרֻבָּבֶ֫ל (H2216) ↔ זְרֻבָּבֶ֫ל (H2217)",
+          "refs": [],
+          "target": "H2217",
+          "why": "Morphological and root derivation analysis links זְרֻבָּבֶ֫ל (H2216) to זְרֻבָּבֶ֫ל (H2217) (\"Zerubbabel\")."
+        },
+        {
+          "rank": 20,
+          "id": "r11:lex:H2216:2",
+          "ep": "documented_lexical_relationship",
+          "title": "Lexical relation (shares root): זְרֻבָּבֶ֫ל (H2216) ↔ שֵׁשְׁבַּצַּר (H8339)",
+          "refs": [],
+          "target": "H8339",
+          "why": "Morphological and root derivation analysis links זְרֻבָּבֶ֫ל (H2216) to שֵׁשְׁבַּצַּר (H8339) (\"Sheshbazzar\")."
+        },
+        {
+          "rank": 21,
+          "id": "r10:homograph:ayin_eye_vs_spring_h5869",
+          "ep": "documented_lexical_relationship",
+          "title": "Homograph disambiguation: Hebrew עַיִן (a.yin H5869) means both \"eye / sight\" (Zech 4:10) and \"spring / fountain / well\" (Gen 16:7; Exod...",
+          "refs": [
+            "Zechariah 4:10",
+            "Genesis 24:13",
+            "Exodus 15:27"
+          ],
+          "target": "G3788",
+          "why": "STEPBible distinguishes senses of עַיִן (H5869): physical eye/sight (H5869a → LXX ὀφθαλμός G3788, as in Zech 4:10 \"eyes of YHWH\") vs water spring/fountain (H5869b → LXX πηγή G4077, as in Gen 16:7, 24:13, Prov 8:28). Context prevents conf..."
+        },
+        {
+          "rank": 22,
+          "id": "r11:xref:23045:14412",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference: Zechariah 4:6 → Psalms 33:16-21 (\"might\")",
+          "refs": [
+            "Zechariah 4:6",
+            "Psalms 33:16-21"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Zechariah 4:6 and Psalms 33:16-21 via anchor phrase \"might\" (2 shared lemmas, 0 LXX alignment bridges)."
+        },
+        {
+          "rank": 23,
+          "id": "r11:cluster:H2428:temple_and_sanctuary_architecture",
+          "ep": "direct_textual_evidence",
+          "title": "Temple & Sanctuary Architecture (Genesis 34 · Exodus 14, 15 · Deuteronomy 11)",
+          "refs": [
+            "Genesis 34:29",
+            "Exodus 14:9",
+            "Exodus 14:28",
+            "Exodus 15:4"
+          ],
+          "target": "H2428",
+          "why": "Attested in 27 verses (Genesis 34:29, Exodus 14:9, Exodus 14:28, Exodus 15:4...) with surface forms: חֵילָ֤ם, וְחֵיל֑וֹ, חֵ֣יל, וְחֵיל֖וֹ. Co-occurs with: mighty man, place, father, thousand. Occurs in sanctuary or Temple architectural d..."
+        },
+        {
+          "rank": 24,
+          "id": "r11:xref:23045:11487",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference: Zechariah 4:6 → 2 Chronicles 14:11 (\"Not by might nor by power, but by My Spirit\")",
+          "refs": [
+            "Zechariah 4:6",
+            "2 Chronicles 14:11"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Zechariah 4:6 and 2 Chronicles 14:11 via anchor phrase \"Not by might nor by power, but by My Spirit\" (1 shared lemma, 0 LXX alignment bridges)."
+        },
+        {
+          "rank": 25,
+          "id": "r11:xref:23045:26217",
+          "ep": "editorial_cross_reference",
+          "title": "Zechariah 4:6 -> John 2:15 (\"drove all from the temple courts\")",
+          "refs": [
+            "Zechariah 4:6",
+            "John 2:15"
+          ],
+          "why": "Cross-testament CrossReferences.org link (6 witness votes) around \"drove all from the temple courts\"."
+        }
+      ],
+      "case_scores": [
+        {
+          "id": "S035",
+          "polarity": "positive",
+          "category": "narrative_pattern",
+          "assessable": true,
+          "k": 25,
+          "old": 6,
+          "now": 9
+        }
+      ]
+    },
+    {
+      "index": 135,
+      "q": "Isaiah 11:2",
+      "mode": "discover",
+      "via": "passage",
+      "status": "ok",
+      "error": null,
+      "latency_ms": 3834,
+      "cards": [
+        {
+          "rank": 1,
+          "id": "r11:xref:18003:29323",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (reciprocal) (OT↔NT): Isaiah 11:2 ↔ Ephesians 1:17-18 (\"Spirit of wisdom\")",
+          "refs": [
+            "Isaiah 11:2",
+            "Ephesians 1:17-18"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) reciprocally links Isaiah 11:2 and Ephesians 1:17-18 via anchor phrase \"Spirit of wisdom\" (0 shared lemmas, 3 LXX alignment bridges)."
+        },
+        {
+          "rank": 2,
+          "id": "r11:xref:18003:29573",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (OT↔NT): Isaiah 11:2 → Colossians 1:8-9 (\"Spirit of wisdom\")",
+          "refs": [
+            "Isaiah 11:2",
+            "Colossians 1:8-9"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Isaiah 11:2 and Colossians 1:8-9 via anchor phrase \"Spirit of wisdom\" (0 shared lemmas, 4 LXX alignment bridges)."
+        },
+        {
+          "rank": 3,
+          "id": "r11:xref:18003:29596",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (OT↔NT): Isaiah 11:2 → Colossians 2:2-3 (\"Spirit of wisdom\")",
+          "refs": [
+            "Isaiah 11:2",
+            "Colossians 2:2-3"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Isaiah 11:2 and Colossians 2:2-3 via anchor phrase \"Spirit of wisdom\" (0 shared lemmas, 4 LXX alignment bridges)."
+        },
+        {
+          "rank": 4,
+          "id": "r11:xref:18003:27402",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (reciprocal) (OT↔NT): Isaiah 11:2 ↔ Acts 10:38 (\"Spirit of the LORD\")",
+          "refs": [
+            "Isaiah 11:2",
+            "Acts 10:38"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) reciprocally links Isaiah 11:2 and Acts 10:38 via anchor phrase \"Spirit of the LORD\" (0 shared lemmas, 2 LXX alignment bridges)."
+        },
+        {
+          "rank": 5,
+          "id": "r12:scene:18003:13142",
+          "ep": "shared_motif_evidence",
+          "title": "Structural & lexical scene correspondence: Isaiah 11:2 ↔ Job 12:13",
+          "refs": [
+            "Isaiah 11:2",
+            "Job 12:13"
+          ],
+          "why": "Cross-book alignment between Isaiah 11:2 and Job 12:13 sharing rare attested lemmas/LXX equivalents (H2451-H2451,H0998-H8394,H6098-H6098,H1369-H1369, IDF=15.8). Candidate literary/scene parallel; inspect both contexts before inferring au..."
+        },
+        {
+          "rank": 6,
+          "id": "r12:scene:18003:28483",
+          "ep": "shared_motif_evidence",
+          "title": "Structural & lexical scene correspondence (OT↔NT): Isaiah 11:2 ↔ 1 Corinthians 1:19",
+          "refs": [
+            "Isaiah 11:2",
+            "1 Corinthians 1:19"
+          ],
+          "why": "Cross-book alignment between Isaiah 11:2 and 1 Corinthians 1:19 sharing rare attested lemmas/LXX equivalents (H2451-G4678,H0998-G4907, IDF=8.9). Candidate literary/scene parallel; inspect both contexts before inferring authorial dependence."
+        },
+        {
+          "rank": 7,
+          "id": "r11:xref:18006:29451",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (reciprocal) (OT↔NT): Isaiah 11:5 ↔ Ephesians 6:14 (\"Righteousness\") (same-chapter pericope context near...",
+          "refs": [
+            "Isaiah 11:5",
+            "Ephesians 6:14"
+          ],
+          "why": "Same-chapter pericope context (Isaiah 11:5, 3v from Isaiah 11:2): Modern editorial cross-reference index (CrossReferences.org / OpenBible) reciprocally links Isaiah 11:5 and Ephesians 6:14 via anchor phrase \"Righteousness\" (0 shared lemm..."
+        },
+        {
+          "rank": 8,
+          "id": "r11:xref:18003:30436",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (reciprocal) (OT↔NT): Isaiah 11:2 ↔ James 3:17-18 (\"Spirit of wisdom\")",
+          "refs": [
+            "Isaiah 11:2",
+            "James 3:17-18"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) reciprocally links Isaiah 11:2 and James 3:17-18 via anchor phrase \"Spirit of wisdom\" (0 shared lemmas, 1 LXX alignment bridge)."
+        },
+        {
+          "rank": 9,
+          "id": "r11:xref:18005:29769",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (reciprocal) (OT↔NT): Isaiah 11:4 ↔ 2 Thessalonians 2:8 (\"strike\") (same-chapter pericope context near I...",
+          "refs": [
+            "Isaiah 11:4",
+            "2 Thessalonians 2:8"
+          ],
+          "why": "Same-chapter pericope context (Isaiah 11:4, 2v from Isaiah 11:2): Modern editorial cross-reference index (CrossReferences.org / OpenBible) reciprocally links Isaiah 11:4 and 2 Thessalonians 2:8 via anchor phrase \"strike\" (0 shared lemmas..."
+        },
+        {
+          "rank": 10,
+          "id": "r11:gram:H5117:grammatical_subject_of:H7307",
+          "ep": "direct_textual_evidence",
+          "title": "Has grammatical subject: נוּחַ (nu.ach) ↔ רוּחַ (\"spirit / wind / breath\", 5×)",
+          "refs": [
+            "2 Kings 2:15",
+            "Isaiah 11:2",
+            "Isaiah 63:14"
+          ],
+          "target": "H7307",
+          "why": "Has grammatical subject: נוּחַ (H5117, \"to rest\") and רוּחַ (H7307, \"spirit / wind / breath\") across 5 indexed occurrences. 5 distinct canonical source clauses pass token-position verification; parallel editions are counted once."
+        },
+        {
+          "rank": 11,
+          "id": "r11:xref:18003:27352",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (OT↔NT): Isaiah 11:2 → Acts 9:31 (\"living in the fear of the Lord\")",
+          "refs": [
+            "Isaiah 11:2",
+            "Acts 9:31"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Isaiah 11:2 and Acts 9:31 via anchor phrase \"living in the fear of the Lord\" (0 shared lemmas, 2 LXX alignment bridges)."
+        },
+        {
+          "rank": 12,
+          "id": "r12:scene:18003:29574",
+          "ep": "shared_motif_evidence",
+          "title": "Structural & lexical scene correspondence (OT↔NT): Isaiah 11:2 ↔ Colossians 1:9",
+          "refs": [
+            "Isaiah 11:2",
+            "Colossians 1:9"
+          ],
+          "why": "Cross-book alignment between Isaiah 11:2 and Colossians 1:9 sharing rare attested lemmas/LXX equivalents (H2451-G4678,H0998-G4907, IDF=8.9). Candidate literary/scene parallel; inspect both contexts before inferring authorial dependence."
+        },
+        {
+          "rank": 13,
+          "id": "r12:path:H7307:H2534",
+          "ep": "documented_collocation_or_cooccurrence",
+          "title": "2-hop: רוּחַ (H7307) → חֵמָה (\"rage\", H2534)",
+          "refs": [
+            "Job 6:4",
+            "Ezekiel 3:14",
+            "Ezekiel 13:13",
+            "Ezekiel 19:12"
+          ],
+          "target": "H2534",
+          "why": "2-hop path (direct endpoint witness): רוּחַ (spirit / wind / breath) —subject of→ נוּחַ (to rest) ; נוּחַ (to rest) —object of→ חֵמָה (rage)"
+        },
+        {
+          "rank": 14,
+          "id": "r11:xref:18003:23325",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (reciprocal) (OT↔NT): Isaiah 11:2 ↔ Matthew 3:16 (\"Spirit of the LORD\")",
+          "refs": [
+            "Isaiah 11:2",
+            "Matthew 3:16"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) reciprocally links Isaiah 11:2 and Matthew 3:16 via anchor phrase \"Spirit of the LORD\" (0 shared lemmas, 1 LXX alignment bridge)."
+        },
+        {
+          "rank": 15,
+          "id": "r11:xref:18003:26261",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (reciprocal) (OT↔NT): Isaiah 11:2 ↔ John 3:34 (\"Spirit of the LORD\")",
+          "refs": [
+            "Isaiah 11:2",
+            "John 3:34"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) reciprocally links Isaiah 11:2 and John 3:34 via anchor phrase \"Spirit of the LORD\" (0 shared lemmas, 1 LXX alignment bridge)."
+        },
+        {
+          "rank": 16,
+          "id": "r11:xref:18002:28417",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (reciprocal) (OT↔NT): Isaiah 11:1 ↔ Romans 15:12 (\"of Jesse\") (same-chapter pericope context near Isaiah...",
+          "refs": [
+            "Isaiah 11:1",
+            "Romans 15:12"
+          ],
+          "why": "Same-chapter pericope context (Isaiah 11:1, 1v from Isaiah 11:2): Modern editorial cross-reference index (CrossReferences.org / OpenBible) reciprocally links Isaiah 11:1 and Romans 15:12 via anchor phrase \"of Jesse\" (0 shared lemmas, 2 L..."
+        },
+        {
+          "rank": 17,
+          "id": "r11:gram:H2451:possessive_construction_with:H7307",
+          "ep": "direct_textual_evidence",
+          "title": "Genitive / construct connection: חׇכְמָה (chokh.mah) ↔ רוּחַ (\"spirit / wind / breath\", 3×)",
+          "refs": [
+            "Deuteronomy 34:9",
+            "Exodus 28:3",
+            "Isaiah 11:2"
+          ],
+          "target": "H7307",
+          "why": "Genitive / construct connection: חׇכְמָה (H2451, \"wisdom\") and רוּחַ (H7307, \"spirit / wind / breath\") across 3 indexed occurrences. 3 distinct canonical source clauses pass token-position verification; parallel editions are counted once."
+        },
+        {
+          "rank": 18,
+          "id": "r11:xref:18003:27210",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (OT↔NT): Isaiah 11:2 → Acts 6:3 (\"full of the Spirit and wisdom\")",
+          "refs": [
+            "Isaiah 11:2",
+            "Acts 6:3"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Isaiah 11:2 and Acts 6:3 via anchor phrase \"full of the Spirit and wisdom\" (0 shared lemmas, 2 LXX alignment bridges)."
+        },
+        {
+          "rank": 19,
+          "id": "r11:xref:18003:5849",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (reciprocal): Isaiah 11:2 ↔ Deuteronomy 34:9 (\"Spirit of wisdom\")",
+          "refs": [
+            "Isaiah 11:2",
+            "Deuteronomy 34:9"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) reciprocally links Isaiah 11:2 and Deuteronomy 34:9 via anchor phrase \"Spirit of wisdom\" (2 shared lemmas, 0 LXX alignment bridges)."
+        },
+        {
+          "rank": 20,
+          "id": "r11:cluster:H5117:temple_and_sanctuary_architecture",
+          "ep": "direct_textual_evidence",
+          "title": "Temple & Sanctuary Architecture (Genesis 39, 42 · Exodus 20, 23, 32, 33 · Deuteronomy 26)",
+          "refs": [
+            "Genesis 39:16",
+            "Genesis 42:33",
+            "Exodus 20:11",
+            "Exodus 23:12"
+          ],
+          "target": "H5117",
+          "why": "Attested in 28 verses (Genesis 39:16, Genesis 42:33, Exodus 20:11, Exodus 23:12...) with surface forms: וַתַּנַּ֥ח, הַנִּ֣יחוּ, וַיָּ֖נַח, יָנ֗וּחַ. Co-occurs with: place, to(wards), priest, five. Occurs in sanctuary or Temple architectu..."
+        },
+        {
+          "rank": 21,
+          "id": "r11:lxx:H0998:0",
+          "ep": "documented_lexical_relationship",
+          "title": "Septuagint alignment witness: בִּינָה (H0998) → σύνεσις",
+          "refs": [],
+          "target": "G4907",
+          "why": "Documented LXX lexical alignment linking בִּינָה (H0998) with Greek witness σύνεσις."
+        },
+        {
+          "rank": 22,
+          "id": "r11:xref:18003:18938",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference: Isaiah 11:2 → Isaiah 59:21 (\"Spirit of the LORD\")",
+          "refs": [
+            "Isaiah 11:2",
+            "Isaiah 59:21"
+          ],
+          "target": "H0998",
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Isaiah 11:2 and Isaiah 59:21 via anchor phrase \"Spirit of the LORD\" (thematic editorial cross-reference)."
+        },
+        {
+          "rank": 23,
+          "id": "r11:xref:18003:4050",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference: Isaiah 11:2 → Numbers 11:25-26 (\"Spirit of the LORD\")",
+          "refs": [
+            "Isaiah 11:2",
+            "Numbers 11:25-26"
+          ],
+          "target": "H5117",
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Isaiah 11:2 and Numbers 11:25-26 via anchor phrase \"Spirit of the LORD\" (same original lemma)."
+        },
+        {
+          "rank": 24,
+          "id": "r11:lex:H0998:0",
+          "ep": "documented_lexical_relationship",
+          "title": "Lexical relation (shares root): בִּינָה (H0998) ↔ בִּינָה (H0999)",
+          "refs": [],
+          "target": "H0999",
+          "why": "Morphological and root derivation analysis links בִּינָה (H0998) to בִּינָה (H0999) (\"understanding\")."
+        },
+        {
+          "rank": 25,
+          "id": "r11:xref:18003:29916",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (OT↔NT): Isaiah 11:2 → 2 Timothy 1:7 (\"Spirit of wisdom\")",
+          "refs": [
+            "Isaiah 11:2",
+            "2 Timothy 1:7"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Isaiah 11:2 and 2 Timothy 1:7 via anchor phrase \"Spirit of wisdom\" (0 shared lemmas, 2 LXX alignment bridges)."
+        }
+      ],
+      "case_scores": [
+        {
+          "id": "S049",
+          "polarity": "positive",
+          "category": "narrative_pattern",
+          "assessable": true,
+          "k": 25,
+          "old": null,
+          "now": null
+        }
+      ]
+    },
+    {
+      "index": 149,
+      "q": "Psalm 51:7",
+      "mode": "discover",
+      "via": "passage",
+      "status": "ok",
+      "error": null,
+      "latency_ms": 3834,
+      "cards": [
+        {
+          "rank": 1,
+          "id": "r11:xref:14745:3116",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (reciprocal): Psalms 51:7 ↔ Leviticus 14:4-52 (\"Purify me with hyssop\")",
+          "refs": [
+            "Psalms 51:7",
+            "Leviticus 14:4-52"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) reciprocally links Psalms 51:7 and Leviticus 14:4-52 via anchor phrase \"Purify me with hyssop\" (3 shared lemmas, 0 LXX alignment bridges)."
+        },
+        {
+          "rank": 2,
+          "id": "r11:xref:14745:4308",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (reciprocal): Psalms 51:7 ↔ Numbers 19:18-20 (\"Purify me with hyssop\")",
+          "refs": [
+            "Psalms 51:7",
+            "Numbers 19:18-20"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) reciprocally links Psalms 51:7 and Numbers 19:18-20 via anchor phrase \"Purify me with hyssop\" (4 shared lemmas, 0 LXX alignment bridges)."
+        },
+        {
+          "rank": 3,
+          "id": "r12:scene:14745:3961",
+          "ep": "shared_motif_evidence",
+          "title": "Structural & lexical scene correspondence: Psalms 51:7 ↔ Numbers 8:21",
+          "refs": [
+            "Psalms 51:7",
+            "Numbers 8:21"
+          ],
+          "why": "Cross-book alignment between Psalms 51:7 and Numbers 8:21 sharing rare attested lemmas/LXX equivalents (H2398-H2398,H2891-H2891,H3526-H3526, 3 shared MACULA grammatical role(s), IDF=10.8). Candidate literary/scene parallel; inspect both..."
+        },
+        {
+          "rank": 4,
+          "id": "r12:scene:14745:4309",
+          "ep": "shared_motif_evidence",
+          "title": "Structural & lexical scene correspondence: Psalms 51:7 ↔ Numbers 19:19",
+          "refs": [
+            "Psalms 51:7",
+            "Numbers 19:19"
+          ],
+          "why": "Cross-book alignment between Psalms 51:7 and Numbers 19:19 sharing rare attested lemmas/LXX equivalents (H2398-H2398,H2891-H2891,H3526-H3526, 3 shared MACULA grammatical role(s), IDF=10.8). Candidate literary/scene parallel; inspect both..."
+        },
+        {
+          "rank": 5,
+          "id": "r11:xref:14745:30224",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (reciprocal) (OT↔NT): Psalms 51:7 ↔ Hebrews 9:19 (\"Purify me with hyssop\")",
+          "refs": [
+            "Psalms 51:7",
+            "Hebrews 9:19"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) reciprocally links Psalms 51:7 and Hebrews 9:19 via anchor phrase \"Purify me with hyssop\" (0 shared lemmas, 1 LXX alignment bridge)."
+        },
+        {
+          "rank": 6,
+          "id": "r11:xref:14745:17789",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (reciprocal): Psalms 51:7 ↔ Isaiah 1:18 (\"whiter than snow\")",
+          "refs": [
+            "Psalms 51:7",
+            "Isaiah 1:18"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) reciprocally links Psalms 51:7 and Isaiah 1:18 via anchor phrase \"whiter than snow\" (2 shared lemmas, 0 LXX alignment bridges)."
+        },
+        {
+          "rank": 7,
+          "id": "r11:xref:14745:30218",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (reciprocal) (OT↔NT): Psalms 51:7 ↔ Hebrews 9:13-14 (\"and I will be clean\")",
+          "refs": [
+            "Psalms 51:7",
+            "Hebrews 9:13-14"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) reciprocally links Psalms 51:7 and Hebrews 9:13-14 via anchor phrase \"and I will be clean\" (0 shared lemmas, 1 LXX alignment bridge)."
+        },
+        {
+          "rank": 8,
+          "id": "r12:scene:14745:30445",
+          "ep": "shared_motif_evidence",
+          "title": "Structural & lexical scene correspondence (OT↔NT): Psalms 51:7 ↔ James 4:8",
+          "refs": [
+            "Psalms 51:7",
+            "James 4:8"
+          ],
+          "why": "Cross-book alignment between Psalms 51:7 and James 4:8 sharing rare attested lemmas/LXX equivalents (H2398-G0268,H2891-G2511, 1 shared MACULA grammatical role(s), IDF=8.7). Candidate literary/scene parallel; inspect both contexts before..."
+        },
+        {
+          "rank": 9,
+          "id": "r12:entity:14745:25165",
+          "ep": "shared_motif_evidence",
+          "title": "Pericope named-entity bridge (OT↔NT): H5416 (Psalms 51:2) ↔ G3481 (Luke 3:31)",
+          "refs": [
+            "Psalms 51:7",
+            "Psalms 51:2",
+            "Luke 3:31"
+          ],
+          "why": "Chapter pericope verse Psalms 51:2 (near Psalms 51:7) attests rare proper name H5416, linked across testaments via STEP/LXX lexical alignment to G3481 in Luke 3:31. Connects episode context to later genealogy or reception witness."
+        },
+        {
+          "rank": 10,
+          "id": "r11:xref:14748:29627",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (reciprocal) (OT↔NT): Psalms 51:10 ↔ Colossians 3:10 (\"renew a right spirit within me\") (same-chapter pe...",
+          "refs": [
+            "Psalms 51:10",
+            "Colossians 3:10"
+          ],
+          "why": "Same-chapter pericope context (Psalms 51:10, 3v from Psalms 51:7): Modern editorial cross-reference index (CrossReferences.org / OpenBible) reciprocally links Psalms 51:10 and Colossians 3:10 via anchor phrase \"renew a right spirit withi..."
+        },
+        {
+          "rank": 11,
+          "id": "r11:xref:14745:30647",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (OT↔NT): Psalms 51:7 → 1 John 1:7 (\"and I will be clean\")",
+          "refs": [
+            "Psalms 51:7",
+            "1 John 1:7"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Psalms 51:7 and 1 John 1:7 via anchor phrase \"and I will be clean\" (0 shared lemmas, 2 LXX alignment bridges)."
+        },
+        {
+          "rank": 12,
+          "id": "r11:xref:14746:25729",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (OT↔NT): Psalms 51:8 → Luke 15:32 (\"fitting to celebrate\") (same-chapter pericope context near Psalms 51:7)",
+          "refs": [
+            "Psalms 51:8",
+            "Luke 15:32"
+          ],
+          "why": "Same-chapter pericope context (Psalms 51:8, 1v from Psalms 51:7): Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Psalms 51:8 and Luke 15:32 via anchor phrase \"fitting to celebrate\" (0 shared lemmas, 3 LXX..."
+        },
+        {
+          "rank": 13,
+          "id": "r11:xref:14745:29430",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (OT↔NT): Psalms 51:7 → Ephesians 5:26-27 (\"whiter than snow\")",
+          "refs": [
+            "Psalms 51:7",
+            "Ephesians 5:26-27"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Psalms 51:7 and Ephesians 5:26-27 via anchor phrase \"whiter than snow\" (0 shared lemmas, 1 LXX alignment bridge)."
+        },
+        {
+          "rank": 14,
+          "id": "r11:xref:14746:27616",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (OT↔NT): Psalms 51:8 → Acts 16:29-34 (\"the bones You have crushed rejoice\") (same-chapter pericope conte...",
+          "refs": [
+            "Psalms 51:8",
+            "Acts 16:29-34"
+          ],
+          "why": "Same-chapter pericope context (Psalms 51:8, 1v from Psalms 51:7): Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Psalms 51:8 and Acts 16:29-34 via anchor phrase \"the bones You have crushed rejoice\" (0 shar..."
+        },
+        {
+          "rank": 15,
+          "id": "r11:gram:H3526:grammatical_object_of:H0899",
+          "ep": "direct_textual_evidence",
+          "title": "Has direct object: כָּבַס (ka.vas) ↔ בֶּ֫גֶד (\"garment\", 31×)",
+          "refs": [
+            "2 Samuel 19:24",
+            "Leviticus 11:25",
+            "Leviticus 11:28"
+          ],
+          "target": "H0899",
+          "why": "Has direct object: כָּבַס (H3526, \"Washer's\") and בֶּ֫גֶד (H0899, \"garment\") across 31 indexed occurrences. 32 distinct canonical source clauses pass token-position verification; parallel editions are counted once."
+        },
+        {
+          "rank": 16,
+          "id": "r11:xref:14745:26960",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (OT↔NT): Psalms 51:7 → John 19:29 (\"hyssop\")",
+          "refs": [
+            "Psalms 51:7",
+            "John 19:29"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Psalms 51:7 and John 19:29 via anchor phrase \"hyssop\" (0 shared lemmas, 1 LXX alignment bridge)."
+        },
+        {
+          "rank": 17,
+          "id": "r11:lxx:H0231:1",
+          "ep": "documented_lexical_relationship",
+          "title": "Septuagint (LXX) bridge: אֵזוֹב (H0231) → ὕσσωπος (G5301, \"hyssop\") across 9 passages",
+          "refs": [
+            "Exodus 12:22",
+            "Leviticus 14:4",
+            "Leviticus 14:6",
+            "Leviticus 14:49"
+          ],
+          "target": "G5301",
+          "why": "Ancient Greek Septuagint translates Hebrew אֵזוֹב (H0231) as Greek ὕσσωπος (G5301) in 9 occurrences (Exodus 12:22, Leviticus 14:4, Leviticus 14:6, Leviticus 14:49). Establishes documented Greek translation bridge."
+        },
+        {
+          "rank": 18,
+          "id": "r11:lex:H7950:0",
+          "ep": "documented_lexical_relationship",
+          "title": "Lexical relation (shares root): שֶׁ֫לֶג (H7950) ↔ תְּלַג (H8517)",
+          "refs": [],
+          "target": "H8517",
+          "why": "Morphological and root derivation analysis links שֶׁ֫לֶג (H7950) to תְּלַג (H8517) (\"snow\")."
+        },
+        {
+          "rank": 19,
+          "id": "r11:xref:14745:26807",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (OT↔NT): Psalms 51:7 → John 15:2 (\"prunes\")",
+          "refs": [
+            "Psalms 51:7",
+            "John 15:2"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Psalms 51:7 and John 15:2 via anchor phrase \"prunes\" (0 shared lemmas, 1 LXX alignment bridge)."
+        },
+        {
+          "rank": 20,
+          "id": "r11:cluster:H0231:temple_and_sanctuary_architecture",
+          "ep": "direct_textual_evidence",
+          "title": "Temple & Sanctuary Architecture (Exodus 12 · Leviticus 14 · Numbers 19)",
+          "refs": [
+            "Exodus 12:22",
+            "Leviticus 14:4",
+            "Leviticus 14:6",
+            "Leviticus 14:49"
+          ],
+          "target": "H0231",
+          "why": "Attested in 8 verses (Exodus 12:22, Leviticus 14:4, Leviticus 14:6, Leviticus 14:49...) with surface forms: אֵז֗וֹב, וְאֵזֹֽב, הָאֵזֹ֑ב, הָ֨אֵזֹ֜ב. Co-occurs with: cedar, scarlet, worm, bird. Occurs in sanctuary or Temple architectural d..."
+        },
+        {
+          "rank": 21,
+          "id": "r11:cluster:H2891:temple_and_sanctuary_architecture",
+          "ep": "direct_textual_evidence",
+          "title": "Temple & Sanctuary Architecture (Genesis 35 · Leviticus 11, 14 · 2 Chronicles 29, 34)",
+          "refs": [
+            "Genesis 35:2",
+            "Leviticus 11:32",
+            "Leviticus 14:4",
+            "Leviticus 14:20"
+          ],
+          "target": "H2891",
+          "why": "Attested in 13 verses (Genesis 35:2, Leviticus 11:32, Leviticus 14:4, Leviticus 14:20...) with surface forms: וְהִֽטַּהֲר֔וּ, וְטָהֵֽר, לַמִּטַּהֵ֛ר, וְטִהַ֤ר. Co-occurs with: place, priest, altar, to atone. Occurs in sanctuary or Temple..."
+        },
+        {
+          "rank": 22,
+          "id": "r11:lex:H3526:0",
+          "ep": "documented_lexical_relationship",
+          "title": "Lexical relation (shares root): כָּבַס (H3526) ↔ שָׂדֶה (H7704)",
+          "refs": [],
+          "target": "H7704",
+          "why": "Morphological and root derivation analysis links כָּבַס (H3526) to שָׂדֶה (H7704) (\"Field (of the Launderer)\")."
+        },
+        {
+          "rank": 23,
+          "id": "r12:path:H2398:H1419",
+          "ep": "documented_collocation_or_cooccurrence",
+          "title": "2-hop: חָטָא (H2398) → גָּדוֹל (\"great: large\", H1419)",
+          "refs": [
+            "Genesis 20:9",
+            "Genesis 39:9",
+            "Exodus 32:30",
+            "Exodus 32:31"
+          ],
+          "target": "H1419",
+          "why": "2-hop path (direct endpoint witness): חָטָא (to sin) —object of→ חֲטָאָה (sin) ; חֲטָאָה (sin) —modifies→ גָּדוֹל (great: large)"
+        },
+        {
+          "rank": 24,
+          "id": "r11:gram:H2891:grammatical_subject_of:H3548",
+          "ep": "direct_textual_evidence",
+          "title": "Has grammatical subject: טָהֵר (ta.her) ↔ כֹּהֵן (\"priest\", 9×)",
+          "refs": [
+            "Ezra 6:20",
+            "Leviticus 13:17",
+            "Leviticus 13:23"
+          ],
+          "target": "H3548",
+          "why": "Has grammatical subject: טָהֵר (H2891, \"be pure\") and כֹּהֵן (H3548, \"priest\") across 9 indexed occurrences. 9 distinct canonical source clauses pass token-position verification; parallel editions are counted once."
+        },
+        {
+          "rank": 25,
+          "id": "r11:xref:14745:3947",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference: Psalms 51:7 → Numbers 8:7 (\"water\")",
+          "refs": [
+            "Psalms 51:7",
+            "Numbers 8:7"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Psalms 51:7 and Numbers 8:7 via anchor phrase \"water\" (2 shared lemmas, 0 LXX alignment bridges)."
+        }
+      ],
+      "case_scores": [
+        {
+          "id": "S064",
+          "polarity": "positive",
+          "category": "narrative_pattern",
+          "assessable": true,
+          "k": 15,
+          "old": 25,
+          "now": 2
+        }
+      ]
+    },
+    {
+      "index": 163,
+      "q": "Genesis 6:14",
+      "mode": "bridge",
+      "via": "passage",
+      "status": "ok",
+      "error": null,
+      "latency_ms": 3833,
+      "cards": [
+        {
+          "rank": 1,
+          "id": "r11:xref:152:30544",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (reciprocal) (OT↔NT): Genesis 6:14 ↔ 1 Peter 3:20 (\"Make\")",
+          "refs": [
+            "Genesis 6:14",
+            "1 Peter 3:20"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) reciprocally links Genesis 6:14 and 1 Peter 3:20 via anchor phrase \"Make\" (0 shared lemmas, 1 LXX alignment bridge)."
+        },
+        {
+          "rank": 2,
+          "id": "r11:xref:152:1558",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (reciprocal): Genesis 6:14 ↔ Exodus 2:3 (\"coat it with pitch\")",
+          "refs": [
+            "Genesis 6:14",
+            "Exodus 2:3"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) reciprocally links Genesis 6:14 and Exodus 2:3 via anchor phrase \"coat it with pitch\" (1 shared lemma, 0 LXX alignment bridges)."
+        },
+        {
+          "rank": 3,
+          "id": "r12:scene:152:7350",
+          "ep": "shared_motif_evidence",
+          "title": "Structural & lexical scene correspondence: Genesis 6:14 ↔ 1 Samuel 6:18",
+          "refs": [
+            "Genesis 6:14",
+            "1 Samuel 6:18"
+          ],
+          "why": "Cross-book alignment between Genesis 6:14 and 1 Samuel 6:18 sharing rare attested lemmas/LXX equivalents (H8392-H0727,H3724-H3724, 1 shared MACULA grammatical role(s), IDF=9.0). Candidate literary/scene parallel; inspect both contexts be..."
+        },
+        {
+          "rank": 4,
+          "id": "r12:entity:152:25170",
+          "ep": "shared_motif_evidence",
+          "title": "Pericope named-entity bridge (OT↔NT): H8035 (Genesis 6:10) ↔ G4590 (Luke 3:36)",
+          "refs": [
+            "Genesis 6:14",
+            "Genesis 6:10",
+            "Luke 3:36"
+          ],
+          "why": "Chapter pericope verse Genesis 6:10 (near Genesis 6:14) attests rare proper name H8035, linked across testaments via STEP/LXX lexical alignment to G4590 in Luke 3:36. Connects episode context to later genealogy or reception witness."
+        },
+        {
+          "rank": 5,
+          "id": "r12:entity:152:24108",
+          "ep": "shared_motif_evidence",
+          "title": "Pericope named-entity bridge (OT↔NT): H5146 (Genesis 6:13) ↔ G3575 (Matthew 24:37)",
+          "refs": [
+            "Genesis 6:14",
+            "Genesis 6:13",
+            "Matthew 24:37"
+          ],
+          "why": "Chapter pericope verse Genesis 6:13 (near Genesis 6:14) attests rare proper name H5146, linked across testaments via STEP/LXX lexical alignment to G3575 in Matthew 24:37. Connects episode context to later genealogy or reception witness."
+        },
+        {
+          "rank": 6,
+          "id": "r12:scene:152:3801",
+          "ep": "shared_motif_evidence",
+          "title": "Structural & lexical scene correspondence: Genesis 6:14 ↔ Numbers 5:8",
+          "refs": [
+            "Genesis 6:14",
+            "Numbers 5:8"
+          ],
+          "why": "Cross-book alignment between Genesis 6:14 and Numbers 5:8 sharing rare attested lemmas/LXX equivalents (H3722-H3722,H3724-H1350, 1 shared MACULA grammatical role(s), IDF=8.2). Candidate literary/scene parallel; inspect both contexts befo..."
+        },
+        {
+          "rank": 7,
+          "id": "r11:xref:152:24109",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (OT↔NT): Genesis 6:14 → Matthew 24:38 (\"Make\")",
+          "refs": [
+            "Genesis 6:14",
+            "Matthew 24:38"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Genesis 6:14 and Matthew 24:38 via anchor phrase \"Make\" (0 shared lemmas, 1 LXX alignment bridge)."
+        },
+        {
+          "rank": 8,
+          "id": "r11:xref:152:25787",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (OT↔NT): Genesis 6:14 → Luke 17:27 (\"Make\")",
+          "refs": [
+            "Genesis 6:14",
+            "Luke 17:27"
+          ],
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Genesis 6:14 and Luke 17:27 via anchor phrase \"Make\" (0 shared lemmas, 1 LXX alignment bridge)."
+        },
+        {
+          "rank": 9,
+          "id": "r12:event:152:event:35",
+          "ep": "shared_motif_evidence",
+          "title": "Biblical narrative sequence: God instructs Noah to build the ark → Death of Lamech (Genesis 6:14)",
+          "refs": [
+            "Genesis 6:14",
+            "Genesis 6:13",
+            "Genesis 5:31"
+          ],
+          "why": "Genesis 6:14 belongs to canonical narrative episode \"God instructs Noah to build the ark\" (-2399) (within episode context including Genesis 6:13), followed in canonical narrative sequence by \"Death of Lamech\" (Genesis 5:31). Canonical na..."
+        },
+        {
+          "rank": 10,
+          "id": "r12:scene:152:11686",
+          "ep": "shared_motif_evidence",
+          "title": "Structural & lexical scene correspondence: Genesis 6:14 ↔ 2 Chronicles 24:8",
+          "refs": [
+            "Genesis 6:14",
+            "2 Chronicles 24:8"
+          ],
+          "why": "Cross-book alignment between Genesis 6:14 and 2 Chronicles 24:8 sharing rare attested lemmas/LXX equivalents (H8392-H0727,H2351-H2351, 1 shared MACULA grammatical role(s), IDF=7.6). Candidate literary/scene parallel; inspect both context..."
+        },
+        {
+          "rank": 11,
+          "id": "r11:gram:H1613:possessive_construction_with:H6086",
+          "ep": "direct_textual_evidence",
+          "title": "Genitive / construct connection: גֹּ֫פֶר (go.pher) ↔ עֵץ (\"tree: wood\", 1×)",
+          "refs": [
+            "Genesis 6:14"
+          ],
+          "target": "H6086",
+          "why": "Genitive / construct connection: גֹּ֫פֶר (H1613, \"gopher\") and עֵץ (H6086, \"tree: wood\") across 1 indexed occurrences. 1 distinct canonical source clauses pass token-position verification; parallel editions are counted once."
+        },
+        {
+          "rank": 12,
+          "id": "r11:xref:151:30279",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (reciprocal) (OT↔NT): Genesis 6:13 ↔ Hebrews 11:7 (\"the earth\") (same-chapter pericope context near Gene...",
+          "refs": [
+            "Genesis 6:13",
+            "Hebrews 11:7"
+          ],
+          "why": "Same-chapter pericope context (Genesis 6:13, 1v from Genesis 6:14): Modern editorial cross-reference index (CrossReferences.org / OpenBible) reciprocally links Genesis 6:13 and Hebrews 11:7 via anchor phrase \"the earth\" (0 shared lemmas,..."
+        },
+        {
+          "rank": 13,
+          "id": "r12:event:152:event:32",
+          "ep": "shared_motif_evidence",
+          "title": "Chapter-level narrative context: God decides to destroy every living thing → Birth of Shem (near Genesis 6:14)",
+          "refs": [
+            "Genesis 6:14",
+            "Genesis 6:7",
+            "Genesis 5:32"
+          ],
+          "why": "Genesis 6:14 occurs in the same chapter context as canonical narrative episode \"God decides to destroy every living thing\" (-2467) (including Genesis 6:7), followed in canonical narrative sequence by \"Birth of Shem\" (Genesis 5:32); verse..."
+        },
+        {
+          "rank": 14,
+          "id": "r11:xref:151:30628",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (OT↔NT): Genesis 6:13 → 2 Peter 3:6-12 (\"the earth\") (same-chapter pericope context near Genesis 6:14)",
+          "refs": [
+            "Genesis 6:13",
+            "2 Peter 3:6-12"
+          ],
+          "why": "Same-chapter pericope context (Genesis 6:13, 1v from Genesis 6:14): Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Genesis 6:13 and 2 Peter 3:6-12 via anchor phrase \"the earth\" (0 shared lemmas, 2 LXX alig..."
+        },
+        {
+          "rank": 15,
+          "id": "r11:gram:H8392:possessive_construction_with:H6086",
+          "ep": "direct_textual_evidence",
+          "title": "Head of genitive / construct: תֵּבָה (te.vah) ↔ עֵץ (\"tree: wood\", 1×)",
+          "refs": [
+            "Genesis 6:14"
+          ],
+          "target": "H6086",
+          "why": "Head of genitive / construct: תֵּבָה (H8392, \"ark\") and עֵץ (H6086, \"tree: wood\") across 1 indexed occurrences. 1 distinct canonical source clauses pass token-position verification; parallel editions are counted once."
+        },
+        {
+          "rank": 16,
+          "id": "r11:lxx:H7064:1",
+          "ep": "documented_lexical_relationship",
+          "title": "Septuagint (LXX) bridge: קֵן (H7064) → νοσσεύω (G8407, \"to nest\") across 11 passages",
+          "refs": [
+            "Genesis 6:14",
+            "Numbers 24:21",
+            "Deuteronomy 22:6",
+            "Deuteronomy 32:11"
+          ],
+          "target": "G8407",
+          "why": "Ancient Greek Septuagint translates Hebrew קֵן (H7064) as Greek νοσσεύω (G8407) in 11 occurrences (Genesis 6:14, Numbers 24:21, Deuteronomy 22:6, Deuteronomy 32:11). Establishes documented Greek translation bridge."
+        },
+        {
+          "rank": 17,
+          "id": "r11:cluster:H3722:temple_and_sanctuary_architecture",
+          "ep": "direct_textual_evidence",
+          "title": "Temple & Sanctuary Architecture (Genesis 6 · Exodus 29, 30, 32 · Leviticus 4, 8, 9, 14)",
+          "refs": [
+            "Genesis 6:14",
+            "Exodus 29:33",
+            "Exodus 29:36",
+            "Exodus 29:37"
+          ],
+          "target": "H3722",
+          "why": "Attested in 32 verses (Genesis 6:14, Exodus 29:33, Exodus 29:36, Exodus 29:37...) with surface forms: וְכָֽפַרְתָּ֥, כֻּפַּ֣ר, בְּכַפֶּרְךָ֖, תְּכַפֵּר֙. Co-occurs with: altar, sin, about/through/for, holiness. Occurs in sanctuary or Tem..."
+        },
+        {
+          "rank": 18,
+          "id": "r11:lxx:H7064:2",
+          "ep": "documented_lexical_relationship",
+          "title": "Septuagint (LXX) bridge: קֵן (H7064) → νοσσοποιέω (G8408, \"to build a nest\") across 11 passages",
+          "refs": [
+            "Genesis 6:14",
+            "Numbers 24:21",
+            "Deuteronomy 22:6",
+            "Deuteronomy 32:11"
+          ],
+          "target": "G8408",
+          "why": "Ancient Greek Septuagint translates Hebrew קֵן (H7064) as Greek νοσσοποιέω (G8408) in 11 occurrences (Genesis 6:14, Numbers 24:21, Deuteronomy 22:6, Deuteronomy 32:11). Establishes documented Greek translation bridge."
+        },
+        {
+          "rank": 19,
+          "id": "r11:xref:151:30553",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (OT↔NT): Genesis 6:13 → 1 Peter 4:7 (\"The end\") (same-chapter pericope context near Genesis 6:14)",
+          "refs": [
+            "Genesis 6:13",
+            "1 Peter 4:7"
+          ],
+          "why": "Same-chapter pericope context (Genesis 6:13, 1v from Genesis 6:14): Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Genesis 6:13 and 1 Peter 4:7 via anchor phrase \"The end\" (0 shared lemmas, 1 LXX alignment..."
+        },
+        {
+          "rank": 20,
+          "id": "r11:gram:H8392:grammatical_object_of:H6213",
+          "ep": "direct_textual_evidence",
+          "title": "Direct object of: תֵּבָה (te.vah) ↔ עָשָׂה (\"to make\", 2×)",
+          "refs": [
+            "Genesis 6:14"
+          ],
+          "target": "H6213",
+          "why": "Direct object of: תֵּבָה (H8392, \"ark\") and עָשָׂה (H6213, \"to make\") across 2 indexed occurrences. 2 distinct canonical source clauses pass token-position verification; parallel editions are counted once."
+        },
+        {
+          "rank": 21,
+          "id": "r11:cluster:H7064:temple_and_sanctuary_architecture",
+          "ep": "direct_textual_evidence",
+          "title": "Temple & Sanctuary Architecture (Genesis 6 · Deuteronomy 22)",
+          "refs": [
+            "Genesis 6:14",
+            "Deuteronomy 22:6"
+          ],
+          "target": "H7064",
+          "why": "Attested in 2 verses (Genesis 6:14, Deuteronomy 22:6) with surface forms: קִנִּ֖ים, קַן. Co-occurs with: gopher, tree: wood, young, egg. Occurs in sanctuary or Temple architectural descriptions and sacred vessel ornamentation."
+        },
+        {
+          "rank": 22,
+          "id": "r11:lxx:H7064:0",
+          "ep": "documented_lexical_relationship",
+          "title": "Septuagint alignment witness: קֵן (H7064) → νοσσιά",
+          "refs": [],
+          "target": "G3555",
+          "why": "Documented LXX lexical alignment linking קֵן (H7064) with Greek witness νοσσιά."
+        },
+        {
+          "rank": 23,
+          "id": "r11:cluster:H1613:temple_and_sanctuary_architecture",
+          "ep": "direct_textual_evidence",
+          "title": "Temple & Sanctuary Architecture (Genesis 6)",
+          "refs": [
+            "Genesis 6:14"
+          ],
+          "target": "H1613",
+          "why": "Attested in 1 verse (Genesis 6:14) with surface forms: גֹ֔פֶר. Co-occurs with: nest, ransom, ark, to atone. Occurs in sanctuary or Temple architectural descriptions and sacred vessel ornamentation."
+        },
+        {
+          "rank": 24,
+          "id": "r11:xref:1560:27243",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference (OT↔NT): Exodus 2:5 → Acts 7:21 (\"daughter\")",
+          "refs": [
+            "Exodus 2:5",
+            "Acts 7:21"
+          ],
+          "target": "H8392",
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Exodus 2:5 and Acts 7:21 via anchor phrase \"daughter\" (thematic editorial cross-reference)."
+        },
+        {
+          "rank": 25,
+          "id": "lxx_highlight:H8392:G2787",
+          "ep": "documented_cross_language_bridge",
+          "title": "תֵּבָה (te.vah, H8392, 25v) -> LXX κιβωτός (G2787, \"ark: covenant\")",
+          "refs": [
+            "Genesis 6:14",
+            "Genesis 6:15",
+            "Genesis 6:16"
+          ],
+          "target": "G2787",
+          "why": "Distinctive word (25 verses) rendered by LXX as κιβωτός (\"ark: covenant\") (24x); first biblical occurrence here."
+        }
+      ],
+      "case_scores": [
+        {
+          "id": "W017",
+          "polarity": "positive",
+          "category": "real_world_material",
+          "assessable": true,
+          "k": 25,
+          "old": null,
+          "now": null
+        }
+      ]
+    },
+    {
+      "index": 177,
+      "q": "sun",
+      "mode": "bridge",
+      "via": "word",
+      "status": "ok",
+      "error": null,
+      "latency_ms": 607,
+      "cards": [
+        {
+          "rank": 1,
+          "id": "r11:lxx:G4862:0",
+          "ep": "documented_lexical_relationship",
+          "title": "Septuagint alignment witness: σύν (G4862) → עֻמָּה",
+          "refs": [],
+          "target": "H5980",
+          "why": "Documented LXX lexical alignment linking σύν (G4862) with Greek witness עֻמָּה."
+        },
+        {
+          "rank": 2,
+          "id": "r11:lex:G4862:0",
+          "ep": "documented_lexical_relationship",
+          "title": "Lexical relation (shares root): σύν (G4862) ↔ σπαράσσω (G4682)",
+          "refs": [],
+          "target": "G4682",
+          "why": "Morphological and root derivation analysis links σύν (G4862) to σπαράσσω (G4682) (\"to convulse\")."
+        },
+        {
+          "rank": 3,
+          "id": "r11:lex:G4862:1",
+          "ep": "documented_lexical_relationship",
+          "title": "Lexical relation (shares root): σύν (G4862) ↔ συγγενής (G4773)",
+          "refs": [],
+          "target": "G4773",
+          "why": "Morphological and root derivation analysis links σύν (G4862) to συγγενής (G4773) (\"kindred\")."
+        },
+        {
+          "rank": 4,
+          "id": "r11:lex:G4862:2",
+          "ep": "documented_lexical_relationship",
+          "title": "Lexical relation (shares root): σύν (G4862) ↔ σύμβουλος (G4825)",
+          "refs": [],
+          "target": "G4825",
+          "why": "Morphological and root derivation analysis links σύν (G4862) to σύμβουλος (G4825) (\"counselor\")."
+        },
+        {
+          "rank": 5,
+          "id": "r11:lex:G4862:3",
+          "ep": "documented_lexical_relationship",
+          "title": "Lexical relation (shares root): σύν (G4862) ↔ σύμμορφος (G4832)",
+          "refs": [],
+          "target": "G4832",
+          "why": "Morphological and root derivation analysis links σύν (G4862) to σύμμορφος (G4832) (\"conformed\")."
+        },
+        {
+          "rank": 6,
+          "id": "r11:cluster:G4862:gospel_and_nt_teaching",
+          "ep": "direct_textual_evidence",
+          "title": "Gospel & NT Teaching (Matthew 25, 26, 27 · Mark 2, 4, 8, 9 · Luke 1, 2, 5, 7)",
+          "refs": [
+            "Matthew 25:27",
+            "Matthew 26:35",
+            "Matthew 27:38",
+            "Matthew 27:44"
+          ],
+          "target": "G4862",
+          "why": "Attested in 85 verses (Matthew 25:27, Matthew 26:35, Matthew 27:38, Matthew 27:44...) with surface forms: σὺν, σύν. Co-occurs with: it/s/he, then, to be, toward."
+        },
+        {
+          "rank": 7,
+          "id": "r11:lex:G4862:4",
+          "ep": "documented_lexical_relationship",
+          "title": "Lexical relation (shares root): σύν (G4862) ↔ συμπαθής (G4835)",
+          "refs": [],
+          "target": "G4835",
+          "why": "Morphological and root derivation analysis links σύν (G4862) to συμπαθής (G4835) (\"sympathetic\")."
+        },
+        {
+          "rank": 8,
+          "id": "r11:cluster:G4862:epistolary_and_apocalyptic",
+          "ep": "direct_textual_evidence",
+          "title": "Epistolary & Apocalyptic Writings (Romans 6, 8, 16 · 1 Corinthians 1, 5, 10, 11 · 2 Corinthians 1, 4, 9, 13)",
+          "refs": [
+            "Romans 6:8",
+            "Romans 8:32",
+            "Romans 16:14",
+            "Romans 16:15"
+          ],
+          "target": "G4862",
+          "why": "Attested in 38 verses (Romans 6:8, Romans 8:32, Romans 16:14, Romans 16:15...) with surface forms: σὺν. Co-occurs with: I/we, Christ, all, you."
+        },
+        {
+          "rank": 9,
+          "id": "r11:colloc:G4862:G0435",
+          "ep": "documented_collocation_or_cooccurrence",
+          "title": "Direct collocation: σύν (\"with\") ↔ ἀνήρ (\"man\", 12×)",
+          "refs": [
+            "Matthew 25:27",
+            "Matthew 26:35",
+            "Matthew 27:38",
+            "Matthew 27:44"
+          ],
+          "target": "G0435",
+          "why": "Corpus co-occurrence links σύν (G4862, \"with\") with ἀνήρ (G0435, \"man\") across 12 shared contexts (Matthew 25:27, Matthew 26:35, Matthew 27:38, Matthew 27:44, Mark 2:26, Mark 4:10)."
+        },
+        {
+          "rank": 10,
+          "id": "r11:colloc:G4862:G3972",
+          "ep": "documented_collocation_or_cooccurrence",
+          "title": "Direct collocation: σύν (\"with\") ↔ Παῦλος (\"Paul\", 11×)",
+          "refs": [
+            "Matthew 25:27",
+            "Matthew 26:35",
+            "Matthew 27:38",
+            "Matthew 27:44"
+          ],
+          "target": "G3972",
+          "why": "Corpus co-occurrence links σύν (G4862, \"with\") with Παῦλος (G3972, \"Paul\") across 11 shared contexts (Matthew 25:27, Matthew 26:35, Matthew 27:38, Matthew 27:44, Mark 2:26, Mark 4:10)."
+        },
+        {
+          "rank": 11,
+          "id": "r11:xref:24281:24287",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference: Matthew 27:38 → Matthew 27:44 (\"Two robbers\")",
+          "refs": [
+            "Matthew 27:38",
+            "Matthew 27:44"
+          ],
+          "target": "G4862",
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Matthew 27:38 and Matthew 27:44 via anchor phrase \"Two robbers\" (same original lemma)."
+        },
+        {
+          "rank": 12,
+          "id": "r11:xref:24281:24963",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference: Matthew 27:38 → Mark 15:27-28 (\"Two robbers\")",
+          "refs": [
+            "Matthew 27:38",
+            "Mark 15:27-28"
+          ],
+          "target": "G4862",
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Matthew 27:38 and Mark 15:27-28 via anchor phrase \"Two robbers\" (same original lemma)."
+        },
+        {
+          "rank": 13,
+          "id": "r11:colloc:G4862:G1525",
+          "ep": "documented_collocation_or_cooccurrence",
+          "title": "Direct collocation: σύν (\"with\") ↔ εἰσέρχομαι (\"to enter\", 11×)",
+          "refs": [
+            "Matthew 25:27",
+            "Matthew 26:35",
+            "Matthew 27:38",
+            "Matthew 27:44"
+          ],
+          "target": "G1525",
+          "why": "Corpus co-occurrence links σύν (G4862, \"with\") with εἰσέρχομαι (G1525, \"to enter\") across 11 shared contexts (Matthew 25:27, Matthew 26:35, Matthew 27:38, Matthew 27:44, Mark 2:26, Mark 4:10)."
+        },
+        {
+          "rank": 14,
+          "id": "r11:xref:24281:26074",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference: Matthew 27:38 → Luke 23:32-43 (\"Two robbers\")",
+          "refs": [
+            "Matthew 27:38",
+            "Luke 23:32-43"
+          ],
+          "target": "G4862",
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Matthew 27:38 and Luke 23:32-43 via anchor phrase \"Two robbers\" (same original lemma)."
+        },
+        {
+          "rank": 15,
+          "id": "r11:colloc:G4862:G5547",
+          "ep": "documented_collocation_or_cooccurrence",
+          "title": "Direct collocation: σύν (\"with\") ↔ Χριστός (\"Christ\", 12×)",
+          "refs": [
+            "Romans 6:8",
+            "Romans 8:32",
+            "Romans 16:14",
+            "Romans 16:15"
+          ],
+          "target": "G5547",
+          "why": "Corpus co-occurrence links σύν (G4862, \"with\") with Χριστός (G5547, \"Christ\") across 12 shared contexts (Romans 6:8, Romans 8:32, Romans 16:14, Romans 16:15, 1 Corinthians 1:2, 1 Corinthians 5:4)."
+        },
+        {
+          "rank": 16,
+          "id": "r11:xref:24287:24281",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference: Matthew 27:44 → Matthew 27:38 (\"berated Him\")",
+          "refs": [
+            "Matthew 27:44",
+            "Matthew 27:38"
+          ],
+          "target": "G4862",
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Matthew 27:44 and Matthew 27:38 via anchor phrase \"berated Him\" (same original lemma)."
+        },
+        {
+          "rank": 17,
+          "id": "r11:colloc:G4862:G0040",
+          "ep": "documented_collocation_or_cooccurrence",
+          "title": "Direct collocation: σύν (\"with\") ↔ ἅγιος (\"holy\", 7×)",
+          "refs": [
+            "Romans 6:8",
+            "Romans 8:32",
+            "Romans 16:14",
+            "Romans 16:15"
+          ],
+          "target": "G0040",
+          "why": "Corpus co-occurrence links σύν (G4862, \"with\") with ἅγιος (G0040, \"holy\") across 7 shared contexts (Romans 6:8, Romans 8:32, Romans 16:14, Romans 16:15, 1 Corinthians 1:2, 1 Corinthians 5:4)."
+        },
+        {
+          "rank": 18,
+          "id": "r11:xref:28178:29148",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference: Romans 6:8 → 2 Corinthians 13:4 (\"will also live with Him\")",
+          "refs": [
+            "Romans 6:8",
+            "2 Corinthians 13:4"
+          ],
+          "target": "G4862",
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Romans 6:8 and 2 Corinthians 13:4 via anchor phrase \"will also live with Him\" (same original lemma)."
+        },
+        {
+          "rank": 19,
+          "id": "r11:xref:28178:29620",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference: Romans 6:8 → Colossians 3:3-4 (\"will also live with Him\")",
+          "refs": [
+            "Romans 6:8",
+            "Colossians 3:3-4"
+          ],
+          "target": "G4862",
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Romans 6:8 and Colossians 3:3-4 via anchor phrase \"will also live with Him\" (same original lemma)."
+        },
+        {
+          "rank": 20,
+          "id": "r11:xref:28178:29717",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference: Romans 6:8 → 1 Thessalonians 4:14-17 (\"will also live with Him\")",
+          "refs": [
+            "Romans 6:8",
+            "1 Thessalonians 4:14-17"
+          ],
+          "target": "G4862",
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links Romans 6:8 and 1 Thessalonians 4:14-17 via anchor phrase \"will also live with Him\" (same original lemma)."
+        },
+        {
+          "rank": 21,
+          "id": "r11:xref:28466:28902",
+          "ep": "editorial_cross_reference",
+          "title": "Modern editorial cross-reference: 1 Corinthians 1:2 → 2 Corinthians 1:1 (\"church of God\")",
+          "refs": [
+            "1 Corinthians 1:2",
+            "2 Corinthians 1:1"
+          ],
+          "target": "G4862",
+          "why": "Modern editorial cross-reference index (CrossReferences.org / OpenBible) links 1 Corinthians 1:2 and 2 Corinthians 1:1 via anchor phrase \"church of God\" (same original lemma)."
+        },
+        {
+          "rank": 22,
+          "id": "r11:occ:G4862:24149",
+          "ep": "direct_textual_evidence",
+          "title": "Attested occurrence: σύν (sun) in Matthew 25:27",
+          "refs": [
+            "Matthew 25:27"
+          ],
+          "target": "G4862",
+          "why": "Attested biblical occurrence of σύν (G4862, \"with\") in Matthew 25:27: \"You ought therefore to have deposited my money with the bankers, and at my coming I should have received back my own with interest.\"."
+        },
+        {
+          "rank": 23,
+          "id": "r11:occ:G4862:24203",
+          "ep": "direct_textual_evidence",
+          "title": "Attested occurrence: σύν (sun) in Matthew 26:35",
+          "refs": [
+            "Matthew 26:35"
+          ],
+          "target": "G4862",
+          "why": "Attested biblical occurrence of σύν (G4862, \"with\") in Matthew 26:35: \"Peter said to him, “Even if I must die with you, I will not deny you.” All of the disciples also said likewise.\"."
+        },
+        {
+          "rank": 24,
+          "id": "r11:occ:G4862:24281",
+          "ep": "direct_textual_evidence",
+          "title": "Attested occurrence: σύν (sun) in Matthew 27:38",
+          "refs": [
+            "Matthew 27:38"
+          ],
+          "target": "G4862",
+          "why": "Attested biblical occurrence of σύν (G4862, \"with\") in Matthew 27:38: \"Then there were two robbers crucified with him, one on his right hand and one on the left.\"."
+        },
+        {
+          "rank": 25,
+          "id": "r11:occ:G4862:24287",
+          "ep": "direct_textual_evidence",
+          "title": "Attested occurrence: σύν (sun) in Matthew 27:44",
+          "refs": [
+            "Matthew 27:44"
+          ],
+          "target": "G4862",
+          "why": "Attested biblical occurrence of σύν (G4862, \"with\") in Matthew 27:44: \"The robbers also who were crucified with him cast on him the same reproach.\"."
+        }
+      ],
+      "case_scores": [
+        {
+          "id": "W031",
+          "polarity": "positive",
+          "category": "real_world_property",
+          "assessable": false,
+          "k": 15,
+          "old": null,
+          "now": null
+        }
+      ]
+    }
+  ]
+}
