@@ -1,0 +1,1242 @@
+{
+  "method": "get_Connection connections=25, expected direct_link_found is prospective not authoritative ground truth",
+  "cases": [
+    {
+      "id": "C01",
+      "items": [
+        "Exodus 25:31",
+        "Hebrews 9:2"
+      ],
+      "expected": true,
+      "label": "Menorah quoted in Hebrews",
+      "status": "ok",
+      "ms": 6748,
+      "direct_link_found": true,
+      "all_endpoints_connected": true,
+      "passed": true,
+      "graph_proof": {
+        "proof_type": "direct_pair",
+        "is_complete": true,
+        "is_valid": true,
+        "independent_edge_count": 1,
+        "verified_edge_count": 1,
+        "distinct_anchor_pairs_connected": 1,
+        "covered_anchors": [
+          "Exodus 25:31",
+          "Hebrews 9:2"
+        ],
+        "uncovered_anchors": [],
+        "verified_edges": [
+          {
+            "anchor_pair": [
+              0,
+              1
+            ],
+            "from_anchor": "Exodus 25:31",
+            "to_anchor": "Hebrews 9:2",
+            "evidence_id": "passage_lxx:H4501:G3087",
+            "relation": "cross_language_lxx_bridge",
+            "epistemic": "documented_cross_language_bridge",
+            "tier": 3,
+            "witness_refs": [
+              "Exodus 25:31",
+              "Hebrews 9:2"
+            ],
+            "title": "LXX lexical bridge: מְנוֹרָה (H4501) <-> λυχνία (G3087, \"lampstand\")",
+            "why": "Exodus 25:31 uses מְנוֹרָה (H4501), corresponding via LXX to λυχνία (G3087), which appears in Hebrews 9:2."
+          }
+        ]
+      },
+      "connections": [
+        {
+          "rank": 1,
+          "id": "r11:xref:2227:30207",
+          "relation": "cross_testament_reference",
+          "epistemic": "editorial_cross_reference",
+          "refs": [
+            "Exodus 25:31",
+            "Hebrews 9:2"
+          ],
+          "title": "Exodus 25:31 -> Hebrews 9:2 (\"a lampstand\")"
+        },
+        {
+          "rank": 2,
+          "id": "r11:xref:30207:2227",
+          "relation": "cross_testament_reference",
+          "epistemic": "editorial_cross_reference",
+          "refs": [
+            "Hebrews 9:2",
+            "Exodus 25:31"
+          ],
+          "title": "Hebrews 9:2 -> Exodus 25:31 (\"a lampstand\")"
+        },
+        {
+          "rank": 3,
+          "id": "passage_lxx:H4501:G3087",
+          "relation": "cross_language_lxx_bridge",
+          "epistemic": "documented_cross_language_bridge",
+          "refs": [
+            "Exodus 25:31",
+            "Hebrews 9:2"
+          ],
+          "title": "LXX lexical bridge: מְנוֹרָה (H4501) <-> λυχνία (G3087, \"lampstand\")"
+        },
+        {
+          "rank": 4,
+          "id": "r11:xref:30207:2219",
+          "relation": "cross_reference_witness",
+          "epistemic": "editorial_cross_reference",
+          "refs": [
+            "Hebrews 9:2",
+            "Exodus 25:23-40"
+          ],
+          "title": "Modern editorial cross-reference (reciprocal) (OT↔NT): Hebrews 9:2 ↔ Exodus 25:23-40 (\"first room\")"
+        },
+        {
+          "rank": 5,
+          "id": "r13:subgraph:path:0:1",
+          "relation": "steiner_bridge_path",
+          "epistemic": "multi_hop_research_path",
+          "refs": [
+            "1 Chronicles 28:15",
+            "2 Chronicles 13:11",
+            "2 Chronicles 4:7",
+            "Hebrews 9:2"
+          ],
+          "title": "Steiner bridge (2 hops): Exodus 25:31 <-> Hebrews 9:2"
+        }
+      ],
+      "indirect_paths": [
+        {
+          "id": "r13:subgraph:path:0:1",
+          "relation": "steiner_bridge_path",
+          "epistemic": "multi_hop_research_path",
+          "tier": 4,
+          "title": "Steiner bridge (2 hops): Exodus 25:31 <-> Hebrews 9:2",
+          "why": "Head of genitive / construct: מְנוֹרָה (me.no.rah) ↔ זָהָב (\"gold\", 5×) -> Structural & lexical scene correspondence (OT↔NT): Hebrews 9:2 ↔ 2 Chronicles 13:11",
+          "refs": [
+            "1 Chronicles 28:15",
+            "2 Chronicles 13:11",
+            "2 Chronicles 4:7",
+            "Hebrews 9:2"
+          ],
+          "score": 834,
+          "matched_endpoints": [
+            "Exodus 25:31",
+            "Hebrews 9:2"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "C02",
+      "items": [
+        "H8247",
+        "Revelation 12:1"
+      ],
+      "expected": false,
+      "label": "Unrelated almond / woman",
+      "status": "ok",
+      "ms": 6750,
+      "direct_link_found": false,
+      "all_endpoints_connected": false,
+      "passed": true,
+      "graph_proof": {
+        "proof_type": "partial_components",
+        "is_complete": false,
+        "is_valid": false,
+        "independent_edge_count": 0,
+        "verified_edge_count": 0,
+        "distinct_anchor_pairs_connected": 0,
+        "covered_anchors": [
+          "H8247"
+        ],
+        "uncovered_anchors": [
+          "Revelation 12:1"
+        ],
+        "partial_reason": "Connected 1 of 2 requested anchors; no verified <=3-hop original-language or textual edge reached: Revelation 12:1.",
+        "verified_edges": []
+      },
+      "connections": [],
+      "indirect_paths": []
+    },
+    {
+      "id": "C03",
+      "items": [
+        "Genesis 6:14",
+        "Exodus 2:3"
+      ],
+      "expected": true,
+      "label": "Two tebah baskets",
+      "status": "ok",
+      "ms": 6749,
+      "direct_link_found": true,
+      "all_endpoints_connected": true,
+      "passed": true,
+      "graph_proof": {
+        "proof_type": "direct_pair",
+        "is_complete": true,
+        "is_valid": true,
+        "independent_edge_count": 1,
+        "verified_edge_count": 1,
+        "distinct_anchor_pairs_connected": 1,
+        "covered_anchors": [
+          "Genesis 6:14",
+          "Exodus 2:3"
+        ],
+        "uncovered_anchors": [],
+        "verified_edges": [
+          {
+            "anchor_pair": [
+              0,
+              1
+            ],
+            "from_anchor": "Genesis 6:14",
+            "to_anchor": "Exodus 2:3",
+            "evidence_id": "shared_lemma:H8392",
+            "relation": "shared_rare_vocabulary",
+            "epistemic": "documented_lexical_relationship",
+            "tier": 3,
+            "witness_refs": [
+              "Genesis 6:14",
+              "Exodus 2:3"
+            ],
+            "title": "Shared vocabulary: תֵּבָה (H8392, 25v) \"ark\"",
+            "why": "Both Genesis 6:14 (gloss \"an.ark\") and Exodus 2:3 (gloss \"a.basket\") use תֵּבָה (lemma:H8392, \"ark\")."
+          }
+        ]
+      },
+      "connections": [
+        {
+          "rank": 1,
+          "id": "r11:xref:152:1558",
+          "relation": "cross_reference",
+          "epistemic": "editorial_cross_reference",
+          "refs": [
+            "Genesis 6:14",
+            "Exodus 2:3"
+          ],
+          "title": "Genesis 6:14 -> Exodus 2:3 (\"coat it with pitch\")"
+        },
+        {
+          "rank": 2,
+          "id": "r11:xref:1558:152",
+          "relation": "cross_reference",
+          "epistemic": "editorial_cross_reference",
+          "refs": [
+            "Exodus 2:3",
+            "Genesis 6:14"
+          ],
+          "title": "Exodus 2:3 -> Genesis 6:14 (\"coated it with tar\")"
+        },
+        {
+          "rank": 3,
+          "id": "shared_lemma:H8392",
+          "relation": "shared_rare_vocabulary",
+          "epistemic": "documented_lexical_relationship",
+          "refs": [
+            "Genesis 6:14",
+            "Exodus 2:3"
+          ],
+          "title": "Shared vocabulary: תֵּבָה (H8392, 25v) \"ark\""
+        },
+        {
+          "rank": 4,
+          "id": "r13:subgraph:path:0:1",
+          "relation": "steiner_direct_link",
+          "epistemic": "editorial_cross_reference",
+          "refs": [
+            "Genesis 6:14",
+            "Exodus 2:3"
+          ],
+          "title": "Modern editorial cross-reference (reciprocal): Genesis 6:14 ↔ Exodus 2:3 (\"coat it with pitch\")"
+        }
+      ],
+      "indirect_paths": []
+    },
+    {
+      "id": "C04",
+      "items": [
+        "Numbers 21:9",
+        "John 3:14"
+      ],
+      "expected": true,
+      "label": "Serpent and lifting",
+      "status": "ok",
+      "ms": 6749,
+      "direct_link_found": true,
+      "all_endpoints_connected": true,
+      "passed": true,
+      "graph_proof": {
+        "proof_type": "direct_pair",
+        "is_complete": true,
+        "is_valid": true,
+        "independent_edge_count": 1,
+        "verified_edge_count": 1,
+        "distinct_anchor_pairs_connected": 1,
+        "covered_anchors": [
+          "Numbers 21:9",
+          "John 3:14"
+        ],
+        "uncovered_anchors": [],
+        "verified_edges": [
+          {
+            "anchor_pair": [
+              0,
+              1
+            ],
+            "from_anchor": "Numbers 21:9",
+            "to_anchor": "John 3:14",
+            "evidence_id": "passage_lxx:H5175:G3789",
+            "relation": "cross_language_lxx_bridge",
+            "epistemic": "documented_cross_language_bridge",
+            "tier": 3,
+            "witness_refs": [
+              "Numbers 21:9",
+              "John 3:14"
+            ],
+            "title": "LXX lexical bridge: נָחָשׁ (H5175) <-> ὄφις (G3789, \"snake\")",
+            "why": "Numbers 21:9 uses נָחָשׁ (H5175), corresponding via LXX to ὄφις (G3789), which appears in John 3:14."
+          }
+        ]
+      },
+      "connections": [
+        {
+          "rank": 1,
+          "id": "r11:xref:4350:26241",
+          "relation": "cross_testament_reference",
+          "epistemic": "editorial_cross_reference",
+          "refs": [
+            "Numbers 21:9",
+            "John 3:14-15"
+          ],
+          "title": "Numbers 21:9 -> John 3:14-15 (\"bronze snake\")"
+        },
+        {
+          "rank": 2,
+          "id": "r11:xref:26241:4350",
+          "relation": "cross_testament_reference",
+          "epistemic": "editorial_cross_reference",
+          "refs": [
+            "John 3:14",
+            "Numbers 21:9"
+          ],
+          "title": "John 3:14 -> Numbers 21:9 (\"bronze snake\")"
+        },
+        {
+          "rank": 3,
+          "id": "passage_lxx:H5175:G3789",
+          "relation": "cross_language_lxx_bridge",
+          "epistemic": "documented_cross_language_bridge",
+          "refs": [
+            "Numbers 21:9",
+            "John 3:14"
+          ],
+          "title": "LXX lexical bridge: נָחָשׁ (H5175) <-> ὄφις (G3789, \"snake\")"
+        },
+        {
+          "rank": 4,
+          "id": "passage_lxx:H4872:G3475",
+          "relation": "cross_language_lxx_bridge",
+          "epistemic": "documented_cross_language_bridge",
+          "refs": [
+            "Numbers 21:9",
+            "John 3:14"
+          ],
+          "title": "LXX lexical bridge: מֹשֶׁה (H4872) <-> Μωϋσῆς, Μωσῆς (G3475, \"Moses\")"
+        },
+        {
+          "rank": 5,
+          "id": "passage_lxx:H0376:G0444",
+          "relation": "cross_language_lxx_bridge",
+          "epistemic": "documented_cross_language_bridge",
+          "refs": [
+            "Numbers 21:9",
+            "John 3:14"
+          ],
+          "title": "LXX lexical bridge: אִישׁ (H0376) <-> ἄνθρωπος (G0444, \"a human\")"
+        },
+        {
+          "rank": 6,
+          "id": "nt_typological_citation:Numbers 21:9:John 3:14",
+          "relation": "explicit_typological_quotation",
+          "epistemic": "authorial_typology_or_quote",
+          "refs": [
+            "Numbers 21:9",
+            "John 3:14"
+          ],
+          "title": "Explicit NT typological citation & LXX phrase parallel: Numbers 21:9 → John 3:14 (3 aligned terms)"
+        },
+        {
+          "rank": 7,
+          "id": "r11:xref:26241:4348",
+          "relation": "cross_reference_witness",
+          "epistemic": "editorial_cross_reference",
+          "refs": [
+            "John 3:14",
+            "Numbers 21:7-9"
+          ],
+          "title": "Modern editorial cross-reference (OT↔NT): John 3:14 → Numbers 21:7-9 (\"lifted up the snake\")"
+        },
+        {
+          "rank": 8,
+          "id": "r13:subgraph:path:0:1",
+          "relation": "steiner_direct_link",
+          "epistemic": "editorial_cross_reference",
+          "refs": [
+            "John 3:14",
+            "Numbers 21:9"
+          ],
+          "title": "Modern editorial cross-reference (OT↔NT): John 3:14 → Numbers 21:9 (\"bronze snake\")"
+        }
+      ],
+      "indirect_paths": []
+    },
+    {
+      "id": "C05",
+      "items": [
+        "Genesis 2:7",
+        "1 Corinthians 15:45"
+      ],
+      "expected": true,
+      "label": "Adam first last",
+      "status": "ok",
+      "ms": 6748,
+      "direct_link_found": true,
+      "all_endpoints_connected": true,
+      "passed": true,
+      "graph_proof": {
+        "proof_type": "direct_pair",
+        "is_complete": true,
+        "is_valid": true,
+        "independent_edge_count": 1,
+        "verified_edge_count": 1,
+        "distinct_anchor_pairs_connected": 1,
+        "covered_anchors": [
+          "Genesis 2:7",
+          "1 Corinthians 15:45"
+        ],
+        "uncovered_anchors": [],
+        "verified_edges": [
+          {
+            "anchor_pair": [
+              0,
+              1
+            ],
+            "from_anchor": "Genesis 2:7",
+            "to_anchor": "1 Corinthians 15:45",
+            "evidence_id": "passage_lxx:H2416:G2198",
+            "relation": "cross_language_lxx_bridge",
+            "epistemic": "documented_cross_language_bridge",
+            "tier": 3,
+            "witness_refs": [
+              "Genesis 2:7",
+              "1 Corinthians 15:45"
+            ],
+            "title": "LXX lexical bridge: חַי (H2416) <-> ζάω (G2198, \"to live\")",
+            "why": "Genesis 2:7 uses חַי (H2416), corresponding via LXX to ζάω (G2198), which appears in 1 Corinthians 15:45."
+          }
+        ]
+      },
+      "connections": [
+        {
+          "rank": 1,
+          "id": "r11:xref:38:28864",
+          "relation": "cross_testament_reference",
+          "epistemic": "editorial_cross_reference",
+          "refs": [
+            "Genesis 2:7",
+            "1 Corinthians 15:45"
+          ],
+          "title": "Genesis 2:7 -> 1 Corinthians 15:45 (\"a living being\")"
+        },
+        {
+          "rank": 2,
+          "id": "r11:xref:28864:38",
+          "relation": "cross_testament_reference",
+          "epistemic": "editorial_cross_reference",
+          "refs": [
+            "1 Corinthians 15:45",
+            "Genesis 2:7"
+          ],
+          "title": "1 Corinthians 15:45 -> Genesis 2:7 (\"first man Adam\")"
+        },
+        {
+          "rank": 3,
+          "id": "passage_lxx:H2416:G2198",
+          "relation": "cross_language_lxx_bridge",
+          "epistemic": "documented_cross_language_bridge",
+          "refs": [
+            "Genesis 2:7",
+            "1 Corinthians 15:45"
+          ],
+          "title": "LXX lexical bridge: חַי (H2416) <-> ζάω (G2198, \"to live\")"
+        },
+        {
+          "rank": 4,
+          "id": "passage_lxx:H0120:G0444",
+          "relation": "cross_language_lxx_bridge",
+          "epistemic": "documented_cross_language_bridge",
+          "refs": [
+            "Genesis 2:7",
+            "1 Corinthians 15:45"
+          ],
+          "title": "LXX lexical bridge: אָדָם (H0120) <-> ἄνθρωπος (G0444, \"a human\")"
+        },
+        {
+          "rank": 5,
+          "id": "passage_lxx:H5315:G5590",
+          "relation": "cross_language_lxx_bridge",
+          "epistemic": "documented_cross_language_bridge",
+          "refs": [
+            "Genesis 2:7",
+            "1 Corinthians 15:45"
+          ],
+          "title": "LXX lexical bridge: נֶ֫פֶשׁ (H5315) <-> ψυχή (G5590, \"soul\")"
+        },
+        {
+          "rank": 6,
+          "id": "passage_lxx:H1961:G1096",
+          "relation": "cross_language_lxx_bridge",
+          "epistemic": "documented_cross_language_bridge",
+          "refs": [
+            "Genesis 2:7",
+            "1 Corinthians 15:45"
+          ],
+          "title": "LXX lexical bridge: הָיָה (H1961) <-> γίνομαι (G1096, \"to be\")"
+        },
+        {
+          "rank": 7,
+          "id": "nt_typological_citation:Genesis 2:7:1 Corinthians 15:45",
+          "relation": "explicit_typological_quotation",
+          "epistemic": "authorial_typology_or_quote",
+          "refs": [
+            "Genesis 2:7",
+            "1 Corinthians 15:45"
+          ],
+          "title": "Explicit NT typological citation & LXX phrase parallel: Genesis 2:7 → 1 Corinthians 15:45 (4 aligned terms)"
+        },
+        {
+          "rank": 8,
+          "id": "r13:subgraph:path:0:1",
+          "relation": "steiner_direct_link",
+          "epistemic": "editorial_cross_reference",
+          "refs": [
+            "1 Corinthians 15:45",
+            "Genesis 2:7"
+          ],
+          "title": "Modern editorial cross-reference (reciprocal) (OT↔NT): 1 Corinthians 15:45 ↔ Genesis 2:7 (\"first man Adam\")"
+        }
+      ],
+      "indirect_paths": []
+    },
+    {
+      "id": "C06",
+      "items": [
+        "Genesis 1:1",
+        "John 1:1"
+      ],
+      "expected": true,
+      "label": "Creation and Logos",
+      "status": "ok",
+      "ms": 6749,
+      "direct_link_found": true,
+      "all_endpoints_connected": true,
+      "passed": true,
+      "graph_proof": {
+        "proof_type": "direct_pair",
+        "is_complete": true,
+        "is_valid": true,
+        "independent_edge_count": 1,
+        "verified_edge_count": 1,
+        "distinct_anchor_pairs_connected": 1,
+        "covered_anchors": [
+          "Genesis 1:1",
+          "John 1:1"
+        ],
+        "uncovered_anchors": [],
+        "verified_edges": [
+          {
+            "anchor_pair": [
+              0,
+              1
+            ],
+            "from_anchor": "Genesis 1:1",
+            "to_anchor": "John 1:1",
+            "evidence_id": "passage_lex_bridge:H7225:G0746",
+            "relation": "source_provided_lexical_equivalent",
+            "epistemic": "documented_lexical_relationship",
+            "tier": 2,
+            "witness_refs": [
+              "Genesis 1:1",
+              "John 1:1"
+            ],
+            "title": "Original-language root/derivation bridge: רֵאשִׁית (H7225, \"first: beginning\") <-> ἀρχή (G0746, \"beginning\")",
+            "why": "Genesis 1:1 uses רֵאשִׁית (H7225, \"first: beginning\") and John 1:1 uses ἀρχή (G0746, \"beginning\"), linked by documented source_provided_lexical_equivalent."
+          }
+        ]
+      },
+      "connections": [
+        {
+          "rank": 1,
+          "id": "r11:xref:1:26152",
+          "relation": "cross_testament_reference",
+          "epistemic": "editorial_cross_reference",
+          "refs": [
+            "Genesis 1:1",
+            "John 1:1-3"
+          ],
+          "title": "Genesis 1:1 -> John 1:1-3 (\"beginning\")"
+        },
+        {
+          "rank": 2,
+          "id": "r11:xref:26152:1",
+          "relation": "cross_testament_reference",
+          "epistemic": "editorial_cross_reference",
+          "refs": [
+            "John 1:1",
+            "Genesis 1:1"
+          ],
+          "title": "John 1:1 -> Genesis 1:1 (\"In the beginning\")"
+        },
+        {
+          "rank": 3,
+          "id": "passage_lex_bridge:H7225:G0746",
+          "relation": "source_provided_lexical_equivalent",
+          "epistemic": "documented_lexical_relationship",
+          "refs": [
+            "Genesis 1:1",
+            "John 1:1"
+          ],
+          "title": "Original-language root/derivation bridge: רֵאשִׁית (H7225, \"first: beginning\") <-> ἀρχή (G0746, \"beginning\")"
+        },
+        {
+          "rank": 4,
+          "id": "passage_lxx:H7225:G0746",
+          "relation": "cross_language_lxx_bridge",
+          "epistemic": "documented_cross_language_bridge",
+          "refs": [
+            "Genesis 1:1",
+            "John 1:1"
+          ],
+          "title": "LXX lexical bridge: רֵאשִׁית (H7225) <-> ἀρχή (G0746, \"beginning\")"
+        },
+        {
+          "rank": 5,
+          "id": "passage_lxx:H0430:G2316",
+          "relation": "cross_language_lxx_bridge",
+          "epistemic": "documented_cross_language_bridge",
+          "refs": [
+            "Genesis 1:1",
+            "John 1:1"
+          ],
+          "title": "LXX lexical bridge: אֱלֹהִים (H0430) <-> θεός (G2316, \"God\")"
+        },
+        {
+          "rank": 6,
+          "id": "r13:subgraph:path:0:1",
+          "relation": "steiner_direct_link",
+          "epistemic": "editorial_cross_reference",
+          "refs": [
+            "John 1:1",
+            "Genesis 1:1"
+          ],
+          "title": "Modern editorial cross-reference (reciprocal) (OT↔NT): John 1:1 ↔ Genesis 1:1 (\"In the beginning\")"
+        }
+      ],
+      "indirect_paths": []
+    },
+    {
+      "id": "C07",
+      "items": [
+        "Exodus 25:31",
+        "Zechariah 4:2",
+        "Revelation 11:4"
+      ],
+      "expected": true,
+      "label": "Three lampstand anchors",
+      "status": "ok",
+      "ms": 6749,
+      "direct_link_found": true,
+      "all_endpoints_connected": true,
+      "passed": true,
+      "graph_proof": {
+        "proof_type": "triangle",
+        "is_complete": true,
+        "is_valid": true,
+        "independent_edge_count": 3,
+        "verified_edge_count": 3,
+        "distinct_anchor_pairs_connected": 3,
+        "covered_anchors": [
+          "Exodus 25:31",
+          "Zechariah 4:2",
+          "Revelation 11:4"
+        ],
+        "uncovered_anchors": [],
+        "verified_edges": [
+          {
+            "anchor_pair": [
+              0,
+              1
+            ],
+            "from_anchor": "Exodus 25:31",
+            "to_anchor": "Zechariah 4:2",
+            "evidence_id": "passage_lex_bridge:H4501:H5216",
+            "relation": "derived_from_root_anchor",
+            "epistemic": "documented_lexical_relationship",
+            "tier": 2,
+            "witness_refs": [
+              "Exodus 25:31",
+              "Zechariah 4:2"
+            ],
+            "title": "Original-language root/derivation bridge: מְנוֹרָה (H4501, \"lampstand (menorah)\") <-> נֵר (H5216, \"lamp\")",
+            "why": "Exodus 25:31 uses מְנוֹרָה (H4501, \"lampstand (menorah)\") and Zechariah 4:2 uses נֵר (H5216, \"lamp\"), linked by documented derived_from_root_anchor."
+          },
+          {
+            "anchor_pair": [
+              0,
+              2
+            ],
+            "from_anchor": "Exodus 25:31",
+            "to_anchor": "Revelation 11:4",
+            "evidence_id": "passage_lxx:H4501:G3087",
+            "relation": "cross_language_lxx_bridge",
+            "epistemic": "documented_cross_language_bridge",
+            "tier": 3,
+            "witness_refs": [
+              "Exodus 25:31",
+              "Revelation 11:4"
+            ],
+            "title": "LXX lexical bridge: מְנוֹרָה (H4501) <-> λυχνία (G3087, \"lampstand\")",
+            "why": "Exodus 25:31 uses מְנוֹרָה (H4501), corresponding via LXX to λυχνία (G3087), which appears in Revelation 11:4."
+          },
+          {
+            "anchor_pair": [
+              1,
+              2
+            ],
+            "from_anchor": "Zechariah 4:2",
+            "to_anchor": "Revelation 11:4",
+            "evidence_id": "r13:subgraph:path:1:2",
+            "relation": "steiner_direct_link",
+            "epistemic": "multi_hop_research_path",
+            "tier": 1,
+            "witness_refs": [],
+            "title": "Steiner bridge (0 hops): Zechariah 4:2 <-> Revelation 11:4",
+            "why": "Zechariah 4:2 shares terminal identity with Revelation 11:4"
+          }
+        ]
+      },
+      "connections": [
+        {
+          "rank": 1,
+          "id": "r13:proof:triangle:Exodus 25:31+Zechariah 4:2+Revelation 11:4",
+          "relation": "verified_three_edge_triangle",
+          "epistemic": "documented_lexical_relationship",
+          "refs": [
+            "Exodus 25:31",
+            "Zechariah 4:2",
+            "Revelation 11:4"
+          ],
+          "title": "Verified 3-edge triangle connecting Exodus 25:31 <-> Zechariah 4:2 <-> Revelation 11:4"
+        },
+        {
+          "rank": 2,
+          "id": "passage_lex_bridge:H4501:H5216",
+          "relation": "derived_from_root_anchor",
+          "epistemic": "documented_lexical_relationship",
+          "refs": [
+            "Exodus 25:31",
+            "Zechariah 4:2"
+          ],
+          "title": "Original-language root/derivation bridge: מְנוֹרָה (H4501, \"lampstand (menorah)\") <-> נֵר (H5216, \"lamp\")"
+        },
+        {
+          "rank": 3,
+          "id": "passage_lxx:H4501:G3087",
+          "relation": "cross_language_lxx_bridge",
+          "epistemic": "documented_cross_language_bridge",
+          "refs": [
+            "Exodus 25:31",
+            "Revelation 11:4"
+          ],
+          "title": "LXX lexical bridge: מְנוֹרָה (H4501) <-> λυχνία (G3087, \"lampstand\")"
+        },
+        {
+          "rank": 4,
+          "id": "r13:subgraph:path:1:2",
+          "relation": "steiner_direct_link",
+          "epistemic": "multi_hop_research_path",
+          "title": "Steiner bridge (0 hops): Zechariah 4:2 <-> Revelation 11:4"
+        },
+        {
+          "rank": 5,
+          "id": "r10:xlang:menorah_luchnia",
+          "relation": "cross_language_bridge",
+          "epistemic": "documented_lexical_relationship",
+          "refs": [
+            "Exodus 25:31",
+            "Zechariah 4:2",
+            "Revelation 11:4",
+            "Revelation 1:12"
+          ],
+          "title": "Same-image cross-language bridge: Hebrew מְנוֹרָה (menorah H4501) ↔ LXX/NT Greek λυχνία (luchnia G3087)"
+        },
+        {
+          "rank": 6,
+          "id": "r11:xref:2227:23041",
+          "relation": "cross_reference",
+          "epistemic": "editorial_cross_reference",
+          "refs": [
+            "Exodus 25:31",
+            "Zechariah 4:2"
+          ],
+          "title": "Exodus 25:31 -> Zechariah 4:2 (\"a lampstand\")"
+        },
+        {
+          "rank": 7,
+          "id": "r11:xref:23041:2227",
+          "relation": "cross_reference",
+          "epistemic": "editorial_cross_reference",
+          "refs": [
+            "Zechariah 4:2",
+            "Exodus 25:31-38"
+          ],
+          "title": "Zechariah 4:2 -> Exodus 25:31-38 (\"lampstand\")"
+        },
+        {
+          "rank": 8,
+          "id": "shared_lemma:H4501",
+          "relation": "shared_rare_vocabulary",
+          "epistemic": "documented_lexical_relationship",
+          "refs": [
+            "Exodus 25:31",
+            "Zechariah 4:2"
+          ],
+          "title": "Shared vocabulary: מְנוֹרָה (H4501, 31v) \"lampstand (menorah)\""
+        },
+        {
+          "rank": 9,
+          "id": "r11:xref:23041:30977",
+          "relation": "cross_testament_reference",
+          "epistemic": "editorial_cross_reference",
+          "refs": [
+            "Zechariah 4:2",
+            "Revelation 11:4"
+          ],
+          "title": "Zechariah 4:2 -> Revelation 11:4 (\"two olive trees\")"
+        },
+        {
+          "rank": 10,
+          "id": "r11:xref:30977:23041",
+          "relation": "cross_testament_reference",
+          "epistemic": "editorial_cross_reference",
+          "refs": [
+            "Revelation 11:4",
+            "Zechariah 4:2-14"
+          ],
+          "title": "Revelation 11:4 -> Zechariah 4:2-14 (\"two olive trees\")"
+        },
+        {
+          "rank": 11,
+          "id": "r10:motif:exod25_to_zech4_menorah_oil",
+          "relation": "literary_correspondence",
+          "epistemic": "verified_cross_reference",
+          "refs": [
+            "Exodus 25:31",
+            "Exodus 25:37",
+            "Exodus 27:20",
+            "Zechariah 4:2"
+          ],
+          "title": "Exodus 25:31–37 / 27:20–21 Tabernacle golden lampstand (menorah), seven lamps, and pure olive oil forms the background of Zechariah 4"
+        },
+        {
+          "rank": 12,
+          "id": "r13:subgraph:path:0:1",
+          "relation": "steiner_direct_link",
+          "epistemic": "multi_hop_research_path",
+          "title": "Steiner bridge (0 hops): Exodus 25:31 <-> Zechariah 4:2"
+        },
+        {
+          "rank": 13,
+          "id": "r13:subgraph:path:0:2",
+          "relation": "steiner_direct_link",
+          "epistemic": "multi_hop_research_path",
+          "title": "Steiner bridge (0 hops): Exodus 25:31 <-> Revelation 11:4"
+        }
+      ],
+      "indirect_paths": []
+    },
+    {
+      "id": "C08",
+      "items": [
+        "H8247",
+        "Revelation 12:1",
+        "Exodus 25:31"
+      ],
+      "expected": false,
+      "label": "Unrelated multi-anchor",
+      "status": "ok",
+      "ms": 6750,
+      "direct_link_found": false,
+      "all_endpoints_connected": false,
+      "passed": true,
+      "graph_proof": {
+        "proof_type": "partial_components",
+        "is_complete": false,
+        "is_valid": false,
+        "independent_edge_count": 0,
+        "verified_edge_count": 0,
+        "distinct_anchor_pairs_connected": 0,
+        "covered_anchors": [
+          "H8247"
+        ],
+        "uncovered_anchors": [
+          "Revelation 12:1",
+          "Exodus 25:31"
+        ],
+        "partial_reason": "Connected 1 of 3 requested anchors; no verified <=3-hop original-language or textual edge reached: Revelation 12:1, Exodus 25:31.",
+        "verified_edges": []
+      },
+      "connections": [],
+      "indirect_paths": []
+    },
+    {
+      "id": "C09",
+      "items": [
+        "H0216",
+        "H5785"
+      ],
+      "expected": false,
+      "label": "Light skin phonetic only",
+      "status": "ok",
+      "ms": 6751,
+      "direct_link_found": true,
+      "all_endpoints_connected": true,
+      "passed": false,
+      "graph_proof": {
+        "proof_type": "direct_pair",
+        "is_complete": true,
+        "is_valid": true,
+        "independent_edge_count": 1,
+        "verified_edge_count": 1,
+        "distinct_anchor_pairs_connected": 1,
+        "covered_anchors": [
+          "H0216",
+          "H5785"
+        ],
+        "uncovered_anchors": [],
+        "verified_edges": [
+          {
+            "anchor_pair": [
+              0,
+              1
+            ],
+            "from_anchor": "H0216",
+            "to_anchor": "H5785",
+            "evidence_id": "r13:subgraph:path:0:1",
+            "relation": "steiner_direct_link",
+            "epistemic": "shared_motif_evidence",
+            "tier": 4,
+            "witness_refs": [
+              "Lamentations 3:2",
+              "Lamentations 3:4"
+            ],
+            "title": "Close pericope proximity: \"H0216\" (Lamentations 3:2) ↔ \"H5785\" (Lamentations 3:4)",
+            "why": "Close pericope proximity: \"H0216\" (Lamentations 3:2) ↔ \"H5785\" (Lamentations 3:4)"
+          }
+        ]
+      },
+      "connections": [
+        {
+          "rank": 1,
+          "id": "intersect:H0216+H5785",
+          "relation": "nearby_verse_co_attestation",
+          "epistemic": "documented_collocation_or_cooccurrence",
+          "refs": [
+            "Lamentations 3:2"
+          ],
+          "title": "H0216 + H5785 co-occur in 1 nearby (±2v) passage(s)"
+        },
+        {
+          "rank": 2,
+          "id": "r11:intersect:pericope:20473:20475",
+          "relation": "shared_motif",
+          "epistemic": "shared_motif_evidence",
+          "refs": [
+            "Lamentations 3:2",
+            "Lamentations 3:4"
+          ],
+          "title": "Close pericope proximity: \"H0216\" (Lamentations 3:2) ↔ \"H5785\" (Lamentations 3:4)"
+        },
+        {
+          "rank": 3,
+          "id": "r11:intersect:pericope:13584:13588",
+          "relation": "shared_motif",
+          "epistemic": "shared_motif_evidence",
+          "refs": [
+            "Job 30:26",
+            "Job 30:30"
+          ],
+          "title": "Close pericope proximity: \"H0216\" (Job 30:26) ↔ \"H5785\" (Job 30:30)"
+        }
+      ],
+      "indirect_paths": []
+    },
+    {
+      "id": "C10",
+      "items": [
+        "Jeremiah 1:11",
+        "Jeremiah 1:12"
+      ],
+      "expected": true,
+      "label": "Almond watching same episode",
+      "status": "ok",
+      "ms": 6750,
+      "direct_link_found": true,
+      "all_endpoints_connected": true,
+      "passed": true,
+      "graph_proof": {
+        "proof_type": "direct_pair",
+        "is_complete": true,
+        "is_valid": true,
+        "independent_edge_count": 1,
+        "verified_edge_count": 1,
+        "distinct_anchor_pairs_connected": 1,
+        "covered_anchors": [
+          "Jeremiah 1:11",
+          "Jeremiah 1:12"
+        ],
+        "uncovered_anchors": [],
+        "verified_edges": [
+          {
+            "anchor_pair": [
+              0,
+              1
+            ],
+            "from_anchor": "Jeremiah 1:11",
+            "to_anchor": "Jeremiah 1:12",
+            "evidence_id": "r13:wp:H8247:H8245",
+            "relation": "orthographic_wordplay",
+            "epistemic": "direct_textual_evidence",
+            "tier": 2,
+            "witness_refs": [
+              "Jeremiah 1:11",
+              "Jeremiah 1:12"
+            ],
+            "title": "Attested biblical wordplay: שָׁקֵד (H8247) ↔ שָׁקַד (H8245)",
+            "why": "שָׁקֵד (H8247, \"almond\") and שָׁקַד (H8245, \"to watch\") share consonantal/phonetic sequence \"שקד\" (edit distance 0, adjacent-verse proximity, explicit textual cue). Documented shared root in STEPBible."
+          }
+        ]
+      },
+      "connections": [
+        {
+          "rank": 1,
+          "id": "passage_root_wordplay:H8247:H8245",
+          "relation": "shared_root_or_wordplay_bridge",
+          "epistemic": "documented_lexical_relationship",
+          "refs": [
+            "Jeremiah 1:11",
+            "Jeremiah 1:12"
+          ],
+          "title": "Original-language lexical/wordplay bridge: שָׁקֵד (H8247, \"almond\") <-> שָׁקַד (H8245, \"to watch\")"
+        },
+        {
+          "rank": 2,
+          "id": "r13:wp:H8247:H8245",
+          "relation": "orthographic_wordplay",
+          "epistemic": "direct_textual_evidence",
+          "refs": [
+            "Jeremiah 1:11",
+            "Jeremiah 1:12"
+          ],
+          "title": "Attested biblical wordplay: שָׁקֵד (H8247) ↔ שָׁקַד (H8245)"
+        },
+        {
+          "rank": 3,
+          "id": "r13:wp:H8245:H8247",
+          "relation": "orthographic_wordplay",
+          "epistemic": "direct_textual_evidence",
+          "refs": [
+            "Jeremiah 1:11",
+            "Jeremiah 1:12"
+          ],
+          "title": "Attested biblical wordplay: שָׁקַד (H8245) ↔ שָׁקֵד (H8247)"
+        },
+        {
+          "rank": 4,
+          "id": "r13:subgraph:path:0:1",
+          "relation": "steiner_direct_link",
+          "epistemic": "multi_hop_research_path",
+          "title": "Steiner bridge (0 hops): Jeremiah 1:11 <-> Jeremiah 1:12"
+        },
+        {
+          "rank": 5,
+          "id": "r13:beam:H8247-H8245",
+          "relation": "multihop_proof_path",
+          "epistemic": "shared_motif_evidence",
+          "refs": [
+            "Jeremiah 1:11",
+            "Jeremiah 1:12"
+          ],
+          "title": "Multi-hop pattern (wordplay): almond → to watch"
+        }
+      ],
+      "indirect_paths": [
+        {
+          "id": "r13:beam:H8247-H8245",
+          "relation": "multihop_proof_path",
+          "epistemic": "shared_motif_evidence",
+          "evidence_type": "multi_hop_pattern",
+          "tier": 4,
+          "title": "Multi-hop pattern (wordplay): almond → to watch",
+          "why": "Bounded beam path (H8247 -[wordplay:attested_textual_wordplay:documented_biblical_wordplay]-> H8245) reaching queried target concept.",
+          "refs": [
+            "Jeremiah 1:11",
+            "Jeremiah 1:12"
+          ],
+          "matched_endpoints": [
+            "Jeremiah 1:11",
+            "Jeremiah 1:12"
+          ],
+          "target": {
+            "strongs": "H8245",
+            "script": "שָׁקַד",
+            "transliteration": "sha.qad",
+            "gloss": "to watch"
+          },
+          "witness": "Moreover the LORD’s word came to me, saying, “Jeremiah, what do you see?” I said, “I see a branch of an almond tree.”",
+          "score_breakdown": {
+            "E": 0.61,
+            "F": 0.55,
+            "P": 0.719,
+            "I": 0.564,
+            "R": 0.48,
+            "N": 0.628,
+            "U": 0,
+            "rrf": 0.366,
+            "final": 823,
+            "evidence_strength": 0.604,
+            "exploration_value": 0.509,
+            "formula": "base + round(20*I + 18*N + 15*rrf - 35*U)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "C11",
+      "items": [
+        "Zechariah 12:10",
+        "John 19:37"
+      ],
+      "expected": true,
+      "label": "Look on pierced quoted",
+      "status": "ok",
+      "ms": 6750,
+      "direct_link_found": true,
+      "all_endpoints_connected": true,
+      "passed": true,
+      "graph_proof": {
+        "proof_type": "direct_pair",
+        "is_complete": true,
+        "is_valid": true,
+        "independent_edge_count": 1,
+        "verified_edge_count": 1,
+        "distinct_anchor_pairs_connected": 1,
+        "covered_anchors": [
+          "Zechariah 12:10",
+          "John 19:37"
+        ],
+        "uncovered_anchors": [],
+        "verified_edges": [
+          {
+            "anchor_pair": [
+              0,
+              1
+            ],
+            "from_anchor": "Zechariah 12:10",
+            "to_anchor": "John 19:37",
+            "evidence_id": "passage_lxx:H1856:G1574",
+            "relation": "cross_language_lxx_bridge",
+            "epistemic": "documented_cross_language_bridge",
+            "tier": 3,
+            "witness_refs": [
+              "Zechariah 12:10",
+              "John 19:37"
+            ],
+            "title": "LXX lexical bridge: דָּקַר (H1856) <-> ἐκκεντέω (G1574, \"to pierce\")",
+            "why": "Zechariah 12:10 uses דָּקַר (H1856), corresponding via LXX to ἐκκεντέω (G1574), which appears in John 19:37."
+          }
+        ]
+      },
+      "connections": [
+        {
+          "rank": 1,
+          "id": "r11:xref:26968:23172",
+          "relation": "cross_testament_reference",
+          "epistemic": "editorial_cross_reference",
+          "refs": [
+            "John 19:37",
+            "Zechariah 12:10"
+          ],
+          "title": "John 19:37 -> Zechariah 12:10 (\"look on the One they have pierced\")"
+        },
+        {
+          "rank": 2,
+          "id": "passage_lxx:H1856:G1574",
+          "relation": "cross_language_lxx_bridge",
+          "epistemic": "documented_cross_language_bridge",
+          "refs": [
+            "Zechariah 12:10",
+            "John 19:37"
+          ],
+          "title": "LXX lexical bridge: דָּקַר (H1856) <-> ἐκκεντέω (G1574, \"to pierce\")"
+        },
+        {
+          "rank": 3,
+          "id": "r13:subgraph:path:0:1",
+          "relation": "steiner_direct_link",
+          "epistemic": "editorial_cross_reference",
+          "refs": [
+            "John 19:37",
+            "Zechariah 12:10"
+          ],
+          "title": "Modern editorial cross-reference (OT↔NT): John 19:37 → Zechariah 12:10 (\"look on the One they have pierced\")"
+        }
+      ],
+      "indirect_paths": []
+    },
+    {
+      "id": "C12",
+      "items": [
+        "Exodus 12:15",
+        "Exodus 14:30"
+      ],
+      "expected": true,
+      "label": "Unleavened bread Exodus crossing",
+      "status": "ok",
+      "ms": 6750,
+      "direct_link_found": false,
+      "all_endpoints_connected": false,
+      "passed": false,
+      "graph_proof": {
+        "proof_type": "partial_components",
+        "is_complete": false,
+        "is_valid": false,
+        "independent_edge_count": 0,
+        "verified_edge_count": 0,
+        "distinct_anchor_pairs_connected": 0,
+        "covered_anchors": [
+          "Exodus 12:15"
+        ],
+        "uncovered_anchors": [
+          "Exodus 14:30"
+        ],
+        "partial_reason": "Connected 1 of 2 requested anchors; no verified <=3-hop original-language or textual edge reached: Exodus 14:30.",
+        "verified_edges": []
+      },
+      "connections": [],
+      "indirect_paths": []
+    }
+  ]
+}
