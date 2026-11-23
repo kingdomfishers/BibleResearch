@@ -1,0 +1,604 @@
+{
+  "method": "Adapted compatibility smoke checks on 32 R13 frozen cases; differs from native discover and pattern operations, therefore should not be compared with native 32/32 local result",
+  "stats": {
+    "total": 32,
+    "native_exact": 4,
+    "single_anchor_adapted": 24,
+    "evidence_adapter": 1,
+    "unsupported": 3,
+    "proxy_pass": 29,
+    "proxy_fail": 0,
+    "not_assessed": 0,
+    "invalid_native_score_claim": "These are not the native R13 algorithm/acceptance test outcomes."
+  },
+  "rows": [
+    {
+      "id": "R13-WP-01",
+      "tool": "discover",
+      "proxy": "single_anchor_adaptation",
+      "k": 5,
+      "result": "proxy_check_pass",
+      "checks": [
+        {
+          "name": "expect_strongs H8247",
+          "pass": true
+        },
+        {
+          "name": "expect_strongs H8245",
+          "pass": true
+        },
+        {
+          "name": "any expected ref",
+          "pass": true,
+          "found": [
+            "Jeremiah 1:11"
+          ]
+        },
+        {
+          "name": "evidence_type in topK",
+          "pass": true,
+          "found": [
+            "attested_textual_wordplay",
+            "attested_textual_wordplay"
+          ]
+        }
+      ],
+      "source_status": "ok"
+    },
+    {
+      "id": "R13-WP-02",
+      "tool": "discover",
+      "proxy": "single_anchor_adaptation",
+      "k": 10,
+      "result": "proxy_check_pass",
+      "checks": [
+        {
+          "name": "expect_strongs H0120",
+          "pass": true
+        },
+        {
+          "name": "expect_strongs H0127",
+          "pass": true
+        },
+        {
+          "name": "evidence_type in topK",
+          "pass": true,
+          "found": [
+            "attested_textual_wordplay",
+            "attested_textual_wordplay"
+          ]
+        },
+        {
+          "name": "forbid_claims_title_only",
+          "pass": true,
+          "caveat": "why omitted"
+        }
+      ],
+      "source_status": "ok"
+    },
+    {
+      "id": "R13-WP-03",
+      "tool": "discover",
+      "proxy": "single_anchor_adaptation",
+      "k": 5,
+      "result": "proxy_check_pass",
+      "checks": [
+        {
+          "name": "expect_strongs H7019",
+          "pass": true
+        },
+        {
+          "name": "expect_strongs H7093",
+          "pass": true
+        },
+        {
+          "name": "evidence_type in topK",
+          "pass": true,
+          "found": [
+            "attested_textual_wordplay"
+          ]
+        }
+      ],
+      "source_status": "ok"
+    },
+    {
+      "id": "R13-WP-04",
+      "tool": "discover",
+      "proxy": "single_anchor_adaptation",
+      "k": 8,
+      "result": "proxy_check_pass",
+      "checks": [
+        {
+          "name": "expect_strongs H3724",
+          "pass": true
+        },
+        {
+          "name": "evidence_type in topK",
+          "pass": true,
+          "found": [
+            "documented_root_family",
+            "verified_lexical_grammatical"
+          ]
+        }
+      ],
+      "source_status": "ok"
+    },
+    {
+      "id": "R13-RT-01",
+      "tool": "discover",
+      "proxy": "single_anchor_adaptation",
+      "k": 10,
+      "result": "proxy_check_pass",
+      "checks": [
+        {
+          "name": "expect_strongs H3722",
+          "pass": true
+        },
+        {
+          "name": "evidence_type in topK",
+          "pass": true,
+          "found": [
+            "verified_lexical_grammatical",
+            "documented_root_family"
+          ]
+        }
+      ],
+      "source_status": "ok"
+    },
+    {
+      "id": "R13-RT-02",
+      "tool": "discover",
+      "proxy": "single_anchor_adaptation",
+      "k": 10,
+      "result": "proxy_check_pass",
+      "checks": [
+        {
+          "name": "expect_strongs H8141",
+          "pass": true
+        }
+      ],
+      "source_status": "ok"
+    },
+    {
+      "id": "R13-MT-01",
+      "tool": "discover_patterns",
+      "proxy": "unsupported_live_schema",
+      "result": "unsupported",
+      "reasons": [
+        "not_executed"
+      ],
+      "k": 10
+    },
+    {
+      "id": "R13-MT-02",
+      "tool": "get_word",
+      "proxy": "exact_tool",
+      "k": 12,
+      "result": "proxy_check_pass",
+      "checks": [
+        {
+          "name": "expect_colloc_or_conn",
+          "pass": true
+        }
+      ],
+      "source_status": "ok"
+    },
+    {
+      "id": "R13-MT-03",
+      "tool": "get_word",
+      "proxy": "exact_tool",
+      "k": 12,
+      "result": "proxy_check_pass",
+      "checks": [
+        {
+          "name": "expect_colloc_or_conn",
+          "pass": true
+        }
+      ],
+      "source_status": "ok"
+    },
+    {
+      "id": "R13-SI-01",
+      "tool": "discover",
+      "proxy": "single_anchor_adaptation",
+      "k": 5,
+      "result": "proxy_check_pass",
+      "checks": [
+        {
+          "name": "expect_strongs G2985",
+          "pass": true
+        },
+        {
+          "name": "expect_strongs G4151",
+          "pass": true
+        },
+        {
+          "name": "evidence_type in topK",
+          "pass": true,
+          "found": [
+            "explicit_biblical_interpretation",
+            "explicit_biblical_interpretation"
+          ]
+        },
+        {
+          "name": "forbid_refs",
+          "pass": true
+        }
+      ],
+      "source_status": "ok"
+    },
+    {
+      "id": "R13-SI-02",
+      "tool": "discover",
+      "proxy": "single_anchor_adaptation",
+      "k": 5,
+      "result": "proxy_check_pass",
+      "checks": [
+        {
+          "name": "expect_strongs G3788",
+          "pass": true
+        },
+        {
+          "name": "expect_strongs G4151",
+          "pass": true
+        },
+        {
+          "name": "evidence_type in topK",
+          "pass": true,
+          "found": [
+            "explicit_biblical_interpretation",
+            "explicit_biblical_interpretation"
+          ]
+        }
+      ],
+      "source_status": "ok"
+    },
+    {
+      "id": "R13-SI-03",
+      "tool": "discover",
+      "proxy": "single_anchor_adaptation",
+      "k": 5,
+      "result": "proxy_check_pass",
+      "checks": [
+        {
+          "name": "expect_strongs G3087",
+          "pass": true
+        },
+        {
+          "name": "expect_strongs G1577",
+          "pass": true
+        },
+        {
+          "name": "evidence_type in topK",
+          "pass": true,
+          "found": [
+            "explicit_biblical_interpretation",
+            "explicit_biblical_interpretation"
+          ]
+        },
+        {
+          "name": "forbid_substrings_title_only",
+          "pass": true,
+          "caveat": "why omitted"
+        }
+      ],
+      "source_status": "ok"
+    },
+    {
+      "id": "R13-SI-04",
+      "tool": "compare_patterns",
+      "proxy": "unsupported_live_schema",
+      "result": "unsupported",
+      "reasons": [
+        "not_executed"
+      ],
+      "k": 25
+    },
+    {
+      "id": "R13-OTNT-01",
+      "tool": "discover",
+      "proxy": "single_anchor_adaptation",
+      "k": 15,
+      "result": "proxy_check_pass",
+      "checks": [
+        {
+          "name": "any expected ref",
+          "pass": true,
+          "found": [
+            "Zechariah 4:2",
+            "Revelation 1:12-20"
+          ]
+        }
+      ],
+      "source_status": "ok"
+    },
+    {
+      "id": "R13-OTNT-02",
+      "tool": "discover",
+      "proxy": "single_anchor_adaptation",
+      "k": 10,
+      "result": "proxy_check_pass",
+      "checks": [
+        {
+          "name": "any expected ref",
+          "pass": true,
+          "found": [
+            "Revelation 1:7"
+          ]
+        }
+      ],
+      "source_status": "ok"
+    },
+    {
+      "id": "R13-OTNT-03",
+      "tool": "discover",
+      "proxy": "single_anchor_adaptation",
+      "k": 10,
+      "result": "proxy_check_pass",
+      "checks": [
+        {
+          "name": "any expected ref",
+          "pass": true,
+          "found": [
+            "Luke 4:18",
+            "Matthew 11:5"
+          ]
+        }
+      ],
+      "source_status": "ok"
+    },
+    {
+      "id": "R13-OTNT-04",
+      "tool": "discover",
+      "proxy": "single_anchor_adaptation",
+      "k": 15,
+      "result": "proxy_check_pass",
+      "checks": [
+        {
+          "name": "any expected ref",
+          "pass": true,
+          "found": [
+            "Matthew 1:5",
+            "Hebrews 11:31",
+            "Hebrews 9:19"
+          ]
+        }
+      ],
+      "source_status": "ok"
+    },
+    {
+      "id": "R13-SC-01",
+      "tool": "discover",
+      "proxy": "single_anchor_adaptation",
+      "k": 10,
+      "result": "proxy_check_pass",
+      "checks": [
+        {
+          "name": "forbid_refs",
+          "pass": true
+        },
+        {
+          "name": "forbid_ids_matching",
+          "pass": true
+        }
+      ],
+      "source_status": "ok"
+    },
+    {
+      "id": "R13-SC-02",
+      "tool": "discover",
+      "proxy": "single_anchor_adaptation",
+      "k": 15,
+      "result": "proxy_check_pass",
+      "checks": [
+        {
+          "name": "forbid_refs",
+          "pass": true
+        }
+      ],
+      "source_status": "ok"
+    },
+    {
+      "id": "R13-SC-03",
+      "tool": "discover",
+      "proxy": "single_anchor_adaptation",
+      "k": 15,
+      "result": "proxy_check_pass",
+      "checks": [
+        {
+          "name": "forbid_refs",
+          "pass": true
+        }
+      ],
+      "source_status": "ok"
+    },
+    {
+      "id": "R13-HO-01",
+      "tool": "discover",
+      "proxy": "single_anchor_adaptation",
+      "k": 5,
+      "result": "proxy_check_pass",
+      "checks": [
+        {
+          "name": "expect_strongs H7799",
+          "pass": true
+        },
+        {
+          "name": "forbid_primary_strongs",
+          "pass": true
+        }
+      ],
+      "source_status": "ok"
+    },
+    {
+      "id": "R13-HO-02",
+      "tool": "discover",
+      "proxy": "single_anchor_adaptation",
+      "k": 5,
+      "result": "proxy_check_pass",
+      "checks": [
+        {
+          "name": "expect_strongs H8247",
+          "pass": true
+        },
+        {
+          "name": "expect_strongs H8245",
+          "pass": true
+        }
+      ],
+      "source_status": "ok"
+    },
+    {
+      "id": "R13-MA-01",
+      "tool": "get_connection",
+      "proxy": "exact_tool",
+      "k": 25,
+      "result": "proxy_check_pass",
+      "checks": [
+        {
+          "name": "direct_link_found",
+          "pass": true,
+          "observed": true
+        }
+      ],
+      "source_status": "ok"
+    },
+    {
+      "id": "R13-MA-02",
+      "tool": "get_connection",
+      "proxy": "exact_tool",
+      "k": 25,
+      "result": "proxy_check_pass",
+      "checks": [
+        {
+          "name": "direct_link_found",
+          "pass": true,
+          "observed": false
+        }
+      ],
+      "source_status": "ok"
+    },
+    {
+      "id": "R13-MA-03",
+      "tool": "research_trace_and_evidence",
+      "proxy": "evidence_adapter",
+      "k": 25,
+      "result": "proxy_check_pass",
+      "checks": [
+        {
+          "name": "hydrated_evidence_proxy",
+          "pass": true
+        }
+      ],
+      "source_status": "ok"
+    },
+    {
+      "id": "R13-NEG-01",
+      "tool": "discover",
+      "proxy": "single_anchor_adaptation",
+      "k": 25,
+      "result": "proxy_check_pass",
+      "checks": [
+        {
+          "name": "forbid_refs",
+          "pass": true
+        }
+      ],
+      "source_status": "ok"
+    },
+    {
+      "id": "R13-NEG-02",
+      "tool": "discover",
+      "proxy": "single_anchor_adaptation",
+      "k": 10,
+      "result": "proxy_check_pass",
+      "checks": [
+        {
+          "name": "forbid_claims_title_only",
+          "pass": true,
+          "caveat": "why omitted"
+        }
+      ],
+      "source_status": "ok"
+    },
+    {
+      "id": "R13-HO-U1",
+      "tool": "discover",
+      "proxy": "single_anchor_adaptation",
+      "k": 10,
+      "result": "proxy_check_pass",
+      "checks": [
+        {
+          "name": "expect_strongs H5175",
+          "pass": true
+        },
+        {
+          "name": "any expected ref",
+          "pass": true,
+          "found": [
+            "John 3:14"
+          ]
+        }
+      ],
+      "source_status": "ok"
+    },
+    {
+      "id": "R13-HO-U2",
+      "tool": "discover",
+      "proxy": "single_anchor_adaptation",
+      "k": 10,
+      "result": "proxy_check_pass",
+      "checks": [
+        {
+          "name": "any expected ref",
+          "pass": true,
+          "found": [
+            "Acts 8:32"
+          ]
+        }
+      ],
+      "source_status": "ok"
+    },
+    {
+      "id": "R13-HO-U3",
+      "tool": "discover",
+      "proxy": "single_anchor_adaptation",
+      "k": 10,
+      "result": "proxy_check_pass",
+      "checks": [
+        {
+          "name": "any expected ref",
+          "pass": true,
+          "found": [
+            "Matthew 2:15"
+          ]
+        }
+      ],
+      "source_status": "ok"
+    },
+    {
+      "id": "R13-HO-U4",
+      "tool": "discover",
+      "proxy": "single_anchor_adaptation",
+      "k": 15,
+      "result": "proxy_check_pass",
+      "checks": [
+        {
+          "name": "forbid_refs",
+          "pass": true
+        }
+      ],
+      "source_status": "ok"
+    },
+    {
+      "id": "R13-HO-U5",
+      "tool": "compare_patterns",
+      "proxy": "unsupported_live_schema",
+      "result": "unsupported",
+      "reasons": [
+        "not_executed"
+      ],
+      "k": 25
+    }
+  ]
+}
