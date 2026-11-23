@@ -31,7 +31,10 @@ export interface SelfInterpretationRecord {
     | 'greek_copula_identification'
     | 'greek_antitype_link'
     | 'hebrew_vision_qa_explanation'
-    | 'hebrew_demonstrative_identification';
+    | 'hebrew_demonstrative_identification'
+    | 'hebrew_naming_etiology'
+    | 'hebrew_compound_name_etiology'
+    | 'hebrew_birth_attribute_naming';
   symbol_strongs: string[];
   referent_strongs: string[];
   symbol_summary: string;
@@ -39,6 +42,50 @@ export interface SelfInterpretationRecord {
   witness_vids: number[];
   strict_referent_note: string;
 }
+
+const HEBREW_FINAL_MAP: Record<string, string> = {
+  ך: 'כ',
+  ם: 'מ',
+  ן: 'נ',
+  ף: 'פ',
+  ץ: 'צ',
+};
+
+function hebrewConsonants(raw: string): string {
+  const nfd = (raw || '').normalize('NFD');
+  let out = '';
+  for (const ch of nfd) {
+    const code = ch.charCodeAt(0);
+    if (code >= 0x05d0 && code <= 0x05ea) {
+      out += HEBREW_FINAL_MAP[ch] ?? ch;
+    }
+  }
+  return out;
+}
+
+function hebrewNoMatresStem(raw: string): string {
+  const cons = hebrewConsonants(raw);
+  if (cons.length <= 2) return cons;
+  // Strip medial matres (ו, י) and final weak ה on >= 3-letter words
+  let out = cons[0];
+  for (let i = 1; i < cons.length - 1; i++) {
+    const c = cons[i];
+    if (c === 'ו' || c === 'י') continue;
+    out += c;
+  }
+  const last = cons[cons.length - 1];
+  if (last !== 'ה' || out.length < 2) {
+    out += last;
+  }
+  return out;
+}
+
+const NAMING_CLAUSE_SKIP = new Set([
+  'H0853', 'H0854', 'H4480', 'H0413', 'H5921', 'H0518', 'H3588', 'H0834', 'H1931', 'H0859',
+  'H0589', 'H2088', 'H2063', 'H0428', 'H1992', 'H3605', 'H3808', 'H3541', 'H3651', 'H4100',
+  'H0559', 'H1696', 'H1961', 'H7121', 'H8034', 'H3205', 'H2029', 'H0430', 'H3068', 'H0376',
+  'H0802', 'H1121', 'H1323', 'H0001', 'H0517',
+]);
 
 const SKIP_CONTENT_STRONGS = new Set([
   'H0853', 'H0854', 'H4480', 'H0413', 'H5921', 'H0518', 'H3588', 'H0834', 'H1931', 'H0859',
@@ -240,6 +287,51 @@ export function extractScripturalInterpretations(
           strict_referent_note: `${v.ref} clause-final identification binds ${symDesc} to ${refDesc}; preserve exact referent without merging neighboring clauses.`,
         });
       }
+
+      // 4. Bare Greek parable / symbolic equative copula (Noun + G1510 + [Art] + Noun, e.g., Luke 8:11 "The seed is the word of God")
+      const hasParableCue = toks.some(t => t.s === 'G3850') || /\b(?:parable|mystery|allegory)\b/i.test(v.en || '');
+      for (let i = 1; i < toks.length - 1; i++) {
+        if (toks[i].s !== 'G1510') continue;
+        const leftNoun = (() => {
+          const t1 = toks[i - 1];
+          if (t1 && isSymbolicCandidateNoun(t1, 180, dfMap) && !isPrepGoverned(i - 1)) return t1;
+          return null;
+        })();
+        if (!leftNoun) continue;
+        const symDf = dfMap?.get(leftNoun.s) ?? 999;
+        if (!hasParableCue && symDf > 90) continue;
+
+        const rightCandidates: VerseTokenLite[] = [];
+        for (let r = i + 1; r < Math.min(toks.length, i + 5); r++) {
+          const rt = toks[r];
+          if (r > i + 1 && (rt.s === 'G1510' || rt.s === 'G2532') && rightCandidates.length >= 1) break;
+          if (isNominalLike(rt)) rightCandidates.push(rt);
+        }
+        if (rightCandidates.length === 0) continue;
+        const symStrongs = [leftNoun.s];
+        const refStrongs = [...new Set(rightCandidates.map(t => t.s))];
+        if (symStrongs.every(s => refStrongs.includes(s))) continue;
+
+        const id = `r13:interp:${v.verse_id}:eq${i}`;
+        if (seenKey.has(id)) continue;
+        seenKey.add(id);
+
+        const symDesc = `${leftNoun.lm || leftNoun.sf || leftNoun.s} (${leftNoun.s}, "${leftNoun.g || ''}")`;
+        const refDesc = rightCandidates.map(t => `${t.lm || t.sf || t.s} (${t.s}, "${t.g || ''}")`).join(' + ');
+        out.push({
+          id,
+          verse_id: v.verse_id,
+          ref: v.ref,
+          language: 'grc',
+          cue_kind: 'greek_copula_identification',
+          symbol_strongs: symStrongs,
+          referent_strongs: refStrongs,
+          symbol_summary: symDesc,
+          referent_summary: refDesc,
+          witness_vids: [v.verse_id],
+          strict_referent_note: `${v.ref} equative copula explicitly identifies ${symDesc} as ${refDesc}.`,
+        });
+      }
     } else {
       // OT Prophetic vision Q&A ("What do you see?" / "What are these?" -> next 0..2 verses explanation)
       const strongsSet = new Set(toks.map(t => t.s));
@@ -280,9 +372,16 @@ export function extractScripturalInterpretations(
         }
       }
 
-      // OT Demonstrative explanation ("These/they are ..." with H0428/H1992 on rare symbolic entities, e.g., Zech 4:10, Ezek 37:11)
-      const hasDem = strongsSet.has('H0428') || strongsSet.has('H1992');
-      if (hasDem && /\b(?:these (?:seven |are|bones)|they are)\b/.test(enLower)) {
+      // OT Equative demonstrative identification ("these bones ARE the whole house of Israel" / "these seven ARE the eyes of Yahweh",
+      // strictly rejecting directional dative addresses or transitive action clauses like Ezek 37:5 "to these bones: I will cause breath to enter")
+      const demIdx = toks.findIndex(t => t.s === 'H0428' || t.s === 'H1992');
+      const hasDem = demIdx >= 0;
+      const isEquativeDemEn =
+        /\b(?:these(?:\s+[a-z]+){0,2}\s+(?:are|is)|they\s+are)\b/.test(enLower) &&
+        !/\b(?:to|unto|into|against|upon|for)\s+these\b/.test(enLower) &&
+        !/\b(?:cause\s+\w+\s+to\s+enter|put\s+sinews|bring\s+up\s+flesh)\b/.test(enLower);
+      const isActionPrefix = demIdx > 0 && /^to\s+/i.test(toks[demIdx - 1]?.g || '');
+      if (hasDem && isEquativeDemEn && !isActionPrefix) {
         const nouns = toks.filter(t => isSymbolicCandidateNoun(t, 350, dfMap) || t.s === 'H3068' || t.s === 'H7651');
         if (nouns.length >= 2) {
           const mid = Math.ceil(nouns.length / 2);
@@ -306,6 +405,215 @@ export function extractScripturalInterpretations(
               witness_vids: [v.verse_id],
               strict_referent_note: `Demonstrative symbol identification in ${v.ref}; keep distinct from similar imagery in other books unless explicitly linked.`,
             });
+          }
+        }
+      }
+
+      // OT Biblical Naming Etiologies ([H7121 קָרָא + H8034 שֵׁם + ProperName]):
+      // 1) Compound 2-word stem decomposition (e.g. Gen 29:32 רְאוּבֵן H7205 [ראבן] = רָאָה H7200 [רא] + בֵּן H1121 [בן]),
+      // 2) Single-word consonantal/root naming explanation in the naming verse or ±3v birth-speech response
+      //    (e.g. Gen 21:3-6 יִצְחָק H3327 ↔ צְחֹק H6712 + צָחַק H6711),
+      // 3) Birth-attribute naming description ([H3318 יָצָא + rare descriptive nouns/adjectives] + [H7121 + H8034 + ProperName],
+      //    e.g. Gen 25:25 עֵשָׂו H6215 ↔ אַדְמוֹנִי H0132 + שֵׂעָר H8181).
+      const callIdx = toks.findIndex(t => t.s === 'H7121');
+      const nameNounIdx = toks.findIndex((t, idx) => t.s === 'H8034' && (callIdx < 0 || Math.abs(idx - callIdx) <= 4));
+      if (callIdx >= 0 && nameNounIdx >= 0) {
+        const anchorIdx = Math.max(callIdx, nameNounIdx);
+        // When a relative clause (אֲשֶׁר H0834 or participle הַנּוֹלַד H3205) modifies שֵׁם בְּנוֹ (e.g. Gen 21:3 "called the name of his son who was born to him, whom Sarah bore to him, Isaac"),
+        // the named entity appears right after the relative clause; prefer the token after the relative clause or the rarest proper name within +1..+10 tokens.
+        const candTargets: VerseTokenLite[] = [];
+        for (let k = anchorIdx + 1; k <= Math.min(toks.length - 1, anchorIdx + 10); k++) {
+          const cand = toks[k];
+          if (!cand || !cand.s || /^H900/.test(cand.s) || NAMING_CLAUSE_SKIP.has(cand.s)) continue;
+          const cl = (cand.cl || '').toLowerCase();
+          if (SKIP_POS.has(cl) || cl === 'verb') continue;
+          const cCons = hebrewConsonants(cand.lm || cand.sf || '');
+          if (cCons.length >= 2) {
+            candTargets.push(cand);
+          }
+        }
+        // If there is a relative clause (H0834) between anchorIdx and the last candidate, the named entity is the last candidate (after the relative clause); otherwise the first candidate.
+        const hasRelBetween = toks.slice(anchorIdx + 1, anchorIdx + 9).some(t => t.s === 'H0834');
+        const namedTok: VerseTokenLite | null =
+          candTargets.length === 0
+            ? null
+            : hasRelBetween
+              ? candTargets[candTargets.length - 1]
+              : candTargets[0];
+
+        if (namedTok) {
+          const namedBs = namedTok.s;
+          const namedRaw = namedTok.lm || namedTok.sf || '';
+          const namedCons = hebrewConsonants(namedRaw);
+          const namedStem = hebrewNoMatresStem(namedRaw);
+          const namedLabel = `${namedRaw} (${namedBs}, "${namedTok.g || ''}")`;
+
+          // Candidate explanation tokens in the same verse (excluding the naming formula itself, but keeping H1121 בֵּן for compound names like רְאוּבֵן)
+          const sameVerseClauseToks = toks.filter(
+            t =>
+              t.s &&
+              t.s !== namedBs &&
+              !/^H900/.test(t.s) &&
+              (t.s === 'H1121' || !NAMING_CLAUSE_SKIP.has(t.s)) &&
+              !SKIP_POS.has((t.cl || '').toLowerCase()),
+          );
+
+          // Check (A): Compound 2-word prefix+suffix decomposition in the same verse (e.g., רְאוּבֵן [ראבן] = רָאָה [רא] + בֵּן [בן])
+          let emittedCompound = false;
+          if (namedStem.length >= 4) {
+            for (let i = 0; i < sameVerseClauseToks.length && !emittedCompound; i++) {
+              const t1 = sameVerseClauseToks[i];
+              const s1 = hebrewNoMatresStem(t1.lm || t1.sf || '');
+              const c1 = hebrewConsonants(t1.lm || t1.sf || '');
+              if (s1.length < 2) continue;
+              const prefCandidates = [s1, s1.slice(0, 2), c1.slice(0, 2)].filter(p => p.length >= 2);
+              const matchedPref = prefCandidates.find(p => namedStem.startsWith(p));
+              if (!matchedPref) continue;
+              const remStem = namedStem.slice(matchedPref.length);
+              if (remStem.length < 2) continue;
+
+              for (let j = 0; j < sameVerseClauseToks.length; j++) {
+                if (i === j) continue;
+                const t2 = sameVerseClauseToks[j];
+                if (t2.s === t1.s) continue;
+                const s2 = hebrewNoMatresStem(t2.lm || t2.sf || '');
+                const c2 = hebrewConsonants(t2.lm || t2.sf || '');
+                if (s2 === remStem || c2 === remStem || (remStem.length >= 2 && s2.startsWith(remStem))) {
+                  const id = `r13:interp:${v.verse_id}:compname:${namedBs}`;
+                  if (!seenKey.has(id)) {
+                    seenKey.add(id);
+                    const refToks = [t1, t2];
+                    const refDesc = refToks.map(t => `${t.lm || t.sf || t.s} (${t.s}, "${t.g || ''}")`).join(' + ');
+                    out.push({
+                      id,
+                      verse_id: v.verse_id,
+                      ref: v.ref,
+                      language: 'hbo',
+                      cue_kind: 'hebrew_compound_name_etiology',
+                      symbol_strongs: [namedBs],
+                      referent_strongs: [t1.s, t2.s],
+                      symbol_summary: namedLabel,
+                      referent_summary: refDesc,
+                      witness_vids: [v.verse_id],
+                      strict_referent_note: `Clause-scoped compound naming etiology in ${v.ref}: ${namedLabel} decomposes into ${refDesc} (${matchedPref} + ${remStem} = ${namedStem}).`,
+                    });
+                    emittedCompound = true;
+                  }
+                  break;
+                }
+              }
+            }
+          }
+
+          // Check (B): Single-word consonantal/root naming explanation in the same verse OR ±3v birth-speech window (only when same-verse speech is absent)
+          const hasSameVerseSpeech = strongsSet.has('H0559') || strongsSet.has('H3588');
+          const hasBirthVerb = strongsSet.has('H3205') || strongsSet.has('H2029');
+          const windowVerses: { verse: VerseInputLite; toks: VerseTokenLite[] }[] = [
+            { verse: v, toks: sameVerseClauseToks.filter(t => t.s !== 'H1121') },
+          ];
+          if (hasBirthVerb && !hasSameVerseSpeech) {
+            for (let dv = 1; dv <= 3; dv++) {
+              const nv = byVid.get(v.verse_id + dv);
+              if (!nv || nv.book !== v.book || nv.chapter !== v.chapter) continue;
+              const nvStrongs = new Set(nv.toks.map(t => t.s));
+              if (nvStrongs.has('H0559') && !nvStrongs.has('H7121')) {
+                const nvClauseToks = nv.toks.filter(
+                  t =>
+                    t.s &&
+                    t.s !== namedBs &&
+                    !/^H900/.test(t.s) &&
+                    !NAMING_CLAUSE_SKIP.has(t.s) &&
+                    !SKIP_POS.has((t.cl || '').toLowerCase()),
+                );
+                windowVerses.push({ verse: nv, toks: nvClauseToks });
+              }
+            }
+          }
+
+          const matchedEtiologyToks: VerseTokenLite[] = [];
+          const matchedWitnessVids = new Set<number>([v.verse_id]);
+          for (const wv of windowVerses) {
+            for (const ct of wv.toks) {
+              const ctCons = hebrewConsonants(ct.lm || ct.sf || '');
+              const ctStem = hebrewNoMatresStem(ct.lm || ct.sf || '');
+              if (ctStem.length < 2) continue;
+              // Require >= 2 non-mater stem consonants shared in order with the named entity's stem
+              let sharedInOrder = 0;
+              let cursor = 0;
+              for (const ch of ctStem) {
+                const pos = namedStem.indexOf(ch, cursor);
+                if (pos >= 0) {
+                  sharedInOrder++;
+                  cursor = pos + 1;
+                }
+              }
+              const sharesRootSubstr =
+                (ctStem.length >= 2 && namedCons.includes(ctStem.slice(0, 2))) ||
+                (ctCons.length >= 3 && namedCons.includes(ctCons.slice(0, 3))) ||
+                sharedInOrder >= 3 ||
+                (sharedInOrder >= 2 && Math.min(ctStem.length, namedStem.length) <= 3 && Math.max(ctStem.length, namedStem.length) <= 4);
+              if (sharesRootSubstr) {
+                if (!matchedEtiologyToks.some(x => x.s === ct.s)) {
+                  matchedEtiologyToks.push(ct);
+                }
+                matchedWitnessVids.add(wv.verse.verse_id);
+              }
+            }
+          }
+
+          if (matchedEtiologyToks.length > 0) {
+            const primaryVid = [...matchedWitnessVids].pop() ?? v.verse_id;
+            const id = `r13:interp:${v.verse_id}:name:${namedBs}`;
+            if (!seenKey.has(id)) {
+              seenKey.add(id);
+              const refDesc = matchedEtiologyToks.map(t => `${t.lm || t.sf || t.s} (${t.s}, "${t.g || ''}")`).join(', ');
+              const spanRef =
+                primaryVid !== v.verse_id && byVid.get(primaryVid)
+                  ? `${v.ref}-${byVid.get(primaryVid)!.verse}`
+                  : v.ref;
+              out.push({
+                id,
+                verse_id: v.verse_id,
+                ref: spanRef,
+                language: 'hbo',
+                cue_kind: 'hebrew_naming_etiology',
+                symbol_strongs: [namedBs],
+                referent_strongs: matchedEtiologyToks.map(t => t.s),
+                symbol_summary: namedLabel,
+                referent_summary: refDesc,
+                witness_vids: [...matchedWitnessVids],
+                strict_referent_note: `Explicit biblical naming etiology in ${spanRef}: ${namedLabel} is explained by ${refDesc}.`,
+              });
+            }
+          } else if (strongsSet.has('H3318')) {
+            // Check (C): Birth-attribute naming clause ([H3318 יָצָא + rare descriptive nouns/adjectives df <= 150] + [H7121 + H8034 + ProperName])
+            const birthAttrToks = sameVerseClauseToks.filter(
+              t =>
+                t.s !== 'H3318' &&
+                t.s !== 'H7223' &&
+                isNominalLike(t) &&
+                (dfMap?.get(t.s) ?? 999) <= 150,
+            );
+            if (birthAttrToks.length > 0) {
+              const id = `r13:interp:${v.verse_id}:birthname:${namedBs}`;
+              if (!seenKey.has(id)) {
+                seenKey.add(id);
+                const refDesc = birthAttrToks.map(t => `${t.lm || t.sf || t.s} (${t.s}, "${t.g || ''}")`).join(', ');
+                out.push({
+                  id,
+                  verse_id: v.verse_id,
+                  ref: v.ref,
+                  language: 'hbo',
+                  cue_kind: 'hebrew_birth_attribute_naming',
+                  symbol_strongs: [namedBs],
+                  referent_strongs: [...new Set(birthAttrToks.map(t => t.s))],
+                  symbol_summary: namedLabel,
+                  referent_summary: refDesc,
+                  witness_vids: [v.verse_id],
+                  strict_referent_note: `Birth-attribute naming clause in ${v.ref}: ${namedLabel} is named in immediate connection with birth attributes ${refDesc}.`,
+                });
+              }
+            }
           }
         }
       }

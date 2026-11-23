@@ -175,8 +175,11 @@ function buildNgrams(text: string, size: number): string[] {
 
 export function normalizeOriginalForm(script: string, strongsHint?: string): NormalizedOriginalForm {
   const language = detectLanguage(script, strongsHint);
+  // Split multi-form comma/semicolon dictionary headwords (e.g., H0894 "בָּבֶ֫ל, בָּבֶל")
+  // so repeated lexical entries do not concatenate into artificial double-length skeletons.
+  const primaryScript = String(script || '').split(/[,;/]/)[0]?.trim() || String(script || '');
   if (language === 'grc') {
-    const clean = stripGreekLetters(script);
+    const clean = stripGreekLetters(primaryScript);
     let phon = '';
     for (const ch of clean) {
       const cls = GREEK_PHONETIC_CLASS[ch] || ch;
@@ -186,7 +189,7 @@ export function normalizeOriginalForm(script: string, strongsHint?: string): Nor
     const strippedAffixStem = clean.replace(/(οσ|ον|ησ|ω|ειν|εσθαι|μαι)$/, '');
     const stem = strippedAffixStem.length >= 3 ? strippedAffixStem : clean;
     return {
-      script,
+      script: primaryScript,
       language,
       consonantal: clean,
       consonantalWithSinDot: clean,
@@ -198,8 +201,8 @@ export function normalizeOriginalForm(script: string, strongsHint?: string): Nor
     };
   }
 
-  const cons = stripHebrewConsonants(script, false);
-  const consDot = stripHebrewConsonants(script, true);
+  const cons = stripHebrewConsonants(primaryScript, false);
+  const consDot = stripHebrewConsonants(primaryScript, true);
   const noMatres = collapseMatresHebrew(cons);
   const stripped = stripOrdinaryHebrewAffixes(noMatres.length >= 3 ? noMatres : cons);
   let phon = '';
@@ -207,7 +210,7 @@ export function normalizeOriginalForm(script: string, strongsHint?: string): Nor
     phon += HEBREW_PHONETIC_CLASS[ch] || ch;
   }
   return {
-    script,
+    script: primaryScript,
     language,
     consonantal: cons,
     consonantalWithSinDot: consDot,
@@ -388,26 +391,6 @@ export interface VerseWordplayContextInput {
   englishText?: string;
 }
 
-const HEBREW_CAUSAL_WORDPLAY_STRONGS = new Set([
-  'H3588', // ki (for/because)
-  'H3651', // ken / al-ken (therefore)
-  'H7121', // qara (call/name)
-  'H8034', // shem (name)
-  'H4100', // mah (what?)
-  'H7200', // ra'ah (see — prophetic vision Q&A)
-  'H3190', // yatab (well-seen / good)
-  'H4480', // min (out of / from)
-]);
-
-const GREEK_CAUSAL_WORDPLAY_STRONGS = new Set([
-  'G1063', // gar (for)
-  'G3754', // hoti (because/for)
-  'G1510', // eimi (copula / identification)
-  'G3004', // lego (say/call)
-  'G3686', // onoma (name)
-  'G2564', // kaleo (call)
-]);
-
 export function detectWordplayContextCues(
   windowVerses: VerseWordplayContextInput[],
   language: 'hbo' | 'grc',
@@ -419,26 +402,35 @@ export function detectWordplayContextCues(
     for (const s of v.strongsList) allStrongs.add(s.toUpperCase());
   }
 
+  // Strictly require textual/exegetical wordplay or naming markers rather than bare conjunctions/prepositions
+  // like H4480 (min) or H3588 (ki) alone, which cause coincidental same-verse promotion (e.g., Lev 16:14, Isa 29:19).
   if (language === 'hbo') {
-    if (allStrongs.has('H4100') && allStrongs.has('H7200')) cues.add('prophetic_vision_qa');
-    if (allStrongs.has('H7121') && allStrongs.has('H8034')) cues.add('naming_etiological_formula');
-    if (allStrongs.has('H3588') || allStrongs.has('H3651')) cues.add('explanatory_particle');
-    for (const s of allStrongs) {
-      if (HEBREW_CAUSAL_WORDPLAY_STRONGS.has(s) && s === 'H4480') cues.add('derivation_origin_preposition');
+    if (allStrongs.has('H4100') && allStrongs.has('H7200') && /\bwhat do you see\b/.test(combinedEn)) {
+      cues.add('prophetic_vision_qa');
     }
-    if (/\b(?:therefore|because|for i|called (?:his|her|its) name|what do you see)\b/.test(combinedEn)) {
-      cues.add('explanatory_clause_cue');
+    const hasCausalNaming =
+      allStrongs.has('H7121') &&
+      (allStrongs.has('H8034') || /\bcalled (?:its|his|her) name\b|\bnamed (?:him|her|it)\b/.test(combinedEn)) &&
+      (allStrongs.has('H3588') || allStrongs.has('H3651') || allStrongs.has('H0559') || /\bbecause\b|\btherefore\b|\bsaying\b/.test(combinedEn));
+    if (hasCausalNaming) {
+      cues.add('naming_etiological_formula');
+    }
+    const hasCreationFormation =
+      (allStrongs.has('H3335') || allStrongs.has('H1129') || allStrongs.has('H3947')) &&
+      allStrongs.has('H4480') &&
+      /\b(?:formed man|dust (?:of|from) the ground|taken out of|built)\b/.test(combinedEn);
+    if (hasCreationFormation) {
+      cues.add('creation_formation_cue');
     }
   } else {
-    for (const s of allStrongs) {
-      if (GREEK_CAUSAL_WORDPLAY_STRONGS.has(s)) {
-        if (s === 'G1510') cues.add('identification_copula');
-        else if (s === 'G3686' || s === 'G2564') cues.add('naming_formula');
-        else cues.add('explanatory_particle');
-      }
+    if (allStrongs.has('G3177') || (allStrongs.has('G3004') && /\bwhich is(?:,| )?\s*(?:by )?interpretation\b|\bthat is to say\b/.test(combinedEn))) {
+      cues.add('greek_interpretation_formula');
     }
-    if (/\b(?:which is|that is to say|called|for|because)\b/.test(combinedEn)) {
-      cues.add('explanatory_clause_cue');
+    if ((allStrongs.has('G3686') || allStrongs.has('G2564')) && allStrongs.has('G3754')) {
+      cues.add('naming_formula');
+    }
+    if (allStrongs.has('G0499') || (allStrongs.has('G1510') && /\b(?:which (?:is|are)|meaning)\b/.test(combinedEn))) {
+      cues.add('identification_copula');
     }
   }
   return [...cues];
@@ -470,14 +462,19 @@ function classifyPairEdge(params: {
   src: CorpusWordplayInputProfile;
   tgt: CorpusWordplayInputProfile;
   metrics: WordplayPairMetrics;
+  srcConsLen: number;
+  tgtConsLen: number;
   sharedRootKey?: string;
   isFormationDerived: boolean;
   sameVerseVids: number[];
   adjacentVerseVids: number[];
   cueKinds: string[];
 }): WordplayCandidateEdge | null {
-  const { src, tgt, metrics, sharedRootKey, isFormationDerived, sameVerseVids, adjacentVerseVids, cueKinds } = params;
-  const provenRoot = Boolean(sharedRootKey || isFormationDerived);
+  const { src, tgt, metrics, srcConsLen, tgtConsLen, sharedRootKey, isFormationDerived, sameVerseVids, adjacentVerseVids, cueKinds } = params;
+  // Require real shared consonantal overlap (>= 2) before asserting a common root/derivation;
+  // prevents unshared alternative proper names (e.g. Babylon H0894 vs Pekod H6489) from claiming proven_common_root.
+  const hasSharedStemLetters = metrics.comparable && metrics.shared_consonants.length >= 2;
+  const provenRoot = Boolean((sharedRootKey || isFormationDerived) && hasSharedStemLetters);
   const proxSame = sameVerseVids.length;
   const proxAdj = adjacentVerseVids.length;
   const hasCue = cueKinds.length > 0 && (proxSame > 0 || proxAdj > 0);
@@ -490,10 +487,7 @@ function classifyPairEdge(params: {
     return null;
   }
   // Common 2-letter lemmas only qualify if same/adjacent-verse proximate OR documented root OR exact consonantal match
-  const minConsLen = Math.min(
-    stripHebrewConsonants(src.script).length || stripGreekLetters(src.script).length,
-    stripHebrewConsonants(tgt.script).length || stripGreekLetters(tgt.script).length,
-  );
+  const minConsLen = Math.min(srcConsLen, tgtConsLen);
   if (minConsLen <= 2 && !provenRoot && proxSame === 0 && proxAdj === 0 && metrics.overlap_kind !== 'consonantal_exact') {
     return null;
   }
@@ -502,22 +496,42 @@ function classifyPairEdge(params: {
   let overlapKind: WordplayOverlapKind = metrics.overlap_kind;
   let epistemic: WordplayCandidateEdge['epistemic_class'];
 
-  if (
-    metrics.comparable &&
-    ((hasCue && (proxSame > 0 || proxAdj > 0) && metrics.formal_score >= 0.72) ||
-      ((proxSame > 0 || proxAdj > 0) && metrics.overlap_kind === 'consonantal_exact' && Math.min(src.total_verses, tgt.total_verses) <= 400))
-  ) {
+  // Strip trailing weak mater-lectionis He ('ה') when evaluating 2-letter shared consonants against >= 4-letter lemmas
+  // (e.g., הָרָה H2029 [הרה] vs אוּרִיָּה H0223 [אוריה] share only 'רה', which is 1 root consonant 'ר' + final mater '-ה').
+  const maxConsLen = Math.max(srcConsLen, tgtConsLen);
+  const nonMaterSharedLen =
+    src.bs.startsWith('H') &&
+    metrics.shared_consonants.length === 2 &&
+    metrics.shared_consonants.endsWith('ה') &&
+    maxConsLen >= 4
+      ? 1
+      : metrics.shared_consonants.length;
+
+  const cueOverlapQualified =
+    hasCue &&
+    (proxSame > 0 || proxAdj > 0) &&
+    metrics.formal_score >= 0.56 &&
+    (nonMaterSharedLen >= 3 ||
+      (nonMaterSharedLen === 2 && minConsLen <= 3 && maxConsLen <= 4 && metrics.edit_distance <= 1.2));
+
+  const exactHomophonePun =
+    (proxSame > 0 || proxAdj > 0) &&
+    metrics.overlap_kind === 'consonantal_exact' &&
+    minConsLen >= 3 &&
+    Math.min(src.total_verses, tgt.total_verses) <= 300;
+
+  if (metrics.comparable && (cueOverlapQualified || exactHomophonePun)) {
     evidenceType = 'attested_textual_wordplay';
     overlapKind = hasCue ? 'documented_biblical_wordplay' : metrics.overlap_kind;
     epistemic = 'direct_textual_evidence';
-  } else if (metrics.comparable && (proxSame > 0 || proxAdj > 0) && metrics.formal_score >= 0.65) {
+  } else if (metrics.comparable && (proxSame > 0 || proxAdj > 0) && metrics.formal_score >= 0.52) {
     evidenceType = 'proximate_wordplay_candidate';
     epistemic = 'candidate_literary_pattern';
-  } else if (isFormationDerived) {
+  } else if (isFormationDerived && provenRoot) {
     evidenceType = 'morphological_derivation';
     overlapKind = 'shared_root';
     epistemic = 'documented_lexical_relationship';
-  } else if (sharedRootKey) {
+  } else if (sharedRootKey && provenRoot) {
     evidenceType = 'documented_root_family';
     overlapKind = 'shared_root';
     epistemic = 'documented_lexical_relationship';
@@ -530,7 +544,7 @@ function classifyPairEdge(params: {
   }
 
   const rarityFactor = 1 / Math.log2(4 + Math.min(src.total_verses, tgt.total_verses) * 0.25);
-  const proxBoost = proxSame * 0.16 + proxAdj * 0.22 + (hasCue ? 0.28 : 0);
+  const proxBoost = proxSame * 0.16 + proxAdj * 0.22 + (evidenceType === 'attested_textual_wordplay' ? 0.28 : (hasCue ? 0.12 : 0));
   const rootBoost = provenRoot ? 0.18 : 0;
   const formalPart = metrics.comparable ? metrics.formal_score * 0.48 : 0.3;
   const rawScore = (formalPart + proxBoost + rootBoost) * (0.65 + 0.55 * rarityFactor);
@@ -545,21 +559,21 @@ function classifyPairEdge(params: {
     overlap_kind: overlapKind,
     epistemic_class: epistemic,
     proven_common_root: provenRoot,
-    ...(sharedRootKey ? { shared_root_key: sharedRootKey } : {}),
+    ...(provenRoot && sharedRootKey ? { shared_root_key: sharedRootKey } : {}),
     shared_consonants: metrics.shared_consonants,
-    source_consonants: stripHebrewConsonants(src.script) || stripGreekLetters(src.script),
-    target_consonants: stripHebrewConsonants(tgt.script) || stripGreekLetters(tgt.script),
+    source_consonants: stripHebrewConsonants(src.script.split(/[,;/]/)[0] || src.script) || stripGreekLetters(src.script.split(/[,;/]/)[0] || src.script),
+    target_consonants: stripHebrewConsonants(tgt.script.split(/[,;/]/)[0] || tgt.script) || stripGreekLetters(tgt.script.split(/[,;/]/)[0] || tgt.script),
     edit_distance: metrics.edit_distance,
     phonetic_distance: metrics.phonetic_distance,
     idf_overlap: metrics.idf_overlap,
     proximity_same_verse: proxSame,
     proximity_adjacent_verse: proxAdj,
-    has_explicit_cue: hasCue,
+    has_explicit_cue: hasCue && evidenceType === 'attested_textual_wordplay',
     cue_kinds: cueKinds,
     witness_vids: witnessVids,
     score,
     etymology_disclaimer: provenRoot
-      ? 'Documented in STEP lexical root/formation records; shared derivation still does not guarantee identical contextual meaning.'
+      ? 'Documented in STEP/OSHB lexical root or formation records; shared derivation still does not guarantee identical contextual meaning.'
       : ETYMOLOGY_DISCLAIMER,
   };
 }
@@ -723,7 +737,10 @@ export function buildCorpusWordplayIndex(
             const samePhon = nfA.phoneticClass.length >= 3 && nfA.phoneticClass === nfB.phoneticClass;
             if (lcs.length >= 2 || samePhon) {
               const m = ensurePair(sA, sB);
-              if (m.adjVids.length < 12) m.adjVids.push(vid);
+              if (m.adjVids.length < 12) {
+                if (!m.adjVids.includes(vid)) m.adjVids.push(vid);
+                if (!m.adjVids.includes(nextVid)) m.adjVids.push(nextVid);
+              }
               candidatePairs.add(`${m.a}|${m.b}`);
             }
           }
@@ -761,19 +778,29 @@ export function buildCorpusWordplayIndex(
     if (meta.sameVids.length === 0 && meta.adjVids.length === 0 && pA.all_vids.length <= 2000 && pB.all_vids.length <= 2000) {
       const setB = new Set(pB.all_vids);
       for (const vid of pA.all_vids) {
-        if (setB.has(vid) && meta.sameVids.length < 8) meta.sameVids.push(vid);
-        else if ((setB.has(vid + 1) || setB.has(vid - 1)) && meta.adjVids.length < 8) meta.adjVids.push(vid);
+        if (setB.has(vid) && meta.sameVids.length < 8) {
+          meta.sameVids.push(vid);
+        } else if (setB.has(vid + 1) && meta.adjVids.length < 8) {
+          if (!meta.adjVids.includes(vid)) meta.adjVids.push(vid);
+          if (!meta.adjVids.includes(vid + 1)) meta.adjVids.push(vid + 1);
+        } else if (setB.has(vid - 1) && meta.adjVids.length < 8) {
+          if (!meta.adjVids.includes(vid - 1)) meta.adjVids.push(vid - 1);
+          if (!meta.adjVids.includes(vid)) meta.adjVids.push(vid);
+        }
       }
     }
 
     const cueSet = new Set<string>();
     if (verseLookup) {
-      for (const vid of [...meta.sameVids.slice(0, 3), ...meta.adjVids.slice(0, 3)]) {
-        const win: VerseWordplayContextInput[] = [];
-        for (let dv = -1; dv <= 1; dv++) {
-          const vl = verseLookup.get(vid + dv);
-          if (vl) win.push(vl);
-        }
+      // Only inspect cues in the actual witness verses where both lemmas co-occur (same verse or adjacent pair),
+      // never expanding ±1 verse beyond an adjacent pair.
+      const witnessCheckVids = [...new Set([...meta.sameVids.slice(0, 3), ...meta.adjVids.slice(0, 4)])];
+      const win: VerseWordplayContextInput[] = [];
+      for (const vid of witnessCheckVids) {
+        const vl = verseLookup.get(vid);
+        if (vl) win.push(vl);
+      }
+      if (win.length > 0) {
         for (const cue of detectWordplayContextCues(win, nfA.language)) cueSet.add(cue);
       }
     }
@@ -783,6 +810,8 @@ export function buildCorpusWordplayIndex(
       src: pA,
       tgt: pB,
       metrics,
+      srcConsLen: nfA.consonantal.length,
+      tgtConsLen: nfB.consonantal.length,
       sharedRootKey: meta.sharedRootKey,
       isFormationDerived: meta.isFormationDerived,
       sameVerseVids: meta.sameVids,

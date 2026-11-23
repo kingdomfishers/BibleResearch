@@ -25,6 +25,7 @@ import {
   handleDiscoverBiblicalConnectionsV1,
   handleDiscoverPatternsV1,
   handleComparePatternsV1,
+  handleDiscoverSubgraphV1,
   handleTraceEvidenceV1,
   handleDiscoverRelationshipPathsV1,
   handleExpandBiblicalConnectionV1,
@@ -1540,6 +1541,132 @@ async function handleCompareHebrewSeptuagintPassageV1(env, params) {
     .filter((a) => a.alignment_tier === 'scholarly_interpretation')
     .map(mapAlign);
 
+  // E10 fallback: when static hebrew_lxx_word_alignments has no entries for this verse,
+  // infer deterministic candidate alignments from lxx_token_lexicon_b64gz in motifs-and-patterns.json.gz
+  if (docAlignments.length === 0 && candAlignments.length === 0 && mtWords.length > 0 && lxxWords.length > 0) {
+    try {
+      const mpShard = await loadJsonShard(env, '/v2/relationships/r11-v1.0/r10/motifs-and-patterns.json.gz');
+      const lexB64 = mpShard?.lxx_token_lexicon_b64gz;
+      const lex = lexB64 ? decodeB64GzJson(env, lexB64, '/r10/lxx_token_lexicon') : null;
+      if (lex?.hebrew_to_greek && lex?.greek_forms) {
+        const padH = (raw) => {
+          const m = /^([HG])0*(\d+)[A-Z]*$/i.exec(String(raw || '').trim());
+          return m ? `${m[1].toUpperCase()}${m[2].padStart(4, '0')}` : '';
+        };
+        const normG = (w) =>
+          String(w || '')
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z\u0370-\u03ff\u1f00-\u1fff]/gi, '')
+            .toLowerCase();
+        const candidatePairs = [];
+        const lxxNorms = lxxWords.map((lw) => ({ lw, nw: normG(lw.normalized_word || lw.word_text) }));
+        for (const mw of mtWords) {
+          const hBs = padH(mw.strongs_nr);
+          if (!hBs) continue;
+          const gBridges = lex.hebrew_to_greek[hBs] || [];
+          for (const [gBs, bridgeCount] of gBridges) {
+            const gForms = lex.greek_forms[gBs] || [];
+            if (gForms.length === 0) continue;
+            for (const { lw, nw } of lxxNorms) {
+              if (!nw || nw.length < 2) continue;
+              let matchScore = 0;
+              let technique = '';
+              for (const gf of gForms) {
+                if (nw === gf) {
+                  matchScore = 0.78 + Math.min(0.14, Math.log10(1 + (Number(bridgeCount) || 1)) * 0.05);
+                  technique = 'attested_lxx_lexical_equivalent_exact_form';
+                  break;
+                }
+                const stemLen = Math.min(nw.length, gf.length, 5);
+                if (stemLen >= 4 && nw.slice(0, stemLen) === gf.slice(0, stemLen)) {
+                  const s = 0.64 + Math.min(0.12, Math.log10(1 + (Number(bridgeCount) || 1)) * 0.04);
+                  if (s > matchScore) {
+                    matchScore = s;
+                    technique = 'attested_lxx_lexical_equivalent_stem_match';
+                  }
+                } else if (nw.length >= 5 && gf.length >= 4 && (nw.startsWith('ε' + gf.slice(0, 4)) || nw.startsWith('η' + gf.slice(0, 4)))) {
+                  const s = 0.62 + Math.min(0.10, Math.log10(1 + (Number(bridgeCount) || 1)) * 0.04);
+                  if (s > matchScore) {
+                    matchScore = s;
+                    technique = 'attested_lxx_lexical_equivalent_augmented_stem';
+                  }
+                }
+              }
+              if (matchScore > 0) {
+                const isFunc = gBs === 'G3588' || gBs === 'G2532' || gBs === 'G1161' || gBs === 'G1722';
+                const posDelta = Math.abs(mw.ordinal / Math.max(1, mtWords.length) - lw.ordinal / Math.max(1, lxxWords.length));
+                const sortPriority = (isFunc ? matchScore * 0.6 : matchScore) - posDelta * 0.08;
+                candidatePairs.push({
+                  mw,
+                  lw,
+                  hBs,
+                  gBs,
+                  bridgeCount: Number(bridgeCount) || 1,
+                  confidence: Math.round(matchScore * 100) / 100,
+                  technique,
+                  sortPriority,
+                });
+              }
+            }
+          }
+          // Direct OT-LXX corpus co-occurrence forms (covers LXX-only Greek vocabulary without NT Strong's numbers)
+          const directForms = lex.hebrew_to_lxx_forms?.[hBs] || [];
+          for (const [dfForm, coocCnt, conf100] of directForms) {
+            for (const { lw, nw } of lxxNorms) {
+              if (!nw || nw.length < 3) continue;
+              const stemLen = Math.min(nw.length, String(dfForm).length, 5);
+              const isExact = nw === dfForm;
+              const isStem = !isExact && stemLen >= 4 && nw.slice(0, stemLen) === String(dfForm).slice(0, stemLen);
+              if (!isExact && !isStem) continue;
+              const conf = Math.round(((Number(conf100) || 65) / 100) * (isExact ? 1.0 : 0.92) * 100) / 100;
+              const posDelta = Math.abs(mw.ordinal / Math.max(1, mtWords.length) - lw.ordinal / Math.max(1, lxxWords.length));
+              candidatePairs.push({
+                mw,
+                lw,
+                hBs,
+                gBs: null,
+                bridgeCount: Number(coocCnt) || 1,
+                confidence: conf,
+                technique: isExact ? 'corpus_cooccurrence_lxx_form_exact' : 'corpus_cooccurrence_lxx_form_stem',
+                sortPriority: conf - posDelta * 0.08,
+              });
+            }
+          }
+        }
+        candidatePairs.sort((a, b) => b.sortPriority - a.sortPriority || a.mw.ordinal - b.mw.ordinal || a.lw.ordinal - b.lw.ordinal);
+        const usedHebOrd = new Set();
+        const usedLxxOrd = new Set();
+        for (const cp of candidatePairs) {
+          if (usedHebOrd.has(cp.mw.ordinal) || usedLxxOrd.has(cp.lw.ordinal)) continue;
+          usedHebOrd.add(cp.mw.ordinal);
+          usedLxxOrd.add(cp.lw.ordinal);
+          candAlignments.push({
+            alignment_key: `cand:v${verseId ?? 0}:h${cp.mw.ordinal}:g${cp.lw.ordinal}`,
+            cardinality: '1:1',
+            alignment_tier: 'computationally_inferred_candidate',
+            verification_status: 'candidate',
+            confidence_score: cp.confidence,
+            hebrew_text: cp.mw.original_word,
+            hebrew_ordinals: [cp.mw.ordinal],
+            hebrew_strongs: [cp.hBs],
+            lxx_text: cp.lw.word_text,
+            lxx_ordinals: [cp.lw.ordinal],
+            lxx_strongs: cp.gBs ? [cp.gBs] : [],
+            algorithm_or_source: 'r13_lxx_token_lexicon_bridge',
+            translation_technique: cp.technique,
+            evidence_summary: cp.gBs
+              ? `Candidate Hebrew-LXX alignment inferred from attested corpus bridge ${cp.hBs} -> ${cp.gBs} (${cp.bridgeCount} corpus witnesses); not a manual word-level alignment.`
+              : `Candidate Hebrew-LXX alignment inferred from OT-LXX verse co-occurrence ${cp.hBs} -> ${cp.lw.normalized_word || cp.lw.word_text} (${cp.bridgeCount} aligned verse witnesses); not a manual word-level alignment.`,
+          });
+        }
+        candAlignments.sort((a, b) => (a.hebrew_ordinals?.[0] || 0) - (b.hebrew_ordinals?.[0] || 0));
+      }
+    } catch {
+      // Non-fatal fallback if motifs-and-patterns shard is absent in partial test fixtures
+    }
+  }
+
   if (docAlignments.length > 0 || candAlignments.length > 0) {
     for (const mw of mtWords) {
       const da = docAlignments.find((a) => (a.hebrew_ordinals || []).includes(mw.ordinal));
@@ -2645,7 +2772,7 @@ const corpusWorker = {
         if (op === 'discover_biblical_connections_v1' || op === 'discover_biblical_connections_v2') {
           return jsonResponse(await handleDiscoverBiblicalConnectionsV1({ env, loadJsonShard, loadJsonShardWithBytes, decodeB64GzJson: (b64, cacheKey) => decodeB64GzJson(env, b64, cacheKey) }, params), 200, 'public, max-age=300');
         }
-        if (op === 'discover_patterns_v1' || op === 'compare_patterns_v1' || op === 'trace_evidence_v1') {
+        if (op === 'discover_patterns_v1' || op === 'compare_patterns_v1' || op === 'trace_evidence_v1' || op === 'discover_subgraph_v1') {
           const r13Ctx = {
             env,
             loadJsonShard,
@@ -2658,6 +2785,9 @@ const corpusWorker = {
           }
           if (op === 'compare_patterns_v1') {
             return jsonResponse(await handleComparePatternsV1(r13Ctx, params), 200, 'public, max-age=300');
+          }
+          if (op === 'discover_subgraph_v1') {
+            return jsonResponse(await handleDiscoverSubgraphV1(r13Ctx, params), 200, 'public, max-age=300');
           }
           return jsonResponse(await handleTraceEvidenceV1(r13Ctx, params), 200, 'public, max-age=300');
         }

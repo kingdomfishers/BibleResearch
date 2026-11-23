@@ -228,6 +228,8 @@ export interface R13ScoreBreakdown {
   U: number;
   rrf: number;
   final: number;
+  evidence_strength?: number;
+  exploration_value?: number;
   formula?: string;
 }
 

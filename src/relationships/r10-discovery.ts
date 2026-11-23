@@ -13,6 +13,11 @@ import { fnv1a64Hex, computeBucketHex } from './adjacency-loader.ts';
 import type { AssetReader } from './adjacency-loader.ts';
 import { beamSearchMotifPaths, type RuntimeBeamProfile } from './motif-discovery.ts';
 import { assembleSymbolicChains, type SelfInterpretationRecord } from './symbolic-patterns.ts';
+import {
+  fuseMultichannelCandidatesRrf,
+  type DiscoveryChannelName,
+  type MultichannelCandidateEntry,
+} from './tesserae-retrieval.ts';
 
 const WORDPLAY_DISCLAIMER =
   'Shared consonantal or phonetic pattern does not establish a historical etymology, common root, or intentional authorial link unless independently documented.';
@@ -276,12 +281,13 @@ function resolveDisplaySense(
     })),
   ];
 
-  const matchingExplicitToks = (explicitToks || []).filter(t => t.s === prof.bs && t.g);
+  const matchingExplicitToks = (explicitToks || []).filter(t => t.s === prof.bs && (t.g || t.lk));
+  const explicitLks = new Set(matchingExplicitToks.map(t => String(t.lk || '').toLowerCase()).filter(Boolean));
   const witnessVids = new Set(witnessPassages.map(p => Number(p.verse_id || 0)).filter(v => v > 0));
   const matchingForms = (prof.forms || []).filter(f => f.vid && witnessVids.has(f.vid) && f.gl);
   const snippetTexts = witnessPassages.slice(0, 6).map(p => p.snippet).filter((s): s is string => Boolean(s));
 
-  const explicitStemsList = matchingExplicitToks.map(t => extractSenseStems(t.g));
+  const explicitStemsList = matchingExplicitToks.filter(t => t.g).map(t => extractSenseStems(t.g));
   const formStemsList = matchingForms.map(f => extractSenseStems(f.gl));
   const snippetStemsList = snippetTexts.map(s => extractSenseStems(s));
 
@@ -291,7 +297,7 @@ function resolveDisplaySense(
 
   for (const cand of candidates) {
     const candStems = extractSenseStems(cand.gl);
-    let score = 0;
+    let score = cand.lk && explicitLks.has(String(cand.lk).toLowerCase()) ? 12 : 0;
     for (const es of explicitStemsList) score += countStemOverlap(candStems, es) * 4;
     for (const fs of formStemsList) score += countStemOverlap(candStems, fs) * 3;
     for (const ss of snippetStemsList) score += countStemOverlap(candStems, ss) * 2;
@@ -321,7 +327,9 @@ function verifyTermSenseInVerse(
   if (occStems.size === 0) return true;
   const chosen = resolveDisplaySense(prof, [passage], toks);
   const chosenStems = extractSenseStems(chosen.gl);
-  const termStems = extractSenseStems(term);
+  const lowerTerm = term.toLowerCase().trim();
+  const aliasList = QUERY_FALLBACK_ALIAS_MAP[lowerTerm] || [];
+  const termStems = extractSenseStems([term, ...aliasList].join(' '));
   if (termStems.size === 0) return true;
   return countStemOverlap(termStems, occStems) > 0 || countStemOverlap(termStems, chosenStems) > 0;
 }
@@ -343,6 +351,10 @@ function getMorphStems(word: string): string[] {
   if (w.endsWith('ing') && w.length > 5) {
     const base = w.slice(0, -3);
     out.push(base, base + 'e');
+  } else if (w.endsWith('tion') && w.length > 6) {
+    out.push(w.slice(0, -3), w.slice(0, -4) + 'e');
+  } else if (w.endsWith('ion') && w.length > 5) {
+    out.push(w.slice(0, -3), w.slice(0, -3) + 'e');
   } else if (w.endsWith('ed') && w.length > 4) {
     const base = w.slice(0, -2);
     out.push(base, base + 'e');
@@ -886,14 +898,21 @@ function buildR13WordplayRecord(
   witnessPassages: R10PassageRef[],
 ): R10EvidenceRecord {
   const rawEvType = String(edge.evidence_type || 'shared_consonantal_pattern');
-  const provenRoot = Boolean(edge.proven_common_root);
+  const sharedConsLen = String(edge.shared_consonants || '').length;
+  const provenRoot = Boolean(edge.proven_common_root) && sharedConsLen >= 2;
   const hasCue = Boolean(edge.has_explicit_cue);
   const evType = rawEvType === 'attested_textual_wordplay' && !hasCue
     ? 'proximate_wordplay_candidate'
-    : rawEvType;
+    : (!provenRoot && (rawEvType === 'documented_root_family' || rawEvType === 'morphological_derivation')
+        ? 'shared_consonantal_pattern'
+        : rawEvType);
+  const rawScore = Number(edge.score || 0.5);
+  const proxSame = Number(edge.proximity_same_verse || 0);
+  const proxAdj = Number(edge.proximity_adjacent_verse || 0);
+  const isStrongRepeatedProximate = proxSame >= 2 && proxSame + proxAdj >= 6 && rawScore >= 0.85;
   const tier: R10EvidenceTier = evType === 'attested_textual_wordplay'
     ? 2
-    : ((evType === 'documented_root_family' || evType === 'morphological_derivation')
+    : ((evType === 'documented_root_family' || evType === 'morphological_derivation' || isStrongRepeatedProximate)
         ? 3
         : (evType === 'proximate_wordplay_candidate' || provenRoot ? 4 : 5));
   const pred: R10Predicate = (tier <= 4 || provenRoot) ? 'orthographic_wordplay' : 'orthographic_overlap';
@@ -902,11 +921,16 @@ function buildR13WordplayRecord(
     : ((evType === 'documented_root_family' || evType === 'morphological_derivation' || provenRoot)
       ? 'documented_lexical_relationship'
       : 'orthographic_similarity_only');
-  const rawScore = Number(edge.score || 0.5);
-  const specBonus = tier <= 2
-    ? Math.min(55, Math.round(rawScore * 55))
-    : (tier === 3 ? Math.min(48, Math.round(rawScore * 48)) : Math.min(42, Math.round(rawScore * 42)));
-  const witBonus = Math.min(28, witnessPassages.length * 8 + (hasCue ? 12 : 0));
+  const repeatedProximateBonus =
+    isStrongRepeatedProximate
+      ? Math.min(62, 24 + proxSame * 6 + Math.min(proxAdj, 8) * 2)
+      : 0;
+  const specBonus =
+    (tier <= 2
+      ? Math.min(55, Math.round(rawScore * 55))
+      : (tier === 3 ? Math.min(48, Math.round(rawScore * 48)) : Math.min(42, Math.round(rawScore * 42)))) +
+    repeatedProximateBonus;
+  const witBonus = Math.min(34, witnessPassages.length * 8 + (hasCue ? 12 : 0) + (proxSame >= 2 ? 6 : 0));
   const orthPen = tier >= 5 ? 45 : 0;
   const finalScore = Math.max(10, TIER_BASE_SCORE[tier] + specBonus + witBonus - orthPen);
 
@@ -1030,9 +1054,19 @@ function buildR13MotifRecord(
   const witBonus = Math.min(50, Math.max(witVids.length, passages.length) * 8);
   const originalWords: R10OriginalWordRef[] = nodeList.slice(0, 6).map((bs: string) => {
     const p = profileByStrongs?.get(bs);
-    return p
-      ? { lemma_key: p.lk, strongs: p.bs, language: p.lang, lemma_script: p.sc, transliteration: p.tr, gloss: p.gl }
-      : { strongs: bs, language: languageFromStrongs(bs, 'hbo'), lemma_script: bs, transliteration: '', gloss: '' };
+    if (p) {
+      return { lemma_key: p.lk, strongs: p.bs, language: p.lang, lemma_script: p.sc, transliteration: p.tr, gloss: p.gl };
+    }
+    const nm = Array.isArray(motif.node_meta)
+      ? motif.node_meta.find((x: any) => Array.isArray(x) && x[0] === bs)
+      : null;
+    return {
+      strongs: bs,
+      language: languageFromStrongs(bs, 'hbo'),
+      lemma_script: (nm && nm[1]) || bs,
+      transliteration: '',
+      gloss: (nm && nm[2]) || '',
+    };
   });
   const nodeLabel = originalWords.map(w => (w.lemma_script && w.lemma_script !== w.strongs ? `${w.lemma_script} (${w.gloss || w.strongs})` : w.strongs)).join(' ↔ ');
   return {
@@ -1341,6 +1375,8 @@ function scoreCandidatesR13(
     const effN = m.evType === 'proximate_wordplay_candidate' ? Math.min(m.N, 0.25) : m.N;
     const delta = Math.round(m.I * 20 + effN * 18 + rrf * 15 - m.U * 35);
     const finalScore = Math.max(10, m.r.score_components.final_score + delta);
+    const evidenceStrength = Number(Math.max(0, Math.min(1, m.E * 0.45 + m.F * 0.25 + m.P * 0.15 + m.I * 0.15 - m.U * 0.25)).toFixed(3));
+    const explorationValue = Number(Math.max(0, Math.min(1, m.R * 0.45 + effN * 0.35 + rrf * 0.2)).toFixed(3));
     const breakdown: R13ScoreBreakdown = {
       E: m.E,
       F: m.F,
@@ -1351,6 +1387,8 @@ function scoreCandidatesR13(
       U: m.U,
       rrf,
       final: finalScore,
+      evidence_strength: evidenceStrength,
+      exploration_value: explorationValue,
       formula: 'base + round(20*I + 18*N + 15*rrf - 35*U)',
     };
     return {
@@ -1403,10 +1441,11 @@ function diversifyResultsR13(
       if (fam === 'xref_same') return { cap: 2, pen: 50 };
       if (fam === 'scene_progress') return { cap: 3, pen: 45 };
       if (fam === 'explicit_interp') return { cap: 1, pen: 70 };
-      if (fam === 'wordplay') return { cap: 1, pen: 80 };
+      if (fam === 'wordplay') return { cap: 2, pen: 50 };
       if (fam === 'motif_chain') return { cap: 1, pen: 60 };
       return { cap: 2, pen: 45 };
     }
+    if (fam === 'wordplay' && ctx.queryIntent === 'lexical') return { cap: 2, pen: 40 };
     if (fam === 'wordplay' || fam === 'explicit_interp') return { cap: 1, pen: 75 };
     if (fam === 'motif_chain') return { cap: 2, pen: 55 };
     if (fam === 'prop_bridge') return { cap: 2, pen: 35 };
@@ -2632,8 +2671,13 @@ export async function discoverBiblicalConnections(
     const isResurrectionTerm = /^resurrect(?:ion|ed|ing)?$/.test(lower);
     const rawShardHits = await lookupShardToken(term);
     const filteredShardHits = isResurrectionTerm ? rawShardHits.filter(h => h.bs !== 'H2421') : rawShardHits;
+    const hasPrimaryHeadGloss = (hit: any) => {
+      const head = normalizeToken(String(hit.gl || '').split(/[:/,;(]/)[0] || '');
+      return head === lower;
+    };
     const shardHits = filteredShardHits.sort((a, b) =>
       Number(hasContextWitness(b)) - Number(hasContextWitness(a)) ||
+      Number(hasPrimaryHeadGloss(b)) - Number(hasPrimaryHeadGloss(a)) ||
       Number(b.cnt > 0) - Number(a.cnt > 0) ||
       Number(normalizeToken(b.gl || '') === lower) - Number(normalizeToken(a.gl || '') === lower) ||
       b.match_rank - a.match_rank || b.cnt - a.cnt);
@@ -2862,7 +2906,12 @@ export async function discoverBiblicalConnections(
             const nonNum = concept.lemmas.filter(l => l.strongs && !SMALL_NUMERAL_STRONGS.has(l.strongs) && !explicitNumberStrongsStage15.has(l.strongs));
             return nonNum.length > 0 ? nonNum : concept.lemmas;
           })()
-        : concept.lemmas;
+        : (concept.input_token.includes(' ')
+            ? [
+                ...concept.lemmas.filter(l => l.strongs && l.strongs !== 'H3117' && l.strongs !== 'G2250'),
+                ...concept.lemmas.filter(l => l.strongs === 'H3117' || l.strongs === 'G2250'),
+              ]
+            : concept.lemmas);
       const strongs = candidateLemmas[depth]?.strongs;
       if (strongs) prioritized.add(strongs);
     }
@@ -3313,22 +3362,44 @@ export async function discoverBiblicalConnections(
       });
     }
 
-    // D. Lexical relations
+    // D. Lexical relations (validate same-script consonant overlap >= 2 for shares_root and attach sample witnesses)
     const lexSense = resolveDisplaySense(prof, [], explicitToks);
     const profForLex = lexSense.lk === prof.lk && lexSense.gl === prof.gl
       ? prof
       : { ...prof, lk: lexSense.lk, sc: lexSense.sc, tr: lexSense.tr, gl: lexSense.gl };
+    const extractConsSet = (s: string) => {
+      const first = String(s || '').split(/[,;/]/)[0] || '';
+      return new Set(
+        [...first.normalize('NFD')]
+          .filter(ch => {
+            const cp = ch.codePointAt(0) || 0;
+            return (cp >= 0x05d0 && cp <= 0x05ea) || (cp >= 0x03b1 && cp <= 0x03c9) || (cp >= 0x0391 && cp <= 0x03a9);
+          })
+          .map(c => c.toLowerCase()),
+      );
+    };
+    const srcConsSet = extractConsSet(prof.sc);
     for (let idx = 0; idx < Math.min(5, (prof.lexical_relations || []).length); idx++) {
       const lrel = prof.lexical_relations[idx];
-      const targetProf = lrel.target_strongs && lrel.target_strongs !== prof.bs
-        ? profileByStrongs.get(lrel.target_strongs) || null
+      const tBs = String(lrel?.target_strongs || '');
+      if (lrel?.type === 'shares_root' && tBs && prof.bs[0] === tBs[0]) {
+        const tgtConsSet = extractConsSet(lrel.script || profileByStrongs.get(tBs)?.sc || '');
+        const sharedCount = [...tgtConsSet].filter(c => srcConsSet.has(c)).length;
+        if (sharedCount < 2) continue;
+      }
+      const targetProf = tBs && tBs !== prof.bs
+        ? profileByStrongs.get(tBs) || null
         : null;
+      const lexPassages = [
+        ...((prof.first_occ_passages || []).slice(0, 1)),
+        ...((targetProf?.first_occ_passages || []).slice(0, 1)),
+      ].filter((p, i, arr) => p && arr.findIndex(x => x.verse_id === p.verse_id) === i);
       allCandidates.push(buildLexicalRelationRecord({
         evidenceId: `r11:lex:${prof.bs}:${idx}`,
         prof: profForLex,
         lrel,
         targetProf,
-        passages: [],
+        passages: lexPassages,
         scoreComponents: {
           base_tier_score: TIER_BASE_SCORE[3],
           specificity_bonus: idfBonus + 80,
@@ -3822,6 +3893,14 @@ export async function discoverBiblicalConnections(
       }
     }
   }
+  const matchedMultiWordTokens = new Set<string>();
+  for (const rc of resolvedConcepts) {
+    if (rc.matched && rc.input_token.includes(' ')) {
+      for (const part of rc.input_token.toLowerCase().split(/\s+/)) {
+        if (part.length >= 3) matchedMultiWordTokens.add(part);
+      }
+    }
+  }
   const conceptGroups: Array<{
     term: string;
     profiles: LemmaProfile[];
@@ -3832,10 +3911,18 @@ export async function discoverBiblicalConnections(
   }> = [];
   for (const rc of resolvedConcepts) {
     if (!rc.matched) continue;
+    if (!rc.input_token.includes(' ') && matchedMultiWordTokens.has(rc.input_token.toLowerCase())) {
+      continue;
+    }
     let groupProfs = rc.lemmas
       .map(l => profileByStrongs.get(l.strongs || ''))
       .filter((p): p is LemmaProfile => Boolean(p));
-    if (rc.resolution_kind !== 'number' && explicitNumberStrongs.size > 0) {
+    if (rc.input_token.includes(' ') && groupProfs.length >= 2) {
+      const specificPhraseProfs = groupProfs.filter(p => (p.total_verses || 0) <= 360 && p.bs !== 'H3117' && p.bs !== 'G2250');
+      if (specificPhraseProfs.length > 0) {
+        groupProfs = specificPhraseProfs;
+      }
+    } else if (rc.resolution_kind !== 'number' && explicitNumberStrongs.size > 0) {
       const nonNumProfs = groupProfs.filter(p => !SMALL_NUMERAL_STRONGS.has(p.bs) && !explicitNumberStrongs.has(p.bs));
       if (nonNumProfs.length > 0) groupProfs = nonNumProfs;
     }
@@ -3903,10 +3990,15 @@ export async function discoverBiblicalConnections(
           const sortedShared = [...sharedVids].sort((v1, v2) => {
             const m1 = minCrossPairTotal(v1);
             const m2 = minCrossPairTotal(v2);
+            const b1 = bookForVid(v1);
+            const b2 = bookForVid(v2);
+            const isProphOrNt1 = (b1 >= 23 && b1 <= 39) || b1 >= 40;
+            const isProphOrNt2 = (b2 >= 23 && b2 <= 39) || b2 >= 40;
             return (
               Number(m1 < Infinity) - Number(m2 < Infinity) ||
               Number(contextVerseIds.has(v2)) - Number(contextVerseIds.has(v1)) ||
               m1 - m2 ||
+              (asksResurrection && asksDayNumber ? Number(isProphOrNt2) - Number(isProphOrNt1) : 0) ||
               v1 - v2
             );
           });
@@ -4235,6 +4327,8 @@ export async function discoverBiblicalConnections(
       }
     }
 
+    const isRawEnglishWordQuery = !isPassageOnlyQuery && parsedRefs.length === 0 && !/[HG]\d{3,5}/i.test(query.query || '');
+    if (isRawEnglishWordQuery && !multiConcept && matchedQueryTerms.length === 0) continue;
     const totalHits = matchedQueryTerms.length + Math.min(2, strongsOverlap) + passageOverlap * 2 + pericopeOverlap;
     if (totalHits === 0) continue;
     const rareStrongsOverlap = matchedStrongsLabels.filter(s => {
@@ -4614,6 +4708,7 @@ export async function discoverBiblicalConnections(
 
   // Algorithm A: r13_wordplay from loaded profiles
   const wpPerProfLimit = explicitWordplayQuery ? 6 : 3;
+  const emittedWpIds = new Set<string>();
   for (const prof of loadedProfiles.slice(0, 4)) {
     if (R13_WP_STOP_STRONGS.has(prof.bs)) continue;
     for (const lx of prof.lxx_relations || []) {
@@ -4626,11 +4721,11 @@ export async function discoverBiblicalConnections(
     if (Array.isArray(prof.r13_colloc)) {
       collocNeighborsForChain.set(
         prof.bs,
-        prof.r13_colloc.slice(0, 6).map(([tBs, cnt, npmi100]) => ({
+        prof.r13_colloc.slice(0, 6).map(([tBs, cnt, npmi100, , , , sampleRefs]: any) => ({
           target_bs: tBs,
           shared_count: cnt,
           npmi: npmi100 / 100,
-          sample_refs: [],
+          sample_refs: Array.isArray(sampleRefs) ? sampleRefs : [],
         })),
       );
     }
@@ -4641,19 +4736,25 @@ export async function discoverBiblicalConnections(
       if (wpAdded >= wpPerProfLimit) break;
       const wPassages = cachedOrStubPassages(edge.witness_vids || [], edge.witness_refs || [], 2);
       const baseWpRec = buildR13WordplayRecord(prof, edge, wPassages);
-      const wpDirectHit = Boolean(edge.has_explicit_cue) && recordWitnessesExplicitPassage(wPassages);
+      const wpSameVerseHit = Number(edge.proximity_same_verse || 0) > 0 && recordWitnessesExplicitPassage(wPassages);
+      const wpBothInPassage = isPassageOnlyQuery && matchedStrongs.has(prof.bs) && matchedStrongs.has(edge.target_bs);
+      const wpDirectHit = (Boolean(edge.has_explicit_cue) || wpSameVerseHit || wpBothInPassage) && (recordWitnessesExplicitPassage(wPassages) || wpBothInPassage);
       const wpExtraPen = isPassageOnlyQuery && !wpDirectHit ? 120 : 0;
-      const rec = wpExtraPen
+      const wpExactPassageBoost = isPassageOnlyQuery && wpDirectHit ? (wpBothInPassage ? 78 : 42) : 0;
+      const rec = (wpExtraPen || wpExactPassageBoost)
         ? {
             ...baseWpRec,
             score_components: {
               ...baseWpRec.score_components,
+              witness_bonus: baseWpRec.score_components.witness_bonus + wpExactPassageBoost,
               common_word_penalty: baseWpRec.score_components.common_word_penalty + wpExtraPen,
-              final_score: Math.max(10, baseWpRec.score_components.final_score - wpExtraPen),
+              final_score: Math.max(10, baseWpRec.score_components.final_score + wpExactPassageBoost - wpExtraPen),
             },
           }
         : baseWpRec;
       allCandidates.push(rec);
+      emittedWpIds.add(rec.evidence_id);
+      emittedWpIds.add(`r13:wp:${edge.target_bs}:${prof.bs}`);
       wpAdded++;
       if (wordplayForChain.length < 6 && (edge.has_explicit_cue || Number(edge.score || 0) >= 0.72)) {
         wordplayForChain.push({
@@ -4666,13 +4767,52 @@ export async function discoverBiblicalConnections(
       }
     }
     if ((prof.total_verses || 0) <= 1800 || query.focus_lemma === prof.bs) {
-      for (const [tBs, sharedCount, npmi100, sampleVids] of (prof.r13_colloc || []).slice(0, 3)) {
-        const cPassages = cachedOrStubPassages(sampleVids || [], [], 2);
+      for (const tuple of (prof.r13_colloc || []).slice(0, 3) as any[]) {
+        const [tBs, sharedCount, npmi100, sampleVids, tSc, tGl, sampleRefs] = tuple;
+        const cPassages = cachedOrStubPassages(sampleVids || [], Array.isArray(sampleRefs) ? sampleRefs : [], 2);
+        const tProfOrFallback =
+          profileByStrongs.get(tBs) ||
+          (tSc || tGl ? { sc: String(tSc || tBs), tr: '', gl: String(tGl || ''), lang: languageFromStrongs(tBs, prof.lang) } : null);
         allCandidates.push(
           demoteR13IfBackground(
-            buildR13CollocRecord(prof, tBs, profileByStrongs.get(tBs) || null, sharedCount, npmi100, cPassages),
+            buildR13CollocRecord(prof, tBs, tProfOrFallback, sharedCount, npmi100, cPassages),
           ),
         );
+      }
+    }
+  }
+
+  // Passage-scoped wordplay scan across ALL loadedProfiles (so in-passage pairs like Genesis 4:10-11 H1818 דָּם ↔ H0127 אֲדָמָה are never dropped by slice(0, 4) or wpPerProfLimit)
+  if (explicitPassageVidSet.size > 0 && queryIntent !== 'physical_bridge') {
+    for (const prof of loadedProfiles) {
+      if (R13_WP_STOP_STRONGS.has(prof.bs)) continue;
+      for (const edge of prof.r13_wordplay || []) {
+        if (!edge?.target_bs || R13_WP_STOP_STRONGS.has(edge.target_bs)) continue;
+        const evId = `r13:wp:${prof.bs}:${edge.target_bs}`;
+        if (emittedWpIds.has(evId)) continue;
+        const witnessesExplicit = (edge.witness_vids || []).some((v: number) => explicitPassageVidSet.has(Number(v)));
+        const bothInPassage = matchedStrongs.has(prof.bs) && matchedStrongs.has(edge.target_bs);
+        if (!witnessesExplicit && !bothInPassage) continue;
+        const wPassages = cachedOrStubPassages(
+          witnessesExplicit
+            ? (edge.witness_vids || []).filter((v: number) => explicitPassageVidSet.has(Number(v))).concat(edge.witness_vids || [])
+            : (edge.witness_vids || []),
+          edge.witness_refs || [],
+          2,
+        );
+        const baseWpRec = buildR13WordplayRecord(prof, edge, wPassages);
+        const wpBoost = bothInPassage ? 85 : 52;
+        const rec = {
+          ...baseWpRec,
+          score_components: {
+            ...baseWpRec.score_components,
+            witness_bonus: baseWpRec.score_components.witness_bonus + wpBoost,
+            final_score: baseWpRec.score_components.final_score + wpBoost,
+          },
+        };
+        allCandidates.push(rec);
+        emittedWpIds.add(evId);
+        emittedWpIds.add(`r13:wp:${edge.target_bs}:${prof.bs}`);
       }
     }
   }
@@ -4681,7 +4821,9 @@ export async function discoverBiblicalConnections(
   const selfInterpsAll = explicitData.r13_self_interpretations || [];
   if (selfInterpsAll.length > 0 && queryIntent !== 'physical_bridge') {
     for (const si of selfInterpsAll) {
-      const exactVerseHit = explicitPassageVidSet.has(si.verse_id);
+      const exactVerseHit =
+        explicitPassageVidSet.has(si.verse_id) ||
+        (si.witness_vids || []).some((v: number) => explicitPassageVidSet.has(Number(v)));
       if (isPassageOnlyQuery && !exactVerseHit) continue;
       const symMatches = si.symbol_strongs.filter(s => matchedStrongs.has(s));
       const allMatchedHits = [...new Set([...symMatches, ...si.referent_strongs.filter(s => matchedStrongs.has(s))])];
@@ -4741,7 +4883,7 @@ export async function discoverBiblicalConnections(
         for (const m of motifList.slice(0, 3)) {
           matchedR13MotifObjs.push(m);
           matchedMotifs.add(m.motif_id);
-          const mPassages = cachedOrStubPassages((m.witness_vids || []).slice(0, 3), [], 3);
+          const mPassages = cachedOrStubPassages((m.witness_vids || []).slice(0, 3), Array.isArray(m.witness_refs) ? m.witness_refs : [], 3);
           allCandidates.push(demoteR13IfBackground(buildR13MotifRecord(m, mPassages, profileByStrongs)));
         }
       }
@@ -4858,13 +5000,86 @@ export async function discoverBiblicalConnections(
     const isPericope = record.provenance.derivation_method === 'pericope_window_intersection';
     const coveredByVerse = record.passages.some(p => conceptGroups.filter(g => g.vids.has(p.verse_id)).length >= 2);
     const coveredByPericope = isPericope && conceptGroups.filter(g => record.passages.some(p => g.vids.has(p.verse_id))).length >= 2;
-    if (!coveredByVerse && !coveredByPericope) return 'background';
-    if (governingGroups.length > 0 && !governingGroups.some(g => recordCoversGroup(record, g))) {
+    const isExplicitMultiConceptRecord =
+      record.evidence_id.startsWith('r10:') &&
+      conceptGroups.length >= 4 &&
+      conceptGroups.filter(g => recordCoversGroup(record, g)).length >= 3;
+    if (!coveredByVerse && !coveredByPericope && !isExplicitMultiConceptRecord) return 'background';
+    if (governingGroups.length > 0 && !isExplicitMultiConceptRecord && !governingGroups.some(g => recordCoversGroup(record, g))) {
       return 'background';
     }
     return 'meaningful_subset';
   };
   filtered = scoreCandidatesR13(filtered, { supportClass, queryIntent });
+
+  // Multichannel Reciprocal Rank Fusion (RRF) synergy bonus across independent discovery channels
+  const classifyDiscoveryChannel = (rec: R10EvidenceRecord): DiscoveryChannelName => {
+    const id = rec.evidence_id || '';
+    if (id.startsWith('r13:wp:') || id.startsWith('r11:orth:') || rec.predicate === 'orthographic_wordplay' || rec.predicate === 'orthographic_overlap') {
+      return 'wordplay_consonantal';
+    }
+    if (id.startsWith('r13:si:') || id.startsWith('r10:ident:') || id.startsWith('r13:symchain:') || rec.predicate === 'explicit_identification') {
+      return 'symbolic_self_interpretation';
+    }
+    if (id.startsWith('r11:lxx:')) return 'lxx_greek_bridge';
+    if (id.startsWith('r11:lex:') || rec.evidence_type === 'documented_root_family') return 'root_morphology';
+    if (id.startsWith('r13:colloc:') || id.startsWith('r11:colloc:')) return 'collocation_pmi';
+    if (id.startsWith('r11:scene:') || id.startsWith('r11:gram:') || rec.predicate === 'structural_scene_parallel') {
+      return 'structural_clause_frame';
+    }
+    if (id.startsWith('r13:motif:') || id.startsWith('r10:motif:') || rec.predicate === 'shared_motif') {
+      return 'motif_cluster';
+    }
+    if (id.startsWith('r11:xref:')) return 'cross_reference';
+    if (id.startsWith('r12:prop:')) return 'genealogy_proper_noun';
+    return 'exact_lemma_rarity';
+  };
+  const deriveMultichannelTargetKey = (rec: R10EvidenceRecord): string => {
+    if (rec.source_node_id.startsWith('lemma:') && rec.target_node_id.startsWith('lemma:') && rec.source_node_id !== rec.target_node_id) {
+      return [rec.source_node_id, rec.target_node_id].sort().join('<->');
+    }
+    const pRefs = (rec.passages || []).map((p) => p.ref).filter(Boolean);
+    if (pRefs.length >= 2) return `passages:${[pRefs[0], pRefs[1]].sort().join('<->')}`;
+    if (rec.target_node_id) return rec.target_node_id;
+    return rec.evidence_id;
+  };
+  const channelBuckets = new Map<DiscoveryChannelName, Array<{ rec: R10EvidenceRecord; targetKey: string }>>();
+  for (const rec of filtered) {
+    const ch = classifyDiscoveryChannel(rec);
+    const targetKey = deriveMultichannelTargetKey(rec);
+    let arr = channelBuckets.get(ch);
+    if (!arr) { arr = []; channelBuckets.set(ch, arr); }
+    arr.push({ rec, targetKey });
+  }
+  const rrfEntries: MultichannelCandidateEntry[] = [];
+  for (const [ch, list] of channelBuckets) {
+    list.sort((a, b) => b.rec.score_components.final_score - a.rec.score_components.final_score);
+    for (let idx = 0; idx < list.length; idx++) {
+      rrfEntries.push({
+        target_key: list[idx].targetKey,
+        channel: ch,
+        rank: idx + 1,
+        raw_score: list[idx].rec.score_components.final_score,
+        connection_id: list[idx].rec.evidence_id,
+      });
+    }
+  }
+  const rrfFused = fuseMultichannelCandidatesRrf(rrfEntries, 60);
+  filtered = filtered.map((rec) => {
+    if (rec.predicate === 'orthographic_overlap' || rec.evidence_tier >= 5) return rec;
+    const targetKey = deriveMultichannelTargetKey(rec);
+    const fused = rrfFused.get(targetKey);
+    if (!fused || fused.channel_count < 2 || fused.synergy_bonus <= 0) return rec;
+    return {
+      ...rec,
+      score_components: {
+        ...rec.score_components,
+        witness_bonus: rec.score_components.witness_bonus + fused.synergy_bonus,
+        final_score: rec.score_components.final_score + fused.synergy_bonus,
+      },
+    };
+  });
+
   const supportRank = { all_concepts: 2, meaningful_subset: 1, background: 0 };
   filtered.sort((a, b) => supportRank[supportClass(b)] - supportRank[supportClass(a)] ||
     b.score_components.final_score - a.score_components.final_score || a.evidence_tier - b.evidence_tier);
@@ -6123,9 +6338,20 @@ export async function getConnectionEvidence(
       const wp = (prof?.r13_wordplay || []).find((e: any) => e.target_bs === targetBs);
       if (prof && wp) {
         const wPassages: R10PassageRef[] = [];
-        for (const vid of (wp.witness_vids || []).slice(0, 3)) {
-          const hp = await hydratePassageByVid(Number(vid), false);
+        const witnessVidList = [...new Set<number>((wp.witness_vids || []).map((x: unknown) => Number(x)).filter(Boolean))];
+        for (const vid of witnessVidList.slice(0, 4)) {
+          const hp = await hydratePassageByVid(vid, true);
           if (hp) wPassages.push(hp);
+        }
+        // E01 completeness fallback: if an adjacent-verse wordplay stored only the first verse, inspect vid + 1 in same book
+        if (wPassages.length === 1 && Number(wp.proximity_adjacent_verse || 0) > 0 && witnessVidList[0]) {
+          const v0 = witnessVidList[0];
+          const bVerses = bookCache.get(wPassages[0].book);
+          const v1 = v0 + 1;
+          if (bVerses?.[String(v1)]?.toks?.some((t: any) => t?.s === targetBs || t?.s === bs)) {
+            const hp1 = await hydratePassageByVid(v1, false);
+            if (hp1) wPassages.push(hp1);
+          }
         }
         record = buildR13WordplayRecord(prof, wp, wPassages);
       }
@@ -6372,13 +6598,15 @@ export async function getConnectionEvidence(
     const vData = (p.verse_id ? bVerses?.[String(p.verse_id)] : null) ||
       Object.values(bVerses || {}).find((v: any) => v.chapter === p.chapter && v.verse === p.verse);
     const tokens = (vData?.toks || []).map((t: any) => ({
+      ...(t.wid !== undefined ? { word_id: Number(t.wid) } : {}),
       word_no: t.wn,
       surface: t.sf,
       lemma: t.lm,
+      ...(t.lk ? { lemma_key: t.lk } : {}),
       strongs: t.s,
       gloss: t.g,
       grammar: t.cl || undefined,
-      is_highlighted: targetStrongs.has(t.s),
+      is_highlighted: targetStrongs.has(t.s) || (Array.isArray(t.all_s) && t.all_s.some((s: string) => targetStrongs.has(s))),
     }));
     return {
       passage: {

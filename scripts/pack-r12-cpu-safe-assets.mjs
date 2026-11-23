@@ -122,6 +122,84 @@ for (const f of verseFiles) {
 assert.equal(verseMap.size, 31203, `Expected 31203 verses in verseMap, got ${verseMap.size}`);
 console.log(`Loaded ${verseMap.size} verses (${Date.now() - tStart} ms).`);
 
+const vidByBookChVs = new Map();
+for (const [vid, v] of verseMap) {
+  vidByBookChVs.set(`${v.book}:${v.chapter}:${v.verse}`, vid);
+}
+
+// Reconcile fast-verses tokens against canonical r8-v1.2/chapter-lite (E07 canonical identity & stem lemma_keys)
+const verseStemLemmaKeys = new Map(); // vid -> Map<baseStrongs, Set<lowerLemmaKey>>
+const r8Dir = path.join(root, 'v2/relationships/r8-v1.2');
+const r8ChapterLiteDir = path.join(r8Dir, 'chapter-lite');
+const packedChCache = new Map();
+const readPackedCh = ([blob, start, len]) => {
+  const bp = path.join(r8Dir, blob);
+  let buf = packedChCache.get(bp);
+  if (!buf) { buf = fs.readFileSync(bp); packedChCache.set(bp, buf); }
+  const slice = buf.subarray(start, start + len);
+  const raw = slice[0] === 0x1f && slice[1] === 0x8b ? zlib.gunzipSync(slice) : slice;
+  return JSON.parse(raw);
+};
+let reconciledTokenCount = 0;
+if (fs.existsSync(r8ChapterLiteDir)) {
+  for (const sf of fs.readdirSync(r8ChapterLiteDir).filter((x) => x.endsWith('.json.gz')).sort()) {
+    const shard = readGzJson(path.join(r8ChapterLiteDir, sf));
+    const entryPairs = shard.entries ? Object.entries(shard.entries).map(([k, ptr]) => [k, readPackedCh(ptr)]) : [];
+    for (const [chKey, chData] of entryPairs) {
+      const [bkStr, chStr] = chKey.split(':');
+      for (const [vsStr, vObj] of Object.entries(chData || {})) {
+        const vid = vidByBookChVs.get(`${bkStr}:${chStr}:${vsStr}`);
+        if (!vid || !Array.isArray(vObj?.t)) continue;
+        let m = verseStemLemmaKeys.get(vid);
+        if (!m) { m = new Map(); verseStemLemmaKeys.set(vid, m); }
+        const vEntry = verseMap.get(vid);
+        const tokByWn = new Map();
+        for (const t of vEntry?.toks || []) {
+          if (t?.wn != null) tokByWn.set(Number(t.wn), t);
+        }
+        for (const row of vObj.t) {
+          const wn = Number(row?.[0]);
+          const wid = Number(row?.[1]);
+          const bs = padStrongsBase(row?.[3]);
+          if (!bs) continue;
+          const morphArr = Array.isArray(row?.[4]) ? row[4] : [];
+          let stemLk = '';
+          for (const part of morphArr) {
+            if (!Array.isArray(part) || part.length < 2) continue;
+            const role = String(part[0] || '');
+            const lk = String(part[1] || '').toLowerCase();
+            if (!lk || /^lemma:h90/.test(lk)) continue;
+            if (role === 'stem' || role === '' || morphArr.length === 1) {
+              if (!stemLk) stemLk = String(part[1] || '');
+              let s = m.get(bs); if (!s) { s = new Set(); m.set(bs, s); }
+              s.add(lk);
+            }
+          }
+          const tok = tokByWn.get(wn);
+          if (tok) {
+            if (Number.isFinite(wid) && wid > 0) tok.wid = wid;
+            if (stemLk) tok.lk = stemLk;
+            const prevBs = padStrongsBase(tok.s);
+            const allSet = new Set(Array.isArray(tok.all_s) ? tok.all_s.map(padStrongsBase).filter(Boolean) : []);
+            if (prevBs) allSet.add(prevBs);
+            allSet.add(bs);
+            if (allSet.size > 1 || Array.isArray(tok.all_s)) {
+              tok.all_s = [...allSet];
+            }
+            if (prevBs !== bs) {
+              tok.s = bs;
+              tok._reconciledBs = bs;
+              reconciledTokenCount++;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+packedChCache.clear();
+console.log(`Loaded chapter-lite stem lemma_keys for ${verseStemLemmaKeys.size} verses (reconciled ${reconciledTokenCount} canonical token Strong's).`);
+
 const orthMap = new Map();
 const pilot = readGzJson(path.join(r10Dir, 'r12-pilot.json.gz'));
 assert.ok((pilot.pilot_anchors?.length || 0) >= 48, `Expected >= 48 pilot_anchors`);
@@ -162,6 +240,15 @@ if (versesOnly) {
     }
   }
   assert.equal(baseProfByBs.size, 19566, `Expected 19566 base profiles, got ${baseProfByBs.size}`);
+  for (const v of verseMap.values()) {
+    for (const tok of v.toks || []) {
+      if (tok?._reconciledBs) {
+        const canonSc = baseProfByBs.get(tok._reconciledBs)?.sc;
+        if (canonSc) tok.lm = String(canonSc).split(/[,;/]/)[0].trim() || tok.lm;
+        delete tok._reconciledBs;
+      }
+    }
+  }
 } else {
 console.log('Loading orthographic shards...');
 const orthDir = path.join(r10Dir, 'orthographic');
@@ -714,6 +801,7 @@ for (const l of tblLemmas) {
 }
 const rootKeysByBs = new Map();
 for (const rl of tblRootLinks) {
+  if (rl.etymology_type === 'shared_name_base' || rl.etymology_type === 'group_member_of') continue;
   const lm = lemmaMetaById.get(rl.lemma_id);
   const rk = rootKeyById.get(rl.root_id);
   if (!lm?.bs || !rk) continue;
@@ -722,15 +810,90 @@ for (const rl of tblRootLinks) {
   if (!arr.includes(rk)) arr.push(rk);
 }
 const formationTargetsByBs = new Map();
+const addBidirectionalFormation = (aBs, bBs) => {
+  if (!aBs || !bBs || aBs === bBs) return;
+  let arrA = formationTargetsByBs.get(aBs);
+  if (!arrA) { arrA = []; formationTargetsByBs.set(aBs, arrA); }
+  if (!arrA.includes(bBs)) arrA.push(bBs);
+  let arrB = formationTargetsByBs.get(bBs);
+  if (!arrB) { arrB = []; formationTargetsByBs.set(bBs, arrB); }
+  if (!arrB.includes(aBs)) arrB.push(aBs);
+};
 for (const fm of tblFormations) {
   const lm = lemmaMetaById.get(fm.lemma_id);
   if (!lm?.bs) continue;
   const refs = String(fm.evidence_note || '').match(/\b[HG]\d{3,5}\b/g) || [];
-  let arr = formationTargetsByBs.get(lm.bs);
-  if (!arr) { arr = []; formationTargetsByBs.set(lm.bs, arr); }
   for (const rawBs of refs) {
     const tBs = padStrongsBase(rawBs);
-    if (tBs && tBs !== lm.bs && !arr.includes(tBs)) arr.push(tBs);
+    if (tBs && tBs !== lm.bs) addBidirectionalFormation(lm.bs, tBs);
+  }
+}
+
+// Enrich Hebrew derivation links from CC BY 4.0 Open Scriptures HebrewStrong.xml (requiring >= 2 shared Hebrew consonants)
+const oshbXmlPath = path.resolve('.artifacts-r12/external-cache/oshb-lexicon/HebrewStrong.xml');
+let oshbAddedLinks = 0;
+const extractScriptConsonants = (s) => {
+  const first = String(s || '').split(/[,;/]/)[0] || '';
+  return [...first.normalize('NFD')].filter((ch) => {
+    const cp = ch.codePointAt(0) || 0;
+    return (cp >= 0x05d0 && cp <= 0x05ea) || (cp >= 0x03b1 && cp <= 0x03c9) || (cp >= 0x0391 && cp <= 0x03a9);
+  }).map((c) => c.toLowerCase());
+};
+if (fs.existsSync(oshbXmlPath)) {
+  const xmlText = fs.readFileSync(oshbXmlPath, 'utf8');
+  const entryRe = /<entry id="(H\d+)">([\s\S]*?)<\/entry>/g;
+  let em;
+  while ((em = entryRe.exec(xmlText)) !== null) {
+    const srcBs = padStrongsBase(em[1]);
+    if (!srcBs) continue;
+    const body = em[2];
+    const srcBlockMatch = /<source>([\s\S]*?)<\/source>/.exec(body);
+    if (!srcBlockMatch) continue;
+    const srcBlock = srcBlockMatch[1];
+    if (/foreign origin|uncertain derivation/i.test(srcBlock)) continue;
+    const srcProf = baseProfByBs.get(srcBs);
+    const srcCons = new Set(extractScriptConsonants(srcProf?.sc));
+    if (srcCons.size < 2) continue;
+    const refRe = /src="(H\d+)"/g;
+    let rm;
+    while ((rm = refRe.exec(srcBlock)) !== null) {
+      const tBs = padStrongsBase(rm[1]);
+      if (!tBs || tBs === srcBs) continue;
+      const tProf = baseProfByBs.get(tBs);
+      const tCons = extractScriptConsonants(tProf?.sc);
+      const shared = [...new Set(tCons.filter((c) => srcCons.has(c)))];
+      if (shared.length < 2) continue;
+      const beforeLen = (formationTargetsByBs.get(srcBs) || []).length;
+      addBidirectionalFormation(srcBs, tBs);
+      if ((formationTargetsByBs.get(srcBs) || []).length > beforeLen) oshbAddedLinks++;
+    }
+  }
+  console.log(`Enriched formationTargetsByBs with ${oshbAddedLinks} bidirectional consonant-verified links from Open Scriptures HebrewStrong.xml (CC BY 4.0).`);
+}
+
+// Build per-homograph lemma_key contextual gloss map across all verses (EV13 H3722 sense preservation)
+const homographGlossCountsByBs = new Map(); // bs -> Map<lk, Map<cleanGloss, count>>
+for (const v of verseMap.values()) {
+  for (const tok of v.toks || []) {
+    if (tok?._reconciledBs) {
+      const canonSc = baseProfByBs.get(tok._reconciledBs)?.sc;
+      if (canonSc) tok.lm = String(canonSc).split(/[,;/]/)[0].trim() || tok.lm;
+      delete tok._reconciledBs;
+    }
+    const bs = padStrongsBase(tok?.s);
+    const lk = String(tok?.lk || '').trim();
+    const rawG = String(tok?.g || '')
+      .replace(/^\([^)]+\)\s*/, '')
+      .replace(/^(?:and|the|a|an|in|to|from|with|for|of|on)\s+/i, '')
+      .replace(/\./g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (!bs || !lk || !rawG || rawG.length < 2) continue;
+    let byLk = homographGlossCountsByBs.get(bs);
+    if (!byLk) { byLk = new Map(); homographGlossCountsByBs.set(bs, byLk); }
+    let gMap = byLk.get(lk);
+    if (!gMap) { gMap = new Map(); byLk.set(lk, gMap); }
+    gMap.set(rawG, (gMap.get(rawG) || 0) + 1);
   }
 }
 
@@ -843,8 +1006,74 @@ for (const prof of rawProfilesList) {
     }
   }
 
+  // Filter legacy prof.lexical_relations against rootKeysByBs & >= 2 shared consonants for same-language roots (EV05),
+  // and enrich with consonant-verified formationTargetsByBs links (e.g. H8247 <-> H8245, H8246 <-> H8247)
+  const myRoots = new Set(rootKeysByBs.get(prof.bs) || []);
+  const myFormTargets = new Set(formationTargetsByBs.get(prof.bs) || []);
+  const myCons = new Set(extractScriptConsonants(prof.sc));
+  const cleanedLexRels = [];
+  const seenLexTarget = new Set();
+  for (const lr of prof.lexical_relations || []) {
+    const tBs = padStrongsBase(lr?.target_strongs);
+    if (!tBs || tBs === prof.bs || seenLexTarget.has(tBs)) continue;
+    const tProf = baseProfByBs.get(tBs);
+    if (lr.type === 'shares_root') {
+      const tRoots = rootKeysByBs.get(tBs) || [];
+      const hasVerifiedSharedRoot = tRoots.some((rk) => myRoots.has(rk)) || myFormTargets.has(tBs);
+      if (!hasVerifiedSharedRoot) continue;
+      if (prof.bs[0] === tBs[0]) {
+        const tCons = extractScriptConsonants(tProf?.sc || lr.script);
+        const sharedC = [...new Set(tCons.filter((c) => myCons.has(c)))];
+        if (sharedC.length < 2) continue;
+      }
+    }
+    seenLexTarget.add(tBs);
+    cleanedLexRels.push(lr);
+  }
+  for (const tBs of myFormTargets) {
+    if (seenLexTarget.has(tBs)) continue;
+    const tProf = baseProfByBs.get(tBs);
+    if (!tProf) continue;
+    if (prof.bs[0] === tBs[0]) {
+      const tCons = extractScriptConsonants(tProf.sc);
+      const sharedC = [...new Set(tCons.filter((c) => myCons.has(c)))];
+      if (sharedC.length < 2) continue;
+    }
+    seenLexTarget.add(tBs);
+    cleanedLexRels.push({
+      type: 'derived_from_root_anchor',
+      root: String(tProf.sc || '').split(/[,;/]/)[0].trim(),
+      target_strongs: tBs,
+      script: tProf.sc || '',
+      gloss: tProf.gl || '',
+    });
+  }
+
+  // Enrich senses with distinct homograph lemma_keys when multiple homographs exist on this base Strong's (EV13 H3722)
+  const existingSenses = Array.isArray(prof.senses) ? [...prof.senses] : [];
+  const byLk = homographGlossCountsByBs.get(prof.bs);
+  if (byLk && byLk.size >= 2) {
+    const existingKeys = new Set(existingSenses.map((s) => String(s?.key || '').toLowerCase()));
+    for (const [lk, gMap] of [...byLk.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
+      const topGlosses = [...gMap.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 2)
+        .map(([g]) => g);
+      if (topGlosses.length === 0) continue;
+      const senseKey = lk.replace(/^lemma:/i, 'sense:') + ':contextual';
+      if (!existingKeys.has(senseKey.toLowerCase()) && !existingKeys.has(lk.toLowerCase())) {
+        existingSenses.push({
+          key: lk,
+          gl: topGlosses.join(' / '),
+        });
+      }
+    }
+  }
+
   const enriched = {
     ...prof,
+    senses: existingSenses,
+    lexical_relations: cleanedLexRels,
     first_occ_passages: firstOccPassages,
   };
   const orthEntry = orthMap.get(prof.bs);
@@ -912,6 +1141,9 @@ for (const prof of rawProfilesList) {
       c.shared_count,
       Math.round(c.npmi * 100),
       c.sample_vids.slice(0, 3),
+      baseProfByBs.get(c.target_bs)?.sc || '',
+      baseProfByBs.get(c.target_bs)?.gl || '',
+      c.sample_vids.slice(0, 3).map((vid) => verseMap.get(vid)?.ref).filter(Boolean),
     ]);
   }
   if (profMotifIds.length > 0) {
@@ -1039,7 +1271,7 @@ const SYNONYM_AND_PHRASE_MAPPINGS = {
   'pillar of cloud': ['H5982', 'H6051'],
   'pillar of fire': ['H5982', 'H0784'],
   'third day': ['H7992', 'H3117', 'G5154', 'G2250'],
-  'three days': ['H7969', 'H3117', 'G5140', 'G2250'],
+  'three days': ['H7969', 'H7992', 'H3117', 'G5140', 'G5154', 'G2250'],
   'bread of life': ['H3899', 'H2416', 'G0740', 'G2222'],
   'good shepherd': ['H7462', 'G4166', 'G2570'],
   'new covenant': ['H1285', 'H2319', 'G1242', 'G2537'],
@@ -1164,7 +1396,6 @@ function phraseSpecificityBonus(phrase) {
 }
 
 const verseContentMap = new Map(); // vid -> { set: Set<string>, list: string[] }
-const vidByBookChVs = new Map();
 const chapterVidsMap = new Map(); // "book:chapter" -> number[]
 for (const [vid, v] of verseMap) {
   vidByBookChVs.set(`${v.book}:${v.chapter}:${v.verse}`, vid);
@@ -1358,52 +1589,6 @@ for (const [vid, entry] of rawByVid) {
   }
 }
 console.log(`Indexed evidence-weighted top-28 xrefs across ${embeddedXrefsByVid.size} verses (${totalEmbeddedXrefs} links).`);
-
-// Load chapter-lite per-verse stem lemma_keys so homograph proper-name checks inspect the actual verse token
-const verseStemLemmaKeys = new Map(); // vid -> Map<baseStrongs, Set<lowerLemmaKey>>
-const r8Dir = path.join(root, 'v2/relationships/r8-v1.2');
-const r8ChapterLiteDir = path.join(r8Dir, 'chapter-lite');
-const packedChCache = new Map();
-const readPackedCh = ([blob, start, len]) => {
-  const bp = path.join(r8Dir, blob);
-  let buf = packedChCache.get(bp);
-  if (!buf) { buf = fs.readFileSync(bp); packedChCache.set(bp, buf); }
-  const slice = buf.subarray(start, start + len);
-  const raw = slice[0] === 0x1f && slice[1] === 0x8b ? zlib.gunzipSync(slice) : slice;
-  return JSON.parse(raw);
-};
-if (fs.existsSync(r8ChapterLiteDir)) {
-  for (const sf of fs.readdirSync(r8ChapterLiteDir).filter((x) => x.endsWith('.json.gz')).sort()) {
-    const shard = readGzJson(path.join(r8ChapterLiteDir, sf));
-    const entryPairs = shard.entries ? Object.entries(shard.entries).map(([k, ptr]) => [k, readPackedCh(ptr)]) : [];
-    for (const [chKey, chData] of entryPairs) {
-      const [bkStr, chStr] = chKey.split(':');
-      for (const [vsStr, vObj] of Object.entries(chData || {})) {
-        const vid = vidByBookChVs.get(`${bkStr}:${chStr}:${vsStr}`);
-        if (!vid || !Array.isArray(vObj?.t)) continue;
-        let m = verseStemLemmaKeys.get(vid);
-        if (!m) { m = new Map(); verseStemLemmaKeys.set(vid, m); }
-        for (const row of vObj.t) {
-          const bs = padStrongsBase(row?.[3]);
-          if (!bs) continue;
-          const morphArr = Array.isArray(row?.[4]) ? row[4] : [];
-          for (const part of morphArr) {
-            if (!Array.isArray(part) || part.length < 2) continue;
-            const role = String(part[0] || '');
-            const lk = String(part[1] || '').toLowerCase();
-            if (!lk || /^lemma:h90/.test(lk)) continue;
-            if (role === 'stem' || role === '' || morphArr.length === 1) {
-              let s = m.get(bs); if (!s) { s = new Set(); m.set(bs, s); }
-              s.add(lk);
-            }
-          }
-        }
-      }
-    }
-  }
-}
-packedChCache.clear();
-console.log(`Loaded exact chapter-lite stem lemma_keys for ${verseStemLemmaKeys.size} verses.`);
 
 // Build Stream A (clause-aligned rare-lemma scene), Stream B (verified proper-name pericope bridge), Stream C (forward progression)
 const conceptIdxForUsfm = readGzJson(path.join(r10Dir, 'concept-index.json.gz'));
@@ -1924,9 +2109,272 @@ const expSizes = writeGzJsonAtomic(expPath, {
 }, 1);
 
 const eventKeywords = [...new Set((mp.events || []).flatMap((e) => e.keywords || []).map((k) => String(k).toLowerCase()))];
-const r13MotifById = Object.fromEntries(minedMotifsRes.motifs.map((m) => [m.motif_id, m]));
+const r13MotifById = Object.fromEntries(
+  minedMotifsRes.motifs.map((m) => [
+    m.motif_id,
+    {
+      ...m,
+      witness_refs: (m.witness_vids || []).slice(0, 6).map((vid) => verseMap.get(vid)?.ref).filter(Boolean),
+      node_meta: (m.nodes || []).map((bs) => {
+        const bp = baseProfByBs.get(bs);
+        return [bs, bp?.sc || '', bp?.gl || ''];
+      }),
+    },
+  ]),
+);
 const r13MotifsByBs = Object.fromEntries(minedMotifsRes.motifIdsByBs);
 const r13MotifsByVid = Object.fromEntries(minedMotifsRes.motifIdsByVid);
+
+// Build compact lxx_token_lexicon (E10) and genealogy_index (CC BY 4.0) inside motifs-and-patterns.json.gz (0 new files)
+const normalizeGreekToken = (w) =>
+  String(w || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z\u0370-\u03ff\u1f00-\u1fff]/gi, '')
+    .toLowerCase();
+
+const hebToGreekMap = new Map(); // Hxxxx -> Map<Gxxxx, count>
+const referencedGreekSet = new Set();
+const extraGreekScripts = new Map(); // Gxxxx -> Set<normForm>
+
+const lxxBridgeTsvPath = path.resolve('data/sources/bcv-lxx-bridge/lxx_bridge.tsv');
+if (fs.existsSync(lxxBridgeTsvPath)) {
+  const lines = fs.readFileSync(lxxBridgeTsvPath, 'utf8').split(/\r?\n/);
+  for (let i = 1; i < lines.length; i++) {
+    const parts = lines[i].trim().split('\t');
+    if (parts.length < 2) continue;
+    const hBs = padStrongsBase(parts[0]);
+    const gBs = padStrongsBase(parts[1]);
+    const cnt = Math.max(1, Number(parts[2]) || 1);
+    if (!hBs.startsWith('H') || !gBs.startsWith('G')) continue;
+    let gm = hebToGreekMap.get(hBs);
+    if (!gm) { gm = new Map(); hebToGreekMap.set(hBs, gm); }
+    gm.set(gBs, Math.max(gm.get(gBs) || 0, cnt));
+    referencedGreekSet.add(gBs);
+  }
+}
+for (const [bs, prof] of baseProfByBs) {
+  if (!bs.startsWith('H')) continue;
+  for (const lr of prof.lxx_relations || []) {
+    const gBs = padStrongsBase(lr.target_strongs);
+    if (!gBs.startsWith('G')) continue;
+    const cnt = Math.max(1, Number(lr.count) || 2);
+    let gm = hebToGreekMap.get(bs);
+    if (!gm) { gm = new Map(); hebToGreekMap.set(bs, gm); }
+    gm.set(gBs, Math.max(gm.get(gBs) || 0, cnt));
+    referencedGreekSet.add(gBs);
+    if (lr.script) {
+      const nf = normalizeGreekToken(lr.script);
+      if (nf.length >= 2) {
+        let s = extraGreekScripts.get(gBs);
+        if (!s) { s = new Set(); extraGreekScripts.set(gBs, s); }
+        s.add(nf);
+      }
+    }
+  }
+}
+const hebrewToGreek = {};
+for (const [hBs, gm] of hebToGreekMap) {
+  const topPairs = [...gm.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .slice(0, 8);
+  if (topPairs.length > 0) hebrewToGreek[hBs] = topPairs;
+}
+const greekForms = {};
+for (const gBs of referencedGreekSet) {
+  const gProf = baseProfByBs.get(gBs);
+  const formsSet = new Set(extraGreekScripts.get(gBs) || []);
+  if (gProf?.sc) {
+    for (const part of String(gProf.sc).split(/[,;/]/)) {
+      const nf = normalizeGreekToken(part);
+      if (nf.length >= 2) formsSet.add(nf);
+    }
+  }
+  for (const f of gProf?.forms || []) {
+    if (formsSet.size >= 24) break;
+    const nf = normalizeGreekToken(f?.sf);
+    if (nf.length >= 2) formsSet.add(nf);
+  }
+  if (formsSet.size > 0) greekForms[gBs] = [...formsSet].slice(0, 24);
+}
+
+// Compute corpus-wide Hebrew Strong's -> LXX Swete Greek normalized token co-occurrence (IBM-1 / PMI / Dice)
+// across all aligned OT-LXX verses in v1/lxx/b*.json.gz so LXX-only vocabulary (e.g. καρυινην, καρυισκους, κρατηρες, σφαιρωτηρες)
+// has empirically attested candidate alignments without any hardcoding.
+const hebrewToLxxForms = {};
+const catMetaPath = path.join(root, 'v1/catalog/metadata.json.gz');
+const lxxDirPath = path.join(root, 'v1/lxx');
+if (fs.existsSync(catMetaPath) && fs.existsSync(lxxDirPath)) {
+  const catMeta = readGzJson(catMetaPath);
+  const grkStopForms = new Set([
+    'και', 'δε', 'γαρ', 'ο', 'η', 'το', 'του', 'της', 'τω', 'τη', 'τον', 'την', 'οι', 'αι', 'τα',
+    'των', 'τοις', 'ταις', 'τους', 'τας', 'εν', 'εις', 'εκ', 'εξ', 'απο', 'προς', 'επι', 'κατα',
+    'μετα', 'δια', 'υπο', 'περι', 'παρα', 'αυτος', 'αυτου', 'αυτω', 'αυτον', 'αυτης', 'αυτη',
+    'αυτην', 'αυτων', 'αυτοις', 'αυτους', 'ου', 'μη', 'ουκ', 'ουχ', 'ως', 'οτι', 'ει', 'αν',
+  ]);
+  const hebDfLxx = new Map();
+  const grkDfLxx = new Map();
+  const pairCooc = new Map(); // hBs -> Map<nw, { cnt: number, posBonus: number }>
+
+  for (const lb of catMeta.lxx_swete_books || []) {
+    const lxxPath = path.join(lxxDirPath, `b${lb.book_no}.json.gz`);
+    if (!fs.existsSync(lxxPath)) continue;
+    const lxxShard = readGzJson(lxxPath);
+    const vidByLxxChVs = new Map();
+    for (const m of lxxShard.versification_mappings || []) {
+      if (m.canonical_verse_id != null && !m.lxx_chapter_suffix && !m.lxx_verse_suffix) {
+        const k = `${m.lxx_chapter}:${m.lxx_verse_nr}`;
+        if (!vidByLxxChVs.has(k)) vidByLxxChVs.set(k, Number(m.canonical_verse_id));
+      }
+    }
+    const wordsByChVs = new Map();
+    for (const w of lxxShard.words || []) {
+      if (w.is_chapter_heading_marker || w.chapter_suffix || w.verse_suffix) continue;
+      const k = `${w.chapter}:${w.verse_nr}`;
+      let arr = wordsByChVs.get(k);
+      if (!arr) { arr = []; wordsByChVs.set(k, arr); }
+      arr.push(w);
+    }
+    for (const [chVs, gWords] of wordsByChVs) {
+      let vid = vidByLxxChVs.get(chVs);
+      if (!vid && lb.canonical_book != null) {
+        vid = vidByBookChVs.get(`${lb.canonical_book}:${chVs}`);
+      }
+      if (!vid) continue;
+      const hVerse = verseMap.get(vid);
+      if (!hVerse?.toks?.length || !gWords.length) continue;
+
+      const hToks = hVerse.toks
+        .map((t, idx) => ({ bs: padStrongsBase(t.s), relPos: idx / Math.max(1, hVerse.toks.length) }))
+        .filter((t) => t.bs.startsWith('H') && !PACK_FUNC_OR_STOP_STRONGS.has(t.bs));
+      const gToks = gWords
+        .map((w, idx) => ({ nw: normalizeGreekToken(w.normalized_word || w.word_text), relPos: idx / Math.max(1, gWords.length) }))
+        .filter((w) => w.nw.length >= 3 && !grkStopForms.has(w.nw));
+      if (!hToks.length || !gToks.length) continue;
+
+      const seenH = new Set();
+      for (const ht of hToks) {
+        if (!seenH.has(ht.bs)) {
+          seenH.add(ht.bs);
+          hebDfLxx.set(ht.bs, (hebDfLxx.get(ht.bs) || 0) + 1);
+        }
+      }
+      const seenG = new Set();
+      for (const gt of gToks) {
+        if (!seenG.has(gt.nw)) {
+          seenG.add(gt.nw);
+          grkDfLxx.set(gt.nw, (grkDfLxx.get(gt.nw) || 0) + 1);
+        }
+      }
+
+      const seenPairs = new Set();
+      for (const ht of hToks) {
+        let gm = pairCooc.get(ht.bs);
+        if (!gm) { gm = new Map(); pairCooc.set(ht.bs, gm); }
+        for (const gt of gToks) {
+          const pk = `${ht.bs}:${gt.nw}`;
+          const posSim = Math.max(0, 1 - Math.abs(ht.relPos - gt.relPos) * 1.4);
+          let cur = gm.get(gt.nw);
+          if (!cur) {
+            cur = { cnt: 0, posSum: 0 };
+            gm.set(gt.nw, cur);
+          }
+          if (!seenPairs.has(pk)) {
+            seenPairs.add(pk);
+            cur.cnt++;
+          }
+          cur.posSum = Math.max(cur.posSum, posSim);
+        }
+      }
+    }
+  }
+
+  for (const [hBs, gm] of pairCooc) {
+    const hDf = hebDfLxx.get(hBs) || 1;
+    const scored = [];
+    for (const [nw, { cnt, posSum }] of gm) {
+      const gDf = grkDfLxx.get(nw) || 1;
+      if (cnt === 1 && (hDf > 18 || gDf > 24)) continue;
+      if (cnt === 2 && (hDf > 90 || gDf > 120)) continue;
+      const dice = (2 * cnt) / (hDf + gDf);
+      const pGivenH = cnt / hDf;
+      const pGivenG = cnt / gDf;
+      const score = dice * 0.5 + pGivenH * 0.25 + pGivenG * 0.15 + (posSum / Math.max(1, cnt)) * 0.1;
+      if (score >= 0.14 || (cnt >= 3 && pGivenH >= 0.22)) {
+        scored.push([nw, cnt, Math.min(95, Math.round((0.55 + Math.min(0.38, score * 0.6)) * 100))]);
+      }
+    }
+    scored.sort((a, b) => b[2] - a[2] || b[1] - a[1] || String(a[0]).localeCompare(String(b[0])));
+    if (scored.length > 0) {
+      hebrewToLxxForms[hBs] = scored.slice(0, 6);
+    }
+  }
+  console.log(`Mined empirical OT-LXX token co-occurrence forms for ${Object.keys(hebrewToLxxForms).length} Hebrew content lemmas.`);
+}
+
+const lxxTokenLexicon = {
+  hebrew_to_greek: hebrewToGreek,
+  greek_forms: greekForms,
+  hebrew_to_lxx_forms: hebrewToLxxForms,
+};
+
+let genealogyIndex = { people_by_bs: {}, people_by_id: {}, edges: [], verses_by_person: {}, people_by_vid: {} };
+const peopleGraphPath = path.resolve('public/data/bible-people-graph.json');
+const personVersesPath = path.resolve('public/data/bible-person-verses.json');
+if (fs.existsSync(peopleGraphPath)) {
+  const pg = JSON.parse(fs.readFileSync(peopleGraphPath, 'utf8'));
+  const peopleById = {};
+  const peopleByBs = {};
+  for (const p of pg.people || []) {
+    if (!p?.id) continue;
+    const strongs = (p.strongs || []).map(padStrongsBase).filter(Boolean);
+    peopleById[p.id] = {
+      id: p.id,
+      name: p.name || p.id,
+      era: p.era || '',
+      lineageGroup: p.lineageGroup || '',
+      strongs,
+      hebrew: p.hebrew || '',
+      greek: p.greek || '',
+    };
+    for (const s of strongs) {
+      if (!peopleByBs[s]) peopleByBs[s] = [];
+      if (!peopleByBs[s].includes(p.id)) peopleByBs[s].push(p.id);
+    }
+  }
+  const edges = (pg.relationships || []).map((r) => ({
+    from: r.fromId,
+    to: r.toId,
+    type: r.type || 'kinship',
+    category: r.category || 'explicit',
+    ref: r.witnessRef?.label || '',
+  }));
+  const versesByPerson = {};
+  const peopleByVid = {};
+  if (fs.existsSync(personVersesPath)) {
+    const pv = JSON.parse(fs.readFileSync(personVersesPath, 'utf8'));
+    for (const [coord, pIds] of Object.entries(pv || {})) {
+      const vid = vidByBookChVs.get(coord);
+      if (!vid || !Array.isArray(pIds)) continue;
+      for (const pid of pIds) {
+        if (!peopleById[pid]) continue;
+        if (!versesByPerson[pid]) versesByPerson[pid] = [];
+        if (versesByPerson[pid].length < 24) versesByPerson[pid].push(vid);
+        if (!peopleByVid[vid]) peopleByVid[vid] = [];
+        if (!peopleByVid[vid].includes(pid)) peopleByVid[vid].push(pid);
+      }
+    }
+  }
+  genealogyIndex = {
+    people_by_bs: peopleByBs,
+    people_by_id: peopleById,
+    edges,
+    verses_by_person: versesByPerson,
+    people_by_vid: peopleByVid,
+  };
+  console.log(`Packed genealogy_index (${Object.keys(peopleById).length} people, ${edges.length} edges) & lxx_token_lexicon (${Object.keys(hebrewToGreek).length} Hebrew lemmas).`);
+}
+
 const mpSizes = writeGzJsonAtomic(mpPath, {
   schema_version: 'r10-lazy-motifs-1',
   motifs: mp.motifs,
@@ -1938,6 +2386,8 @@ const mpSizes = writeGzJsonAtomic(mpPath, {
   r13_motifs_b64gz: encodeB64Gz(r13MotifById),
   r13_motifs_by_bs: r13MotifsByBs,
   r13_motifs_by_vid: r13MotifsByVid,
+  lxx_token_lexicon_b64gz: encodeB64Gz(lxxTokenLexicon),
+  genealogy_index_b64gz: encodeB64Gz(genealogyIndex),
 }, 1);
 
 // 9. Update fast-manifest.json.gz
@@ -1958,9 +2408,9 @@ const fastManifestObj = {
   witness_version: 'r12-witnesses-1',
   r12_pilot: 'r12-pilot.json.gz',
   r12_pilot_embedded: true,
-  r12_version: 'r13-discovery-1',
-  r13_version: 'r13-discovery-1',
-  r12_score_version: 'r13-ranker-v1',
+  r12_version: 'r13-discovery-3',
+  r13_version: 'r13-discovery-3',
+  r12_score_version: 'r13-ranker-v3',
   r12_pilot_anchors: pilot.pilot_anchors.length,
   r12_pilot_anchors_list: pilot.pilot_anchors,
   r12_external_sources: pilot.external_sources || [],
@@ -2081,7 +2531,7 @@ for (const p of files.sort()) {
 const assetSha256 = digest.digest('hex');
 
 const summary = {
-  release: 'r13-discovery-1',
+  release: 'r13-discovery-3',
   staging_root: root,
   total_files: files.length,
   max_individual_file_bytes: maxIndividualFileBytes,

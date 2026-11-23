@@ -13,6 +13,7 @@ import { resolveResearchConcept } from '../src/relationships/concept-resolver.ts
 import { discoverMultiHopPaths } from '../src/relationships/multihop-search.ts';
 import { scoreCrossTestamentPair, synthesizeEvidencePatterns } from '../src/relationships/evidence-synthesis.ts';
 import { compareStructuredRoleFrames } from '../src/relationships/symbolic-patterns.ts';
+import { findConnectedSubgraph } from '../src/relationships/subgraph-engine.ts';
 import {
   DEFAULT_R10_RELEASE,
   discoverBiblicalConnections,
@@ -3261,7 +3262,13 @@ function projectCompactProfile(
             bs: rawOrth.bs ?? prof.bs,
             ...(rawOrth.cons ? { cons: rawOrth.cons } : {}),
             ...(Array.isArray(rawOrth.homographs)
-              ? { homographs: rawOrth.homographs.slice(0, 5).map(compactOrthCandidate) }
+              ? { homographs: rawOrth.homographs.slice(0, 6).map(compactOrthCandidate) }
+              : {}),
+            ...(Array.isArray(rawOrth.consonantal_overlaps)
+              ? { consonantal_overlaps: rawOrth.consonantal_overlaps.slice(0, 8) }
+              : {}),
+            ...(Array.isArray(rawOrth.shared_root)
+              ? { shared_root: rawOrth.shared_root.slice(0, 6) }
               : {}),
             ...(rawOrthCands.length > 0 ? { candidates: rawOrthCands.slice(0, 5).map(compactOrthCandidate) } : {}),
           }
@@ -3337,6 +3344,9 @@ function projectCompactProfile(
         }))
       : [],
     ...(orthEntry !== undefined ? { orth_entry: orthEntry } : {}),
+    ...(Array.isArray(prof.r13_wordplay) ? { r13_wordplay: prof.r13_wordplay.slice(0, 10) } : {}),
+    ...(Array.isArray(prof.r13_colloc) ? { r13_colloc: prof.r13_colloc.slice(0, 6) } : {}),
+    ...(Array.isArray(prof.r13_motif_ids) ? { r13_motif_ids: prof.r13_motif_ids.slice(0, 8) } : {}),
     first_occ_passages: Array.isArray(prof.first_occ_passages)
       ? prof.first_occ_passages.slice(0, 3).map((fp) => ({
           ref: fp?.ref ?? null,
@@ -4059,6 +4069,21 @@ export async function handleDiscoverPatternsV1(ctx, params = {}) {
     maxPatterns: Math.min(8, Math.max(3, limit)),
   });
 
+  let subgraph = null;
+  if (anchors.length >= 2) {
+    try {
+      const reader = createWorkerR10Reader(ctx);
+      const releaseId = params.release_id ? String(params.release_id).trim() : DEFAULT_R10_RELEASE;
+      subgraph = await findConnectedSubgraph(reader, {
+        anchors: anchors.slice(0, 5),
+        max_hops: 3,
+        release_id: releaseId,
+      });
+    } catch {
+      subgraph = null;
+    }
+  }
+
   return {
     schema_version: 1,
     status: disc.status,
@@ -4071,6 +4096,7 @@ export async function handleDiscoverPatternsV1(ctx, params = {}) {
       node_count: nodeCatalog.size,
       edge_count: edges.length,
       patterns,
+      ...(subgraph ? { subgraph } : {}),
     },
     strongest_connections: disc.strongest_connections,
     controls_and_alternatives: disc.controls_and_alternatives,
@@ -4156,6 +4182,17 @@ export async function handleComparePatternsV1(ctx, params = {}) {
     }
   }
 
+  let subgraph = null;
+  try {
+    subgraph = await findConnectedSubgraph(reader, {
+      anchors: targets,
+      max_hops: 3,
+      release_id: releaseId,
+    });
+  } catch {
+    subgraph = null;
+  }
+
   return {
     schema_version: 1,
     status: 'ok',
@@ -4166,6 +4203,7 @@ export async function handleComparePatternsV1(ctx, params = {}) {
     shared_motifs: sharedMotifs,
     structural_role_alignment: structuralAlignment,
     cross_testament_alignment: crossTestamentAlignment,
+    ...(subgraph ? { subgraph } : {}),
     combined_connections: combined.strongest_connections,
     divergences_and_controls: [
       ...(perTarget[0]?.controls_and_alternatives || []),
@@ -4173,6 +4211,25 @@ export async function handleComparePatternsV1(ctx, params = {}) {
       ...(combined.controls_and_alternatives || []),
     ].slice(0, 8),
   };
+}
+
+export async function handleDiscoverSubgraphV1(ctx, params = {}) {
+  const reader = createWorkerR10Reader(ctx);
+  const releaseId = params.release_id ? String(params.release_id).trim() : DEFAULT_R10_RELEASE;
+  const rawAnchors =
+    parseOptionalListParam(params.anchors) ||
+    parseOptionalListParam(params.targets) ||
+    parseOptionalListParam(params.items) ||
+    parseOptionalListParam(params.concepts) ||
+    (params.query ? String(params.query).split(/\s*[;|,]\s*|\s+\+\s+/).filter(Boolean) : []);
+  return findConnectedSubgraph(reader, {
+    anchors: rawAnchors,
+    max_hops: params.max_hops !== undefined ? finiteOr(params.max_hops, 3) : 3,
+    max_nodes: params.max_nodes !== undefined ? finiteOr(params.max_nodes, 60) : 60,
+    max_edges: params.max_edges !== undefined ? finiteOr(params.max_edges, 160) : 160,
+    include_exploratory: params.include_exploratory !== false,
+    release_id: releaseId,
+  });
 }
 
 export async function handleTraceEvidenceV1(ctx, params = {}) {

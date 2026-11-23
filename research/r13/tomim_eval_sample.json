@@ -1,0 +1,22 @@
+{
+  "dataset": "T'OMIM-compatible Open Hebrew Parallel Evaluation Sample",
+  "provenance_note": "HuggingFace NuBerea/tomim returned HTTP 401/403 (gated dataset requiring manual login; never bypassed per project policy). This 16-pair evaluation benchmark tests the exact T'OMIM task taxonomy (8 Hebrew narrative parallel verse pairs + 8 Hebrew poetic/prophetic parallel verse pairs) using public-domain / CC BY 4.0 canonical Masoretic Hebrew verses in our local corpus.",
+  "pairs": [
+    { "id": "TOM01", "category": "narrative_pairs_verse", "source_ref": "2 Samuel 22:2", "target_ref": "Psalms 18:2", "label": "David's song of deliverance rock/fortress invocation" },
+    { "id": "TOM02", "category": "narrative_pairs_verse", "source_ref": "2 Samuel 22:8", "target_ref": "Psalms 18:7", "label": "Earth shook and trembled at divine wrath" },
+    { "id": "TOM03", "category": "narrative_pairs_verse", "source_ref": "2 Kings 18:13", "target_ref": "Isaiah 36:1", "label": "Fourteenth year of Hezekiah Sennacherib invasion" },
+    { "id": "TOM04", "category": "narrative_pairs_verse", "source_ref": "2 Kings 19:15", "target_ref": "Isaiah 37:16", "label": "Hezekiah's prayer before the cherubim" },
+    { "id": "TOM05", "category": "narrative_pairs_verse", "source_ref": "2 Kings 24:18", "target_ref": "Jeremiah 52:1", "label": "Zedekiah accession and Hamutal mother formula" },
+    { "id": "TOM06", "category": "narrative_pairs_verse", "source_ref": "1 Chronicles 16:8", "target_ref": "Psalms 105:1", "label": "Ark installation thanksgiving hymn opening" },
+    { "id": "TOM07", "category": "narrative_pairs_verse", "source_ref": "1 Chronicles 16:22", "target_ref": "Psalms 105:15", "label": "Touch not my anointed ones and do my prophets no harm" },
+    { "id": "TOM08", "category": "narrative_pairs_verse", "source_ref": "2 Chronicles 36:22", "target_ref": "Ezra 1:1", "label": "First year of Cyrus decree fulfilling Jeremiah" },
+    { "id": "TOM09", "category": "poetic_pairs_verse", "source_ref": "Isaiah 2:2", "target_ref": "Micah 4:1", "label": "Mountain of the house of YHWH raised above the hills" },
+    { "id": "TOM10", "category": "poetic_pairs_verse", "source_ref": "Isaiah 2:4", "target_ref": "Micah 4:3", "label": "Swords into plowshares and spears into pruning hooks" },
+    { "id": "TOM11", "category": "poetic_pairs_verse", "source_ref": "Psalms 14:1", "target_ref": "Psalms 53:1", "label": "The fool says in his heart there is no God" },
+    { "id": "TOM12", "category": "poetic_pairs_verse", "source_ref": "Exodus 15:2", "target_ref": "Psalms 118:14", "label": "YHWH is my strength and song and has become my salvation" },
+    { "id": "TOM13", "category": "poetic_pairs_verse", "source_ref": "Jeremiah 10:12", "target_ref": "Jeremiah 51:15", "label": "Creator of earth by power, establisher of world by wisdom" },
+    { "id": "TOM14", "category": "poetic_pairs_verse", "source_ref": "Proverbs 6:10", "target_ref": "Proverbs 24:33", "label": "A little sleep, a little slumber, folding of the hands" },
+    { "id": "TOM15", "category": "poetic_pairs_verse", "source_ref": "Obadiah 1:1", "target_ref": "Jeremiah 49:14", "label": "Envoy sent among the nations: Rise up against Edom" },
+    { "id": "TOM16", "category": "poetic_pairs_verse", "source_ref": "Genesis 1:2", "target_ref": "Jeremiah 4:23", "label": "Tohu va-vohu cosmic de-creation echo" }
+  ]
+}

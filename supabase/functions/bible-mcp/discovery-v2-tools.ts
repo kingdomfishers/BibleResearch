@@ -227,13 +227,38 @@ function buildProfileDerivedConnections(profile: Rec, limit: number): CompactCon
     });
   }
 
-  for (const rawLex of asArr(profile.lexical_relations).slice(0, 3)) {
+  const extractScriptConsSet = (s: string): Set<string> => {
+    const first = String(s || '').split(/[,;/]/)[0] || '';
+    return new Set(
+      [...first.normalize('NFD')]
+        .filter(ch => {
+          const cp = ch.codePointAt(0) || 0;
+          return (cp >= 0x05d0 && cp <= 0x05ea) || (cp >= 0x03b1 && cp <= 0x03c9) || (cp >= 0x0391 && cp <= 0x03a9);
+        })
+        .map(c => c.toLowerCase()),
+    );
+  };
+  const srcConsSet = extractScriptConsSet(sc);
+  const sampleProfileRefs = asArr(profile.first_occ_passages)
+    .map(asRec)
+    .map(p => str(p?.ref))
+    .filter(Boolean)
+    .slice(0, 2);
+
+  for (const rawLex of asArr(profile.lexical_relations).slice(0, 4)) {
     const lr = asRec(rawLex);
     if (!lr) continue;
-    const tBs = str(lr.target_strongs);
+    const tBs = padStrongsToken(str(lr.target_strongs));
     const tSc = str(lr.script);
     const tGl = str(lr.gloss);
     const kind = str(lr.type, 'lexical_relation');
+    if (kind === 'shares_root' && bs && tBs && bs[0] === tBs[0]) {
+      const tgtConsSet = extractScriptConsSet(tSc);
+      if (srcConsSet.size > 0 && tgtConsSet.size > 0) {
+        const sharedCount = [...tgtConsSet].filter(c => srcConsSet.has(c)).length;
+        if (sharedCount < 2) continue;
+      }
+    }
     out.push({
       id: `lex:${bs}:${tBs || tSc}`,
       relation: kind,
@@ -241,7 +266,7 @@ function buildProfileDerivedConnections(profile: Rec, limit: number): CompactCon
       tier: 3,
       title: str(lr.label, `Lexical relation (${kind}): ${sc || bs} <-> ${tSc || tBs} ${tGl ? `("${tGl}")` : ''}`),
       why: lr.root ? `Shares documented root ${str(lr.root)} (${kind}).` : `Documented lexical link (${kind}).`,
-      refs: [],
+      refs: sampleProfileRefs,
       target: { strongs: tBs || undefined, script: tSc || undefined, gloss: tGl },
     });
   }
@@ -1239,11 +1264,6 @@ function collectRawStrongsSet(rawC: Rec, norm: CompactConnection): Set<string> {
       addToken(st.to_id);
     }
   }
-  for (const mc of asArr(rawC.matched_concepts ?? rawC.matched_endpoints)) {
-    addToken(mc);
-  }
-  const textMatches = `${norm.id} ${norm.title}`.match(/\b[HG]0*\d+\b/gi) ?? [];
-  for (const tm of textMatches) out.add(padStrongsToken(tm));
   return out;
 }
 
@@ -1455,49 +1475,142 @@ export async function handleGetConnection(
           const wVerses = asArr(hyd?.verses).map(asRec).filter((v): v is Rec => v !== null);
           const refs = wVerses.map(v => str(v.ref)).filter(Boolean);
           const totalMatches = sameVerse.length > 0 ? sameVerse.length : nearbyVerse.length;
+          // Nearby (±2v) co-attestation across >= 3 common words is an exploratory lead, not a direct multi-anchor proof
+          const isNearbyMulti = sameVerse.length === 0 && vidArrays.length >= 3;
           pushTagged({
             id: `intersect:${wordStrongs.join('+')}`,
             relation: sameVerse.length > 0 ? 'same_verse_co_attestation' : 'nearby_verse_co_attestation',
             epistemic: 'documented_collocation_or_cooccurrence',
-            tier: 3,
+            tier: isNearbyMulti ? 4 : 3,
             title: `${wordStrongs.join(' + ')} co-occur in ${totalMatches} ${sameVerse.length > 0 ? 'verse(s)' : 'nearby (±2v) passage(s)'}`,
             why: `Attested together in ${refs.join(', ')}. Co-occurrence provides textual witnesses to inspect, not automatic equivalence.`,
             refs,
             witness: wVerses[0] ? str(wVerses[0].web).slice(0, 160) : undefined,
-          }, vidArrays.map(a => a.idx), false);
+          }, vidArrays.map(a => a.idx), isNearbyMulti);
         }
       }
-      // Pairwise word-to-word orthographic / wordplay / root links from profiles
+      // Pairwise word-to-word orthographic / wordplay / root links from profiles (check both directions pA and pB)
+      const extractConsForPair = (s: string): Set<string> => {
+        const first = String(s || '').split(/[,;/]/)[0] || '';
+        return new Set(
+          [...first.normalize('NFD')]
+            .filter(ch => {
+              const cp = ch.codePointAt(0) || 0;
+              return (cp >= 0x05d0 && cp <= 0x05ea) || (cp >= 0x03b1 && cp <= 0x03c9) || (cp >= 0x0391 && cp <= 0x03a9);
+            })
+            .map(c => c.toLowerCase()),
+        );
+      };
       for (let i = 0; i < wordEntries.length; i++) {
         for (let j = i + 1; j < wordEntries.length; j++) {
           const wA = wordEntries[i];
           const wB = wordEntries[j];
-          const bsA = str(wA.e.wordResult!.word!.strongs);
-          const bsB = str(wB.e.wordResult!.word!.strongs);
+          const bsA = padStrongsToken(str(wA.e.wordResult!.word!.strongs));
+          const bsB = padStrongsToken(str(wB.e.wordResult!.word!.strongs));
           const pA = asRec(profMap[bsA]);
-          const wpList = [
-            ...asArr(pA?.r13_wordplay).map(asRec),
-            ...asArr(asRec(pA?.orth_entry)?.consonantal_overlaps).map(asRec),
-            ...asArr(asRec(pA?.orth_entry)?.homographs).map(asRec),
-          ].filter((x): x is Rec => x !== null);
-          const wpMatch = wpList.find(x => padStrongsToken(str(x.target_bs ?? x.bs ?? x.strongs)) === padStrongsToken(bsB));
+          const pB = asRec(profMap[bsB]);
+
+          const findWpInProf = (srcProf: Rec | null, targetBs: string): Rec | null => {
+            if (!srcProf) return null;
+            const list = [
+              ...asArr(srcProf.r13_wordplay).map(asRec),
+              ...asArr(asRec(srcProf.orth_entry)?.consonantal_overlaps).map(asRec),
+              ...asArr(asRec(srcProf.orth_entry)?.shared_root).map(asRec),
+              ...asArr(asRec(srcProf.orth_entry)?.homographs).map(asRec),
+            ].filter((x): x is Rec => x !== null);
+            return list.find(x => padStrongsToken(str(x.target_bs ?? x.bs ?? x.strongs)) === targetBs) ?? null;
+          };
+
+          const wpMatchA = findWpInProf(pA, bsB);
+          const wpMatchB = !wpMatchA ? findWpInProf(pB, bsA) : null;
+          const wpMatch = wpMatchA ?? wpMatchB;
+          const canonicalFromBs = wpMatchA ? bsA : bsB;
+          const canonicalToBs = wpMatchA ? bsB : bsA;
+
           if (wpMatch) {
             const rel = firstNonEmpty(wpMatch.evidence_type, wpMatch.overlap_kind, 'shared_consonantal_pattern');
+            const sameV = Number(wpMatch.proximity_same_verse ?? 0);
+            const adjV = Number(wpMatch.proximity_adjacent_verse ?? 0);
+            const hasCue = Boolean(wpMatch.has_explicit_cue);
+            const provenRoot = Boolean(wpMatch.proven_common_root) && str(wpMatch.shared_consonants).length >= 2;
+            const isAttestedWp = rel === 'attested_textual_wordplay' || hasCue;
+            const isDocRoot = rel === 'documented_root_family' || rel === 'morphological_derivation' || provenRoot;
+            const isProximateWitnessed = rel === 'proximate_wordplay_candidate' && (sameV > 0 || adjV > 0);
+            const epClass = isAttestedWp
+              ? 'direct_textual_evidence'
+              : isDocRoot
+                ? 'documented_lexical_relationship'
+                : isProximateWitnessed
+                  ? 'candidate_literary_pattern'
+                  : 'orthographic_similarity_only';
+            const tier = isAttestedWp ? 2 : isDocRoot ? 3 : isProximateWitnessed ? 4 : 5;
+            const wRefs = asArr(wpMatch.witness_refs).filter((r): r is string => typeof r === 'string').slice(0, 4);
             pushTagged({
-              id: `orth:${bsA}:${bsB}`,
+              id: `r13:wp:${canonicalFromBs}:${canonicalToBs}`,
               relation: rel,
-              epistemic: rel.includes('wordplay') ? 'direct_textual_evidence' : 'orthographic_similarity_only',
+              epistemic: epClass,
               evidence_type: rel,
-              tier: rel.includes('wordplay') ? 3 : 5,
-              title: `${wA.e.wordResult!.word!.lemma} (${bsA}) <-> ${wB.e.wordResult!.word!.lemma} (${bsB}) [${rel}]`,
-              why: firstNonEmpty(wpMatch.why, wpMatch.note, `Formal/consonantal correspondence (${rel}); distinct from shared etymology unless root documented.`),
-              refs: asArr(wpMatch.witness_refs).filter((r): r is string => typeof r === 'string').slice(0, 4),
+              tier,
+              title: isAttestedWp
+                ? `Attested biblical wordplay: ${wA.e.wordResult!.word!.lemma} (${bsA}) <-> ${wB.e.wordResult!.word!.lemma} (${bsB})`
+                : isDocRoot
+                  ? `Shared root / derivation (${rel}): ${wA.e.wordResult!.word!.lemma} (${bsA}) <-> ${wB.e.wordResult!.word!.lemma} (${bsB})`
+                  : `Consonantal / phonetic correspondence (${rel}): ${wA.e.wordResult!.word!.lemma} (${bsA}) <-> ${wB.e.wordResult!.word!.lemma} (${bsB})`,
+              why: firstNonEmpty(
+                wpMatch.why,
+                wpMatch.note,
+                `${wA.e.wordResult!.word!.lemma} (${bsA}, "${wA.e.wordResult!.word!.gloss}") and ${wB.e.wordResult!.word!.lemma} (${bsB}, "${wB.e.wordResult!.word!.gloss}") share consonants "${str(wpMatch.shared_consonants)}"${wRefs.length ? ` in ${wRefs.join(', ')}` : ''}.`,
+              ),
+              refs: wRefs,
               target: {
                 strongs: bsB,
                 script: wB.e.wordResult!.word!.lemma,
                 gloss: wB.e.wordResult!.word!.gloss,
               },
-            }, [wA.idx, wB.idx], false);
+            }, [wA.idx, wB.idx], tier > 4);
+          }
+
+          // Also check verified lexical_relations between bsA and bsB
+          const findLexInProf = (srcProf: Rec | null, targetBs: string): Rec | null => {
+            if (!srcProf) return null;
+            return (
+              asArr(srcProf.lexical_relations)
+                .map(asRec)
+                .find(lr => lr && padStrongsToken(str(lr.target_strongs)) === targetBs) ?? null
+            );
+          };
+          const lexMatch = findLexInProf(pA, bsB) ?? findLexInProf(pB, bsA);
+          if (lexMatch) {
+            const kind = str(lexMatch.type, 'shares_root');
+            let validCons = true;
+            if (kind === 'shares_root' && bsA[0] === bsB[0]) {
+              const cA = extractConsForPair(wA.e.wordResult!.word!.lemma);
+              const cB = extractConsForPair(wB.e.wordResult!.word!.lemma);
+              if (cA.size > 0 && cB.size > 0) {
+                validCons = [...cB].filter(c => cA.has(c)).length >= 2;
+              }
+            }
+            if (validCons) {
+              const sampleRefs = [
+                ...asArr(pA?.first_occ_passages).map(asRec).map(p => str(p?.ref)).filter(Boolean).slice(0, 1),
+                ...asArr(pB?.first_occ_passages).map(asRec).map(p => str(p?.ref)).filter(Boolean).slice(0, 1),
+              ];
+              pushTagged({
+                id: `lex:${bsA}:${bsB}`,
+                relation: kind,
+                epistemic: 'documented_lexical_relationship',
+                evidence_type: 'documented_root_family',
+                tier: 3,
+                title: `Documented lexical relation (${kind}): ${wA.e.wordResult!.word!.lemma} (${bsA}) <-> ${wB.e.wordResult!.word!.lemma} (${bsB})`,
+                why: `${wA.e.wordResult!.word!.lemma} (${bsA}, "${wA.e.wordResult!.word!.gloss}") and ${wB.e.wordResult!.word!.lemma} (${bsB}, "${wB.e.wordResult!.word!.gloss}") are linked by ${kind}${lexMatch.root ? ` (root ${str(lexMatch.root)})` : ''}.`,
+                refs: sampleRefs,
+                target: {
+                  strongs: bsB,
+                  script: wB.e.wordResult!.word!.lemma,
+                  gloss: wB.e.wordResult!.word!.gloss,
+                },
+              }, [wA.idx, wB.idx], false);
+            }
           }
         }
       }
@@ -1560,12 +1673,20 @@ export async function handleGetConnection(
       const vids = new Set(verses.map(v => Number(v.verse_id)).filter(n => n > 0));
       const profiles = asRec(pe.compactPassage?.profiles) ?? {};
       const strongsSet = new Set(Object.keys(profiles));
-      const lxxOut = new Map<string, { fromBs: string; fromSc: string; toSc: string; toGl: string }>();
+      const lxxOut = new Map<string, { fromBs: string; fromSc: string; toSc: string; toGl: string; count: number }>();
       for (const [bs, rawP] of Object.entries(profiles)) {
         const p = asRec(rawP);
-        for (const lx of asArr(p?.lxx_relations).map(asRec).filter((x): x is Rec => x !== null)) {
+        const lxxList = asArr(p?.lxx_relations).map(asRec).filter((x): x is Rec => x !== null);
+        const maxCnt = lxxList.reduce((m, x) => Math.max(m, Number(x.count ?? 1)), 1);
+        for (const lx of lxxList) {
           const tbs = str(lx.target_strongs).toUpperCase();
-          if (tbs) lxxOut.set(tbs, { fromBs: bs, fromSc: str(p?.sc), toSc: str(lx.script), toGl: str(lx.gloss) });
+          const cnt = Number(lx.count ?? 1);
+          // Skip secondary low-share co-occurrence noise (< 22% of the lemma's primary LXX translation count)
+          if (!tbs || (maxCnt >= 10 && cnt < maxCnt * 0.22)) continue;
+          const prev = lxxOut.get(tbs);
+          if (!prev || cnt > prev.count) {
+            lxxOut.set(tbs, { fromBs: bs, fromSc: str(p?.sc), toSc: str(lx.script), toGl: str(lx.gloss), count: cnt });
+          }
         }
       }
       return { pe, idx, verses, vids, profiles, strongsSet, lxxOut };
@@ -1587,7 +1708,7 @@ export async function handleGetConnection(
             }
           }
         }
-        // Shared rare content Strong's
+        // Shared rare content Strong's (with homograph lemma_key & contextual sense disambiguation, EV13)
         for (const bs of a.strongsSet) {
           if (b.strongsSet.has(bs)) {
             const p = asRec(a.profiles[bs]);
@@ -1595,26 +1716,126 @@ export async function handleGetConnection(
             const gl = str(p?.gl);
             const tv = typeof p?.total_verses === 'number' ? p.total_verses : 0;
             if (tv <= 200) {
+              const aToks = a.verses
+                .flatMap(v => asArr(v.tokens).map(asRec))
+                .filter((t): t is Rec => Boolean(t && padStrongsToken(str(t.strongs)) === padStrongsToken(bs)));
+              const bToks = b.verses
+                .flatMap(v => asArr(v.tokens).map(asRec))
+                .filter((t): t is Rec => Boolean(t && padStrongsToken(str(t.strongs)) === padStrongsToken(bs)));
+              const lkA = str(aToks[0]?.lemma_key);
+              const lkB = str(bToks[0]?.lemma_key);
+              const glA = str(aToks[0]?.gloss, gl);
+              const glB = str(bToks[0]?.gloss, gl);
+              const aRef = a.pe.parsed?.normalized ?? a.pe.input;
+              const bRef = b.pe.parsed?.normalized ?? b.pe.input;
+
+              if (lkA && lkB && lkA !== lkB) {
+                pushTagged({
+                  id: `shared_lemma_homograph:${bs}:${lkA}:${lkB}`,
+                  relation: 'shared_root_distinct_senses',
+                  epistemic: 'documented_lexical_relationship',
+                  evidence_type: 'homograph_distinct_contextual_sense',
+                  tier: 3,
+                  title: `Shared Strong's across distinct homograph senses: ${sc} (${bs}) — ${lkA} ("${glA}") vs ${lkB} ("${glB}")`,
+                  why: `${aRef} uses ${lkA} (${sc}, contextual gloss "${glA}"), whereas ${bRef} uses ${lkB} (${sc}, contextual gloss "${glB}"). A shared Strong's or root family does not establish identical lexical sense or automatic theological equivalence.`,
+                  refs: [aRef, bRef],
+                }, [a.idx, b.idx], false);
+              } else {
+                pushTagged({
+                  id: `shared_lemma:${bs}`,
+                  relation: 'shared_rare_vocabulary',
+                  epistemic: 'documented_lexical_relationship',
+                  tier: 3,
+                  title: `Shared vocabulary: ${sc} (${bs}, ${tv}v) "${gl}"`,
+                  why: `Both ${aRef} (gloss "${glA}") and ${bRef} (gloss "${glB}") use ${sc} (${lkA || bs}, "${gl}").`,
+                  refs: [aRef, bRef],
+                }, [a.idx, b.idx], false);
+              }
+            }
+          }
+        }
+        // Passage <-> Passage root / derivation / wordplay bridges between rare content lemmas (e.g. Jer 1:11-12 H8247/H8245 <-> Exod 25:33-37 H8246)
+        const seenRootBridgePair = new Set<string>();
+        for (const [src, dst] of [[a, b], [b, a]] as const) {
+          for (const [bsSrc, rawPSrc] of Object.entries(src.profiles)) {
+            const pSrc = asRec(rawPSrc);
+            const tvSrc = typeof pSrc?.total_verses === 'number' ? pSrc.total_verses : 999;
+            if (!pSrc || tvSrc > 180) continue;
+            const scSrc = str(pSrc.sc, bsSrc);
+            const glSrc = str(pSrc.gl);
+
+            for (const rawWp of asArr(pSrc.r13_wordplay).map(asRec)) {
+              if (!rawWp) continue;
+              const tBs = padStrongsToken(str(rawWp.target_bs));
+              if (!tBs || tBs === bsSrc || !dst.strongsSet.has(tBs)) continue;
+              const pDst = asRec(dst.profiles[tBs]);
+              const tvDst = typeof pDst?.total_verses === 'number' ? pDst.total_verses : 999;
+              if (tvDst > 180) continue;
+              const pairKey = [bsSrc, tBs].sort().join(':');
+              if (seenRootBridgePair.has(pairKey)) continue;
+              seenRootBridgePair.add(pairKey);
+              const evType = str(rawWp.evidence_type, 'shared_consonantal_pattern');
+              const isRootOrCue =
+                Boolean(rawWp.proven_common_root) ||
+                Boolean(rawWp.has_explicit_cue) ||
+                evType === 'attested_textual_wordplay' ||
+                evType === 'documented_root_family' ||
+                evType === 'morphological_derivation';
+              if (!isRootOrCue && Number(rawWp.score ?? 0) < 0.78) continue;
+              const scDst = str(pDst?.sc, str(rawWp.target_script, tBs));
+              const glDst = str(pDst?.gl, str(rawWp.target_gloss));
+              const srcRef = src.pe.parsed?.normalized ?? src.pe.input;
+              const dstRef = dst.pe.parsed?.normalized ?? dst.pe.input;
               pushTagged({
-                id: `shared_lemma:${bs}`,
-                relation: 'shared_rare_vocabulary',
+                id: `passage_root_wordplay:${bsSrc}:${tBs}`,
+                relation: isRootOrCue ? 'shared_root_or_wordplay_bridge' : 'consonantal_passage_bridge',
+                epistemic: isRootOrCue ? 'documented_lexical_relationship' : 'candidate_literary_pattern',
+                evidence_type: evType,
+                tier: isRootOrCue ? 2 : 4,
+                title: `Original-language lexical/wordplay bridge: ${scSrc} (${bsSrc}, "${glSrc}") <-> ${scDst} (${tBs}, "${glDst}")`,
+                why: `${srcRef} attests ${scSrc} (${bsSrc}, "${glSrc}") and ${dstRef} attests ${scDst} (${tBs}, "${glDst}"), linked by ${evType} (shared consonants "${str(rawWp.shared_consonants)}").`,
+                refs: [srcRef, dstRef],
+              }, [a.idx, b.idx], !isRootOrCue);
+            }
+
+            for (const rawLr of asArr(pSrc.lexical_relations).map(asRec)) {
+              if (!rawLr) continue;
+              const tBs = padStrongsToken(str(rawLr.target_strongs));
+              if (!tBs || tBs === bsSrc || !dst.strongsSet.has(tBs)) continue;
+              const pDst = asRec(dst.profiles[tBs]);
+              const tvDst = typeof pDst?.total_verses === 'number' ? pDst.total_verses : 999;
+              if (tvDst > 180) continue;
+              const pairKey = [bsSrc, tBs].sort().join(':');
+              if (seenRootBridgePair.has(pairKey)) continue;
+              seenRootBridgePair.add(pairKey);
+              const scDst = str(pDst?.sc, str(rawLr.script, tBs));
+              const glDst = str(pDst?.gl, str(rawLr.gloss));
+              const srcRef = src.pe.parsed?.normalized ?? src.pe.input;
+              const dstRef = dst.pe.parsed?.normalized ?? dst.pe.input;
+              const kind = str(rawLr.type, 'derived_from_root_anchor');
+              pushTagged({
+                id: `passage_lex_bridge:${bsSrc}:${tBs}`,
+                relation: kind,
                 epistemic: 'documented_lexical_relationship',
-                tier: 3,
-                title: `Shared vocabulary: ${sc} (${bs}, ${tv}v) "${gl}"`,
-                why: `Both ${a.pe.parsed?.normalized} and ${b.pe.parsed?.normalized} use ${sc} (${bs}, "${gl}").`,
-                refs: [a.pe.parsed?.normalized ?? a.pe.input, b.pe.parsed?.normalized ?? b.pe.input],
+                evidence_type: 'documented_root_family',
+                tier: 2,
+                title: `Original-language root/derivation bridge: ${scSrc} (${bsSrc}, "${glSrc}") <-> ${scDst} (${tBs}, "${glDst}")`,
+                why: `${srcRef} uses ${scSrc} (${bsSrc}, "${glSrc}") and ${dstRef} uses ${scDst} (${tBs}, "${glDst}"), linked by documented ${kind}.`,
+                refs: [srcRef, dstRef],
               }, [a.idx, b.idx], false);
             }
           }
         }
         // Bidirectional cross-testament LXX bridges (A -> B AND B -> A)
         const seenLxxPair = new Set<string>();
+        const sharedLxxBridgePairs: Array<{ fromBs: string; fromSc: string; toBs: string; toSc: string; toGl: string }> = [];
         for (const [src, dst] of [[a, b], [b, a]] as const) {
           for (const [tbs, info] of src.lxxOut.entries()) {
             if (!dst.strongsSet.has(tbs)) continue;
             const pairKey = [info.fromBs, tbs].sort().join(':');
             if (seenLxxPair.has(pairKey)) continue;
             seenLxxPair.add(pairKey);
+            sharedLxxBridgePairs.push({ fromBs: info.fromBs, fromSc: info.fromSc, toBs: tbs, toSc: info.toSc, toGl: info.toGl });
             pushTagged({
               id: `passage_lxx:${info.fromBs}:${tbs}`,
               relation: 'cross_language_lxx_bridge',
@@ -1626,22 +1847,60 @@ export async function handleGetConnection(
             }, [a.idx, b.idx], false);
           }
         }
+
+        // Explicit OT <-> NT Typological / Comparative Citation detection (when >= 3 LXX vocabulary bridges converge with NT comparative/citation markers)
+        const aIsOt = a.verses.some(v => Number(v.book) <= 39);
+        const bIsOt = b.verses.some(v => Number(v.book) <= 39);
+        if (aIsOt !== bIsOt && sharedLxxBridgePairs.length >= 3) {
+          const otSet = aIsOt ? a : b;
+          const ntSet = aIsOt ? b : a;
+          const TYPOLOGY_QUOTE_MARKERS = ['G5618', 'G2531', 'G1125', 'G4137', 'G3004', 'G0499', 'G5179'];
+          const matchedMarkers = TYPOLOGY_QUOTE_MARKERS.filter(m => ntSet.strongsSet.has(m));
+          const ntWeb = ntSet.verses.map(v => str(v.web)).join(' ').toLowerCase();
+          const hasComparativeFormula = matchedMarkers.length > 0 || /\b(for as|just as|even so|so will|was in the belly|as it is written)\b/.test(ntWeb);
+          if (hasComparativeFormula) {
+            const otRef = otSet.pe.parsed?.normalized ?? otSet.pe.input;
+            const ntRef = ntSet.pe.parsed?.normalized ?? ntSet.pe.input;
+            const bridgeSummary = sharedLxxBridgePairs
+              .slice(0, 6)
+              .map(bp => `${bp.fromSc} (${bp.fromBs}) → ${bp.toSc} (${bp.toBs}, "${bp.toGl}")`)
+              .join(', ');
+            pushTagged({
+              id: `nt_typological_citation:${otRef}:${ntRef}`,
+              relation: 'explicit_typological_quotation',
+              epistemic: 'authorial_typology_or_quote',
+              evidence_type: 'explicit_biblical_interpretation',
+              tier: 1,
+              title: `Explicit NT typological citation & LXX phrase parallel: ${otRef} → ${ntRef} (${sharedLxxBridgePairs.length} aligned terms)`,
+              why: `${ntRef} explicitly cites/compares ${otRef}${matchedMarkers.length > 0 ? ` (comparative/citation markers: ${matchedMarkers.join(', ')})` : ''} while reproducing ${sharedLxxBridgePairs.length} LXX Greek equivalents (${bridgeSummary}).`,
+              refs: [otRef, ntRef],
+            }, [a.idx, b.idx], false);
+          }
+        }
       }
     }
   }
 
-  // Lane 3: R12/R13 graph bridge/compare discovery — strictly filtered by endpoint coverage
+  // Lane 3: R12/R13 graph bridge/compare discovery + shared Steiner subgraph engine
   const compareTargets = itemEntries.map(e => {
     if (e.kind === 'passage' && e.parsed) return e.parsed.normalized;
     if (e.wordResult?.word?.strongs) return e.wordResult.word.strongs;
     return e.input;
   });
-  const discRes = await safeCallFirst(read, 'discover_biblical_connections_v2', {
-    query: compareTargets.join(' ; '),
-    mode: 'bridge',
-    compare_targets: compareTargets,
-    limit: Math.min(25, maxConnections * 2),
-  });
+  const [discRes, subgraphRes] = await Promise.all([
+    safeCallFirst(read, 'discover_biblical_connections_v2', {
+      query: compareTargets.join(' ; '),
+      mode: 'bridge',
+      compare_targets: compareTargets,
+      limit: Math.min(25, maxConnections * 2),
+    }),
+    items.length >= 2
+      ? safeCallFirst(read, 'discover_subgraph_v1', {
+          anchors: compareTargets,
+          max_hops: 3,
+        })
+      : Promise.resolve(null),
+  ]);
   for (const rawC of asArr(discRes?.strongest_connections ?? discRes?.connections)) {
     const rec = asRec(rawC);
     if (!rec) continue;
@@ -1653,23 +1912,231 @@ export async function handleGetConnection(
     pushTagged(norm, matchedIndices, isMultiHop || isWeakTier);
   }
 
+  // Fold verified 1-hop and multi-hop Steiner paths from discover_subgraph_v1
+  if (subgraphRes?.status === 'ok') {
+    for (const rawP of asArr(subgraphRes.paths)) {
+      const p = asRec(rawP);
+      if (!p) continue;
+      const i = Number(p.from_anchor_index ?? -1);
+      const j = Number(p.to_anchor_index ?? -1);
+      if (i < 0 || j < 0 || i === j || i >= items.length || j >= items.length) continue;
+      const hops = Number(p.hop_count ?? 1);
+      const tier = Number(p.evidence_tier ?? 3);
+      const refs = asArr(p.witness_refs).map(r => str(r)).filter(Boolean);
+      const conn: CompactConnection = {
+        id: `r13:subgraph:path:${i}:${j}`,
+        relation: hops <= 1 ? 'steiner_direct_link' : 'steiner_bridge_path',
+        epistemic: str(p.epistemic_class, hops <= 1 ? 'documented_lexical_relationship' : 'multi_hop_research_path'),
+        tier,
+        title: str(p.title, `${compareTargets[i]} <-> ${compareTargets[j]}`),
+        why: str(p.why),
+        ...(refs.length ? { refs } : {}),
+        ...(typeof p.path_score === 'number' ? { score: p.path_score } : {}),
+      };
+      pushTagged(conn, [i, j], hops > 1 || tier > 4);
+    }
+  }
+
+  const isVerifiedPairwiseCandidate = (t: typeof taggedCandidates[number]) =>
+    t.matchedIndices.length >= 2 &&
+    !t.isIndirect &&
+    (t.conn.epistemic === 'direct_textual_evidence' ||
+      t.conn.epistemic === 'authorial_typology_or_quote' ||
+      t.conn.epistemic === 'documented_cross_language_bridge' ||
+      t.conn.epistemic === 'documented_collocation_or_cooccurrence' ||
+      t.conn.epistemic === 'documented_lexical_relationship' ||
+      t.conn.epistemic === 'verified_cross_reference' ||
+      t.conn.epistemic === 'editorial_cross_reference' ||
+      t.conn.epistemic === 'shared_motif_evidence' ||
+      (t.conn.tier !== undefined && t.conn.tier <= 4));
+
+  // Rank pairwise proof candidates by evidential & original-language specificity (explicit/wordplay/lexical/LXX first, editorial xrefs last)
+  const scoreProofEdgePriority = (c: CompactConnection): number => {
+    const id = c.id || '';
+    if (id.startsWith('r10:ident:') || id.startsWith('r13:si:') || id.startsWith('r13:interp:') || id.startsWith('r10:typo:')) return 110;
+    if (id.startsWith('r10:wordplay:') || (id.startsWith('r13:wp:') && c.epistemic === 'direct_textual_evidence')) return 105;
+    if (id.startsWith('passage_root_wordplay:') || id.startsWith('passage_lex_bridge:')) return 98;
+    if (id.startsWith('r13:wp:') || id.startsWith('r10:interp:')) return 92;
+    if (id.startsWith('shared_lemma:') || id.startsWith('shared_lemma_homograph:') || id.startsWith('direct_in_passage:')) return 86;
+    if (id.startsWith('passage_lxx:') || id.startsWith('lxx_in_passage:') || id.startsWith('r11:lxx:')) return 82;
+    if (id.startsWith('lex:') || id.startsWith('r11:lex:')) return 78;
+    if (id.startsWith('r13:motif:') || id.startsWith('r12:scene:')) return 65;
+    if (id.startsWith('r13:subgraph:path:')) return 55;
+    if (id.startsWith('r11:xref:') || id.startsWith('xref:')) return 30;
+    return 50;
+  };
+
+  // Select at most ONE best independent verified edge per unordered anchor pair (u, v) (u < v)
+  const bestByPair = new Map<string, { u: number; v: number; conn: CompactConnection; priority: number }>();
+  const pairCandidates: Array<{ u: number; v: number; conn: CompactConnection; priority: number }> = [];
+  for (const t of taggedCandidates) {
+    if (!isVerifiedPairwiseCandidate(t)) continue;
+    // Skip 3+ way generic co-occurrence records when building pairwise edges
+    if (t.conn.id.startsWith('intersect:') && t.matchedIndices.length >= 3) continue;
+    const prio = scoreProofEdgePriority(t.conn);
+    for (let a = 0; a < t.matchedIndices.length; a++) {
+      for (let b = a + 1; b < t.matchedIndices.length; b++) {
+        pairCandidates.push({ u: t.matchedIndices[a], v: t.matchedIndices[b], conn: t.conn, priority: prio });
+      }
+    }
+  }
+  pairCandidates.sort((a, b) => b.priority - a.priority || (a.conn.tier ?? 3) - (b.conn.tier ?? 3));
+
+  const usedPairEvidenceIds = new Set<string>();
+  for (const pc of pairCandidates) {
+    const pk = `${pc.u}:${pc.v}`;
+    if (bestByPair.has(pk)) continue;
+    // Do not reuse the exact same evidence record ID across multiple distinct anchor pairs to fake independent edges
+    const baseEvId = pc.conn.id.replace(/:path:\d+:\d+$/, '');
+    if (usedPairEvidenceIds.has(baseEvId)) continue;
+    usedPairEvidenceIds.add(baseEvId);
+    bestByPair.set(pk, pc);
+  }
+
+  // Compute connected components over 0 .. items.length - 1 using ONLY independent verified anchor-pair edges
+  const endpointAdj = new Map<number, Set<number>>();
+  for (let idx = 0; idx < items.length; idx++) endpointAdj.set(idx, new Set([idx]));
+  for (const { u, v } of bestByPair.values()) {
+    endpointAdj.get(u)?.add(v);
+    endpointAdj.get(v)?.add(u);
+  }
+
+  let largestComp: number[] = items.length > 0 ? [0] : [];
+  const visitedComp = new Set<number>();
+  for (let idx = 0; idx < items.length; idx++) {
+    if (visitedComp.has(idx)) continue;
+    const comp: number[] = [];
+    const q = [idx];
+    visitedComp.add(idx);
+    while (q.length > 0) {
+      const cur = q.shift()!;
+      comp.push(cur);
+      for (const nxt of endpointAdj.get(cur) || []) {
+        if (!visitedComp.has(nxt)) {
+          visitedComp.add(nxt);
+          q.push(nxt);
+        }
+      }
+    }
+    comp.sort((a, b) => a - b);
+    if (comp.length > largestComp.length) largestComp = comp;
+  }
+
+  const compSet = new Set<number>(largestComp);
+  const compPairEdges = [...bestByPair.values()]
+    .filter(pe => compSet.has(pe.u) && compSet.has(pe.v))
+    .sort((a, b) => b.priority - a.priority || a.u - b.u || a.v - b.v);
+
+  const isGraphComplete = items.length >= 2 && largestComp.length === items.length;
+  const isTrueTriangle = items.length === 3 && isGraphComplete && compPairEdges.length === 3;
+  const hasTrueCycle = isGraphComplete && compPairEdges.length >= items.length && items.length >= 3;
+
+  // Build maximum-priority spanning tree (plus cycle closure edges if true triangle/cycle)
+  const uf = items.map((_, idx) => idx);
+  const findUf = (x: number): number => (uf[x] === x ? x : (uf[x] = findUf(uf[x])));
+  const proofEdges: typeof compPairEdges = [];
+  for (const pe of compPairEdges) {
+    const ru = findUf(pe.u);
+    const rv = findUf(pe.v);
+    if (ru !== rv) {
+      uf[ru] = rv;
+      proofEdges.push(pe);
+    } else if (isTrueTriangle || proofEdges.length < items.length + 1) {
+      proofEdges.push(pe);
+    }
+  }
+
+  const proofType = !isGraphComplete
+    ? 'partial_components'
+    : items.length === 2
+      ? 'direct_pair'
+      : isTrueTriangle
+        ? 'triangle'
+        : hasTrueCycle
+          ? 'cycle_network'
+          : 'steiner_tree';
+
+  if (items.length >= 3 && isGraphComplete && proofEdges.length >= items.length - 1) {
+    const allIdx = items.map((_, idx) => idx);
+    const spanRefs = [...new Set(proofEdges.flatMap(pe => pe.conn.refs || []))].slice(0, 8);
+    const worstSpanTier = proofEdges.reduce((acc, pe) => Math.max(acc, pe.conn.tier ?? 2), 1);
+    const edgeSummaries = proofEdges.map(
+      pe => `[${compareTargets[pe.u]} <-> ${compareTargets[pe.v]}] ${pe.conn.title}${pe.conn.refs?.length ? ` (${pe.conn.refs.slice(0, 2).join(', ')})` : ''}`,
+    );
+    const synthesizedConn: CompactConnection = {
+      id: `r13:proof:${proofType}:${compareTargets.join('+')}`,
+      relation: isTrueTriangle ? 'verified_three_edge_triangle' : 'verified_steiner_network',
+      epistemic: worstSpanTier <= 2 ? 'direct_textual_evidence' : 'documented_lexical_relationship',
+      tier: Math.min(4, worstSpanTier),
+      title: isTrueTriangle
+        ? `Verified 3-edge triangle connecting ${compareTargets.join(' <-> ')}`
+        : `Verified ${proofType.replace(/_/g, ' ')} (${proofEdges.length} independent edges) connecting ${compareTargets.join(' <-> ')}`,
+      why: edgeSummaries.join(' | '),
+      ...(spanRefs.length ? { refs: spanRefs } : {}),
+      score: 480,
+    };
+    // Prepend verified multi-anchor proof summary followed by each individual verified proof edge (deduplicated by ID)
+    const toPrepend: Array<{ conn: CompactConnection; matchedIndices: number[]; isIndirect: boolean }> = [
+      {
+        conn: {
+          ...synthesizedConn,
+          matched_endpoints: allIdx.map(i => itemEntries[i]?.input ?? String(i)),
+        },
+        matchedIndices: allIdx,
+        isIndirect: false,
+      },
+      ...proofEdges.map(pe => ({
+        conn: {
+          ...pe.conn,
+          matched_endpoints: [itemEntries[pe.u]?.input ?? String(pe.u), itemEntries[pe.v]?.input ?? String(pe.v)],
+        },
+        matchedIndices: allIdx,
+        isIndirect: false,
+      })),
+    ];
+    taggedCandidates.unshift(...toPrepend);
+  }
+
+  const coveredAnchors = largestComp.map(i => itemEntries[i]?.input ?? String(i));
+  const uncoveredAnchors = itemEntries
+    .map((e, idx) => ({ input: e.input, idx }))
+    .filter(x => !compSet.has(x.idx))
+    .map(x => x.input);
+  const graphProof = {
+    proof_type: proofType,
+    is_complete: isGraphComplete,
+    is_valid: isGraphComplete && proofEdges.length >= Math.max(1, items.length - 1),
+    independent_edge_count: proofEdges.length,
+    verified_edge_count: proofEdges.length,
+    distinct_anchor_pairs_connected: bestByPair.size,
+    covered_anchors: coveredAnchors,
+    uncovered_anchors: uncoveredAnchors,
+    ...(uncoveredAnchors.length > 0
+      ? {
+          partial_reason: `Connected ${coveredAnchors.length} of ${items.length} requested anchors; no verified <=3-hop original-language or textual edge reached: ${uncoveredAnchors.join(', ')}.`,
+        }
+      : {}),
+    verified_edges: proofEdges.map(pe => ({
+      anchor_pair: [pe.u, pe.v],
+      from_anchor: itemEntries[pe.u]?.input ?? String(pe.u),
+      to_anchor: itemEntries[pe.v]?.input ?? String(pe.v),
+      evidence_id: pe.conn.id,
+      relation: pe.conn.relation,
+      epistemic: pe.conn.epistemic,
+      tier: pe.conn.tier ?? 3,
+      witness_refs: pe.conn.refs ?? [],
+      title: pe.conn.title,
+      why: pe.conn.why,
+    })),
+  };
+
   const dedupeConnList = (arr: CompactConnection[]) => filterConnectionsForPrimary(arr, '', maxConnections, false);
   const completeMultiAnchor = dedupeConnList(
-    taggedCandidates.filter(t => t.matchedIndices.length === items.length).map(t => t.conn),
+    taggedCandidates.filter(t => !t.isIndirect && t.matchedIndices.length === items.length).map(t => t.conn),
   );
   const directPairwise = dedupeConnList(
     taggedCandidates
-      .filter(t => t.matchedIndices.length >= 2 && !t.isIndirect && (
-        t.conn.epistemic === 'direct_textual_evidence' ||
-        t.conn.epistemic === 'authorial_typology_or_quote' ||
-        t.conn.epistemic === 'documented_cross_language_bridge' ||
-        t.conn.epistemic === 'documented_collocation_or_cooccurrence' ||
-        t.conn.epistemic === 'documented_lexical_relationship' ||
-        t.conn.epistemic === 'verified_cross_reference' ||
-        t.conn.epistemic === 'editorial_cross_reference' ||
-        t.conn.epistemic === 'shared_motif_evidence' ||
-        (t.conn.tier !== undefined && t.conn.tier <= 4)
-      ))
+      .filter(isVerifiedPairwiseCandidate)
       .map(t => t.conn),
   );
   const indirectPaths = dedupeConnList(
@@ -1700,7 +2167,8 @@ export async function handleGetConnection(
     ...(warnings.length ? { warnings } : {}),
     items: itemSummaries,
     direct_link_found: directLinkFound,
-    all_endpoints_connected: allEndpointsConnected,
+    all_endpoints_connected: allEndpointsConnected && isGraphComplete,
+    graph_proof: graphProof,
     ...(!directLinkFound ? { no_direct_link_reason: 'No direct verse co-occurrence, lexical/LXX match, explicit cross-reference, or verified pairwise motif connected at least two requested items.' } : {}),
     connections,
     complete_multi_anchor: completeMultiAnchor,
