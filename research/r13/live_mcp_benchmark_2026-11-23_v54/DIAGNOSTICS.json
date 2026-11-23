@@ -1,0 +1,546 @@
+{
+  "date": "2026-11-23",
+  "method": "live read-only follow-up; includes no private chain handles",
+  "cases": [
+    {
+      "label": "LXX_modes",
+      "status": "ok",
+      "ms": 13512,
+      "ops": [
+        {
+          "mode": "passage",
+          "status": "ok",
+          "keys": [
+            "index",
+            "op",
+            "status",
+            "mode",
+            "passage",
+            "data"
+          ],
+          "preview": "{\"index\":0,\"op\":\"lxx\",\"status\":\"ok\",\"mode\":\"passage\",\"passage\":\"Exodus 25:31\",\"data\":{\"found\":true,\"book\":{\"book_no\":2,\"latin_name\":\"Exodus\",\"canonical_book_id\":2,\"canonical_book_name\":\"Exodus\",\"is_deuterocanonical_or_apocrypha\":false},\"reference\":{\"chapter\":25,\"chapter_suffix\":\"\",\"verse_nr\":31,\"verse_suffix\":\"\"},\"summary\":{\"total_tokens\":26,\"has_hebrew_counterpart\":true,\"hebrew_canonical_verse_id\":2227,\"hebrew_reference\":{\"book\":2,\"chapter\":25,\"verse_nr\":31},\"versification_mapping\":{\"mapping_kind\":\"same_reference\",\"rule_citation\":\"Standard direct chapter and verse alignment between MT and LXX 2:25.31.\",\"origin_mode\":\"algorithmically_calculated\",\"derivation_method\":\"mt_lxx_versification_alignment\"},\"linguistic_annotation_status\":\"unannotated_in_source\",\"epistemic_disclaimer\":\"The Swete digital edition provides authentic surface tokens and punctuation without morphological tags or lemmas. External lexicons or parsers must not be presented as source-attested facts.\"},\"tokens\":[{\"book_no\":2,\"chapter\":25,\"chapter_suffix\":\"\",\"verse_nr\":31,\"verse_suffix\":\"\",\"ordinal\":1,\"word_text\":\"ἕξ\",\"normalized_word\":\"εξ\",\"source_record_id\":\"SWETE:2.25.31#1\",\"source_release_key\":\"lxx-swete-26bad3e\",\"source_edition_key\":\"lxx-swete\"},{\"book_no\":2,\"chapter\":25,\"chapter_suffix\":\"\",\"verse_nr\":31,\"verse_suffix\":\"\",\"ordinal\":2,\"word_text\":\"δὲ\",\"normalized_word\":\"δε\",\"source_record_id\":\"SWETE:2.25.31#2\",\""
+        },
+        {
+          "mode": "compare",
+          "status": "ok",
+          "keys": [
+            "index",
+            "op",
+            "status",
+            "mode",
+            "passage",
+            "data"
+          ],
+          "preview": "{\"index\":1,\"op\":\"lxx\",\"status\":\"ok\",\"mode\":\"compare\",\"passage\":\"Exodus 25:31\",\"data\":{\"schema_version\":1,\"status\":\"ok\",\"query_mode\":\"hebrew\",\"correspondence_status\":\"matched\",\"has_hebrew_passage\":true,\"has_septuagint_passage\":true,\"hebrew_passage\":{\"canonical_verse_id\":2227,\"book\":2,\"chapter\":25,\"verse_nr\":31,\"word_count\":14,\"words\":[{\"ordinal\":1,\"word_id\":115574,\"original_word\":\"וְעָשִׂ֥יתָ\",\"transliteration\":\"ve.'a.Si.ta\",\"strongs_nr\":\"H6213\",\"gloss\":\"and/ you will make\",\"alignment_status\":\"unmatched\",\"aligned_lxx_ordinals\":[]},{\"ordinal\":2,\"word_id\":91297,\"original_word\":\"מְנֹרַ֖ת\",\"transliteration\":\"me.no.Rat\",\"strongs_nr\":\"H4501\",\"gloss\":\"a lampstand of\",\"alignment_status\":\"candidate_aligned\",\"aligned_lxx_ordinals\":[21]},{\"ordinal\":3,\"word_id\":59031,\"original_word\":\"זָהָ֣ב\",\"transliteration\":\"za.Hav\",\"strongs_nr\":\"H2091\",\"gloss\":\"gold\",\"alignment_status\":\"unmatched\",\"aligned_lxx_ordinals\":[]},{\"ordinal\":4,\"word_id\":67929,\"original_word\":\"טָה֑וֹר\",\"transliteration\":\"ta.Hor\",\"strongs_nr\":\"H2889\",\"gloss\":\"pure\",\"alignment_status\":\"unmatched\",\"aligned_lxx_ordinals\":[]},{\"ordinal\":5,\"word_id\":93871,\"original_word\":\"מִקְשָׁ֞ה\",\"transliteration\":\"mik.Shah\",\"strongs_nr\":\"H4749\",\"gloss\":\"hammered work\",\"alignment_status\":\"candidate_aligned\",\"aligned_lxx_ordinals\":[8]},{\"ordinal\":6,\"word_id\":115854,\"original_word\":\"תֵּעָשֶׂ֤ה\",\"transliteration\":\"te.'a.Seh\",\"strongs_nr\":\"H6213\",\"glos"
+        },
+        {
+          "mode": "translations",
+          "status": "ok",
+          "keys": [
+            "index",
+            "op",
+            "status",
+            "mode",
+            "word",
+            "data"
+          ],
+          "preview": "{\"index\":2,\"op\":\"lxx\",\"status\":\"ok\",\"mode\":\"translations\",\"word\":\"H4501\",\"data\":{\"schema_version\":\"3.0\",\"release_version\":\"r9b-v1.1\",\"rule_version\":\"1.2\",\"source_git_commit\":\"e6d62c99352c641d5748a486b90c1b2cad47fc98\",\"epistemic_layer\":\"static_source_evidence\",\"status\":\"ok\",\"focus\":{\"lemma_id\":\"lemma:H4501\",\"canonical_lemma_id\":\"lemma:H4501\",\"language\":\"hebrew\",\"lemma_form\":\"מְנוֹרָה\",\"lemma_stripped\":\"מנורה\",\"transliteration\":\"me.no.rah\",\"gloss\":\"lampstand (menorah)\",\"strongs_base\":\"H4501\",\"extended_strongs\":\"H4501\",\"homograph_tag\":null,\"pos\":\"H:N-F\",\"in_graph\":true,\"editions\":[\"macula-hebrew-wlc\"],\"outgoing_summary_count\":11,\"incoming_summary_count\":4,\"queried_alias\":\"H4501\"},\"homograph_siblings\":[{\"lemma_id\":\"lemma:H4501\",\"canonical_lemma_id\":\"lemma:H4501\",\"language\":\"hebrew\",\"lemma_form\":\"מְנוֹרָה\",\"lemma_stripped\":\"מנורה\",\"transliteration\":\"me.no.rah\",\"gloss\":\"lampstand (menorah)\",\"strongs_base\":\"H4501\",\"extended_strongs\":\"H4501\",\"homograph_tag\":null,\"pos\":\"H:N-F\",\"in_graph\":true,\"editions\":[\"macula-hebrew-wlc\"],\"outgoing_summary_count\":11,\"incoming_summary_count\":4}],\"resolved_occurrence\":null,\"lxx_translation\":{\"available\":true,\"status\":\"ok\",\"dataset_version\":\"r4-lxx-v1.0\",\"direction\":\"hebrew_to_greek\",\"sharding\":{\"hash_algorithm\":\"fnv1a64_hi32_mod64\",\"buckets\":64},\"counts\":{\"candidate_count\":1,\"total_attested_renderings\":30,\"returned\":1},\"items\":[{\"edge_id\":\"rel:lxx:tran"
+        },
+        {
+          "mode": "alignments",
+          "status": "ok",
+          "keys": [
+            "index",
+            "op",
+            "status",
+            "mode",
+            "word",
+            "data"
+          ],
+          "count": 0,
+          "preview": "{\"index\":3,\"op\":\"lxx\",\"status\":\"ok\",\"mode\":\"alignments\",\"word\":\"H4501\",\"data\":{\"schema_version\":1,\"status\":\"ok\",\"query\":\"H4501\",\"tier_filter\":null,\"total_returned\":0,\"alignments\":[],\"epistemic_disclaimer\":\"Candidate alignments are computationally inferred and strictly segregated from verified textual evidence. Unmatched words remain explicitly unaligned without invented equivalents.\",\"verification_release\":{\"mcp_release\":\"2.0.0\",\"corpus_target\":\"production\",\"corpus_url\":\"https://bibleresearch-corpus.kingdomfishers-custom.workers.dev\",\"corpus_release\":\"r13-discovery-3\",\"worker_version\":\"fa4b7d1b-7977-47a9-afa2-c657e7535769\",\"source_commit\":\"6f70561b5487e5d1033cdd72fd9578ed8e63f239\",\"asset_sha256\":\"fb41be32c11135a5aacdac7101907b2a7ba0878472742db4160518986d9fd422\"}}}"
+        }
+      ]
+    },
+    {
+      "label": "Geo_Gen2_8",
+      "status": "ok",
+      "ms": 13514,
+      "geo": {
+        "status": "ok",
+        "places": [
+          {
+            "place": "Eden 1",
+            "modern": "Armenia",
+            "relation": "event_location",
+            "lat": 40.383333,
+            "lon": 44.95,
+            "confidence": "disputed",
+            "evidence_ref": "Gen 2:8",
+            "note": "Gen 2:8 explicitly names Eden 1 as part of the narrative setting.",
+            "alternatives": [
+              {
+                "id": "290",
+                "bbox": [
+                  44.422222,
+                  32.543333,
+                  44.422222,
+                  32.543333
+                ],
+                "geometry": null,
+                "latitude": 32.543333,
+                "longitude": 44.422222,
+                "rank_order": 2,
+                "modern_name": "Babylon",
+                "is_alternative": true,
+                "precision_kind": "point",
+                "location_status": "disputed",
+                "confidence_label": "Disputed / alternative proposal #2 of 5 (OpenBible score 131)",
+                "evidence_summary": "Identified as in Babylonia (settlement). Ranked #2 among 5 scholarly proposals.",
+                "raw_source_score": {
+                  "vote_count": 11,
+                  "vote_total": 138,
+                  "vote_average": 13,
+                  "openbible_score": 131,
+                  "modern_precision": {
+                    "type": "visible",
+                    "meters": 5,
+                    "description": "point in visible remains"
+                  }
+                },
+                "source_citations": []
+              },
+              {
+                "id": "753",
+                "bbox": [
+                  46.104444,
+                  30.962222,
+                  46.104444,
+                  30.962222
+                ],
+                "geometry": null,
+                "latitude": 30.962222,
+                "longitude": 46.104444,
+                "rank_order": 3,
+                "modern_name": "Tell el Muqayyar",
+                "is_alternative": true,
+                "precision_kind": "point",
+                "location_status": "disputed",
+                "confidence_label": "Disputed / alternative proposal #3 of 5 (OpenBible score 100)",
+                "evidence_summary": "Identified as within 200 km of Ur 2 (settlement). Ranked #3 among 5 scholarly proposals.",
+                "raw_source_score": {
+                  "vote_count": 10,
+                  "vote_total": 116,
+                  "vote_average": 12,
+                  "openbible_score": 100,
+                  "modern_precision": {
+                    "type": "visible",
+                    "meters": 5,
+                    "description": "point in visible remains"
+                  }
+                },
+                "source_citations": []
+              },
+              {
+                "id": "230",
+                "bbox": [
+                  31.3075,
+                  30.129444,
+                  31.3075,
+                  30.129444
+                ],
+                "geometry": null,
+                "latitude": 30.129444,
+                "longitude": 31.3075,
+                "rank_order": 4,
+                "modern_name": "Ain Shams",
+                "is_alternative": true,
+                "precision_kind": "point",
+                "location_status": "disputed",
+                "confidence_label": "Disputed / alternative proposal #4 of 5 (OpenBible score 13)",
+                "evidence_summary": "Identified as in Egypt (settlement). Ranked #4 among 5 scholarly proposals.",
+                "raw_source_score": {
+                  "vote_count": 1,
+                  "vote_total": 10,
+                  "vote_average": 10,
+                  "openbible_score": 13,
+                  "modern_precision": {
+                    "type": "visible",
+                    "meters": 5,
+                    "description": "point in visible remains"
+                  }
+                },
+                "source_citations": []
+              },
+              {
+                "id": "459",
+                "bbox": [
+                  35.333333,
+                  32.766667,
+                  35.333333,
+                  32.766667
+                ],
+                "geometry": null,
+                "latitude": 32.766667,
+                "longitude": 35.333333,
+                "rank_order": 5,
+                "modern_name": "Canaan",
+                "is_alternative": true,
+                "precision_kind": "point",
+                "location_status": "disputed",
+                "confidence_label": "Disputed / alternative proposal #5 of 5 (OpenBible score 13)",
+                "evidence_summary": "Identified as in Canaan (region). Ranked #5 among 5 scholarly proposals.",
+                "raw_source_score": {
+                  "vote_count": 1,
+                  "vote_total": 10,
+                  "vote_average": 10,
+                  "openbible_score": 13,
+                  "modern_precision": {
+                    "type": "region",
+                    "description": "point in region"
+                  }
+                },
+                "source_citations": []
+              }
+            ]
+          },
+          {
+            "place": "Eden 2",
+            "modern": "Til Barsip",
+            "relation": "contextual_location",
+            "lat": 36.7014,
+            "lon": 38.0865,
+            "confidence": "probable",
+            "evidence_ref": "Gen.2.4–Gen.2.25",
+            "note": "Theographic event \"Creation of Adam and Eve\" (Gen.2.4–Gen.2.25) associates this narrative episode with Eden 2."
+          }
+        ]
+      },
+      "chrono": null
+    },
+    {
+      "label": "Word_anchored",
+      "status": "ok",
+      "ms": 13513,
+      "primary": "H8247",
+      "resolution": "selected_candidate_with_alternatives",
+      "occurrences": "{\"total_verses\":4,\"clusters\":[{\"cluster_id\":\"H8247:historical_narrative\",\"category\":\"historical_narrative\",\"label\":\"Historical Narrative (Genesis 43)\",\"count\":1,\"sample_refs\":[\"Genesis 43:11\"],\"summary\":\"Attested in 1 verse (Genesis 43:11) with surface forms: וּשְׁקֵדִֽים. Co-occurs with: best, pistachio, tragacanth gum, myrrh.\"},{\"cluster_id\":\"H8247:temple_and_sanctuary_architecture\",\"category\":\"temple_and_sanctuary_architecture\",\"label\":\"Temple & Sanctuary Architecture (Numbers 17)\",\"count\":1,\"sample_refs\":[\"Numbers 17:8\"],\"summary\":\"Attested in 1 verse (Numbers 17:8) with surface forms: שְׁקֵדִֽים. Co-occurs with: to blossom, flower, flower, morrow. Occurs in sanctuary o\"},{\"cluster_id\":\"H8247:poetic_imagery_and_similes\",\"category\":\"poetic_imagery_and_similes\",\"label\":\"Poetic Imagery & Similes (Ecclesiastes 12)\",\"count\":1,\"sample_refs\":[\"Ecclesiastes 12:5\"],\"summary\":\"Attested in 1 verse (Ecclesiastes 12:5) with surface forms: הַשָּׁקֵד֙. Co-occurs with: terror, desire, to shine, street.\"},{\"cluster_id\":\"H8247:prophetic_imagery_and_oracles\",\"category\":\"prophetic_imagery_and_oracle"
+    },
+    {
+      "label": "Word_homograph",
+      "status": "ok",
+      "ms": 13514,
+      "primary": "H7799",
+      "resolution": "selected_candidate_with_alternatives",
+      "candidates": [
+        {
+          "strongs": "H7800",
+          "script": "שׁוּשַׁן",
+          "transliteration": "shu.shan",
+          "gloss": "Susa",
+          "note": "Homograph or consonantally related sibling"
+        }
+      ],
+      "top": [
+        {
+          "rank": 1,
+          "id": "r11:gram:H7799:possessive_construction_with:H4639",
+          "relation": "verified_lexical_grammatical",
+          "target": "H4639",
+          "title": "Genitive / construct connection: שׁוּשַׁן (shu.shan) ↔ מַעֲשֶׂה (\"deed: judgement\", 2×)"
+        },
+        {
+          "rank": 2,
+          "id": "r11:gram:H7799:possessive_construction_with:H6525",
+          "relation": "verified_lexical_grammatical",
+          "target": "H6525",
+          "title": "Genitive / construct connection: שׁוּשַׁן (shu.shan) ↔ פֶּ֫רַח (\"flower\", 2×)"
+        },
+        {
+          "rank": 3,
+          "id": "r11:cluster:H7799:poetic_imagery_and_similes",
+          "relation": "explicit_comparison",
+          "target": "H7799",
+          "title": "Poetic Imagery & Similes (Song of Solomon 2, 4, 5, 6)"
+        },
+        {
+          "rank": 4,
+          "id": "r11:lxx:H7799:0",
+          "relation": "cross_language_bridge",
+          "target": "G2918",
+          "title": "Septuagint (LXX) bridge: שׁוּשַׁן (H7799) → κρίνον (G2918, \"lily\") across 8 passages"
+        },
+        {
+          "rank": 5,
+          "id": "r11:lex:H7799:0",
+          "relation": "verified_lexical_grammatical",
+          "target": "H7797",
+          "title": "Lexical relation (derived from root anchor): שׁוּשַׁן (H7799) ↔ שׂוּשׂ (H7797)"
+        },
+        {
+          "rank": 6,
+          "id": "r11:cluster:H7799:temple_and_sanctuary_architecture",
+          "relation": "verified_lexical_grammatical",
+          "target": "H7799",
+          "title": "Temple & Sanctuary Architecture (1 Kings 7 · 2 Chronicles 4)"
+        },
+        {
+          "rank": 7,
+          "id": "r11:lxx:H7799:1",
+          "relation": "cross_language_bridge",
+          "target": "H7799",
+          "title": "Septuagint superscription witness for Psalms 45:0: שׁוּשַׁן (H7799)"
+        },
+        {
+          "rank": 8,
+          "id": "r13:colloc:H7799:H5329",
+          "relation": "verified_lexical_grammatical",
+          "target": "H5329",
+          "title": "High-PMI collocation: שׁוּשַׁן (H7799) ↔ נָצַח (\"to conduct\", H5329) (NPMI=0.53, 4×)"
+        },
+        {
+          "rank": 9,
+          "id": "r11:lex:H7799:1",
+          "relation": "verified_lexical_grammatical",
+          "target": "H7800",
+          "title": "Lexical relation (derived from root anchor): שׁוּשַׁן (H7799) ↔ שׁוּשַׁן (H7800)"
+        },
+        {
+          "rank": 10,
+          "id": "r13:wp:H7799:H8348",
+          "relation": "orthographic_wordplay",
+          "target": "H8348",
+          "title": "Shared root / derivation (morphological derivation): שׁוּשַׁן (H7799) ↔ שֵׁשָׁן (H8348)"
+        },
+        {
+          "rank": 11,
+          "id": "r13:wp:H7799:H7800",
+          "relation": "orthographic_wordplay",
+          "target": "H7800",
+          "title": "Shared root / derivation (morphological derivation): שׁוּשַׁן (H7799) ↔ שׁוּשַׁן (H7800)"
+        },
+        {
+          "rank": 12,
+          "id": "r11:lex:H7799:2",
+          "relation": "verified_lexical_grammatical",
+          "target": "H7802",
+          "title": "Lexical relation (derived from root anchor): שׁוּשַׁן (H7799) ↔ שׁוּשַׁן עֵדוּת (H7802)"
+        }
+      ]
+    },
+    {
+      "label": "Blood_life_compare",
+      "status": "ok",
+      "ms": 13514,
+      "direct": true,
+      "proof": {
+        "proof_type": "direct_pair",
+        "is_complete": true,
+        "is_valid": true,
+        "independent_edge_count": 1,
+        "verified_edge_count": 1,
+        "distinct_anchor_pairs_connected": 1,
+        "covered_anchors": [
+          "H1818",
+          "H5315"
+        ],
+        "uncovered_anchors": [],
+        "verified_edges": [
+          {
+            "anchor_pair": [
+              0,
+              1
+            ],
+            "from_anchor": "H1818",
+            "to_anchor": "H5315",
+            "evidence_id": "r13:subgraph:path:0:1",
+            "relation": "steiner_direct_link",
+            "epistemic": "direct_textual_evidence",
+            "tier": 2,
+            "witness_refs": [
+              "Genesis 9:4"
+            ],
+            "title": "Direct textual convergence: \"H1818\" + \"H5315\" in Genesis 9:4",
+            "why": "Direct textual convergence: \"H1818\" + \"H5315\" in Genesis 9:4"
+          }
+        ]
+      },
+      "top": [
+        {
+          "id": "intersect:H1818+H5315",
+          "relation": "same_verse_co_attestation",
+          "title": "H1818 + H5315 co-occur in 28 verse(s)",
+          "refs": [
+            "Genesis 9:4",
+            "Genesis 9:5",
+            "Leviticus 7:27",
+            "Leviticus 17:10"
+          ]
+        },
+        {
+          "id": "r11:intersect:verse:H1818:H5315:210",
+          "relation": "verified_lexical_grammatical",
+          "title": "Direct textual convergence: \"H1818\" + \"H5315\" in Genesis 9:4",
+          "refs": [
+            "Genesis 9:4"
+          ]
+        },
+        {
+          "id": "r11:intersect:verse:H1818:H5315:211",
+          "relation": "verified_lexical_grammatical",
+          "title": "Direct textual convergence: \"H1818\" + \"H5315\" in Genesis 9:5",
+          "refs": [
+            "Genesis 9:5"
+          ]
+        },
+        {
+          "id": "r11:intersect:verse:H1818:H5315:2907",
+          "relation": "verified_lexical_grammatical",
+          "title": "Direct textual convergence: \"H1818\" + \"H5315\" in Leviticus 7:27",
+          "refs": [
+            "Leviticus 7:27"
+          ]
+        },
+        {
+          "id": "r11:intersect:verse:H1818:H5315:3247",
+          "relation": "verified_lexical_grammatical",
+          "title": "Direct textual convergence: \"H1818\" + \"H5315\" in Leviticus 17:11",
+          "refs": [
+            "Leviticus 17:11"
+          ]
+        },
+        {
+          "id": "r11:intersect:verse:H1818:H5315:3246",
+          "relation": "verified_lexical_grammatical",
+          "title": "Direct textual convergence: \"H1818\" + \"H5315\" in Leviticus 17:10",
+          "refs": [
+            "Leviticus 17:10"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "wp_spurious_evidence",
+      "status": "ok",
+      "ms": 13512,
+      "data": [
+        {
+          "status": "ok",
+          "ref": [
+            "Jeremiah 1:10",
+            "Jeremiah 1:11"
+          ],
+          "summary": "שָׁקֵד (H8247, \"almond\") and פָּקַד (H6485, \"to reckon: list\") share consonantal/phonetic sequence \"קד\" (edit distance 1, adjacent-verse proximity, explicit textual cue). Shared consonantal or phonetic pattern does not establish a historical etymology, common root, or intentional authorial link unless independently documented.",
+          "orthographic_analysis": {
+            "source_script": "שָׁקֵד",
+            "target_script": "פָּקַד",
+            "source_consonants": "שָׁקֵד",
+            "target_consonants": "פָּקַד",
+            "shared_consonants": "קד",
+            "overlap_kind": "documented_biblical_wordplay",
+            "proven_common_root": false,
+            "etymology_warning": "Shared consonantal or phonetic pattern does not establish a historical etymology, common root, or intentional authorial link unless independently documented."
+          },
+          "limitations": [
+            "Shared consonantal or phonetic pattern does not establish a historical etymology, common root, or intentional authorial link unless independently documented."
+          ],
+          "provenance": {
+            "source_dataset": "STEPBible + MACULA Original Text",
+            "source_record_ids": [
+              "Jeremiah 1:10",
+              "Jeremiah 1:11"
+            ],
+            "license": "CC BY 4.0",
+            "derivation_method": "r13_wordplay_attested_textual_wordplay"
+          }
+        }
+      ]
+    },
+    {
+      "label": "GitHub_C09",
+      "ms": 13513,
+      "C09": {
+        "id": "C09",
+        "items": [
+          "H0216",
+          "H5785"
+        ],
+        "expected": false,
+        "label": "Light skin phonetic only",
+        "status": "ok",
+        "ms": 6751,
+        "direct_link_found": true,
+        "all_endpoints_connected": true,
+        "passed": false,
+        "graph_proof": {
+          "proof_type": "direct_pair",
+          "is_complete": true,
+          "is_valid": true,
+          "independent_edge_count": 1,
+          "verified_edge_count": 1,
+          "distinct_anchor_pairs_connected": 1,
+          "covered_anchors": [
+            "H0216",
+            "H5785"
+          ],
+          "uncovered_anchors": [],
+          "verified_edges": [
+            {
+              "anchor_pair": [
+                0,
+                1
+              ],
+              "from_anchor": "H0216",
+              "to_anchor": "H5785",
+              "evidence_id": "r13:subgraph:path:0:1",
+              "relation": "steiner_direct_link",
+              "epistemic": "shared_motif_evidence",
+              "tier": 4,
+              "witness_refs": [
+                "Lamentations 3:2",
+                "Lamentations 3:4"
+              ],
+              "title": "Close pericope proximity: \"H0216\" (Lamentations 3:2) ↔ \"H5785\" (Lamentations 3:4)",
+              "why": "Close pericope proximity: \"H0216\" (Lamentations 3:2) ↔ \"H5785\" (Lamentations 3:4)"
+            }
+          ]
+        },
+        "connections": [
+          {
+            "rank": 1,
+            "id": "intersect:H0216+H5785",
+            "relation": "nearby_verse_co_attestation",
+            "epistemic": "documented_collocation_or_cooccurrence",
+            "refs": [
+              "Lamentations 3:2"
+            ],
+            "title": "H0216 + H5785 co-occur in 1 nearby (±2v) passage(s)"
+          },
+          {
+            "rank": 2,
+            "id": "r11:intersect:pericope:20473:20475",
+            "relation": "shared_motif",
+            "epistemic": "shared_motif_evidence",
+            "refs": [
+              "Lamentations 3:2",
+              "Lamentations 3:4"
+            ],
+            "title": "Close pericope proximity: \"H0216\" (Lamentations 3:2) ↔ \"H5785\" (Lamentations 3:4)"
+          },
+          {
+            "rank": 3,
+            "id": "r11:intersect:pericope:13584:13588",
+            "relation": "shared_motif",
+            "epistemic": "shared_motif_evidence",
+            "refs": [
+              "Job 30:26",
+              "Job 30:30"
+            ],
+            "title": "Close pericope proximity: \"H0216\" (Job 30:26) ↔ \"H5785\" (Job 30:30)"
+          }
+        ],
+        "indirect_paths": []
+      }
+    }
+  ]
+}
