@@ -13198,5 +13198,248 @@
       ],
       "uncertainty": "No direct verse co-occurrence or explicit textual witness linked at least two requested items; any single-anchor leads under individual_suggestions are non-linking suggestions."
     }
-  ]
+  ],
+  "metrics": {
+    "n": 34,
+    "top5": 29,
+    "top10": 33,
+    "top25": 34,
+    "connectivity_api_correct": 10,
+    "api_error_count": 0,
+    "byCategory": {
+      "word_seed": {
+        "total": 12,
+        "hit5": 11,
+        "hit10": 12
+      },
+      "passage_seed": {
+        "total": 12,
+        "hit5": 12,
+        "hit10": 12
+      },
+      "natural_query": {
+        "total": 10,
+        "hit5": 6,
+        "hit10": 9
+      }
+    }
+  },
+  "audits": [
+    {
+      "id": "A01",
+      "status": "PASS",
+      "title": "Attested almond/watch witness and canonical token parity",
+      "details": "Jeremiah 1:11 and 1:12 original tokens H8247 and H8245 highlighted; Jer 1:11 word#4 H0413, word_id33134 identical across get_Passage and research(evidence)."
+    },
+    {
+      "id": "A02",
+      "status": "PASS",
+      "title": "Reduce overclaim blood/east and watch/holy",
+      "details": "r13:wp:H1818:H6924 and r13:wp:H8245:H6918 are orthographic_similarity_only; preserved as exploratory candidates."
+    },
+    {
+      "id": "A03",
+      "status": "PASS",
+      "title": "Remove erroneous Babylon/Pekod lexical root",
+      "details": "get_Connection(H0894,H6489) still reports authentic cooccurrence Ezekiel 23:23, but no longer r11:lex:H6489:0 root to Babylon; hydrated r11:lex:H6489:0 now refers to H6485 instead."
+    },
+    {
+      "id": "A04",
+      "status": "PASS",
+      "title": "Remove erroneous Ezekiel bones=breath explicit identity",
+      "details": "r13:interp:21519:dem not_found."
+    },
+    {
+      "id": "A05",
+      "status": "PASS",
+      "title": "Restore blood↔ground retrieval",
+      "details": "get_Word(H1818) target r13:wp:H1818:H0127 rank24→4; get_Passage(Genesis 4:10-11) target absent→rank1."
+    },
+    {
+      "id": "A06",
+      "status": "PASS",
+      "title": "Original-language name discovery",
+      "details": "Genesis 21:6 Isaac/laugh #1; Genesis 29:32 Reuben/see+son #1; Genesis 25:25 Esau appearance #1 (but 'explicit interpretation' claim is debatable)."
+    },
+    {
+      "id": "A07",
+      "status": "PASS",
+      "title": "Correct graph topology",
+      "details": "H8247,H8245,H8246 outputs a two-edge Steiner tree, not false three-edge triangle; Adam/ground/blood triangle returns three distinct anchor-pair edges with Gen 2/4/9 witnesses."
+    },
+    {
+      "id": "A08",
+      "status": "PARTIAL",
+      "title": "Multi-anchor proof reliability",
+      "details": "Graph_proof verifies topology; C01 aggregate overclaims documented_lexical_relationship with two candidate_literary_pattern edges; C03 includes trivial 'see' and 'four' edges as if meaningful prophetic pattern."
+    },
+    {
+      "id": "A09",
+      "status": "PARTIAL",
+      "title": "LXX alignments",
+      "details": "Jeremiah 1:11 11 candidate and Exodus 25:33 12 candidate alignments, 0 documented both; correctness of candidate pairs not independently vetted."
+    },
+    {
+      "id": "A10",
+      "status": "FAIL",
+      "title": "Proper-name formula false positive",
+      "details": "Judges 15:19 incorrectly gives explicit-identification r13:interp:6949:birthname:H3117 where H3117 means 'the day', while H5875 is En Hakkore and name occurs before 'to this day'."
+    },
+    {
+      "id": "A11",
+      "status": "FAIL",
+      "title": "Greek lexical identity/sense mismatch",
+      "details": "get_Word G2495 (Ἰωνᾶς Jonah) returns lemma_key lemma:G2491K and gloss John; get_Passage(Matthew 12:40) says Jonah correctly. Likely verse-vs-lexicon mismatch."
+    },
+    {
+      "id": "A12",
+      "status": "FAIL",
+      "title": "Vision interpretation mixes unrelated verses",
+      "details": "r13:interp:22600:vis takes Amos + basket + summer fruit/end from Amos 8:2 as explicitly identified with wailing, songs, temple, bodies from Amos 8:3; genuine summer/end wordplay separately appears correctly."
+    },
+    {
+      "id": "A13",
+      "status": "PARTIAL",
+      "title": "Gen 6:14 pitch vs atonement context",
+      "details": "New graph uses root/wordplay H3724 'ransom' ↔ H3722 'atone', while Genesis 6:14 H3724 is 'pitch'; connectedness accurate but lexical sense and authorial intent remain unresolved."
+    },
+    {
+      "id": "A14",
+      "status": "PASS",
+      "title": "Additional positive wordplay seeds",
+      "details": "Amos 8:1-2 summer/end #1; Gen 30:24 Joseph/add #1; Gen 29:34 Levi/join #1; Gen 16:11 Ishmael/hear #1."
+    },
+    {
+      "id": "A15",
+      "status": "FAIL",
+      "title": "Unseen Judges 15:19 name derivation",
+      "details": "Expected En Hakkore name explanation; top result is false 'day' naming identification; valid name clue not surfaced as coherent explanation."
+    },
+    {
+      "id": "A16",
+      "status": "PARTIAL",
+      "title": "Jonah–Matthew explicit typology",
+      "details": "Jonah 1:17 vs Matthew 12:40 yields explicit typological-citation candidate rank8 and bilingual lexical bridges, but top result remains editorial xref, and G2495 'Jonah' is misglossed John."
+    },
+    {
+      "id": "A17",
+      "status": "UNKNOWN",
+      "title": "MCP–website graph parity",
+      "details": "Production website interaction and equality of graph engine and ranking were not independently checked in this retest."
+    },
+    {
+      "id": "A18",
+      "status": "UNKNOWN",
+      "title": "GitHub/source traceability",
+      "details": "Live version source_commit 6f70561b5487e5d1033cdd72fd9578ed8e63f239 was not retrievable via connected GitHub repository at test time; corpus and Worker release fields confirmed."
+    }
+  ],
+  "proofs": [
+    {
+      "id": "C01",
+      "type": "triangle",
+      "edge_count": 3,
+      "structurally_valid": true,
+      "edges": [
+        "H0120-H0127 r13:wp:H0120:H0127 direct attested Gen 2:5-7",
+        "H0120-H1818 r13:wp:H0120:H1818 exploratory candidate Gen 9:5-6",
+        "H1818-H0127 r13:wp:H1818:H0127 exploratory candidate Gen 4:10-11"
+      ],
+      "semantic_warning": "Composite result claims documented_lexical_relationship though 2 of 3 edges are candidate_literary_pattern; distinguish topology from evidential certainty."
+    },
+    {
+      "id": "C02",
+      "type": "steiner_tree",
+      "edge_count": 2,
+      "structurally_valid": true,
+      "edges": [
+        "H8247-H8245 r13:wp:H8247:H8245 Jeremiah 1:11-12",
+        "H8247-H8246 r13:wp:H8247:H8246 morphological_derivation"
+      ],
+      "semantic_warning": "Second morphological edge witness_refs empty; show lexical documentation and contextual Exodus witness."
+    },
+    {
+      "id": "C03",
+      "type": "cycle_network",
+      "edge_count": 5,
+      "structurally_valid": true,
+      "edges": [
+        "Zech4→Rev5 explicit r10:ident:rev5_6_eyes_spirits",
+        "Jer1→Ex25 H8247↔H8246 morphology",
+        "Jer1→Rev5 H7200↔G1492 generic 'see'",
+        "Ex25→Rev5 H0702↔G5064 generic 'four'",
+        "Jer1→Zech4 editorial what do you see"
+      ],
+      "semantic_warning": "Connectivity should not imply coherent almond→menorah→seven-eyes meaning. Generic 'four' and 'see' inflate graph."
+    },
+    {
+      "id": "C04",
+      "type": "steiner_tree",
+      "edge_count": 3,
+      "structurally_valid": true,
+      "edges": [
+        "Gen6→Lev16 H3724↔H3722 root/wordplay",
+        "Gen6→Ex2 shared H8392 tevah",
+        "Gen6→1Peter3 LXX H8392↔G2787 ark"
+      ],
+      "semantic_warning": "Gen6 H3724 is pitch in context, displayed as 'ransom'; no unambiguous typology proof from lexical root alone."
+    },
+    {
+      "id": "C05",
+      "type": "cycle_network",
+      "edge_count": 5,
+      "structurally_valid": true,
+      "edges": [
+        "Gen2→John20 H5301↔G1720 breathe into",
+        "Gen2→Rev11 H2416↔G2222 life",
+        "Ezek37→John20 H7307↔G4151 spirit/breath",
+        "Ezek37→Rev11 H0935↔G1525 enter",
+        "Gen2→Ezek37 editorial breath crossref"
+      ],
+      "semantic_warning": "Plausible research path, but cross-language parallels and editorial crossref do not automatically prove literary dependence."
+    }
+  ],
+  "holdouts": [
+    {
+      "id": "U05",
+      "seed": "Amos 8:1-2",
+      "expected": "summer fruit H7019 ↔ end H7093 in Amos 8:1-2",
+      "result": "PASS",
+      "top_rank": 1,
+      "evidence_id": "r13:wp:H7019:H7093"
+    },
+    {
+      "id": "U06",
+      "seed": "Genesis 30:24",
+      "expected": "Joseph H3130 ↔ add H3254, ideally with gathered H0622",
+      "result": "PASS",
+      "top_rank": 1,
+      "evidence_id": "r13:wp:H3130:H3254"
+    },
+    {
+      "id": "U07",
+      "seed": "Genesis 29:34",
+      "expected": "Levi H3878 ↔ joined H3867",
+      "result": "PASS",
+      "top_rank": 1,
+      "evidence_id": "r13:wp:H3867:H3878"
+    },
+    {
+      "id": "U08",
+      "seed": "Genesis 16:11",
+      "expected": "Ishmael H3458 ↔ heard H8085",
+      "result": "PASS",
+      "top_rank": 1,
+      "evidence_id": "r13:interp:393:name:H3458"
+    },
+    {
+      "id": "U09",
+      "seed": "Judges 15:19",
+      "expected": "En Hakkore name H5875 explained by calling/cried; avoid 'the day' H3117",
+      "result": "FAIL",
+      "top_rank": 1,
+      "evidence_id": "r13:interp:6949:birthname:H3117"
+    }
+  ],
+  "scope": "Live connected BibleResearch MCP only, read-only. No website parity or source-code deployment check, no authorial-intent proof from lexical similarities."
 }
