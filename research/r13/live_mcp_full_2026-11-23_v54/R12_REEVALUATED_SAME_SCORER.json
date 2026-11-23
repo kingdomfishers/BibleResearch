@@ -1,0 +1,2427 @@
+{
+  "method": "Re-scored all historical R12-release3 top25 cards with identical evaluator as current R13 live run; exact Strong's/verse range overlap only",
+  "metrics": {
+    "queries": 190,
+    "assessed": 186,
+    "hitK": 132,
+    "hit25": 147,
+    "prior_report_hitK": 135,
+    "rank_agreement": 182,
+    "top5_family": {
+      "r10:wordplay": 3,
+      "r12:path": 45,
+      "r11:gram": 131,
+      "r11:cluster": 43,
+      "r11:colloc": 5,
+      "r11:xref": 383,
+      "r12:entity": 30,
+      "r12:scene": 137,
+      "r10:ident": 9,
+      "r11:lxx": 77,
+      "r12:prop": 10,
+      "r10:typo": 12,
+      "r10:corresp": 15,
+      "r12:prog": 2,
+      "r10:xlang": 13,
+      "r11:lex": 9,
+      "r10:motif": 4,
+      "r10:interp": 1,
+      "r10:lex": 6,
+      "r10:homograph": 4,
+      "r11:intersect": 6,
+      "r10:pattern": 5
+    }
+  },
+  "rows": [
+    {
+      "id": "L001",
+      "query": "H0120",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 15,
+      "previous_report_rank": 1,
+      "refreshed_baseline_rank": 1,
+      "term": "H0127"
+    },
+    {
+      "id": "L002",
+      "query": "H0120",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 25,
+      "previous_report_rank": 8,
+      "refreshed_baseline_rank": 8,
+      "term": "H1818"
+    },
+    {
+      "id": "L003",
+      "query": "H1818",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 10,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "L004",
+      "query": "H2233",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 15,
+      "previous_report_rank": 1,
+      "refreshed_baseline_rank": 1,
+      "term": "H2232"
+    },
+    {
+      "id": "L005",
+      "query": "H2233",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 12,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "L006",
+      "query": "H1285",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 10,
+      "previous_report_rank": 3,
+      "refreshed_baseline_rank": 3,
+      "term": "H3772"
+    },
+    {
+      "id": "L007",
+      "query": "H1285",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 12,
+      "previous_report_rank": 24,
+      "refreshed_baseline_rank": 24,
+      "term": "H2142"
+    },
+    {
+      "id": "L008",
+      "query": "H1285",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 15,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "L009",
+      "query": "H7307",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 20,
+      "previous_report_rank": 16,
+      "refreshed_baseline_rank": 16,
+      "term": "H4325"
+    },
+    {
+      "id": "L010",
+      "query": "H7307",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 15,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "L011",
+      "query": "H5869",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 20,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "L012",
+      "query": "H5869",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 20,
+      "previous_report_rank": 1,
+      "refreshed_baseline_rank": 1,
+      "term": "G3788"
+    },
+    {
+      "id": "L013",
+      "query": "H4501",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 10,
+      "previous_report_rank": 17,
+      "refreshed_baseline_rank": 17,
+      "term": "H5216"
+    },
+    {
+      "id": "L014",
+      "query": "H4501",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 15,
+      "previous_report_rank": 1,
+      "refreshed_baseline_rank": 1,
+      "term": "G3087"
+    },
+    {
+      "id": "L015",
+      "query": "H5216",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 15,
+      "previous_report_rank": 2,
+      "refreshed_baseline_rank": 2,
+      "term": "G3088"
+    },
+    {
+      "id": "L016",
+      "query": "H5216",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 15,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "L017",
+      "query": "H8438",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 15,
+      "previous_report_rank": 4,
+      "refreshed_baseline_rank": 4,
+      "term": "G2847"
+    },
+    {
+      "id": "L018",
+      "query": "H0231",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 10,
+      "previous_report_rank": 1,
+      "refreshed_baseline_rank": 1,
+      "term": "G5301"
+    },
+    {
+      "id": "L019",
+      "query": "H0231",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 12,
+      "previous_report_rank": 14,
+      "refreshed_baseline_rank": 14,
+      "term": "H8438"
+    },
+    {
+      "id": "L020",
+      "query": "H4682",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 15,
+      "previous_report_rank": 3,
+      "refreshed_baseline_rank": 3,
+      "term": "G0106"
+    },
+    {
+      "id": "L021",
+      "query": "H0784",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 10,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "L022",
+      "query": "H3899",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 12,
+      "previous_report_rank": 1,
+      "refreshed_baseline_rank": 1,
+      "term": "G0740"
+    },
+    {
+      "id": "L023",
+      "query": "H0216",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 15,
+      "previous_report_rank": 4,
+      "refreshed_baseline_rank": 4,
+      "term": "G5457"
+    },
+    {
+      "id": "L024",
+      "query": "H3722",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 20,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "L025",
+      "query": "H4325",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 20,
+      "previous_report_rank": 2,
+      "refreshed_baseline_rank": 2,
+      "term": "G5204"
+    },
+    {
+      "id": "L026",
+      "query": "G3056",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 20,
+      "previous_report_rank": 11,
+      "refreshed_baseline_rank": 11,
+      "term": "G4487"
+    },
+    {
+      "id": "L027",
+      "query": "G3088",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 10,
+      "previous_report_rank": 17,
+      "refreshed_baseline_rank": 17,
+      "term": "G5459"
+    },
+    {
+      "id": "L028",
+      "query": "G3087",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 15,
+      "previous_report_rank": 2,
+      "refreshed_baseline_rank": 2,
+      "term": "H4501"
+    },
+    {
+      "id": "L029",
+      "query": "G2847",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 10,
+      "previous_report_rank": 4,
+      "refreshed_baseline_rank": 4,
+      "term": "G2053"
+    },
+    {
+      "id": "L030",
+      "query": "G1953",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 20,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "L031",
+      "query": "G5140",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 12,
+      "previous_report_rank": 1,
+      "refreshed_baseline_rank": 1,
+      "term": "G2250"
+    },
+    {
+      "id": "L032",
+      "query": "G1453",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 12,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "L033",
+      "query": "G3957",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 12,
+      "previous_report_rank": 10,
+      "refreshed_baseline_rank": 10,
+      "term": "G0106"
+    },
+    {
+      "id": "L034",
+      "query": "H4682",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 15,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "L035",
+      "query": "H5216",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 15,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "L036",
+      "query": "H2091",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 20,
+      "previous_report_rank": 10,
+      "refreshed_baseline_rank": 10,
+      "term": "G5553"
+    },
+    {
+      "id": "L037",
+      "query": "H3220",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 10,
+      "previous_report_rank": 2,
+      "refreshed_baseline_rank": 2,
+      "term": "H5488"
+    },
+    {
+      "id": "L038",
+      "query": "H2416",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 20,
+      "previous_report_rank": 11,
+      "refreshed_baseline_rank": 11,
+      "term": "G2222"
+    },
+    {
+      "id": "L039",
+      "query": "H4194",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 15,
+      "previous_report_rank": 4,
+      "refreshed_baseline_rank": 4,
+      "term": "G2288"
+    },
+    {
+      "id": "L040",
+      "query": "H1285",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 10,
+      "previous_report_rank": 9,
+      "refreshed_baseline_rank": 9,
+      "term": "G1242"
+    },
+    {
+      "id": "L041",
+      "query": "H3068",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 10,
+      "previous_report_rank": 6,
+      "refreshed_baseline_rank": 6,
+      "term": "G2962"
+    },
+    {
+      "id": "L042",
+      "query": "H0157",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 10,
+      "previous_report_rank": 3,
+      "refreshed_baseline_rank": 3,
+      "term": "G0025"
+    },
+    {
+      "id": "L043",
+      "query": "H0539",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 12,
+      "previous_report_rank": 3,
+      "refreshed_baseline_rank": 3,
+      "term": "G4100"
+    },
+    {
+      "id": "L044",
+      "query": "H7225",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 10,
+      "previous_report_rank": 3,
+      "refreshed_baseline_rank": 3,
+      "term": "G0746"
+    },
+    {
+      "id": "L045",
+      "query": "H0430",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 15,
+      "previous_report_rank": 7,
+      "refreshed_baseline_rank": 7,
+      "term": "G2316"
+    },
+    {
+      "id": "L046",
+      "query": "H7676",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 15,
+      "previous_report_rank": 4,
+      "refreshed_baseline_rank": 4,
+      "term": "G4521"
+    },
+    {
+      "id": "L047",
+      "query": "H8064",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 15,
+      "previous_report_rank": 4,
+      "refreshed_baseline_rank": 4,
+      "term": "G3772"
+    },
+    {
+      "id": "L048",
+      "query": "H2233",
+      "polarity": "positive",
+      "assessable": false,
+      "k": 20,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "L049",
+      "query": "H7307",
+      "polarity": "positive",
+      "assessable": false,
+      "k": 20,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "L050",
+      "query": "H0127",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 15,
+      "previous_report_rank": 3,
+      "refreshed_baseline_rank": 3,
+      "term": "H0120"
+    },
+    {
+      "id": "L051",
+      "query": "H1818",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 20,
+      "previous_report_rank": 8,
+      "refreshed_baseline_rank": 8,
+      "term": "H0120"
+    },
+    {
+      "id": "L052",
+      "query": "H0231",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 15,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "L053",
+      "query": "H1285",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 25,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "L054",
+      "query": "H5237",
+      "polarity": "positive",
+      "assessable": false,
+      "k": 20,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "L055",
+      "query": "G3088",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 12,
+      "previous_report_rank": 22,
+      "refreshed_baseline_rank": 22,
+      "term": "G5461"
+    },
+    {
+      "id": "D001",
+      "query": "Genesis 1:1",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 10,
+      "previous_report_rank": 6,
+      "refreshed_baseline_rank": 6,
+      "term": "John 1:1"
+    },
+    {
+      "id": "D002",
+      "query": "Genesis 1:3",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 15,
+      "previous_report_rank": 8,
+      "refreshed_baseline_rank": 8,
+      "term": "John 1:5"
+    },
+    {
+      "id": "D003",
+      "query": "Genesis 1:26",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 10,
+      "previous_report_rank": 19,
+      "refreshed_baseline_rank": 19,
+      "term": "Genesis 9:6"
+    },
+    {
+      "id": "D004",
+      "query": "Genesis 2:7",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 10,
+      "previous_report_rank": 4,
+      "refreshed_baseline_rank": 4,
+      "term": "1 Corinthians 15:45"
+    },
+    {
+      "id": "D005",
+      "query": "Genesis 3:15",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 20,
+      "previous_report_rank": 1,
+      "refreshed_baseline_rank": 1,
+      "term": "Revelation 12:17"
+    },
+    {
+      "id": "D006",
+      "query": "Genesis 6:18",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 10,
+      "previous_report_rank": 1,
+      "refreshed_baseline_rank": 1,
+      "term": "Genesis 9:9"
+    },
+    {
+      "id": "D007",
+      "query": "Genesis 8:1",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 15,
+      "previous_report_rank": 1,
+      "refreshed_baseline_rank": 1,
+      "term": "Genesis 1:2"
+    },
+    {
+      "id": "D008",
+      "query": "Genesis 9:13",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 20,
+      "previous_report_rank": 9,
+      "refreshed_baseline_rank": 9,
+      "term": "Revelation 4:3"
+    },
+    {
+      "id": "D009",
+      "query": "Genesis 12:3",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 10,
+      "previous_report_rank": 1,
+      "refreshed_baseline_rank": 1,
+      "term": "Galatians 3:8"
+    },
+    {
+      "id": "D010",
+      "query": "Genesis 15:6",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 10,
+      "previous_report_rank": 1,
+      "refreshed_baseline_rank": 1,
+      "term": "Romans 4:3"
+    },
+    {
+      "id": "D011",
+      "query": "Genesis 22:2",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 10,
+      "previous_report_rank": 1,
+      "refreshed_baseline_rank": 1,
+      "term": "Hebrews 11:17"
+    },
+    {
+      "id": "D012",
+      "query": "Genesis 22:8",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 20,
+      "previous_report_rank": 5,
+      "refreshed_baseline_rank": 5,
+      "term": "John 1:29"
+    },
+    {
+      "id": "D013",
+      "query": "Genesis 28:12",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 10,
+      "previous_report_rank": 1,
+      "refreshed_baseline_rank": 1,
+      "term": "John 1:51"
+    },
+    {
+      "id": "D014",
+      "query": "Exodus 3:6",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 10,
+      "previous_report_rank": 1,
+      "refreshed_baseline_rank": 1,
+      "term": "Matthew 22:32"
+    },
+    {
+      "id": "D015",
+      "query": "Exodus 12:5",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 10,
+      "previous_report_rank": 2,
+      "refreshed_baseline_rank": 2,
+      "term": "1 Corinthians 5:7"
+    },
+    {
+      "id": "D016",
+      "query": "Exodus 12:13",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 10,
+      "previous_report_rank": 13,
+      "refreshed_baseline_rank": 13,
+      "term": "Hebrews 11:28"
+    },
+    {
+      "id": "D017",
+      "query": "Exodus 12:22",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 15,
+      "previous_report_rank": 7,
+      "refreshed_baseline_rank": 7,
+      "term": "Hebrews 9:19"
+    },
+    {
+      "id": "D018",
+      "query": "Exodus 14:21",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 10,
+      "previous_report_rank": 1,
+      "refreshed_baseline_rank": 1,
+      "term": "1 Corinthians 10:2"
+    },
+    {
+      "id": "D019",
+      "query": "Exodus 16:4",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 10,
+      "previous_report_rank": 2,
+      "refreshed_baseline_rank": 2,
+      "term": "John 6:32"
+    },
+    {
+      "id": "D020",
+      "query": "Exodus 17:6",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 10,
+      "previous_report_rank": 2,
+      "refreshed_baseline_rank": 2,
+      "term": "1 Corinthians 10:4"
+    },
+    {
+      "id": "D021",
+      "query": "Exodus 20:12",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 10,
+      "previous_report_rank": 6,
+      "refreshed_baseline_rank": 6,
+      "term": "Ephesians 6:2"
+    },
+    {
+      "id": "D022",
+      "query": "Exodus 25:31",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 12,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "D023",
+      "query": "Leviticus 16:15",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 10,
+      "previous_report_rank": 1,
+      "refreshed_baseline_rank": 1,
+      "term": "Hebrews 9:7"
+    },
+    {
+      "id": "D024",
+      "query": "Leviticus 17:11",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 12,
+      "previous_report_rank": 2,
+      "refreshed_baseline_rank": 2,
+      "term": "Hebrews 9:22"
+    },
+    {
+      "id": "D025",
+      "query": "Numbers 21:9",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 10,
+      "previous_report_rank": 2,
+      "refreshed_baseline_rank": 2,
+      "term": "John 3:14"
+    },
+    {
+      "id": "D026",
+      "query": "Numbers 24:17",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 20,
+      "previous_report_rank": 1,
+      "refreshed_baseline_rank": 1,
+      "term": "Matthew 2:2"
+    },
+    {
+      "id": "D027",
+      "query": "Deuteronomy 6:4",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 10,
+      "previous_report_rank": 5,
+      "refreshed_baseline_rank": 5,
+      "term": "Mark 12:29"
+    },
+    {
+      "id": "D028",
+      "query": "Deuteronomy 6:5",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 10,
+      "previous_report_rank": 8,
+      "refreshed_baseline_rank": 8,
+      "term": "Mark 12:30"
+    },
+    {
+      "id": "D029",
+      "query": "Deuteronomy 8:3",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 10,
+      "previous_report_rank": 1,
+      "refreshed_baseline_rank": 1,
+      "term": "Matthew 4:4"
+    },
+    {
+      "id": "D030",
+      "query": "Deuteronomy 21:23",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 10,
+      "previous_report_rank": 1,
+      "refreshed_baseline_rank": 1,
+      "term": "Galatians 3:13"
+    },
+    {
+      "id": "D031",
+      "query": "Deuteronomy 25:4",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 10,
+      "previous_report_rank": 1,
+      "refreshed_baseline_rank": 1,
+      "term": "1 Corinthians 9:9"
+    },
+    {
+      "id": "D032",
+      "query": "Psalm 22:1",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 10,
+      "previous_report_rank": 1,
+      "refreshed_baseline_rank": 1,
+      "term": "Matthew 27:46"
+    },
+    {
+      "id": "D033",
+      "query": "Psalm 22:18",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 10,
+      "previous_report_rank": 4,
+      "refreshed_baseline_rank": 4,
+      "term": "John 19:24"
+    },
+    {
+      "id": "D034",
+      "query": "Psalm 69:21",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 12,
+      "previous_report_rank": 17,
+      "refreshed_baseline_rank": 17,
+      "term": "John 19:29"
+    },
+    {
+      "id": "D035",
+      "query": "Psalm 110:1",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 10,
+      "previous_report_rank": 2,
+      "refreshed_baseline_rank": 2,
+      "term": "Mark 12:36"
+    },
+    {
+      "id": "D036",
+      "query": "Psalm 118:22",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 10,
+      "previous_report_rank": 5,
+      "refreshed_baseline_rank": 5,
+      "term": "1 Peter 2:7"
+    },
+    {
+      "id": "D037",
+      "query": "Isaiah 7:14",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 10,
+      "previous_report_rank": 2,
+      "refreshed_baseline_rank": 2,
+      "term": "Matthew 1:23"
+    },
+    {
+      "id": "D038",
+      "query": "Isaiah 9:2",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 10,
+      "previous_report_rank": 1,
+      "refreshed_baseline_rank": 1,
+      "term": "Matthew 4:16"
+    },
+    {
+      "id": "D039",
+      "query": "Isaiah 40:3",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 10,
+      "previous_report_rank": 3,
+      "refreshed_baseline_rank": 3,
+      "term": "Mark 1:3"
+    },
+    {
+      "id": "D040",
+      "query": "Isaiah 53:4",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 10,
+      "previous_report_rank": 3,
+      "refreshed_baseline_rank": 3,
+      "term": "Matthew 8:17"
+    },
+    {
+      "id": "D041",
+      "query": "Isaiah 53:7",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 10,
+      "previous_report_rank": 1,
+      "refreshed_baseline_rank": 1,
+      "term": "Acts 8:32"
+    },
+    {
+      "id": "D042",
+      "query": "Isaiah 61:1",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 10,
+      "previous_report_rank": 2,
+      "refreshed_baseline_rank": 2,
+      "term": "Luke 4:18"
+    },
+    {
+      "id": "D043",
+      "query": "Jeremiah 31:31",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 10,
+      "previous_report_rank": 6,
+      "refreshed_baseline_rank": 6,
+      "term": "Hebrews 8:8"
+    },
+    {
+      "id": "D044",
+      "query": "Hosea 11:1",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 10,
+      "previous_report_rank": 1,
+      "refreshed_baseline_rank": 1,
+      "term": "Matthew 2:15"
+    },
+    {
+      "id": "D045",
+      "query": "Joel 2:28",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 10,
+      "previous_report_rank": 1,
+      "refreshed_baseline_rank": 1,
+      "term": "Acts 2:17"
+    },
+    {
+      "id": "D046",
+      "query": "Amos 9:11",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 10,
+      "previous_report_rank": 1,
+      "refreshed_baseline_rank": 1,
+      "term": "Acts 15:16"
+    },
+    {
+      "id": "D047",
+      "query": "Micah 5:2",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 10,
+      "previous_report_rank": 1,
+      "refreshed_baseline_rank": 1,
+      "term": "Matthew 2:6"
+    },
+    {
+      "id": "D048",
+      "query": "Habakkuk 2:4",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 10,
+      "previous_report_rank": 1,
+      "refreshed_baseline_rank": 1,
+      "term": "Romans 1:17"
+    },
+    {
+      "id": "D049",
+      "query": "Zechariah 9:9",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 10,
+      "previous_report_rank": 2,
+      "refreshed_baseline_rank": 2,
+      "term": "Matthew 21:5"
+    },
+    {
+      "id": "D050",
+      "query": "Zechariah 12:10",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 10,
+      "previous_report_rank": 9,
+      "refreshed_baseline_rank": 9,
+      "term": "John 19:37"
+    },
+    {
+      "id": "D051",
+      "query": "Malachi 3:1",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 10,
+      "previous_report_rank": 2,
+      "refreshed_baseline_rank": 2,
+      "term": "Mark 1:2"
+    },
+    {
+      "id": "D052",
+      "query": "Psalm 16:10",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 10,
+      "previous_report_rank": 1,
+      "refreshed_baseline_rank": 1,
+      "term": "Acts 2:27"
+    },
+    {
+      "id": "D053",
+      "query": "Zechariah 13:7",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 10,
+      "previous_report_rank": 1,
+      "refreshed_baseline_rank": 1,
+      "term": "Matthew 26:31"
+    },
+    {
+      "id": "D054",
+      "query": "Isaiah 6:9",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 12,
+      "previous_report_rank": 1,
+      "refreshed_baseline_rank": 1,
+      "term": "Matthew 13:14"
+    },
+    {
+      "id": "D055",
+      "query": "Malachi 4:5",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 15,
+      "previous_report_rank": 5,
+      "refreshed_baseline_rank": 5,
+      "term": "Luke 1:17"
+    },
+    {
+      "id": "S001",
+      "query": "Exodus 12:15",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 25,
+      "previous_report_rank": 18,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "S002",
+      "query": "Exodus 12:39",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 25,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "S003",
+      "query": "Exodus 13:3",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 20,
+      "previous_report_rank": 2,
+      "refreshed_baseline_rank": 2,
+      "term": "Deuteronomy 16:3"
+    },
+    {
+      "id": "S004",
+      "query": "Exodus 14:21",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 25,
+      "previous_report_rank": 2,
+      "refreshed_baseline_rank": 2,
+      "term": "Genesis 1:9"
+    },
+    {
+      "id": "S005",
+      "query": "Exodus 14:21",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 25,
+      "previous_report_rank": 2,
+      "refreshed_baseline_rank": 2,
+      "term": "Genesis 8:1"
+    },
+    {
+      "id": "S006",
+      "query": "Exodus 14:30",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 15,
+      "previous_report_rank": 1,
+      "refreshed_baseline_rank": 1,
+      "term": "1 Corinthians 10:2"
+    },
+    {
+      "id": "S007",
+      "query": "Joshua 3:16",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 15,
+      "previous_report_rank": 1,
+      "refreshed_baseline_rank": 1,
+      "term": "Exodus 14:21"
+    },
+    {
+      "id": "S008",
+      "query": "2 Kings 2:8",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 15,
+      "previous_report_rank": 6,
+      "refreshed_baseline_rank": 6,
+      "term": "Joshua 3:16"
+    },
+    {
+      "id": "S009",
+      "query": "2 Kings 2:14",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 12,
+      "previous_report_rank": 1,
+      "refreshed_baseline_rank": 1,
+      "term": "2 Kings 2:8"
+    },
+    {
+      "id": "S010",
+      "query": "Numbers 20:11",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 15,
+      "previous_report_rank": 6,
+      "refreshed_baseline_rank": 6,
+      "term": "Exodus 17:6"
+    },
+    {
+      "id": "S011",
+      "query": "Numbers 11:7",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 15,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "S012",
+      "query": "Leviticus 23:5",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 15,
+      "previous_report_rank": 1,
+      "refreshed_baseline_rank": 1,
+      "term": "Exodus 12:6"
+    },
+    {
+      "id": "S013",
+      "query": "Leviticus 23:6",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 12,
+      "previous_report_rank": 11,
+      "refreshed_baseline_rank": 11,
+      "term": "Exodus 12:15"
+    },
+    {
+      "id": "S014",
+      "query": "Numbers 33:3",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 20,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "S015",
+      "query": "Joshua 5:10",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 15,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "S016",
+      "query": "1 Kings 19:8",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 25,
+      "previous_report_rank": 5,
+      "refreshed_baseline_rank": 5,
+      "term": "Exodus 24:18"
+    },
+    {
+      "id": "S017",
+      "query": "Genesis 40:13",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 25,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "S018",
+      "query": "Hosea 6:2",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 25,
+      "previous_report_rank": 1,
+      "refreshed_baseline_rank": 1,
+      "term": "1 Corinthians 15:4"
+    },
+    {
+      "id": "S019",
+      "query": "Jonah 1:17",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 10,
+      "previous_report_rank": 1,
+      "refreshed_baseline_rank": 1,
+      "term": "Matthew 12:40"
+    },
+    {
+      "id": "S020",
+      "query": "2 Kings 20:5",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 25,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "S021",
+      "query": "Hosea 6:2",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 25,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "S022",
+      "query": "1 Kings 17:22",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 20,
+      "previous_report_rank": 12,
+      "refreshed_baseline_rank": 12,
+      "term": "Luke 7:15"
+    },
+    {
+      "id": "S023",
+      "query": "2 Kings 4:34",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 25,
+      "previous_report_rank": 9,
+      "refreshed_baseline_rank": 9,
+      "term": "Acts 9:40"
+    },
+    {
+      "id": "S024",
+      "query": "Ezekiel 37:7",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 25,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "S025",
+      "query": "Ezekiel 37:12",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 25,
+      "previous_report_rank": 3,
+      "refreshed_baseline_rank": 3,
+      "term": "Matthew 27:52"
+    },
+    {
+      "id": "S026",
+      "query": "Isaiah 26:19",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 20,
+      "previous_report_rank": 4,
+      "refreshed_baseline_rank": 4,
+      "term": "John 5:28"
+    },
+    {
+      "id": "S027",
+      "query": "Exodus 12:13",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 25,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "S028",
+      "query": "Joshua 2:18",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 20,
+      "previous_report_rank": 5,
+      "refreshed_baseline_rank": 5,
+      "term": "Matthew 1:5"
+    },
+    {
+      "id": "S029",
+      "query": "Genesis 38:29",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 15,
+      "previous_report_rank": 4,
+      "refreshed_baseline_rank": 4,
+      "term": "Matthew 1:3"
+    },
+    {
+      "id": "S030",
+      "query": "Genesis 38:28",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 25,
+      "previous_report_rank": 7,
+      "refreshed_baseline_rank": 7,
+      "term": "Joshua 2:18"
+    },
+    {
+      "id": "S031",
+      "query": "Genesis 38:30",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 15,
+      "previous_report_rank": 2,
+      "refreshed_baseline_rank": 2,
+      "term": "Matthew 1:3"
+    },
+    {
+      "id": "S032",
+      "query": "Exodus 25:31",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 15,
+      "previous_report_rank": 1,
+      "refreshed_baseline_rank": 1,
+      "term": "Zechariah 4:2"
+    },
+    {
+      "id": "S033",
+      "query": "Zechariah 4:2",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 15,
+      "previous_report_rank": 1,
+      "refreshed_baseline_rank": 1,
+      "term": "Revelation 1:12"
+    },
+    {
+      "id": "S034",
+      "query": "Zechariah 4:10",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 15,
+      "previous_report_rank": 1,
+      "refreshed_baseline_rank": 1,
+      "term": "Revelation 5:6"
+    },
+    {
+      "id": "S035",
+      "query": "Zechariah 4:6",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 25,
+      "previous_report_rank": 9,
+      "refreshed_baseline_rank": 9,
+      "term": "Revelation 4:5"
+    },
+    {
+      "id": "S036",
+      "query": "Exodus 27:20",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 15,
+      "previous_report_rank": 23,
+      "refreshed_baseline_rank": 23,
+      "term": "Zechariah 4:12"
+    },
+    {
+      "id": "S037",
+      "query": "Matthew 5:15",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 12,
+      "previous_report_rank": 3,
+      "refreshed_baseline_rank": 3,
+      "term": "Luke 11:33"
+    },
+    {
+      "id": "S038",
+      "query": "Luke 11:34",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 12,
+      "previous_report_rank": 1,
+      "refreshed_baseline_rank": 1,
+      "term": "Matthew 6:22"
+    },
+    {
+      "id": "S039",
+      "query": "2 Peter 1:19",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 20,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "S040",
+      "query": "Revelation 1:20",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 10,
+      "previous_report_rank": 5,
+      "refreshed_baseline_rank": 5,
+      "term": "Revelation 2:1"
+    },
+    {
+      "id": "S041",
+      "query": "Revelation 4:5",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 12,
+      "previous_report_rank": 16,
+      "refreshed_baseline_rank": 16,
+      "term": "Revelation 5:6"
+    },
+    {
+      "id": "S042",
+      "query": "Isaiah 6:3",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 12,
+      "previous_report_rank": 1,
+      "refreshed_baseline_rank": 1,
+      "term": "Revelation 4:8"
+    },
+    {
+      "id": "S043",
+      "query": "Ezekiel 1:26",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 20,
+      "previous_report_rank": 1,
+      "refreshed_baseline_rank": 1,
+      "term": "Revelation 4:2"
+    },
+    {
+      "id": "S044",
+      "query": "Ezekiel 1:28",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 15,
+      "previous_report_rank": 1,
+      "refreshed_baseline_rank": 1,
+      "term": "Revelation 4:3"
+    },
+    {
+      "id": "S045",
+      "query": "Exodus 19:18",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 20,
+      "previous_report_rank": 23,
+      "refreshed_baseline_rank": 23,
+      "term": "Revelation 15:8"
+    },
+    {
+      "id": "S046",
+      "query": "Genesis 15:17",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 20,
+      "previous_report_rank": 7,
+      "refreshed_baseline_rank": 7,
+      "term": "Exodus 19:18"
+    },
+    {
+      "id": "S047",
+      "query": "Leviticus 16:12",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 15,
+      "previous_report_rank": 2,
+      "refreshed_baseline_rank": 2,
+      "term": "Revelation 8:3"
+    },
+    {
+      "id": "S048",
+      "query": "Psalm 141:2",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 12,
+      "previous_report_rank": 1,
+      "refreshed_baseline_rank": 1,
+      "term": "Revelation 5:8"
+    },
+    {
+      "id": "S049",
+      "query": "Isaiah 11:2",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 25,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "S050",
+      "query": "Ezekiel 47:1",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 15,
+      "previous_report_rank": 3,
+      "refreshed_baseline_rank": 3,
+      "term": "Revelation 22:1"
+    },
+    {
+      "id": "S051",
+      "query": "Genesis 2:10",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 20,
+      "previous_report_rank": 9,
+      "refreshed_baseline_rank": 9,
+      "term": "Revelation 22:1"
+    },
+    {
+      "id": "S052",
+      "query": "Genesis 3:24",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 20,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "S053",
+      "query": "Genesis 2:9",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 15,
+      "previous_report_rank": 3,
+      "refreshed_baseline_rank": 3,
+      "term": "Revelation 22:2"
+    },
+    {
+      "id": "S054",
+      "query": "Genesis 3:17",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 15,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "S055",
+      "query": "Genesis 1:3",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 20,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "S056",
+      "query": "Genesis 11:9",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 25,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "S057",
+      "query": "Genesis 4:10",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 10,
+      "previous_report_rank": 4,
+      "refreshed_baseline_rank": 4,
+      "term": "Hebrews 12:24"
+    },
+    {
+      "id": "S058",
+      "query": "Leviticus 23:15",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 25,
+      "previous_report_rank": 11,
+      "refreshed_baseline_rank": 11,
+      "term": "Acts 2:1"
+    },
+    {
+      "id": "S059",
+      "query": "Numbers 6:25",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 25,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "S060",
+      "query": "Exodus 34:29",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 12,
+      "previous_report_rank": 17,
+      "refreshed_baseline_rank": 17,
+      "term": "2 Corinthians 3:7"
+    },
+    {
+      "id": "S061",
+      "query": "Jeremiah 31:33",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 10,
+      "previous_report_rank": 3,
+      "refreshed_baseline_rank": 3,
+      "term": "Hebrews 10:16"
+    },
+    {
+      "id": "S062",
+      "query": "Deuteronomy 30:6",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 20,
+      "previous_report_rank": 9,
+      "refreshed_baseline_rank": 9,
+      "term": "Romans 2:29"
+    },
+    {
+      "id": "S063",
+      "query": "Genesis 17:11",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 20,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "S064",
+      "query": "Psalm 51:7",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 15,
+      "previous_report_rank": 2,
+      "refreshed_baseline_rank": 2,
+      "term": "Numbers 19:18"
+    },
+    {
+      "id": "S065",
+      "query": "John 19:29",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 20,
+      "previous_report_rank": 7,
+      "refreshed_baseline_rank": 7,
+      "term": "Exodus 12:22"
+    },
+    {
+      "id": "W001",
+      "query": "G3088",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 20,
+      "previous_report_rank": 23,
+      "refreshed_baseline_rank": 23,
+      "term": "H8081"
+    },
+    {
+      "id": "W002",
+      "query": "H4501",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 12,
+      "previous_report_rank": 17,
+      "refreshed_baseline_rank": 17,
+      "term": "H5216"
+    },
+    {
+      "id": "W003",
+      "query": "H4501",
+      "polarity": "positive",
+      "assessable": false,
+      "k": 25,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "W004",
+      "query": "H0784",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 12,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "W005",
+      "query": "H0784",
+      "polarity": "positive",
+      "assessable": false,
+      "k": 15,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "W006",
+      "query": "H8081",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 12,
+      "previous_report_rank": 24,
+      "refreshed_baseline_rank": 24,
+      "term": "H5216"
+    },
+    {
+      "id": "W007",
+      "query": "Zechariah 4:12",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 20,
+      "previous_report_rank": 5,
+      "refreshed_baseline_rank": 8,
+      "term": "H4501"
+    },
+    {
+      "id": "W008",
+      "query": "H4325",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 20,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "W009",
+      "query": "H0875",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 25,
+      "previous_report_rank": 23,
+      "refreshed_baseline_rank": 23,
+      "term": "H5869"
+    },
+    {
+      "id": "W010",
+      "query": "H5869",
+      "polarity": "positive",
+      "assessable": false,
+      "k": 20,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "W011",
+      "query": "H5869",
+      "polarity": "positive",
+      "assessable": false,
+      "k": 20,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "W012",
+      "query": "H2091",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 25,
+      "previous_report_rank": 17,
+      "refreshed_baseline_rank": 17,
+      "term": "H5178"
+    },
+    {
+      "id": "W013",
+      "query": "H2091",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 12,
+      "previous_report_rank": 3,
+      "refreshed_baseline_rank": 3,
+      "term": "H4501"
+    },
+    {
+      "id": "W014",
+      "query": "H5178",
+      "polarity": "positive",
+      "assessable": false,
+      "k": 12,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "W015",
+      "query": "silver",
+      "polarity": "positive",
+      "assessable": false,
+      "k": 20,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "W016",
+      "query": "H0068",
+      "polarity": "positive",
+      "assessable": false,
+      "k": 25,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "W017",
+      "query": "Genesis 6:14",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 25,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "W018",
+      "query": "cedar",
+      "polarity": "positive",
+      "assessable": false,
+      "k": 20,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "W019",
+      "query": "pomegranate",
+      "polarity": "positive",
+      "assessable": false,
+      "k": 25,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "W020",
+      "query": "wheat",
+      "polarity": "positive",
+      "assessable": false,
+      "k": 25,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "W021",
+      "query": "barley",
+      "polarity": "positive",
+      "assessable": false,
+      "k": 20,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "W022",
+      "query": "H2233",
+      "polarity": "positive",
+      "assessable": false,
+      "k": 20,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "W023",
+      "query": "fig tree",
+      "polarity": "positive",
+      "assessable": false,
+      "k": 20,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "W024",
+      "query": "vine",
+      "polarity": "positive",
+      "assessable": false,
+      "k": 25,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "W025",
+      "query": "yeast",
+      "polarity": "positive",
+      "assessable": false,
+      "k": 20,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "W026",
+      "query": "Jeremiah 18:6",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 15,
+      "previous_report_rank": 3,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "W027",
+      "query": "wool",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 20,
+      "previous_report_rank": 13,
+      "refreshed_baseline_rank": 13,
+      "term": "G2847"
+    },
+    {
+      "id": "W028",
+      "query": "salt",
+      "polarity": "positive",
+      "assessable": false,
+      "k": 25,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "W029",
+      "query": "iron",
+      "polarity": "positive",
+      "assessable": false,
+      "k": 20,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "W030",
+      "query": "Daniel 2:32",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 15,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "W031",
+      "query": "sun",
+      "polarity": "positive",
+      "assessable": false,
+      "k": 15,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "W032",
+      "query": "H4501",
+      "polarity": "positive",
+      "assessable": false,
+      "k": 25,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "W033",
+      "query": "H3220",
+      "polarity": "positive",
+      "assessable": false,
+      "k": 25,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "W034",
+      "query": "H7307",
+      "polarity": "positive",
+      "assessable": false,
+      "k": 25,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "W035",
+      "query": "G3788",
+      "polarity": "positive",
+      "assessable": false,
+      "k": 20,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "W036",
+      "query": "H2233",
+      "polarity": "positive",
+      "assessable": false,
+      "k": 25,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "W037",
+      "query": "H0231",
+      "polarity": "positive",
+      "assessable": false,
+      "k": 15,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "W038",
+      "query": "G2053",
+      "polarity": "positive",
+      "assessable": false,
+      "k": 25,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "W039",
+      "query": "H8081",
+      "polarity": "positive",
+      "assessable": false,
+      "k": 25,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "W040",
+      "query": "Numbers 19:9",
+      "polarity": "positive",
+      "assessable": true,
+      "k": 15,
+      "previous_report_rank": 2,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "N001",
+      "query": "H1904",
+      "polarity": "negative",
+      "assessable": true,
+      "k": 25,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "N002",
+      "query": "H5869",
+      "polarity": "negative",
+      "assessable": true,
+      "k": 25,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "N003",
+      "query": "G3056",
+      "polarity": "negative",
+      "assessable": true,
+      "k": 25,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "N004",
+      "query": "H1285",
+      "polarity": "negative",
+      "assessable": true,
+      "k": 25,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "N005",
+      "query": "H7307",
+      "polarity": "negative",
+      "assessable": false,
+      "k": 25,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "N006",
+      "query": "H5869",
+      "polarity": "negative",
+      "assessable": false,
+      "k": 25,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "N007",
+      "query": "H2233",
+      "polarity": "negative",
+      "assessable": false,
+      "k": 25,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "N008",
+      "query": "spirit wind",
+      "polarity": "negative",
+      "assessable": true,
+      "k": 25,
+      "previous_report_rank": 1,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "N009",
+      "query": "three days resurrection",
+      "polarity": "negative",
+      "assessable": true,
+      "k": 25,
+      "previous_report_rank": 24,
+      "refreshed_baseline_rank": 24,
+      "term": "Genesis 5:23"
+    },
+    {
+      "id": "N010",
+      "query": "Hosea 6:2",
+      "polarity": "negative",
+      "assessable": true,
+      "k": 25,
+      "previous_report_rank": 1,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "N011",
+      "query": "Exodus 12:15",
+      "polarity": "negative",
+      "assessable": true,
+      "k": 25,
+      "previous_report_rank": 18,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "N012",
+      "query": "H4501",
+      "polarity": "negative",
+      "assessable": false,
+      "k": 25,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "N013",
+      "query": "Adam dam",
+      "polarity": "negative",
+      "assessable": false,
+      "k": 25,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "N014",
+      "query": "scarlet Tamar Rahab",
+      "polarity": "negative",
+      "assessable": false,
+      "k": 25,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "N015",
+      "query": "G3088",
+      "polarity": "negative",
+      "assessable": false,
+      "k": 25,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "N016",
+      "query": "H8081",
+      "polarity": "negative",
+      "assessable": false,
+      "k": 25,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "N017",
+      "query": "G3088",
+      "polarity": "negative",
+      "assessable": false,
+      "k": 25,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "N018",
+      "query": "Jonah 1:17",
+      "polarity": "negative",
+      "assessable": true,
+      "k": 25,
+      "previous_report_rank": 1,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "N019",
+      "query": "Revelation 4:5",
+      "polarity": "negative",
+      "assessable": true,
+      "k": 25,
+      "previous_report_rank": 16,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "N020",
+      "query": "Exodus 14:21",
+      "polarity": "negative",
+      "assessable": true,
+      "k": 25,
+      "previous_report_rank": 1,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "N021",
+      "query": "H1285",
+      "polarity": "negative",
+      "assessable": false,
+      "k": 25,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "N022",
+      "query": "H1904",
+      "polarity": "negative",
+      "assessable": false,
+      "k": 25,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "N023",
+      "query": "H2091",
+      "polarity": "negative",
+      "assessable": false,
+      "k": 25,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    },
+    {
+      "id": "N024",
+      "query": "H5869",
+      "polarity": "negative",
+      "assessable": false,
+      "k": 25,
+      "previous_report_rank": null,
+      "refreshed_baseline_rank": null,
+      "term": null
+    }
+  ]
+}
