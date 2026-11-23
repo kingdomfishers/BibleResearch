@@ -1,0 +1,256 @@
+{
+  "method": "Focused direct pair truthiness and evidence type QA; expected=false means no established direct semantic/textual proof, not denial of loose co-occurrence or a possible thematic link",
+  "cases": [
+    {
+      "id": "NC01",
+      "items": [
+        "H1904",
+        "H3629"
+      ],
+      "expected": false,
+      "why": "Hagar and kidney unconnected",
+      "status": "ok",
+      "direct": false,
+      "ms": 4376,
+      "proof": {
+        "valid": false,
+        "edges": []
+      },
+      "top": []
+    },
+    {
+      "id": "NC02",
+      "items": [
+        "Genesis 1:1",
+        "Obadiah 1:8"
+      ],
+      "expected": false,
+      "why": "Unrelated verses, formerly falsely connected",
+      "status": "ok",
+      "direct": false,
+      "ms": 4376,
+      "proof": {
+        "valid": false,
+        "edges": []
+      },
+      "top": []
+    },
+    {
+      "id": "NC03",
+      "items": [
+        "H0216",
+        "H5785"
+      ],
+      "expected": false,
+      "why": "Light and skin: nearby-pericope witness does not entail semantic identity",
+      "status": "ok",
+      "direct": true,
+      "ms": 4377,
+      "proof": {
+        "valid": true,
+        "edges": [
+          {
+            "anchor_pair": [
+              0,
+              1
+            ],
+            "from_anchor": "H0216",
+            "to_anchor": "H5785",
+            "evidence_id": "r13:subgraph:path:0:1",
+            "relation": "steiner_direct_link",
+            "epistemic": "shared_motif_evidence",
+            "tier": 4,
+            "witness_refs": [
+              "Lamentations 3:2",
+              "Lamentations 3:4"
+            ],
+            "title": "Close pericope proximity: \"H0216\" (Lamentations 3:2) ↔ \"H5785\" (Lamentations 3:4)",
+            "why": "Close pericope proximity: \"H0216\" (Lamentations 3:2) ↔ \"H5785\" (Lamentations 3:4)"
+          }
+        ]
+      },
+      "top": [
+        {
+          "id": "intersect:H0216+H5785",
+          "title": "H0216 + H5785 co-occur in 1 nearby (±2v) passage(s)",
+          "refs": [
+            "Lamentations 3:2"
+          ],
+          "ep": "documented_collocation_or_cooccurrence"
+        },
+        {
+          "id": "r11:intersect:pericope:20473:20475",
+          "title": "Close pericope proximity: \"H0216\" (Lamentations 3:2) ↔ \"H5785\" (Lamentations 3:4)",
+          "refs": [
+            "Lamentations 3:2",
+            "Lamentations 3:4"
+          ],
+          "ep": "shared_motif_evidence"
+        },
+        {
+          "id": "r11:intersect:pericope:13584:13588",
+          "title": "Close pericope proximity: \"H0216\" (Job 30:26) ↔ \"H5785\" (Job 30:30)",
+          "refs": [
+            "Job 30:26",
+            "Job 30:30"
+          ],
+          "ep": "shared_motif_evidence"
+        }
+      ]
+    },
+    {
+      "id": "NC04",
+      "items": [
+        "Exodus 25:31",
+        "Hebrews 9:2"
+      ],
+      "expected": true,
+      "why": "Valid lampstand bridge",
+      "status": "ok",
+      "direct": true,
+      "ms": 4376,
+      "proof": {
+        "valid": true,
+        "edges": [
+          {
+            "anchor_pair": [
+              0,
+              1
+            ],
+            "from_anchor": "Exodus 25:31",
+            "to_anchor": "Hebrews 9:2",
+            "evidence_id": "passage_lxx:H4501:G3087",
+            "relation": "cross_language_lxx_bridge",
+            "epistemic": "documented_cross_language_bridge",
+            "tier": 3,
+            "witness_refs": [
+              "Exodus 25:31",
+              "Hebrews 9:2"
+            ],
+            "title": "LXX lexical bridge: מְנוֹרָה (H4501) <-> λυχνία (G3087, \"lampstand\")",
+            "why": "Exodus 25:31 uses מְנוֹרָה (H4501), corresponding via LXX to λυχνία (G3087), which appears in Hebrews 9:2."
+          }
+        ]
+      },
+      "top": [
+        {
+          "id": "r11:xref:2227:30207",
+          "title": "Exodus 25:31 -> Hebrews 9:2 (\"a lampstand\")",
+          "refs": [
+            "Exodus 25:31",
+            "Hebrews 9:2"
+          ],
+          "ep": "editorial_cross_reference"
+        },
+        {
+          "id": "r11:xref:30207:2227",
+          "title": "Hebrews 9:2 -> Exodus 25:31 (\"a lampstand\")",
+          "refs": [
+            "Hebrews 9:2",
+            "Exodus 25:31"
+          ],
+          "ep": "editorial_cross_reference"
+        },
+        {
+          "id": "passage_lxx:H4501:G3087",
+          "title": "LXX lexical bridge: מְנוֹרָה (H4501) <-> λυχνία (G3087, \"lampstand\")",
+          "refs": [
+            "Exodus 25:31",
+            "Hebrews 9:2"
+          ],
+          "ep": "documented_cross_language_bridge"
+        },
+        {
+          "id": "r11:xref:30207:2219",
+          "title": "Modern editorial cross-reference (reciprocal) (OT↔NT): Hebrews 9:2 ↔ Exodus 25:23-40 (\"first room\")",
+          "refs": [
+            "Hebrews 9:2",
+            "Exodus 25:23-40"
+          ],
+          "ep": "editorial_cross_reference"
+        }
+      ]
+    },
+    {
+      "id": "NC05",
+      "items": [
+        "Zechariah 12:10",
+        "John 19:37"
+      ],
+      "expected": true,
+      "why": "Valid explicit quoted pierced-one witness",
+      "status": "ok",
+      "direct": true,
+      "ms": 4376,
+      "proof": {
+        "valid": true,
+        "edges": [
+          {
+            "anchor_pair": [
+              0,
+              1
+            ],
+            "from_anchor": "Zechariah 12:10",
+            "to_anchor": "John 19:37",
+            "evidence_id": "passage_lxx:H1856:G1574",
+            "relation": "cross_language_lxx_bridge",
+            "epistemic": "documented_cross_language_bridge",
+            "tier": 3,
+            "witness_refs": [
+              "Zechariah 12:10",
+              "John 19:37"
+            ],
+            "title": "LXX lexical bridge: דָּקַר (H1856) <-> ἐκκεντέω (G1574, \"to pierce\")",
+            "why": "Zechariah 12:10 uses דָּקַר (H1856), corresponding via LXX to ἐκκεντέω (G1574), which appears in John 19:37."
+          }
+        ]
+      },
+      "top": [
+        {
+          "id": "r11:xref:26968:23172",
+          "title": "John 19:37 -> Zechariah 12:10 (\"look on the One they have pierced\")",
+          "refs": [
+            "John 19:37",
+            "Zechariah 12:10"
+          ],
+          "ep": "editorial_cross_reference"
+        },
+        {
+          "id": "passage_lxx:H1856:G1574",
+          "title": "LXX lexical bridge: דָּקַר (H1856) <-> ἐκκεντέω (G1574, \"to pierce\")",
+          "refs": [
+            "Zechariah 12:10",
+            "John 19:37"
+          ],
+          "ep": "documented_cross_language_bridge"
+        },
+        {
+          "id": "r13:subgraph:path:0:1",
+          "title": "Modern editorial cross-reference (OT↔NT): John 19:37 → Zechariah 12:10 (\"look on the One they have pierced\")",
+          "refs": [
+            "John 19:37",
+            "Zechariah 12:10"
+          ],
+          "ep": "editorial_cross_reference"
+        }
+      ]
+    },
+    {
+      "id": "NC06",
+      "items": [
+        "Genesis 11:9",
+        "Acts 2:6"
+      ],
+      "expected": false,
+      "why": "Typological Babylon/Pentecost hypothesis, not established direct source citation",
+      "status": "ok",
+      "direct": false,
+      "ms": 4377,
+      "proof": {
+        "valid": false,
+        "edges": []
+      },
+      "top": []
+    }
+  ]
+}
