@@ -1,0 +1,251 @@
+{
+  "method": "read-only research operations, heading and identity canaries, chain handles excluded",
+  "tests": [
+    {
+      "label": "research_batch",
+      "ms": 11873,
+      "status": "ok",
+      "items": [
+        {
+          "op": "grammar_search",
+          "status": "ok",
+          "keys": [
+            "index",
+            "op",
+            "status",
+            "passage",
+            "results"
+          ],
+          "count": 1,
+          "preview": "{\"index\":0,\"op\":\"grammar_search\",\"status\":\"ok\",\"passage\":\"Genesis 2:7\",\"results\":[{\"ref\":\"Genesis 2:7\",\"frames\":{\"schema_version\":\"3.0\",\"release_version\":\"r9b-v1.1\",\"rule_version\":\"1.2\",\"source_git_commit\":\"e6d62c99352c641d5748a486b90c1b2cad47fc98\",\"epistemic_layer\":\"static_source_evidence\",\"status\":\"ok\",\"coverage_classification\":\"covered_with_evidence\",\"source_mode\":\"canonical_macula_syntax\",\"canonical_reference\":{\"book\":1,\"chapter\":2,\"verse\":7,\"ref\":\"GEN 2:7\"},\"edition\":\"macula-hebrew-wlc\",\"supported_predicates\":[\"grammatical_subject_of\",\"grammatical_object_of\",\"grammatical_indirect_object_of\",\"grammatical_second_object_of\",\"modifies\",\"possessive_construction_with\"],\"counts\":{\"frames\":3,\"relations\":6,\"candidate_relations\":0},\"frames\":[{\"context\":{\"figurative_scope\":\"unknown\",\"modality\":\"indicative\",\"polarity\":\"affirmative_candidate\",\"quotation\":\"none\",\"speaker_scope\":\"narrator\",\"voice\":\"unknown\"},\"extraction\":{\"algorithm\":\"bibleontology_s0_s1_s2_r3_v1\",\"quality\":\"rule_derived\",\"rule_version\":\"1.2\",\"warnings\":[]},\"frame_id\":\"frame:macula-hebrew-wlc:GEN 2:7#cl0:svov1\",\"predicate\":{\"lemma_id\":\"lemma:H3335G\",\"source_form\":\"יִּיצֶר֩\",\"token_id\":\"o010020070012\",\"word_id\":75175,\"word_po"
+        },
+        {
+          "op": "lxx",
+          "status": "ok",
+          "keys": [
+            "index",
+            "op",
+            "status",
+            "mode",
+            "passage",
+            "data"
+          ],
+          "preview": "{\"index\":1,\"op\":\"lxx\",\"status\":\"ok\",\"mode\":\"alignments\",\"passage\":\"Exodus 25:31\",\"data\":{\"schema_version\":1,\"status\":\"ok\",\"query\":\"Exodus 25:31\",\"tier_filter\":null,\"total_returned\":0,\"alignments\":[],\"epistemic_disclaimer\":\"Candidate alignments are computationally inferred and strictly segregated from verified textual evidence. Unmatched words remain explicitly unaligned without invented equivalents.\",\"verification_release\":{\"mcp_release\":\"2.0.0\",\"corpus_target\":\"production\",\"corpus_url\":\"https://bibleresearch-corpus.kingdomfishers-custom.workers.dev\",\"corpus_release\":\"r13-discovery-3\",\"worker_version\":\"fa4b7d1b-7977-47a9-afa2-c657e7535769\",\"source_commit\":\"6f70561b5487e5d1033cdd72fd9578ed8e63f239\",\"asset_sha256\":\"fb41be32c11135a5aacdac7101907b2a7ba0878472742db4160518986d9fd422\"}}}"
+        },
+        {
+          "op": "intersect_words",
+          "status": "ok",
+          "keys": [
+            "index",
+            "op",
+            "status",
+            "words",
+            "window",
+            "total_matches",
+            "verse_ids",
+            "verses"
+          ],
+          "preview": "{\"index\":2,\"op\":\"intersect_words\",\"status\":\"ok\",\"words\":[\"H1818\",\"H5315\"],\"window\":0,\"total_matches\":28,\"verse_ids\":[210,211,2907,3246,3247,3248,3250,5264,5413,5611],\"verses\":[{\"verse_id\":210,\"book\":1,\"chapter\":9,\"verse\":4,\"ref\":\"Genesis 9:4\",\"web\":\"But flesh with its life, that is, its blood, you shall not eat.\",\"xrefs\":[{\"target_vid\":5257,\"target_ref\":\"Deuteronomy 12:16-23\",\"phrase\":\"lifeblood\",\"flags\":1,\"reciprocal\":true,\"cross_testament\":false},{\"target_vid\":3246,\"target_ref\":\"Leviticus 17:10-14\",\"phrase\":\"lifeblood\",\"flags\":1,\"reciprocal\":true,\"cross_testament\":false},{\"target_vid\":27567,\"target_ref\":\"Acts 15:20-29\",\"phrase\":\"lifeblood\",\"flags\":3,\"reciprocal\":true,\"cross_testament\":true},{\"target_vid\":2906,\"target_ref\":\"Leviticus 7:26\",\"phrase\":\"lifeblood\",\"flags\":1,\"reciprocal\":true,\"cross_testament\":false},{\"target_vid\":3250,\"target_ref\":\"Leviticus 17:14\",\"phrase\":\"life of all flesh is its blood\",\"flags\":4,\"reciprocal\":false,\"cross_testament\":false},{\"target_vid\":2796,\"target_ref\":\"Leviticus 3:17\",\"phrase\":\"lifeblood\",\"flags\":1,\"reciprocal\":true,\"cross_testament\":false},{\"target_vid\":5264,\"target_ref\":\"Deuteronomy 12:23\",\"phrase\":\"blood is the life\",\"flags\":4,\"reciprocal\":fa"
+        },
+        {
+          "op": "evidence",
+          "status": "ok",
+          "keys": [
+            "index",
+            "op",
+            "status",
+            "evidence_id",
+            "release_id",
+            "relation",
+            "epistemic",
+            "evidence_tier",
+            "evidence_type",
+            "title",
+            "summary",
+            "original_words",
+            "matched_terms",
+            "passages",
+            "orthographic_analysis",
+            "provenance",
+            "limitations"
+          ],
+          "preview": "{\"index\":3,\"op\":\"evidence\",\"status\":\"ok\",\"evidence_id\":\"r13:wp:H8247:H8245\",\"release_id\":\"r11-v1.0\",\"relation\":\"orthographic_wordplay\",\"epistemic\":\"direct_textual_evidence\",\"evidence_tier\":2,\"evidence_type\":\"attested_textual_wordplay\",\"title\":\"Attested biblical wordplay: שָׁקֵד (H8247) ↔ שָׁקַד (H8245)\",\"summary\":\"שָׁקֵד (H8247, \\\"almond\\\") and שָׁקַד (H8245, \\\"to watch\\\") share consonantal/phonetic sequence \\\"שקד\\\" (edit distance 0, adjacent-verse proximity, explicit textual cue). Documented shared root in STEPBible.\",\"original_words\":[{\"lemma_key\":\"lemma:H8247\",\"strongs\":\"H8247\",\"language\":\"hbo\",\"lemma_script\":\"שָׁקֵד\",\"transliteration\":\"sha.qed\",\"gloss\":\"almond\"},{\"strongs\":\"H8245\",\"language\":\"hbo\",\"lemma_script\":\"שָׁקַד\",\"transliteration\":\"\",\"gloss\":\"to watch\"}],\"matched_terms\":[\"almond\",\"to watch\",\"שָׁקֵד\",\"שָׁקַד\",\"H8247\",\"H8245\"],\"passages\":[{\"ref\":\"Jeremiah 1:11\",\"verse_id\":19074,\"book\":24,\"chapter\":1,\"verse\":11,\"english_text\":\"Moreover the LORD’s word came to me, saying, “Jeremiah, what do you see?” I said, “I see a branch of an almond tree.”\",\"english_edition\":\"World English Bible (Public Domain)\",\"original_tokens\":[{\"word_id\":55917,\"word_no\":1,\"surface\":\"וַיְהִ֤י\",\"lemma"
+        },
+        {
+          "op": "passage_compare",
+          "status": "ok",
+          "keys": [
+            "index",
+            "op",
+            "status",
+            "passages",
+            "lexicon",
+            "word_enrichment",
+            "shared_lemmas",
+            "cross_references_and_bridges"
+          ],
+          "preview": "{\"index\":4,\"op\":\"passage_compare\",\"status\":\"ok\",\"passages\":[{\"normalized\":\"Zechariah 12:10\",\"verses\":[{\"verse_id\":23172,\"ref\":\"Zechariah 12:10\",\"original\":\"וְשָׁפַכְתִּי֩ עַל־ בֵּ֨ית דָּוִ֜יד וְעַ֣ל׀ יוֹשֵׁ֣ב יְרוּשָׁלִַ֗ם ר֤וּחַ חֵן֙ וְתַ֣חֲנוּנִ֔ים וְהִבִּ֥יטוּ אֵלַ֖י אֵ֣ת אֲשֶׁר־ דָּקָ֑רוּ וְסָפְד֣וּ עָלָ֗יו כְּמִסְפֵּד֙ עַל־ הַיָּחִ֔יד וְהָמֵ֥ר עָלָ֖יו כְּהָמֵ֥ר עַֽל־ הַבְּכֽוֹר׃\",\"english\":\"I will pour on David’s house and on the inhabitants of Jerusalem the spirit of grace and of supplication. They will look to me whom they have pierced; and they shall mourn for him as one mourns for his only son, and will grieve bitterly for him as one grieves for his firstborn.\",\"tokens\":[{\"position\":1,\"word_id\":144879,\"surface\":\"וְשָׁפַכְתִּי֩\",\"strongs\":\"H8210\",\"all_strongs\":[\"H8210\",\"H9002\"],\"gloss\":\"and I.will.pour.out\",\"transliteration\":\"ve.sha.fakh.Ti\",\"grammar_code\":\"Hc/Vqq1cs\",\"key\":\"lemma:H8210G\"},{\"position\":2,\"word_id\":110272,\"surface\":\"עַל־\",\"strongs\":\"H5921\",\"all_strongs\":[\"H5921\"],\"gloss\":\"on\",\"transliteration\":\"'al-\",\"grammar_code\":\"HR\",\"key\":\"lemma:H5921A\"},{\"position\":3,\"word_id\":43617,\"surface\":\"בֵּ֨ית\",\"strongs\":\"H1004\",\"all_strongs\":[\"H1004\"],\"gloss\":\"the.house\",\"transli"
+        },
+        {
+          "op": "occurrences",
+          "status": "ok",
+          "keys": [
+            "index",
+            "op",
+            "status",
+            "word",
+            "strongs",
+            "lemma",
+            "total_verses",
+            "filtered_count",
+            "verse_ids",
+            "verses",
+            "book_distribution"
+          ],
+          "preview": "{\"index\":5,\"op\":\"occurrences\",\"status\":\"ok\",\"word\":\"H7799\",\"strongs\":\"H7799\",\"lemma\":\"שׁוּשַׁן\",\"total_verses\":17,\"filtered_count\":17,\"verse_ids\":[8954,8957,8961,11252,14638],\"verses\":[{\"verse_id\":8954,\"book\":11,\"chapter\":7,\"verse\":19,\"ref\":\"1 Kings 7:19\",\"web\":\"The capitals that were on the top of the pillars in the porch were of lily work, four cubits.\",\"xrefs\":[{\"target_vid\":8957,\"target_ref\":\"1 Kings 7:22\",\"phrase\":\"lilies\",\"flags\":0,\"reciprocal\":false,\"cross_testament\":false},{\"target_vid\":8961,\"target_ref\":\"1 Kings 7:26\",\"phrase\":\"lily blossom\",\"flags\":4,\"reciprocal\":false,\"cross_testament\":false},{\"target_vid\":8915,\"target_ref\":\"1 Kings 6:18-35\",\"phrase\":\"lilies\",\"flags\":0,\"reciprocal\":false,\"cross_testament\":false},{\"target_vid\":11159,\"target_ref\":\"1 Chronicles 28:15\",\"phrase\":\"lampstands\",\"flags\":4,\"reciprocal\":false,\"cross_testament\":false}],\"events\":[],\"tokens\":[{\"position\":1,\"word_id\":82754,\"surface\":\"וְכֹֽתָרֹ֗ת\",\"lemma\":\"כֹּתֶרֶת\",\"lemma_key\":\"lemma:H3805\",\"strongs\":\"H3805\",\"all_strongs\":[\"H3805\",\"H9002\"],\"gloss\":\"and.[the] capitals\",\"pos_class\":\"noun\"},{\"position\":2,\"word_id\":39333,\"surface\":\"אֲשֶׁר֙\",\"lemma\":\"אֲשֶׁר\",\"lemma_key\":\"lemma:H0834A\",\"strongs\":\"H0834\",\"all"
+        },
+        {
+          "op": "geography_search",
+          "status": "ok",
+          "keys": [
+            "index",
+            "op",
+            "status",
+            "query",
+            "places",
+            "atlas_source",
+            "provenance_sources"
+          ],
+          "preview": "{\"index\":6,\"op\":\"geography_search\",\"status\":\"ok\",\"query\":\"Eden\",\"places\":[{\"place\":\"Beth-eden\",\"place_type\":\"region\",\"modern_name\":\"Til Barsip\",\"lat\":36.7014,\"lon\":38.0865,\"is_non_physical\":false,\"source\":\"database\",\"linked_passages\":[{\"ref\":\"Amos 1:5\",\"verse_id\":22486,\"relationship_type\":\"mentioned_location\",\"role\":\"mentioned_location\"}],\"coverage\":\"Published links only; roles are source assertions. Unknown roles do not establish event or audience location.\",\"events\":[]},{\"place\":\"Eden 1\",\"place_type\":\"garden\",\"modern_name\":\"Armenia\",\"lat\":40.383333,\"lon\":44.95,\"is_non_physical\":false,\"source\":\"database\",\"linked_passages\":[{\"ref\":\"Genesis 2:8-Genesis 3:24\",\"relationship_type\":\"contextual_location\",\"passage_key\":\"gen-2-8-25-eden\",\"title\":\"Garden of Eden narrative in Greater Mesopotamia\",\"role\":\"contextual_location\"},{\"ref\":\"Gen 2:8\",\"verse_id\":39,\"relationship_type\":\"event_location\",\"role\":\"event_location\"},{\"ref\":\"Gen 2:10\",\"verse_id\":41,\"relationship_type\":\"event_location\",\"role\":\"event_location\"},{\"ref\":\"Gen 2:15\",\"verse_id\":46,\"relationship_type\":\"event_location\",\"role\":\"event_location\"},{\"ref\":\"Gen 3:23\",\"verse_id\":79,\"relationship_type\":\"event_location\",\"role\":\"event_location"
+        },
+        {
+          "op": "numbers",
+          "status": "ok",
+          "keys": [
+            "index",
+            "op",
+            "status",
+            "query",
+            "items",
+            "epistemic",
+            "coincidence_warning"
+          ],
+          "preview": "{\"index\":7,\"op\":\"numbers\",\"status\":\"ok\",\"query\":\"7\",\"items\":[{\"id\":\"r10:synth:num:7:G4151:symbolic_vision_count\",\"relation\":\"numbered_entity\",\"epistemic\":\"direct_textual_evidence\",\"evidence_type\":\"numbered_entity\",\"tier\":4,\"title\":\"Counted entity (symbolic vision count): 7 × πνεῦμα (\\\"spirits\\\", 6× in Scripture)\",\"why\":\"Syntactic numeral-noun extraction shows 7 modifying πνεῦμα (G4151, \\\"spirits\\\") across 6 occurrences (e.g., Matthew 12:45, Acts 6:3, Revelation 1:4).\",\"refs\":[\"Matthew 12:45\",\"Acts 6:3\",\"Revelation 1:4\",\"Revelation 3:1\"],\"matched_endpoints\":[\"7\",\"spirits\"],\"witness\":\"Then he goes and takes with himself seven other spirits more evil than he is, and they enter in and dwell there. The last state of that man becomes worse tha...\",\"score_breakdown\":{\"E\":0.61,\"F\":0.55,\"P\":0.407,\"I\":0.621,\"R\":0.48,\"N\":0.268,\"U\":0,\"rrf\":1,\"final\":702,\"evidence_strength\":0.566,\"exploration_value\":0.51,\"formula\":\"base + round(20*I + 18*N + 15*rrf - 35*U)\"}},{\"id\":\"r10:synth:num:7:G0792:symbolic_vision_count\",\"relation\":\"numbered_entity\",\"epistemic\":\"direct_textual_evidence\",\"evidence_type\":\"numbered_entity\",\"tier\":4,\"title\":\"Counted entity (symbolic vision count): 7 × ἀστήρ (\\\"stars\\\", 5× in "
+        }
+      ]
+    },
+    {
+      "label": "psalm_heading",
+      "ms": 11873,
+      "status": "ok",
+      "pagination": {
+        "total_verses": 1,
+        "returned": 1,
+        "offset": 0,
+        "has_more": false,
+        "next_offset": null
+      },
+      "verses": [
+        {
+          "ref": "Psalms 3:0",
+          "english": "A Psalm by David, when he fled from Absalom his son."
+        }
+      ]
+    },
+    {
+      "label": "mt_canary",
+      "ms": 11873,
+      "status": "ok",
+      "pagination": {
+        "total_verses": 1,
+        "returned": 1,
+        "offset": 0,
+        "has_more": false,
+        "next_offset": null
+      },
+      "verses": [
+        {
+          "ref": "Genesis 31:55",
+          "english": "Early in the morning, Laban rose up, and kissed his sons and his daughters, and blessed them. Laban departed and returned to his place."
+        }
+      ]
+    },
+    {
+      "label": "anchored",
+      "ms": 11870,
+      "status": "exception",
+      "error": "TypeError: r.occurrences?.slice is not a function"
+    },
+    {
+      "label": "chain_start",
+      "ms": 11870,
+      "status": "ok",
+      "seed": "H8247",
+      "next": [
+        {
+          "rank": 1,
+          "id": "r13:wp:H8247:H8245",
+          "target": "H8245",
+          "relation": "orthographic_wordplay"
+        },
+        {
+          "rank": 2,
+          "id": "r11:lex:H8247:0",
+          "target": "H8246",
+          "relation": "verified_lexical_grammatical"
+        },
+        {
+          "rank": 3,
+          "id": "r13:wp:H8247:H6485",
+          "target": "H6485",
+          "relation": "orthographic_wordplay"
+        },
+        {
+          "rank": 4,
+          "id": "r11:lex:H8247:1",
+          "target": "H8245",
+          "relation": "verified_lexical_grammatical"
+        },
+        {
+          "rank": 5,
+          "id": "r13:interp:19074:vis",
+          "target": "H4731",
+          "relation": "explicit_identification"
+        }
+      ]
+    },
+    {
+      "label": "chain_follow",
+      "ms": 459,
+      "status": "ok",
+      "step": 1,
+      "classification": {
+        "classification": "direct_evidenced_link",
+        "hop_count": 1,
+        "epistemic_classes_in_path": [
+          "direct_textual_evidence"
+        ],
+        "note": "A multi-step chain does not automatically establish a direct connection between its endpoints; verify each step separately."
+      },
+      "current_node": "H8245",
+      "path_trail": [
+        "H8247",
+        "H8247 -> H8245 [orthographic_wordplay]"
+      ],
+      "next": [
+        {
+          "id": "r11:lxx:H8245:0",
+          "target": "G1127"
+        },
+        {
+          "id": "r11:lxx:H8245:1",
+          "target": "G6481"
+        },
+        {
+          "id": "r11:gram:H8245:grammatical_subject_of:H8104",
+          "target": "H8104"
+        }
+      ]
+    }
+  ]
+}
