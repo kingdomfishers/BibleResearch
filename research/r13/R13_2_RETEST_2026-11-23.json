@@ -12100,5 +12100,132 @@
       "pairwise_count": 0,
       "indirect_count": 0
     }
+  ],
+  "evidence_retest": [
+    {
+      "id": "EV01",
+      "test": "Jeremiah almond/watch includes both direct witness verses",
+      "result": "PASS",
+      "details": "r13:wp:H8247:H8245 now has Jeremiah 1:11 (H8247) and 1:12 (H8245)."
+    },
+    {
+      "id": "EV02",
+      "test": "Canonical occurrence token parity",
+      "result": "PASS",
+      "details": "Jeremiah 1:11 position 4 now H0413, word_id=33134 in both get_Passage and research(evidence)."
+    },
+    {
+      "id": "EV03",
+      "test": "Watch/holy evidence strength",
+      "result": "PASS",
+      "details": "r13:wp:H8245:H6918 now orthographic_similarity_only/proximate_wordplay_candidate, not attested wordplay."
+    },
+    {
+      "id": "EV04",
+      "test": "Blood/east evidence strength",
+      "result": "PASS",
+      "details": "r13:wp:H1818:H6924 now orthographic_similarity_only/proximate_wordplay_candidate."
+    },
+    {
+      "id": "EV05",
+      "test": "Babylon/Pekod false derivation resolved at all layers",
+      "result": "FAIL",
+      "details": "Old r13:wp:H0894:H6489 removed, BUT get_Connection(H0894,H6489) still returns r11:lex:H6489:0 'Lexical relation (shares root)' epistemic documented_lexical_relationship WITHOUT refs."
+    },
+    {
+      "id": "EV06",
+      "test": "Ezekiel 37:5 bones/breath false explicit identity removed",
+      "result": "PASS",
+      "details": "r13:interp:21519:dem not_found; get_Passage(Ezekiel 37:5) no incorrect explicit identity in top 7."
+    },
+    {
+      "id": "EV07",
+      "test": "Noah/comfort original text witness",
+      "result": "PASS",
+      "details": "r13:wp:H5146:H5162 highlights H5146 and H5162 together in Genesis 5:29."
+    },
+    {
+      "id": "EV08",
+      "test": "Luke 8:11 explicit seed/word identification",
+      "result": "PASS",
+      "details": "r13:interp:25365:eq7 highlights G4703, G3056, G2316; ranks #1 in get_Passage(Luke 8:11)."
+    },
+    {
+      "id": "EV09",
+      "test": "LXX candidate word alignments",
+      "result": "PARTIAL",
+      "details": "Jeremiah 1:11 now 11 candidates; Exodus 25:33 now 12. Both have 0 documented alignments, candidate quality not independently verified."
+    },
+    {
+      "id": "EV10",
+      "test": "Chain evidence preservation",
+      "result": "PASS",
+      "details": "H8247->H8245 follow_connectionchain attaches r13:wp:H8247:H8245 with Jeremiah 1:11 and 1:12."
+    },
+    {
+      "id": "EV11",
+      "test": "Multi-anchor triangle has independent edges",
+      "result": "FAIL",
+      "details": "H8247,H8245,H8246 reported triangle includes wordplay and proximity of SAME H8247-H8245 edge; third independent H8245-H8246 textual edge not provided."
+    },
+    {
+      "id": "EV12",
+      "test": "Adam-ground-blood full text-specific triangle",
+      "result": "FAIL",
+      "details": "C01 complete_multi_anchor still relies on Ezekiel/Proverbs generic co-occurrence and Gen 4 blood-ground echo, not Genesis 2:7, 4:10-11, and 9:5-6 three-edge proof."
+    },
+    {
+      "id": "EV13",
+      "test": "Covering/atonement sense preservation",
+      "result": "FAIL",
+      "details": "C04 treats Gen 6:14 H3722 and Lev 16:30 H3722 as same 'to atone', collapsing context-distinct pitch/cover vs ritual atonement; bridge includes weaker generic crossrefs."
+    },
+    {
+      "id": "EV14",
+      "test": "Unseen Isaac/laugh name wordplay seeded from passage",
+      "result": "FAIL",
+      "details": "Genesis 21:6 top16 lacks Isaac↔laugh though direct get_Connection(H3327,H6711) can find the candidate via Genesis 21:5-6 and 26:8."
+    },
+    {
+      "id": "EV15",
+      "test": "Unseen Reuben naming wordplay seeded from passage",
+      "result": "FAIL",
+      "details": "Genesis 29:32 top16 lacks Reuben↔see↔son named derivation; explicit three-anchor call returns same-verse intersections, not semantic name explanation."
+    },
+    {
+      "id": "EV16",
+      "test": "Novel Jonah 1:17 ↔ Matthew 12:40 link",
+      "result": "PASS",
+      "details": "get_Connection finds explicit cross-reference and four plausible LXX lexical pairs; one additional inverse day/night pair seems suspect and needs review."
+    }
+  ],
+  "new_holdout_cases": [
+    {
+      "id": "U01",
+      "seed": "Genesis 21:6",
+      "expected": "Isaac H3327 ↔ laugh H6711; naming/context",
+      "outcome": "MISS top16; seeded pair found by get_Connection"
+    },
+    {
+      "id": "U02",
+      "seed": "Genesis 25:25",
+      "expected": "Esau appearance/hairy language and name",
+      "outcome": "NO self-contained etymological explanation top16; hair H8181 appears #3 in ordinary grammar"
+    },
+    {
+      "id": "U03",
+      "seed": "Genesis 29:32",
+      "expected": "Reuben H7205 ↔ see H7200 / son H1121",
+      "outcome": "MISS unified naming relation top16; direct triple comparison finds all terms in Genesis 29:32"
+    },
+    {
+      "id": "U04",
+      "seed": [
+        "Jonah 1:17",
+        "Matthew 12:40"
+      ],
+      "expected": "Quote/allusion and 3 days/nights + belly intertext",
+      "outcome": "PASS direct editorial xref and multiple bilingual lexical bridges; missing classification as explicit Jesus quotation/allusion"
+    }
   ]
 }
