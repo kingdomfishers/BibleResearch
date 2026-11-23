@@ -39,7 +39,7 @@ The old grammar/LXX monopoly is largely removed, **but xrefs + new scene cards n
 - Genealogy: **2/3 → 3/3** (+1).
 - Lexical relationships: **5/22 → 6/22** (+1).
 - Wordplay: **5/5 → 5/5**, translation: **21/22 → 21/22**, polysemy: **1/3 → 1/3**.
-- Remaining real-world categories combined: 7/14 → **8/14**; **most of the original physical/process expectations are unassessable without explicit IDs/refs and the correct `bridge` mode**.
+- Remaining real-world categories combined: 6/14 → **7/14**; **most of the original physical/process expectations are unassessable without explicit IDs/refs and the correct `bridge` mode**.
 
 **Examples improved:** Genesis 1:1→John 1:1 **#14→#6**, 2 Kings 2:14→2 Kings 2:8 **#17→#1**, Isaiah 61:1→Luke 4:18 **absent→#2**, Zechariah 12:10→John 19:37 **absent→#9**, Psalm 16:10→Acts 2:27 **#20→#1**, Exodus 12:15→departure/wilderness narrative event **absent→#18**, Genesis 11:9 and other new scenes explored (quality below). Grounded lexical case Adam→adamah remains #1.
 
