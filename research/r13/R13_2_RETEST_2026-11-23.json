@@ -9149,6 +9149,2439 @@
       "complete_multi_anchor": [],
       "pairwise_count": 0,
       "indirect_count": 0
+    },
+    {
+      "id": "N07",
+      "category": "natural_query",
+      "tool": "research",
+      "args": {
+        "query": "breath",
+        "limit": 25
+      },
+      "expected": "Genesis 7:22",
+      "baseline_rank": 3,
+      "first_matching_rank": 2,
+      "baseline_top1": "r10:ident:rev5_6_eyes_spirits",
+      "status": "ok",
+      "ms": 6913,
+      "top1": "r10:xlang:ruach_pneuma_anemos",
+      "top": [
+        {
+          "rank": 1,
+          "id": "r10:xlang:ruach_pneuma_anemos",
+          "title": "Cross-language bridge: Hebrew רוּחַ (ruach H7307) ↔ Greek πνεῦμα (pneuma G4151) & ἄνεμος (anemos G0417)",
+          "relation": "cross_language_bridge",
+          "epistemic": "documented_lexical_relationship",
+          "refs": [
+            "Genesis 1:2",
+            "Ezekiel 37:9",
+            "John 3:8",
+            "Revelation 7:1"
+          ]
+        },
+        {
+          "rank": 2,
+          "id": "r11:gram:H5397:possessive_construction_with:H7307",
+          "title": "Head of genitive / construct: נְשָׁמָה (ne.sha.mah) ↔ רוּחַ (\"spirit / wind / breath\", 3×)",
+          "relation": "verified_lexical_grammatical",
+          "epistemic": "direct_textual_evidence",
+          "refs": [
+            "2 Samuel 22:16",
+            "Genesis 7:22",
+            "Psalms 18:15"
+          ]
+        },
+        {
+          "rank": 3,
+          "id": "r13:wp:G4151:G4152",
+          "title": "Attested biblical wordplay: πνεῦμα (G4151) ↔ πνευματικός (G4152)",
+          "relation": "orthographic_wordplay",
+          "epistemic": "direct_textual_evidence",
+          "refs": [
+            "1 Corinthians 2:13",
+            "Galatians 6:1"
+          ]
+        },
+        {
+          "rank": 4,
+          "id": "r11:lxx:G4157:0",
+          "title": "Septuagint alignment witness: πνοή (G4157) → נְשָׁמָה",
+          "relation": "cross_language_bridge",
+          "epistemic": "documented_lexical_relationship",
+          "refs": []
+        },
+        {
+          "rank": 5,
+          "id": "r11:lxx:H5397:0",
+          "title": "Septuagint alignment witness: נְשָׁמָה (H5397) → πνοή",
+          "relation": "cross_language_bridge",
+          "epistemic": "documented_lexical_relationship",
+          "refs": []
+        },
+        {
+          "rank": 6,
+          "id": "r13:motif:r13:motif:chain:G4152:G4559:G4560:G5591",
+          "title": "Multi-passage motif (chain): πνευματικός (spiritual) ↔ G4559 ↔ G4560 ↔ G5591 (5 chapters)",
+          "relation": "shared_motif",
+          "epistemic": "shared_motif_evidence",
+          "refs": [
+            "Romans 15:27",
+            "1 Corinthians 9:11",
+            "1 Corinthians 3:1"
+          ]
+        },
+        {
+          "rank": 7,
+          "id": "r10:lex:ezek37_ruach_winds_directions_breath_spirit",
+          "title": "Ezekiel 37:9,14 demonstrates רוּחַ (ruach H7307) across four directions/winds, breath, and God’s Spirit",
+          "relation": "verified_lexical_grammatical",
+          "epistemic": "documented_lexical_relationship",
+          "refs": [
+            "Ezekiel 37:9",
+            "Ezekiel 37:14",
+            "Zechariah 2:6"
+          ]
+        },
+        {
+          "rank": 8,
+          "id": "r13:interp:28207:eq6",
+          "title": "Scriptural self-interpretation (Romans 7:14): πνευματικός (G4152, \"spiritual\") → σάρκινος (G4560, \"fleshly\")",
+          "relation": "explicit_identification",
+          "epistemic": "direct_textual_evidence",
+          "refs": [
+            "Romans 7:14"
+          ]
+        },
+        {
+          "rank": 9,
+          "id": "r13:colloc:G4151:G0040",
+          "title": "High-PMI collocation: πνεῦμα (G4151) ↔ G0040 (NPMI=0.63, 95×)",
+          "relation": "verified_lexical_grammatical",
+          "epistemic": "documented_collocation_or_cooccurrence",
+          "refs": [
+            "Verse 25107",
+            "Matthew 1:20"
+          ]
+        },
+        {
+          "rank": 10,
+          "id": "r11:gram:H5397:grammatical_object_of:H7604",
+          "title": "Direct object of: נְשָׁמָה (ne.sha.mah) ↔ שָׁאַר (\"to remain\", 2×)",
+          "relation": "verified_lexical_grammatical",
+          "epistemic": "direct_textual_evidence",
+          "refs": [
+            "1 Kings 15:29",
+            "Joshua 11:14"
+          ]
+        },
+        {
+          "rank": 11,
+          "id": "r13:wp:G5590:G5591",
+          "title": "Attested biblical wordplay: ψυχή (G5590) ↔ ψυχικός (G5591)",
+          "relation": "orthographic_wordplay",
+          "epistemic": "direct_textual_evidence",
+          "refs": [
+            "1 Corinthians 15:44",
+            "1 Corinthians 15:45"
+          ]
+        },
+        {
+          "rank": 12,
+          "id": "r12:path:H5397:H7307",
+          "title": "2-hop: נְשָׁמָה (H5397) → רוּחַ (\"spirit / wind / breath\", H7307)",
+          "relation": "multihop_proof_path",
+          "epistemic": "documented_collocation_or_cooccurrence",
+          "refs": [
+            "Genesis 7:22",
+            "2 Samuel 22:16",
+            "Job 4:9",
+            "Job 27:3"
+          ]
+        },
+        {
+          "rank": 13,
+          "id": "r12:path:H5397:H7604",
+          "title": "3-hop: נְשָׁמָה (H5397) → שָׁאַר (\"to remain\", H7604)",
+          "relation": "multihop_proof_path",
+          "epistemic": "documented_collocation_or_cooccurrence",
+          "refs": [
+            "Joshua 10:40",
+            "Joshua 11:14",
+            "1 Kings 15:29",
+            "Daniel 10:17"
+          ]
+        },
+        {
+          "rank": 14,
+          "id": "r12:path:H7307:H5375",
+          "title": "3-hop: רוּחַ (H7307) → נָשָׂא (\"to lift: raise\", H5375)",
+          "relation": "multihop_proof_path",
+          "epistemic": "documented_collocation_or_cooccurrence",
+          "refs": [
+            "Genesis 45:27",
+            "Exodus 10:13",
+            "Exodus 10:19",
+            "Exodus 35:21"
+          ]
+        },
+        {
+          "rank": 15,
+          "id": "r11:lex:G4152:0",
+          "title": "Lexical relation (shares root): πνευματικός (G4152) ↔ πνεῦμα (G4151)",
+          "relation": "verified_lexical_grammatical",
+          "epistemic": "documented_lexical_relationship",
+          "refs": []
+        },
+        {
+          "rank": 16,
+          "id": "r12:path:H7307:H5397",
+          "title": "2-hop: רוּחַ (H7307) → נְשָׁמָה (\"breath\", H5397)",
+          "relation": "multihop_proof_path",
+          "epistemic": "documented_collocation_or_cooccurrence",
+          "refs": [
+            "Genesis 7:22",
+            "2 Samuel 22:16",
+            "Job 4:9",
+            "Job 27:3"
+          ]
+        },
+        {
+          "rank": 17,
+          "id": "r10:lex:john3_8_wind_spirit_pneuma",
+          "title": "John 3:5–8 uses πνεῦμα (G4151) for both \"wind\" and \"Spirit\" alongside \"water\" (ὕδωρ G5204)",
+          "relation": "verified_lexical_grammatical",
+          "epistemic": "documented_lexical_relationship",
+          "refs": [
+            "John 3:5",
+            "John 3:8"
+          ]
+        },
+        {
+          "rank": 18,
+          "id": "r13:colloc:G4151:G0169",
+          "title": "High-PMI collocation: πνεῦμα (G4151) ↔ G0169 (NPMI=0.59, 23×)",
+          "relation": "verified_lexical_grammatical",
+          "epistemic": "documented_collocation_or_cooccurrence",
+          "refs": [
+            "Mark 1:26",
+            "Verse 25205"
+          ]
+        },
+        {
+          "rank": 19,
+          "id": "r12:path:G5590:G4983",
+          "title": "2-hop: ψυχή (G5590) → σῶμα (\"body\", G4983)",
+          "relation": "multihop_proof_path",
+          "epistemic": "documented_collocation_or_cooccurrence",
+          "refs": [
+            "Matthew 6:25",
+            "Matthew 10:28",
+            "Luke 12:22",
+            "Luke 12:23"
+          ]
+        },
+        {
+          "rank": 20,
+          "id": "r12:prop:H7307:G4151",
+          "title": "External concept equivalence: רוּחַ (spirit / wind / breath) ↔ πνεῦμα (\"spirit / Spirit\") via \"oewn:11545095-n\"",
+          "relation": "shared_external_property",
+          "epistemic": "external_world_bridge",
+          "refs": [
+            "Genesis 1:2",
+            "Genesis 3:8",
+            "Matthew 1:18",
+            "Matthew 1:20"
+          ]
+        },
+        {
+          "rank": 21,
+          "id": "r11:lex:G4157:0",
+          "title": "Lexical relation (shares root): πνοή (G4157) ↔ πνέω (G4154)",
+          "relation": "verified_lexical_grammatical",
+          "epistemic": "documented_lexical_relationship",
+          "refs": []
+        },
+        {
+          "rank": 22,
+          "id": "r12:prop:G4151:H7307",
+          "title": "External concept equivalence: πνεῦμα (spirit / Spirit) ↔ רוּחַ (\"spirit / wind / breath\") via \"oewn:11545095-n\"",
+          "relation": "shared_external_property",
+          "epistemic": "external_world_bridge",
+          "refs": [
+            "Matthew 1:18",
+            "Matthew 1:20",
+            "Genesis 1:2",
+            "Genesis 3:8"
+          ]
+        },
+        {
+          "rank": 23,
+          "id": "r13:motif:r13:motif:tri:G4152:G4559:G4560",
+          "title": "Multi-passage motif (triangle): πνευματικός (spiritual) ↔ G4559 ↔ G4560 (4 chapters)",
+          "relation": "shared_motif",
+          "epistemic": "shared_motif_evidence",
+          "refs": [
+            "Romans 15:27",
+            "1 Corinthians 9:11",
+            "1 Corinthians 3:1"
+          ]
+        },
+        {
+          "rank": 24,
+          "id": "r11:cluster:G4152:epistolary_and_apocalyptic",
+          "title": "Epistolary & Apocalyptic Writings (Romans 1, 7, 15 · 1 Corinthians 2, 3, 9, 10 · Galatians 6)",
+          "relation": "verified_lexical_grammatical",
+          "epistemic": "direct_textual_evidence",
+          "refs": [
+            "Romans 1:11",
+            "Romans 7:14",
+            "Romans 15:27",
+            "1 Corinthians 2:13"
+          ]
+        },
+        {
+          "rank": 25,
+          "id": "r12:orth:H7307:H7304",
+          "title": "Orthographic similarity: רוּחַ (H7307) ↔ רָוַח (H7304, matched \"רוח\")",
+          "relation": "orthographic_overlap",
+          "epistemic": "orthographic_similarity_only",
+          "refs": [
+            "1 Samuel 16:23",
+            "Genesis 1:2"
+          ]
+        }
+      ],
+      "word_identity": null,
+      "complete_multi_anchor": [],
+      "pairwise_count": 0,
+      "indirect_count": 0
+    },
+    {
+      "id": "N08",
+      "category": "natural_query",
+      "tool": "research",
+      "args": {
+        "query": "Babel confusion language Genesis 11",
+        "limit": 25
+      },
+      "expected": "Genesis 11:9",
+      "baseline_rank": 5,
+      "first_matching_rank": 3,
+      "baseline_top1": "r11:gram:G1258:modifies:G2398",
+      "status": "ok",
+      "ms": 6913,
+      "top1": "r11:gram:G1258:modifies:G2398",
+      "top": [
+        {
+          "rank": 1,
+          "id": "r11:gram:G1258:modifies:G2398",
+          "title": "Modified by: διάλεκτος (dialektos) ↔ ἴδιος (\"one's own/private\", 3×)",
+          "relation": "verified_lexical_grammatical",
+          "epistemic": "direct_textual_evidence",
+          "refs": [
+            "Acts 1:19",
+            "Acts 2:6",
+            "Acts 2:8"
+          ]
+        },
+        {
+          "rank": 2,
+          "id": "r13:motif:r13:motif:tri:H0894:H3414:H6667",
+          "title": "Multi-passage motif (triangle): בָּבֶ֫ל, בָּבֶל (Babylon) ↔ H3414 ↔ H6667 (11 chapters)",
+          "relation": "shared_motif",
+          "epistemic": "shared_motif_evidence",
+          "refs": [
+            "Jeremiah 38:17",
+            "Jeremiah 28:11",
+            "Verse 20051"
+          ]
+        },
+        {
+          "rank": 3,
+          "id": "r11:cluster:H8193:temple_and_sanctuary_architecture",
+          "title": "Temple & Sanctuary Architecture (Genesis 11, 22, 41 · Exodus 2, 6, 7, 14 · Leviticus 5)",
+          "relation": "verified_lexical_grammatical",
+          "epistemic": "direct_textual_evidence",
+          "refs": [
+            "Genesis 11:1",
+            "Genesis 11:6",
+            "Genesis 11:7",
+            "Genesis 11:9"
+          ]
+        },
+        {
+          "rank": 4,
+          "id": "r13:wp:H8193:H8210",
+          "title": "Attested biblical wordplay: שָׂפָה (H8193) ↔ שָׁפַךְ (H8210)",
+          "relation": "orthographic_wordplay",
+          "epistemic": "direct_textual_evidence",
+          "refs": [
+            "Job 12:20",
+            "Job 12:21"
+          ]
+        },
+        {
+          "rank": 5,
+          "id": "r11:lex:G2350:0",
+          "title": "Lexical relation (shares root): θορυβέω (G2350) ↔ θόρυβος (G2351)",
+          "relation": "verified_lexical_grammatical",
+          "epistemic": "documented_lexical_relationship",
+          "refs": []
+        },
+        {
+          "rank": 6,
+          "id": "r13:motif:r13:motif:tri:H0894:H1285:H3772",
+          "title": "Multi-passage motif (triangle): בָּבֶ֫ל, בָּבֶל (Babylon) ↔ H1285 ↔ H3772 (9 chapters)",
+          "relation": "shared_motif",
+          "epistemic": "shared_motif_evidence",
+          "refs": [
+            "Verse 20954",
+            "Verse 217",
+            "Verse 379"
+          ]
+        },
+        {
+          "rank": 7,
+          "id": "r11:gram:G1258:modifies:G1446",
+          "title": "Modified by: διάλεκτος (dialektos) ↔ Ἑβραΐς (\"Hebrew\", 3×)",
+          "relation": "verified_lexical_grammatical",
+          "epistemic": "direct_textual_evidence",
+          "refs": [
+            "Acts 21:40",
+            "Acts 22:2",
+            "Acts 26:14"
+          ]
+        },
+        {
+          "rank": 8,
+          "id": "r13:interp:27048:18",
+          "title": "Scriptural self-interpretation (Acts 1:19): ἴδιος (G2398, \"own\") + διάλεκτος (G1258, \"language\") + Ἁκελδαμάχ (G0184, \"Akeldama\") → χωρίον...",
+          "relation": "explicit_identification",
+          "epistemic": "direct_textual_evidence",
+          "refs": [
+            "Acts 1:19"
+          ]
+        },
+        {
+          "rank": 9,
+          "id": "r11:lxx:G2992:2",
+          "title": "Septuagint alignment witness: λαός (G2992) → לְאֹם",
+          "relation": "cross_language_bridge",
+          "epistemic": "documented_lexical_relationship",
+          "refs": []
+        },
+        {
+          "rank": 10,
+          "id": "r12:path:G2992:G0749",
+          "title": "3-hop: λαός (G2992) → ἀρχιερεύς (\"high-priest\", G0749)",
+          "relation": "multihop_proof_path",
+          "epistemic": "documented_collocation_or_cooccurrence",
+          "refs": [
+            "Matthew 2:4",
+            "Matthew 21:23",
+            "Matthew 26:3",
+            "Matthew 26:47"
+          ]
+        },
+        {
+          "rank": 11,
+          "id": "r13:wp:H0894:H1077",
+          "title": "Attested biblical wordplay: בָּבֶ֫ל, בָּבֶל (H0894) ↔ בַּל (H1077)",
+          "relation": "orthographic_wordplay",
+          "epistemic": "direct_textual_evidence",
+          "refs": [
+            "Isaiah 14:21",
+            "Isaiah 14:22"
+          ]
+        },
+        {
+          "rank": 12,
+          "id": "r12:path:G2992:G1484",
+          "title": "2-hop: λαός (G2992) → ἔθνος (\"Gentiles\", G1484)",
+          "relation": "multihop_proof_path",
+          "epistemic": "documented_collocation_or_cooccurrence",
+          "refs": [
+            "Luke 2:32",
+            "John 11:50",
+            "Acts 4:25",
+            "Acts 4:27"
+          ]
+        },
+        {
+          "rank": 13,
+          "id": "r11:cluster:H0894:temple_and_sanctuary_architecture",
+          "title": "Temple & Sanctuary Architecture (Genesis 11 · 2 Kings 20, 25 · 2 Chronicles 33, 36)",
+          "relation": "verified_lexical_grammatical",
+          "epistemic": "direct_textual_evidence",
+          "refs": [
+            "Genesis 11:9",
+            "2 Kings 20:17",
+            "2 Kings 20:18",
+            "2 Kings 25:7"
+          ]
+        },
+        {
+          "rank": 14,
+          "id": "r12:entity:268:25170",
+          "title": "Pericope named-entity bridge (OT↔NT): H0775 (Genesis 11:10) ↔ G0742 (Luke 3:36)",
+          "relation": "literary_pattern",
+          "epistemic": "shared_motif_evidence",
+          "refs": [
+            "Genesis 11",
+            "Genesis 11:10",
+            "Luke 3:36"
+          ]
+        },
+        {
+          "rank": 15,
+          "id": "r11:lxx:G2992:3",
+          "title": "Septuagint alignment witness: λαός (G2992) → עַם",
+          "relation": "cross_language_bridge",
+          "epistemic": "documented_lexical_relationship",
+          "refs": []
+        },
+        {
+          "rank": 16,
+          "id": "r12:entity:268:25169",
+          "title": "Pericope named-entity bridge (OT↔NT): H5677 (Genesis 11:14) ↔ G1443 (Luke 3:35)",
+          "relation": "literary_pattern",
+          "epistemic": "shared_motif_evidence",
+          "refs": [
+            "Genesis 11",
+            "Luke 3:35"
+          ]
+        },
+        {
+          "rank": 17,
+          "id": "r11:xref:268:18139",
+          "title": "Modern editorial cross-reference (reciprocal): Genesis 11 ↔ Isaiah 19:18 (\"had one language\")",
+          "relation": "cross_reference_witness",
+          "epistemic": "editorial_cross_reference",
+          "refs": [
+            "Genesis 11",
+            "Isaiah 19:18"
+          ]
+        },
+        {
+          "rank": 18,
+          "id": "r11:xref:268:22946",
+          "title": "Modern editorial cross-reference (reciprocal): Genesis 11 ↔ Zephaniah 3:9 (\"had one language\")",
+          "relation": "cross_reference_witness",
+          "epistemic": "editorial_cross_reference",
+          "refs": [
+            "Genesis 11",
+            "Zephaniah 3:9"
+          ]
+        },
+        {
+          "rank": 19,
+          "id": "r12:path:G2992:G2424",
+          "title": "3-hop: λαός (G2992) → Ἰησοῦς (\"Jesus\", G2424)",
+          "relation": "multihop_proof_path",
+          "epistemic": "documented_collocation_or_cooccurrence",
+          "refs": [
+            "Matthew 1:21",
+            "Matthew 27:1",
+            "Luke 3:21",
+            "Luke 24:19"
+          ]
+        },
+        {
+          "rank": 20,
+          "id": "r12:path:G2992:G4863",
+          "title": "2-hop: λαός (G2992) → συνάγω (\"to assemble\", G4863)",
+          "relation": "multihop_proof_path",
+          "epistemic": "documented_collocation_or_cooccurrence",
+          "refs": [
+            "Matthew 2:4",
+            "Matthew 26:3",
+            "Luke 22:66",
+            "Acts 4:27"
+          ]
+        },
+        {
+          "rank": 21,
+          "id": "r13:colloc:H0894:H5019",
+          "title": "High-PMI collocation: בָּבֶ֫ל, בָּבֶל (H0894) ↔ H5019 (NPMI=0.74, 50×)",
+          "relation": "verified_lexical_grammatical",
+          "epistemic": "documented_collocation_or_cooccurrence",
+          "refs": [
+            "Verse 19749",
+            "Verse 19773"
+          ]
+        },
+        {
+          "rank": 22,
+          "id": "r11:lex:G4799:0",
+          "title": "Lexical relation (shares root): σύγχυσις (G4799) ↔ συγχέω (G4797)",
+          "relation": "verified_lexical_grammatical",
+          "epistemic": "documented_lexical_relationship",
+          "refs": []
+        },
+        {
+          "rank": 23,
+          "id": "r12:path:G2992:G0191",
+          "title": "3-hop: λαός (G2992) → ἀκούω (\"to hear\", G0191)",
+          "relation": "multihop_proof_path",
+          "epistemic": "documented_collocation_or_cooccurrence",
+          "refs": [
+            "Matthew 13:15",
+            "Luke 7:29",
+            "Luke 19:48",
+            "Luke 20:45"
+          ]
+        },
+        {
+          "rank": 24,
+          "id": "r12:event:268:event:53",
+          "title": "Biblical narrative sequence: Tower of Babel → Birth of Reu (Genesis 11)",
+          "relation": "biblical_event",
+          "epistemic": "shared_motif_evidence",
+          "refs": [
+            "Genesis 11",
+            "Genesis 11:2",
+            "Genesis 11:18"
+          ]
+        },
+        {
+          "rank": 25,
+          "id": "r13:colloc:H0894:H4428",
+          "title": "High-PMI collocation: בָּבֶ֫ל, בָּבֶל (H0894) ↔ H4428 (NPMI=0.43, 142×)",
+          "relation": "verified_lexical_grammatical",
+          "epistemic": "documented_collocation_or_cooccurrence",
+          "refs": [
+            "Verse 12012",
+            "Verse 12180"
+          ]
+        }
+      ],
+      "word_identity": null,
+      "complete_multi_anchor": [],
+      "pairwise_count": 0,
+      "indirect_count": 0
+    },
+    {
+      "id": "N09",
+      "category": "natural_query",
+      "tool": "research",
+      "args": {
+        "query": "three days resurrection",
+        "limit": 25
+      },
+      "expected": "Hosea 6:2",
+      "baseline_rank": null,
+      "first_matching_rank": null,
+      "baseline_top1": "r11:cluster:H7969:torah_ritual_and_covenant_law",
+      "status": "ok",
+      "ms": 6914,
+      "top1": "r11:gram:G0386:possessive_construction_with:G3498",
+      "top": [
+        {
+          "rank": 1,
+          "id": "r11:gram:G0386:possessive_construction_with:G3498",
+          "title": "Head of genitive / construct: ἀνάστασις (anastasis) ↔ νεκρός (\"dead\", 11×)",
+          "relation": "verified_lexical_grammatical",
+          "epistemic": "direct_textual_evidence",
+          "refs": [
+            "1 Corinthians 15:12",
+            "1 Corinthians 15:13",
+            "1 Corinthians 15:21"
+          ]
+        },
+        {
+          "rank": 2,
+          "id": "r13:motif:r13:motif:chain:G4653:G4655:G5457:G2250",
+          "title": "Multi-passage motif (chain): G4653 ↔ G4655 ↔ G5457 ↔ ἡμέρα (day) (9 chapters)",
+          "relation": "shared_motif",
+          "epistemic": "shared_motif_evidence",
+          "refs": [
+            "1 John 1:5",
+            "1 John 1:6",
+            "Acts 26:18"
+          ]
+        },
+        {
+          "rank": 3,
+          "id": "r11:cluster:H7992:temple_and_sanctuary_architecture",
+          "title": "Temple & Sanctuary Architecture (Exodus 28, 39 · 1 Kings 3, 6 · 2 Kings 11, 20)",
+          "relation": "verified_lexical_grammatical",
+          "epistemic": "direct_textual_evidence",
+          "refs": [
+            "Exodus 28:19",
+            "Exodus 39:12",
+            "1 Kings 3:18",
+            "1 Kings 6:6"
+          ]
+        },
+        {
+          "rank": 4,
+          "id": "r13:wp:H3117:H3220",
+          "title": "Attested biblical wordplay: יוֹם (H3117) ↔ יָם (H3220)",
+          "relation": "orthographic_wordplay",
+          "epistemic": "direct_textual_evidence",
+          "refs": [
+            "Exodus 14:30",
+            "Exodus 15:22"
+          ]
+        },
+        {
+          "rank": 5,
+          "id": "r11:lxx:H8532:0",
+          "title": "Septuagint alignment witness: תְּלָת (H8532) → τρεῖς",
+          "relation": "cross_language_bridge",
+          "epistemic": "documented_lexical_relationship",
+          "refs": []
+        },
+        {
+          "rank": 6,
+          "id": "r13:motif:r13:motif:chain:G4350:G4655:G5457:G2250",
+          "title": "Multi-passage motif (chain): G4350 ↔ G4655 ↔ G5457 ↔ ἡμέρα (day) (8 chapters)",
+          "relation": "shared_motif",
+          "epistemic": "shared_motif_evidence",
+          "refs": [
+            "Verse 30507",
+            "Verse 30508",
+            "Verse 27944"
+          ]
+        },
+        {
+          "rank": 7,
+          "id": "r11:lxx:H7992:2",
+          "title": "Septuagint (LXX) bridge: שְׁלִישִׁי (H7992) → τρίτος (G5154, \"third\") across 70 passages",
+          "relation": "cross_language_bridge",
+          "epistemic": "documented_lexical_relationship",
+          "refs": [
+            "Genesis 1:13",
+            "Genesis 2:14",
+            "Genesis 31:22",
+            "Genesis 32:19"
+          ]
+        },
+        {
+          "rank": 8,
+          "id": "r13:interp:25923:15",
+          "title": "Scriptural self-interpretation (Luke 20:36): ἀνάστασις (G0386, \"resurrection\") → υἱός (G5207, \"sons\")",
+          "relation": "explicit_identification",
+          "epistemic": "direct_textual_evidence",
+          "refs": [
+            "Luke 20:36"
+          ]
+        },
+        {
+          "rank": 9,
+          "id": "r11:gram:G5140:modifies:G3376",
+          "title": "Modifies: τρεῖς (treis) ↔ μήν (\"month\", 5×)",
+          "relation": "verified_lexical_grammatical",
+          "epistemic": "direct_textual_evidence",
+          "refs": [
+            "Acts 19:8",
+            "Acts 20:3",
+            "Acts 28:11"
+          ]
+        },
+        {
+          "rank": 10,
+          "id": "r11:cluster:H7969:temple_and_sanctuary_architecture",
+          "title": "Temple & Sanctuary Architecture (Genesis 14, 40 · Exodus 15, 25, 27, 32 · Leviticus 19)",
+          "relation": "verified_lexical_grammatical",
+          "epistemic": "direct_textual_evidence",
+          "refs": [
+            "Genesis 40:13",
+            "Genesis 40:19",
+            "Exodus 15:22",
+            "Exodus 25:32"
+          ]
+        },
+        {
+          "rank": 11,
+          "id": "r13:wp:H7969:H7992",
+          "title": "Attested biblical wordplay: שָׁלֹשׁ (H7969) ↔ שְׁלִישִׁי (H7992)",
+          "relation": "orthographic_wordplay",
+          "epistemic": "direct_textual_evidence",
+          "refs": [
+            "1 Samuel 17:13",
+            "1 Chronicles 26:11"
+          ]
+        },
+        {
+          "rank": 12,
+          "id": "r11:lex:H8532:0",
+          "title": "Lexical relation (shares root): תְּלָת (H8532) ↔ שָׁלֹשׁ (H7969)",
+          "relation": "verified_lexical_grammatical",
+          "epistemic": "documented_lexical_relationship",
+          "refs": []
+        },
+        {
+          "rank": 13,
+          "id": "r13:colloc:G0386:G3498",
+          "title": "High-PMI collocation: ἀνάστασις (G0386) ↔ G3498 (NPMI=0.61, 16×)",
+          "relation": "verified_lexical_grammatical",
+          "epistemic": "documented_collocation_or_cooccurrence",
+          "refs": [
+            "Acts 24:21",
+            "Luke 20:35"
+          ]
+        },
+        {
+          "rank": 14,
+          "id": "r13:interp:27423:11",
+          "title": "Scriptural self-interpretation (Acts 11:11): τρεῖς (G5140, \"three\") + ἀνήρ (G0435, \"men\") → Καισάρεια (G2542, \"Caesarea\")",
+          "relation": "explicit_identification",
+          "epistemic": "direct_textual_evidence",
+          "refs": [
+            "Acts 11:11"
+          ]
+        },
+        {
+          "rank": 15,
+          "id": "r11:lex:H7992:2",
+          "title": "Cross-language lexical equivalent: שְׁלִישִׁי (H7992) ↔ τρίτος (tritos · G5154)",
+          "relation": "cross_language_bridge",
+          "epistemic": "documented_cross_language_bridge",
+          "refs": []
+        },
+        {
+          "rank": 16,
+          "id": "r13:colloc:G2250:G5140",
+          "title": "High-PMI collocation: ἡμέρα (G2250) ↔ τρεῖς (\"Three\", G5140) (NPMI=0.48, 23×)",
+          "relation": "verified_lexical_grammatical",
+          "epistemic": "documented_collocation_or_cooccurrence",
+          "refs": [
+            "Matthew 15:32",
+            "Verse 28019"
+          ]
+        },
+        {
+          "rank": 17,
+          "id": "r11:cluster:H3117:temple_and_sanctuary_architecture",
+          "title": "Temple & Sanctuary Architecture (Genesis 2, 3, 17, 35 · Exodus 5, 10, 12, 13 · Leviticus 14, 23, 25)",
+          "relation": "verified_lexical_grammatical",
+          "epistemic": "direct_textual_evidence",
+          "refs": [
+            "Genesis 2:17",
+            "Genesis 3:8",
+            "Genesis 3:17",
+            "Genesis 17:12"
+          ]
+        },
+        {
+          "rank": 18,
+          "id": "r11:lxx:H8532:2",
+          "title": "Septuagint (LXX) bridge: תְּלָת (H8532) → τριακόσιοι (G5145, \"three hundred\") across 3 passages",
+          "relation": "cross_language_bridge",
+          "epistemic": "documented_lexical_relationship",
+          "refs": [
+            "Daniel 7:5",
+            "Daniel 7:8",
+            "Daniel 7:20"
+          ]
+        },
+        {
+          "rank": 19,
+          "id": "r13:wp:H7969:H7998",
+          "title": "Attested biblical wordplay: שָׁלֹשׁ (H7969) ↔ שָׁלָל (H7998)",
+          "relation": "orthographic_wordplay",
+          "epistemic": "direct_textual_evidence",
+          "refs": [
+            "2 Chronicles 20:25",
+            "Esther 3:13"
+          ]
+        },
+        {
+          "rank": 20,
+          "id": "r11:xref:173:148",
+          "title": "Modern editorial cross-reference: Genesis 7:13 → Genesis 6:10 (\"Shem\")",
+          "relation": "cross_reference_witness",
+          "epistemic": "editorial_cross_reference",
+          "refs": [
+            "Genesis 7:13",
+            "Genesis 6:10"
+          ]
+        },
+        {
+          "rank": 21,
+          "id": "r11:xref:1186:1192",
+          "title": "Modern editorial cross-reference: Genesis 40:13 → Genesis 40:19 (\"lift up your head\")",
+          "relation": "cross_reference_witness",
+          "epistemic": "editorial_cross_reference",
+          "refs": [
+            "Genesis 40:13",
+            "Genesis 40:19"
+          ]
+        },
+        {
+          "rank": 22,
+          "id": "r11:lex:G0386:0",
+          "title": "Lexical relation (shares root): ἀνάστασις (G0386) ↔ ἀνίστημι (G0450)",
+          "relation": "verified_lexical_grammatical",
+          "epistemic": "documented_lexical_relationship",
+          "refs": []
+        },
+        {
+          "rank": 23,
+          "id": "r13:symchain:H3117",
+          "title": "Symbolic-prophetic chain from H3117: Exodus 14:30 → Exodus 15:22 → Leviticus 8:35 → 1 Samuel 25:16",
+          "relation": "literary_correspondence",
+          "epistemic": "authorial_typology_or_quote",
+          "refs": [
+            "Exodus 14:30"
+          ]
+        },
+        {
+          "rank": 24,
+          "id": "r11:xref:2313:2677",
+          "title": "Modern editorial cross-reference: Exodus 28:19 → Exodus 39:12 (\"a jacinth\")",
+          "relation": "cross_reference_witness",
+          "epistemic": "editorial_cross_reference",
+          "refs": [
+            "Exodus 28:19",
+            "Exodus 39:12"
+          ]
+        },
+        {
+          "rank": 25,
+          "id": "r11:gram:G2250:modifies:G5140",
+          "title": "Modified by: ἡμέρα (hēmera) ↔ τρεῖς (\"Three\", 22×)",
+          "relation": "verified_lexical_grammatical",
+          "epistemic": "direct_textual_evidence",
+          "refs": [
+            "Acts 25:1",
+            "Acts 28:12",
+            "Acts 28:17"
+          ]
+        }
+      ],
+      "word_identity": null,
+      "complete_multi_anchor": [],
+      "pairwise_count": 0,
+      "indirect_count": 0
+    },
+    {
+      "id": "N10",
+      "category": "natural_query",
+      "tool": "research",
+      "args": {
+        "query": "lily",
+        "limit": 25
+      },
+      "expected": "Psalms 45:0",
+      "baseline_rank": 7,
+      "first_matching_rank": 7,
+      "baseline_top1": "r11:gram:H7799:possessive_construction_with:H4639",
+      "status": "ok",
+      "ms": 6912,
+      "top1": "r11:gram:H7799:possessive_construction_with:H4639",
+      "top": [
+        {
+          "rank": 1,
+          "id": "r11:gram:H7799:possessive_construction_with:H4639",
+          "title": "Genitive / construct connection: שׁוּשַׁן (shu.shan) ↔ מַעֲשֶׂה (\"deed: judgement\", 2×)",
+          "relation": "verified_lexical_grammatical",
+          "epistemic": "direct_textual_evidence",
+          "refs": [
+            "1 Kings 7:19",
+            "1 Kings 7:22"
+          ]
+        },
+        {
+          "rank": 2,
+          "id": "r11:gram:H7799:possessive_construction_with:H6525",
+          "title": "Genitive / construct connection: שׁוּשַׁן (shu.shan) ↔ פֶּ֫רַח (\"flower\", 2×)",
+          "relation": "verified_lexical_grammatical",
+          "epistemic": "direct_textual_evidence",
+          "refs": [
+            "1 Kings 7:26",
+            "2 Chronicles 4:5"
+          ]
+        },
+        {
+          "rank": 3,
+          "id": "r11:cluster:H7799:poetic_imagery_and_similes",
+          "title": "Poetic Imagery & Similes (Song of Solomon 2, 4, 5, 6)",
+          "relation": "explicit_comparison",
+          "epistemic": "direct_textual_evidence",
+          "refs": [
+            "Song of Solomon 2:1",
+            "Song of Solomon 2:2",
+            "Song of Solomon 2:16",
+            "Song of Solomon 4:5"
+          ]
+        },
+        {
+          "rank": 4,
+          "id": "r11:lxx:H7799:0",
+          "title": "Septuagint (LXX) bridge: שׁוּשַׁן (H7799) → κρίνον (G2918, \"lily\") across 8 passages",
+          "relation": "cross_language_bridge",
+          "epistemic": "documented_lexical_relationship",
+          "refs": [
+            "2 Chronicles 4:5",
+            "Song of Solomon 2:1",
+            "Song of Solomon 2:2",
+            "Song of Solomon 2:16"
+          ]
+        },
+        {
+          "rank": 5,
+          "id": "r11:lxx:G2918:0",
+          "title": "Septuagint (LXX) bridge: κρίνον (G2918) → שׁוּשַׁן (H7799, \"lily\") across 8 passages",
+          "relation": "cross_language_bridge",
+          "epistemic": "documented_lexical_relationship",
+          "refs": [
+            "2 Chronicles 4:5",
+            "Song of Solomon 2:1",
+            "Song of Solomon 2:2",
+            "Song of Solomon 2:16"
+          ]
+        },
+        {
+          "rank": 6,
+          "id": "r11:cluster:H7799:temple_and_sanctuary_architecture",
+          "title": "Temple & Sanctuary Architecture (1 Kings 7 · 2 Chronicles 4)",
+          "relation": "verified_lexical_grammatical",
+          "epistemic": "direct_textual_evidence",
+          "refs": [
+            "1 Kings 7:19",
+            "1 Kings 7:22",
+            "1 Kings 7:26",
+            "2 Chronicles 4:5"
+          ]
+        },
+        {
+          "rank": 7,
+          "id": "r13:colloc:H7799:H5329",
+          "title": "High-PMI collocation: שׁוּשַׁן (H7799) ↔ H5329 (NPMI=0.53, 4×)",
+          "relation": "verified_lexical_grammatical",
+          "epistemic": "documented_collocation_or_cooccurrence",
+          "refs": [
+            "Psalms 45:0",
+            "Psalms 60:0"
+          ]
+        },
+        {
+          "rank": 8,
+          "id": "r11:lxx:H7799:1",
+          "title": "Septuagint superscription witness for Psalms 45:0: שׁוּשַׁן (H7799)",
+          "relation": "cross_language_bridge",
+          "epistemic": "documented_lexical_relationship",
+          "refs": [
+            "Psalms 45:0"
+          ]
+        },
+        {
+          "rank": 9,
+          "id": "r13:wp:H7799:H8348",
+          "title": "Shared root / derivation (morphological derivation): שׁוּשַׁן (H7799) ↔ שֵׁשָׁן (H8348)",
+          "relation": "orthographic_wordplay",
+          "epistemic": "documented_lexical_relationship",
+          "refs": []
+        },
+        {
+          "rank": 10,
+          "id": "r13:colloc:G2918:G3514",
+          "title": "High-PMI collocation: κρίνον (G2918) ↔ G3514 (NPMI=1.00, 2×)",
+          "relation": "verified_lexical_grammatical",
+          "epistemic": "documented_collocation_or_cooccurrence",
+          "refs": [
+            "Luke 12:27",
+            "Matthew 6:28"
+          ]
+        },
+        {
+          "rank": 11,
+          "id": "r11:cluster:H7799:prophetic_imagery_and_oracles",
+          "title": "Prophetic Imagery & Oracles (Hosea 14)",
+          "relation": "explicit_comparison",
+          "epistemic": "direct_textual_evidence",
+          "refs": [
+            "Hosea 14:5"
+          ]
+        },
+        {
+          "rank": 12,
+          "id": "r11:lxx:H7799:2",
+          "title": "Septuagint superscription witness for Psalms 60:0: שׁוּשַׁן (H7799)",
+          "relation": "cross_language_bridge",
+          "epistemic": "documented_lexical_relationship",
+          "refs": [
+            "Psalms 60:0"
+          ]
+        },
+        {
+          "rank": 13,
+          "id": "r11:xref:8954:8957",
+          "title": "Modern editorial cross-reference: 1 Kings 7:19 → 1 Kings 7:22 (\"lilies\")",
+          "relation": "cross_reference_witness",
+          "epistemic": "editorial_cross_reference",
+          "refs": [
+            "1 Kings 7:19",
+            "1 Kings 7:22"
+          ]
+        },
+        {
+          "rank": 14,
+          "id": "r11:xref:23427:25595",
+          "title": "Modern editorial cross-reference: Matthew 6:28 → Luke 12:27 (\"lilies of the field\")",
+          "relation": "cross_reference_witness",
+          "epistemic": "editorial_cross_reference",
+          "refs": [
+            "Matthew 6:28",
+            "Luke 12:27"
+          ]
+        },
+        {
+          "rank": 15,
+          "id": "r13:wp:H7799:H8127",
+          "title": "Consonantal / phonetic correspondence: שׁוּשַׁן (H7799) ↔ שֵׁן (H8127)",
+          "relation": "orthographic_wordplay",
+          "epistemic": "orthographic_similarity_only",
+          "refs": [
+            "Song of Solomon 5:13",
+            "Song of Solomon 5:14"
+          ]
+        },
+        {
+          "rank": 16,
+          "id": "r11:gram:H7799:possessive_construction_with:H5715",
+          "title": "Head of genitive / construct: שׁוּשַׁן (shu.shan) ↔ עֵדוּת (\"testimony\", 1×)",
+          "relation": "verified_lexical_grammatical",
+          "epistemic": "direct_textual_evidence",
+          "refs": [
+            "Psalms 60:0"
+          ]
+        },
+        {
+          "rank": 17,
+          "id": "r11:xref:8961:8954",
+          "title": "Modern editorial cross-reference: 1 Kings 7:26 → 1 Kings 7:19 (\"lily blossom\")",
+          "relation": "cross_reference_witness",
+          "epistemic": "editorial_cross_reference",
+          "refs": [
+            "1 Kings 7:26",
+            "1 Kings 7:19"
+          ]
+        },
+        {
+          "rank": 18,
+          "id": "r11:lxx:H7799:3",
+          "title": "Septuagint superscription witness for Psalms 69:0: שׁוּשַׁן (H7799)",
+          "relation": "cross_language_bridge",
+          "epistemic": "documented_lexical_relationship",
+          "refs": [
+            "Psalms 69:0"
+          ]
+        },
+        {
+          "rank": 19,
+          "id": "r13:colloc:G2918:G2872",
+          "title": "High-PMI collocation: κρίνον (G2918) ↔ G2872 (NPMI=0.76, 2×)",
+          "relation": "verified_lexical_grammatical",
+          "epistemic": "documented_collocation_or_cooccurrence",
+          "refs": [
+            "Luke 12:27",
+            "Matthew 6:28"
+          ]
+        },
+        {
+          "rank": 20,
+          "id": "r13:wp:H7799:H3956",
+          "title": "Consonantal / phonetic correspondence: שׁוּשַׁן (H7799) ↔ לָשׁוֹן (H3956)",
+          "relation": "orthographic_wordplay",
+          "epistemic": "orthographic_similarity_only",
+          "refs": [
+            "Psalms 45:0",
+            "Psalms 45:1"
+          ]
+        },
+        {
+          "rank": 21,
+          "id": "r11:colloc:H7799:H5715",
+          "title": "Direct collocation: שׁוּשַׁן (\"lily\") ↔ עֵדוּת (\"testimony\", 2×)",
+          "relation": "verified_lexical_grammatical",
+          "epistemic": "documented_collocation_or_cooccurrence",
+          "refs": [
+            "Psalms 45:0",
+            "Psalms 60:0",
+            "Psalms 69:0",
+            "Psalms 80:0"
+          ]
+        },
+        {
+          "rank": 22,
+          "id": "r11:xref:8961:11252",
+          "title": "Modern editorial cross-reference: 1 Kings 7:26 → 2 Chronicles 4:5 (\"two thousand\")",
+          "relation": "cross_reference_witness",
+          "epistemic": "editorial_cross_reference",
+          "refs": [
+            "1 Kings 7:26",
+            "2 Chronicles 4:5"
+          ]
+        },
+        {
+          "rank": 23,
+          "id": "r11:cluster:G2918:gospel_and_nt_teaching",
+          "title": "Gospel & NT Teaching (Matthew 6 · Luke 12)",
+          "relation": "verified_lexical_grammatical",
+          "epistemic": "direct_textual_evidence",
+          "refs": [
+            "Matthew 6:28",
+            "Luke 12:27"
+          ]
+        },
+        {
+          "rank": 24,
+          "id": "r11:colloc:H7799:H4639",
+          "title": "Direct collocation: שׁוּשַׁן (\"lily\") ↔ מַעֲשֶׂה (\"deed: judgement\", 4×)",
+          "relation": "verified_lexical_grammatical",
+          "epistemic": "documented_collocation_or_cooccurrence",
+          "refs": [
+            "1 Kings 7:19",
+            "1 Kings 7:22",
+            "1 Kings 7:26",
+            "2 Chronicles 4:5"
+          ]
+        },
+        {
+          "rank": 25,
+          "id": "r13:colloc:G2918:G0837",
+          "title": "High-PMI collocation: κρίνον (G2918) ↔ G0837 (NPMI=0.75, 2×)",
+          "relation": "verified_lexical_grammatical",
+          "epistemic": "documented_collocation_or_cooccurrence",
+          "refs": [
+            "Luke 12:27",
+            "Matthew 6:28"
+          ]
+        }
+      ],
+      "word_identity": null,
+      "complete_multi_anchor": [],
+      "pairwise_count": 0,
+      "indirect_count": 0
+    },
+    {
+      "id": "C01",
+      "category": "multi_anchor",
+      "tool": "get_Connection",
+      "args": {
+        "items": [
+          "H0120",
+          "H1818",
+          "H0127"
+        ],
+        "connections": 25
+      },
+      "expected": true,
+      "baseline_rank": null,
+      "first_matching_rank": null,
+      "baseline_top1": null,
+      "status": "ok",
+      "ms": 6917,
+      "top1": "intersect:H0120+H1818+H0127",
+      "top": [
+        {
+          "rank": 1,
+          "id": "intersect:H0120+H1818+H0127",
+          "title": "H0120 + H1818 + H0127 co-occur in 4 nearby (±2v) passage(s)",
+          "relation": "nearby_verse_co_attestation",
+          "epistemic": "documented_collocation_or_cooccurrence",
+          "refs": [
+            "Proverbs 28:17",
+            "Ezekiel 33:24",
+            "Ezekiel 36:17",
+            "Ezekiel 38:20"
+          ]
+        },
+        {
+          "rank": 2,
+          "id": "r10:interp:gen4_10_11_blood_ground_echo",
+          "title": "Thematic / interpretive sound echo in Genesis 4:10–11: brother’s blood (דְּמֵי אָחִיךָ) crying from the ground (מִן־הָאֲדָמָה)",
+          "relation": "literary_correspondence",
+          "epistemic": "candidate_literary_pattern",
+          "refs": [
+            "Genesis 4:10",
+            "Genesis 4:11"
+          ]
+        },
+        {
+          "rank": 3,
+          "id": "r11:intersect:verse:H0120:H0127:145",
+          "title": "Direct textual convergence: \"H0120\" + \"H0127\" in Genesis 6:7",
+          "relation": "verified_lexical_grammatical",
+          "epistemic": "direct_textual_evidence",
+          "refs": [
+            "Genesis 6:7"
+          ]
+        },
+        {
+          "rank": 4,
+          "id": "r11:intersect:verse:H0120:H0127:38",
+          "title": "Direct textual convergence: \"H0120\" + \"H0127\" in Genesis 2:7",
+          "relation": "verified_lexical_grammatical",
+          "epistemic": "direct_textual_evidence",
+          "refs": [
+            "Genesis 2:7"
+          ]
+        },
+        {
+          "rank": 5,
+          "id": "r10:wordplay:adam_adamah_gen2_7",
+          "title": "Stronger biblical wordplay: Genesis 2:5–7 juxtaposes אָדָם (adam H0120) and אֲדָמָה (adamah H0127, ground) sharing consonants א-ד-ם",
+          "relation": "orthographic_wordplay",
+          "epistemic": "documented_lexical_relationship",
+          "refs": [
+            "Genesis 2:7",
+            "Genesis 2:5",
+            "Genesis 3:19"
+          ]
+        },
+        {
+          "rank": 6,
+          "id": "r13:wp:H0120:H0127",
+          "title": "Attested biblical wordplay: אָדָם (H0120) ↔ אֲדָמָה (H0127)",
+          "relation": "orthographic_wordplay",
+          "epistemic": "direct_textual_evidence",
+          "refs": [
+            "Genesis 2:5",
+            "Genesis 2:7"
+          ]
+        },
+        {
+          "rank": 7,
+          "id": "r11:intersect:verse:H0120:H0127:36",
+          "title": "Direct textual convergence: \"H0120\" + \"H0127\" in Genesis 2:5",
+          "relation": "verified_lexical_grammatical",
+          "epistemic": "direct_textual_evidence",
+          "refs": [
+            "Genesis 2:5"
+          ]
+        },
+        {
+          "rank": 8,
+          "id": "r13:wp:H0127:H0120",
+          "title": "Attested biblical wordplay: אֲדָמָה (H0127) ↔ אָדָם (H0120)",
+          "relation": "orthographic_wordplay",
+          "epistemic": "direct_textual_evidence",
+          "refs": [
+            "Genesis 2:5",
+            "Genesis 2:7"
+          ]
+        },
+        {
+          "rank": 9,
+          "id": "r11:intersect:verse:H0120:H0127:139",
+          "title": "Direct textual convergence: \"H0120\" + \"H0127\" in Genesis 6:1",
+          "relation": "verified_lexical_grammatical",
+          "epistemic": "direct_textual_evidence",
+          "refs": [
+            "Genesis 6:1"
+          ]
+        },
+        {
+          "rank": 10,
+          "id": "r13:beam:H0120-H0127",
+          "title": "Multi-hop pattern (wordplay): man → land: soil",
+          "relation": "multihop_proof_path",
+          "epistemic": "shared_motif_evidence",
+          "refs": [
+            "Genesis 2:5",
+            "Genesis 2:7"
+          ]
+        }
+      ],
+      "word_identity": null,
+      "connected": true,
+      "complete_multi_anchor": [
+        {
+          "id": "intersect:H0120+H1818+H0127",
+          "refs": [
+            "Proverbs 28:17",
+            "Ezekiel 33:24",
+            "Ezekiel 36:17",
+            "Ezekiel 38:20"
+          ]
+        },
+        {
+          "id": "r10:interp:gen4_10_11_blood_ground_echo",
+          "refs": [
+            "Genesis 4:10",
+            "Genesis 4:11"
+          ],
+          "target": {
+            "strongs": "H0127",
+            "script": "אֲדָמָה",
+            "transliteration": "a.da.mah",
+            "gloss": "land: soil"
+          }
+        }
+      ],
+      "pairwise_count": 8,
+      "indirect_count": 2
+    },
+    {
+      "id": "C02",
+      "category": "multi_anchor",
+      "tool": "get_Connection",
+      "args": {
+        "items": [
+          "H8247",
+          "H8245",
+          "H8246"
+        ],
+        "connections": 25
+      },
+      "expected": true,
+      "baseline_rank": null,
+      "first_matching_rank": null,
+      "baseline_top1": null,
+      "status": "ok",
+      "ms": 6919,
+      "top1": "r13:subgraph:triangle:H8247+H8245+H8246",
+      "top": [
+        {
+          "rank": 1,
+          "id": "r13:subgraph:triangle:H8247+H8245+H8246",
+          "title": "Convergent triangle connecting H8247 <-> H8245 <-> H8246",
+          "relation": "convergent_multi_anchor_network",
+          "epistemic": "convergent_multi_channel_pattern",
+          "score": 889,
+          "refs": [
+            "Jeremiah 1:11",
+            "Jeremiah 1:12"
+          ]
+        },
+        {
+          "rank": 2,
+          "id": "r11:intersect:pericope:19074:19075",
+          "title": "Close pericope proximity: \"H8247\" (Jeremiah 1:11) ↔ \"H8245\" (Jeremiah 1:12)",
+          "relation": "shared_motif",
+          "epistemic": "shared_motif_evidence",
+          "refs": [
+            "Jeremiah 1:11",
+            "Jeremiah 1:12"
+          ]
+        },
+        {
+          "rank": 3,
+          "id": "r13:wp:H8247:H8245",
+          "title": "Attested biblical wordplay: שָׁקֵד (H8247) ↔ שָׁקַד (H8245)",
+          "relation": "orthographic_wordplay",
+          "epistemic": "direct_textual_evidence",
+          "refs": [
+            "Jeremiah 1:11",
+            "Jeremiah 1:12"
+          ]
+        },
+        {
+          "rank": 4,
+          "id": "r13:wp:H8245:H8247",
+          "title": "Attested biblical wordplay: שָׁקַד (H8245) ↔ שָׁקֵד (H8247)",
+          "relation": "orthographic_wordplay",
+          "epistemic": "direct_textual_evidence",
+          "refs": [
+            "Jeremiah 1:11",
+            "Jeremiah 1:12"
+          ]
+        },
+        {
+          "rank": 5,
+          "id": "r13:subgraph:path:0:2",
+          "title": "Shared root / derivation (morphological derivation): שָׁקַד (H8246) ↔ שָׁקֵד (H8247)",
+          "relation": "steiner_direct_link",
+          "epistemic": "documented_lexical_relationship",
+          "score": 810
+        },
+        {
+          "rank": 6,
+          "id": "orth:H8247:H8245",
+          "title": "שָׁקֵד (H8247) <-> שָׁקַד (H8245) [shared_consonantal_pattern]",
+          "relation": "shared_consonantal_pattern",
+          "epistemic": "orthographic_similarity_only",
+          "refs": []
+        },
+        {
+          "rank": 7,
+          "id": "orth:H8247:H8246",
+          "title": "שָׁקֵד (H8247) <-> שָׁקַד (H8246) [shared_consonantal_pattern]",
+          "relation": "shared_consonantal_pattern",
+          "epistemic": "orthographic_similarity_only",
+          "refs": []
+        },
+        {
+          "rank": 8,
+          "id": "orth:H8245:H8246",
+          "title": "שָׁקַד (H8245) <-> שָׁקַד (H8246) [shared_consonantal_pattern]",
+          "relation": "shared_consonantal_pattern",
+          "epistemic": "orthographic_similarity_only",
+          "refs": []
+        },
+        {
+          "rank": 9,
+          "id": "r13:beam:H8247-H8245",
+          "title": "Multi-hop pattern (wordplay): almond → to watch",
+          "relation": "multihop_proof_path",
+          "epistemic": "shared_motif_evidence",
+          "refs": [
+            "Jeremiah 1:11",
+            "Jeremiah 1:12"
+          ]
+        },
+        {
+          "rank": 10,
+          "id": "r13:beam:H8247-H8246",
+          "title": "Multi-hop pattern (wordplay): almond → be almond shaped",
+          "relation": "multihop_proof_path",
+          "epistemic": "shared_motif_evidence",
+          "refs": []
+        },
+        {
+          "rank": 11,
+          "id": "r13:subgraph:path:1:2",
+          "title": "Steiner bridge (2 hops): H8245 <-> H8246",
+          "relation": "steiner_bridge_path",
+          "epistemic": "multi_hop_research_path",
+          "score": 798,
+          "refs": [
+            "Jeremiah 1:11",
+            "Jeremiah 1:12"
+          ]
+        }
+      ],
+      "word_identity": null,
+      "connected": true,
+      "complete_multi_anchor": [
+        {
+          "id": "r13:subgraph:triangle:H8247+H8245+H8246",
+          "refs": [
+            "Jeremiah 1:11",
+            "Jeremiah 1:12"
+          ]
+        }
+      ],
+      "pairwise_count": 5,
+      "indirect_count": 6
+    },
+    {
+      "id": "C03",
+      "category": "multi_anchor",
+      "tool": "get_Connection",
+      "args": {
+        "items": [
+          "Jeremiah 1:11-12",
+          "Exodus 25:33-37",
+          "Zechariah 4:2-14",
+          "Revelation 5:6"
+        ],
+        "connections": 25
+      },
+      "expected": true,
+      "baseline_rank": null,
+      "first_matching_rank": null,
+      "baseline_top1": null,
+      "status": "ok",
+      "ms": 6914,
+      "top1": "r13:steiner:network:Jeremiah 1:11-12+Exodus 25:33-37+Zechariah 4:2-14+Revelation 5:6",
+      "top": [
+        {
+          "rank": 1,
+          "id": "r13:steiner:network:Jeremiah 1:11-12+Exodus 25:33-37+Zechariah 4:2-14+Revelation 5:6",
+          "title": "Convergent multi-anchor network connecting Jeremiah 1:11-12 <-> Exodus 25:33-37 <-> Zechariah 4:2-14 <-> Revelation 5:6",
+          "relation": "convergent_multi_anchor_network",
+          "epistemic": "convergent_textual_pattern",
+          "score": 360,
+          "refs": [
+            "Jeremiah 1:11",
+            "Exodus 25:33",
+            "Zechariah 4:2",
+            "Jeremiah 1:11-12",
+            "Revelation 5:6",
+            "Zechariah 4:3",
+            "Exodus 25:33-37",
+            "Zechariah 4:10"
+          ]
+        },
+        {
+          "rank": 2,
+          "id": "r11:xref:19074:2229",
+          "title": "Jeremiah 1:11 -> Exodus 25:33 (\"shaped like\")",
+          "relation": "cross_reference",
+          "epistemic": "editorial_cross_reference",
+          "refs": [
+            "Jeremiah 1:11",
+            "Exodus 25:33"
+          ]
+        },
+        {
+          "rank": 3,
+          "id": "r11:xref:2229:19074",
+          "title": "Exodus 25:33 -> Jeremiah 1:11-12 (\"shaped like\")",
+          "relation": "cross_reference",
+          "epistemic": "editorial_cross_reference",
+          "refs": [
+            "Exodus 25:33",
+            "Jeremiah 1:11-12"
+          ]
+        },
+        {
+          "rank": 4,
+          "id": "r11:xref:19074:23041",
+          "title": "Jeremiah 1:11 -> Zechariah 4:2 (\"what do you see\")",
+          "relation": "cross_reference",
+          "epistemic": "editorial_cross_reference",
+          "refs": [
+            "Jeremiah 1:11",
+            "Zechariah 4:2"
+          ]
+        },
+        {
+          "rank": 5,
+          "id": "r11:xref:23041:19074",
+          "title": "Zechariah 4:2 -> Jeremiah 1:11-13 (\"What do you see\")",
+          "relation": "cross_reference",
+          "epistemic": "editorial_cross_reference",
+          "refs": [
+            "Zechariah 4:2",
+            "Jeremiah 1:11-13"
+          ]
+        },
+        {
+          "rank": 6,
+          "id": "passage_lxx:H7200:G1492",
+          "title": "LXX lexical bridge: רָאָה (H7200) <-> εἴδω (G1492, \"to perceive: see\")",
+          "relation": "cross_language_lxx_bridge",
+          "epistemic": "documented_cross_language_bridge",
+          "refs": [
+            "Jeremiah 1:11-12",
+            "Revelation 5:6"
+          ]
+        },
+        {
+          "rank": 7,
+          "id": "r11:xref:2229:23042",
+          "title": "Exodus 25:33 -> Zechariah 4:3 (\"three on the next branch\")",
+          "relation": "cross_reference",
+          "epistemic": "editorial_cross_reference",
+          "refs": [
+            "Exodus 25:33",
+            "Zechariah 4:3"
+          ]
+        },
+        {
+          "rank": 8,
+          "id": "r11:xref:2233:23041",
+          "title": "Exodus 25:37 -> Zechariah 4:2 (\"seven\")",
+          "relation": "cross_reference",
+          "epistemic": "editorial_cross_reference",
+          "refs": [
+            "Exodus 25:37",
+            "Zechariah 4:2"
+          ]
+        },
+        {
+          "rank": 9,
+          "id": "r11:xref:23041:2233",
+          "title": "Zechariah 4:2 -> Exodus 25:37 (\"seven lamps\")",
+          "relation": "cross_reference",
+          "epistemic": "editorial_cross_reference",
+          "refs": [
+            "Zechariah 4:2",
+            "Exodus 25:37"
+          ]
+        },
+        {
+          "rank": 10,
+          "id": "r11:xref:23042:2229",
+          "title": "Zechariah 4:3 -> Exodus 25:33 (\"three on the next branch\")",
+          "relation": "cross_reference",
+          "epistemic": "editorial_cross_reference",
+          "refs": [
+            "Zechariah 4:3",
+            "Exodus 25:33"
+          ]
+        },
+        {
+          "rank": 11,
+          "id": "passage_lxx:H0702:G5064",
+          "title": "LXX lexical bridge: אַרְבַּע (H0702) <-> τέσσαρες (G5064, \"four\")",
+          "relation": "cross_language_lxx_bridge",
+          "epistemic": "documented_cross_language_bridge",
+          "refs": [
+            "Exodus 25:33-37",
+            "Revelation 5:6"
+          ]
+        },
+        {
+          "rank": 12,
+          "id": "r11:xref:23049:30886",
+          "title": "Zechariah 4:10 -> Revelation 5:6 (\"eyes of the LORD\")",
+          "relation": "cross_testament_reference",
+          "epistemic": "editorial_cross_reference",
+          "refs": [
+            "Zechariah 4:10",
+            "Revelation 5:6"
+          ]
+        },
+        {
+          "rank": 13,
+          "id": "r11:xref:30886:23049",
+          "title": "Revelation 5:6 -> Zechariah 4:10 (\"seven eyes\")",
+          "relation": "cross_testament_reference",
+          "epistemic": "editorial_cross_reference",
+          "refs": [
+            "Revelation 5:6",
+            "Zechariah 4:10"
+          ]
+        },
+        {
+          "rank": 14,
+          "id": "passage_lxx:H7651:G2033",
+          "title": "LXX lexical bridge: שֶׁ֫בַע (H7651) <-> ἑπτά (G2033, \"seven\")",
+          "relation": "cross_language_lxx_bridge",
+          "epistemic": "documented_cross_language_bridge",
+          "refs": [
+            "Zechariah 4:2-14",
+            "Revelation 5:6"
+          ]
+        },
+        {
+          "rank": 15,
+          "id": "passage_lxx:H3605:G3956",
+          "title": "LXX lexical bridge: כֹּל (H3605) <-> πᾶς (G3956, \"all\")",
+          "relation": "cross_language_lxx_bridge",
+          "epistemic": "documented_cross_language_bridge",
+          "refs": [
+            "Zechariah 4:2-14",
+            "Revelation 5:6"
+          ]
+        },
+        {
+          "rank": 16,
+          "id": "passage_lxx:G1492:H3045",
+          "title": "LXX lexical bridge: εἴδω (G1492) <-> יָדַע (H3045, \"to know\")",
+          "relation": "cross_language_lxx_bridge",
+          "epistemic": "documented_cross_language_bridge",
+          "refs": [
+            "Revelation 5:6",
+            "Zechariah 4:2-14"
+          ]
+        },
+        {
+          "rank": 17,
+          "id": "r10:ident:rev5_6_eyes_spirits",
+          "title": "Revelation 5:6 explicitly identifies the Lamb’s seven eyes with the seven Spirits of God",
+          "relation": "explicit_identification",
+          "epistemic": "direct_textual_evidence",
+          "refs": [
+            "Revelation 5:6",
+            "Zechariah 4:10"
+          ]
+        },
+        {
+          "rank": 18,
+          "id": "r10:motif:exod25_to_zech4_menorah_oil",
+          "title": "Exodus 25:31–37 / 27:20–21 Tabernacle golden lampstand (menorah), seven lamps, and pure olive oil forms the background of Zechariah 4",
+          "relation": "literary_correspondence",
+          "epistemic": "verified_cross_reference",
+          "refs": [
+            "Exodus 25:31",
+            "Exodus 25:37",
+            "Exodus 27:20",
+            "Zechariah 4:2"
+          ]
+        }
+      ],
+      "word_identity": null,
+      "connected": true,
+      "complete_multi_anchor": [
+        {
+          "id": "r13:steiner:network:Jeremiah 1:11-12+Exodus 25:33-37+Zechariah 4:2-14+Revelation 5:6",
+          "refs": [
+            "Jeremiah 1:11",
+            "Exodus 25:33",
+            "Zechariah 4:2",
+            "Jeremiah 1:11-12",
+            "Revelation 5:6",
+            "Zechariah 4:3",
+            "Exodus 25:33-37",
+            "Zechariah 4:10"
+          ]
+        }
+      ],
+      "pairwise_count": 18,
+      "indirect_count": 0
+    },
+    {
+      "id": "C04",
+      "category": "multi_anchor",
+      "tool": "get_Connection",
+      "args": {
+        "items": [
+          "Genesis 6:14",
+          "Leviticus 16:30",
+          "Exodus 2:3",
+          "1 Peter 3:20-21"
+        ],
+        "connections": 25
+      },
+      "expected": true,
+      "baseline_rank": null,
+      "first_matching_rank": null,
+      "baseline_top1": null,
+      "status": "ok",
+      "ms": 6916,
+      "top1": "r13:steiner:network:Genesis 6:14+Leviticus 16:30+Exodus 2:3+1 Peter 3:20-21",
+      "top": [
+        {
+          "rank": 1,
+          "id": "r13:steiner:network:Genesis 6:14+Leviticus 16:30+Exodus 2:3+1 Peter 3:20-21",
+          "title": "Convergent multi-anchor network connecting Genesis 6:14 <-> Leviticus 16:30 <-> Exodus 2:3 <-> 1 Peter 3:20-21",
+          "relation": "convergent_multi_anchor_network",
+          "epistemic": "convergent_textual_pattern",
+          "score": 360,
+          "refs": [
+            "Genesis 6:14",
+            "Leviticus 16:30",
+            "Exodus 2:3",
+            "1 Peter 3:20",
+            "1 Peter 3:20-21"
+          ]
+        },
+        {
+          "rank": 2,
+          "id": "shared_lemma:H3722",
+          "title": "Shared vocabulary: כִּפֶּר (H3722, 94v) \"to atone\"",
+          "relation": "shared_rare_vocabulary",
+          "epistemic": "documented_lexical_relationship",
+          "refs": [
+            "Genesis 6:14",
+            "Leviticus 16:30"
+          ]
+        },
+        {
+          "rank": 3,
+          "id": "r11:xref:152:1558",
+          "title": "Genesis 6:14 -> Exodus 2:3 (\"coat it with pitch\")",
+          "relation": "cross_reference",
+          "epistemic": "editorial_cross_reference",
+          "refs": [
+            "Genesis 6:14",
+            "Exodus 2:3"
+          ]
+        },
+        {
+          "rank": 4,
+          "id": "r11:xref:1558:152",
+          "title": "Exodus 2:3 -> Genesis 6:14 (\"coated it with tar\")",
+          "relation": "cross_reference",
+          "epistemic": "editorial_cross_reference",
+          "refs": [
+            "Exodus 2:3",
+            "Genesis 6:14"
+          ]
+        },
+        {
+          "rank": 5,
+          "id": "shared_lemma:H8392",
+          "title": "Shared vocabulary: תֵּבָה (H8392, 25v) \"ark\"",
+          "relation": "shared_rare_vocabulary",
+          "epistemic": "documented_lexical_relationship",
+          "refs": [
+            "Genesis 6:14",
+            "Exodus 2:3"
+          ]
+        },
+        {
+          "rank": 6,
+          "id": "r11:xref:152:30544",
+          "title": "Genesis 6:14 -> 1 Peter 3:20 (\"Make\")",
+          "relation": "cross_testament_reference",
+          "epistemic": "editorial_cross_reference",
+          "refs": [
+            "Genesis 6:14",
+            "1 Peter 3:20"
+          ]
+        },
+        {
+          "rank": 7,
+          "id": "r11:xref:30544:152",
+          "title": "1 Peter 3:20 -> Genesis 6:14-22 (\"ark was being built\")",
+          "relation": "cross_testament_reference",
+          "epistemic": "editorial_cross_reference",
+          "refs": [
+            "1 Peter 3:20",
+            "Genesis 6:14-22"
+          ]
+        },
+        {
+          "rank": 8,
+          "id": "passage_lxx:H8392:G2787",
+          "title": "LXX lexical bridge: תֵּבָה (H8392) <-> κιβωτός (G2787, \"ark: covenant\")",
+          "relation": "cross_language_lxx_bridge",
+          "epistemic": "documented_cross_language_bridge",
+          "refs": [
+            "Genesis 6:14",
+            "1 Peter 3:20-21"
+          ]
+        },
+        {
+          "rank": 9,
+          "id": "r13:subgraph:path:0:2",
+          "title": "Modern editorial cross-reference (reciprocal): Genesis 6:14 ↔ Exodus 2:3 (\"coat it with pitch\")",
+          "relation": "steiner_direct_link",
+          "epistemic": "editorial_cross_reference",
+          "score": 902,
+          "refs": [
+            "Genesis 6:14",
+            "Exodus 2:3"
+          ]
+        },
+        {
+          "rank": 10,
+          "id": "r13:subgraph:path:0:3",
+          "title": "Modern editorial cross-reference (reciprocal) (OT↔NT): Genesis 6:14 ↔ 1 Peter 3:20 (\"Make\")",
+          "relation": "steiner_direct_link",
+          "epistemic": "editorial_cross_reference",
+          "score": 962,
+          "refs": [
+            "Genesis 6:14",
+            "1 Peter 3:20"
+          ]
+        },
+        {
+          "rank": 11,
+          "id": "r13:subgraph:path:2:3",
+          "title": "Steiner bridge (2 hops): Exodus 2:3 <-> 1 Peter 3:20-21",
+          "relation": "steiner_bridge_path",
+          "epistemic": "multi_hop_research_path",
+          "score": 820,
+          "refs": [
+            "Genesis 6:14",
+            "Exodus 2:3",
+            "1 Peter 3:20"
+          ]
+        }
+      ],
+      "word_identity": null,
+      "connected": true,
+      "complete_multi_anchor": [
+        {
+          "id": "r13:steiner:network:Genesis 6:14+Leviticus 16:30+Exodus 2:3+1 Peter 3:20-21",
+          "refs": [
+            "Genesis 6:14",
+            "Leviticus 16:30",
+            "Exodus 2:3",
+            "1 Peter 3:20",
+            "1 Peter 3:20-21"
+          ]
+        }
+      ],
+      "pairwise_count": 10,
+      "indirect_count": 1
+    },
+    {
+      "id": "C05",
+      "category": "multi_anchor",
+      "tool": "get_Connection",
+      "args": {
+        "items": [
+          "Genesis 2:7",
+          "Ezekiel 37:5-10",
+          "John 20:22",
+          "Revelation 11:11"
+        ],
+        "connections": 25
+      },
+      "expected": true,
+      "baseline_rank": null,
+      "first_matching_rank": null,
+      "baseline_top1": null,
+      "status": "ok",
+      "ms": 6916,
+      "top1": "r13:subgraph:diamond:Genesis 2:7+Ezekiel 37:5-10+John 20:22+Revelation 11:11",
+      "top": [
+        {
+          "rank": 1,
+          "id": "r13:subgraph:diamond:Genesis 2:7+Ezekiel 37:5-10+John 20:22+Revelation 11:11",
+          "title": "Convergent diamond connecting Genesis 2:7 <-> Ezekiel 37:5-10 <-> John 20:22 <-> Revelation 11:11",
+          "relation": "convergent_multi_anchor_network",
+          "epistemic": "convergent_multi_channel_pattern",
+          "score": 1130,
+          "refs": [
+            "Genesis 2:7",
+            "John 20:22",
+            "Ezekiel 37:5",
+            "Revelation 11:11",
+            "Genesis 2:5",
+            "Genesis 3:19"
+          ]
+        },
+        {
+          "rank": 2,
+          "id": "r11:xref:21519:38",
+          "title": "Ezekiel 37:5 -> Genesis 2:7 (\"I will cause breath to enter\")",
+          "relation": "cross_reference",
+          "epistemic": "editorial_cross_reference",
+          "refs": [
+            "Ezekiel 37:5",
+            "Genesis 2:7"
+          ]
+        },
+        {
+          "rank": 3,
+          "id": "r11:xref:38:26995",
+          "title": "Genesis 2:7 -> John 20:22 (\"breathed\")",
+          "relation": "cross_testament_reference",
+          "epistemic": "editorial_cross_reference",
+          "refs": [
+            "Genesis 2:7",
+            "John 20:22"
+          ]
+        },
+        {
+          "rank": 4,
+          "id": "r11:xref:26995:38",
+          "title": "John 20:22 -> Genesis 2:7 (\"breathed\")",
+          "relation": "cross_testament_reference",
+          "epistemic": "editorial_cross_reference",
+          "refs": [
+            "John 20:22",
+            "Genesis 2:7"
+          ]
+        },
+        {
+          "rank": 5,
+          "id": "passage_lxx:H5301:G1720",
+          "title": "LXX lexical bridge: נָפַח (H5301) <-> ἐμφυσάω (G1720, \"to breathe into\")",
+          "relation": "cross_language_lxx_bridge",
+          "epistemic": "documented_cross_language_bridge",
+          "refs": [
+            "Genesis 2:7",
+            "John 20:22"
+          ]
+        },
+        {
+          "rank": 6,
+          "id": "r11:xref:38:30984",
+          "title": "Genesis 2:7 -> Revelation 11:11 (\"the breath of life\")",
+          "relation": "cross_testament_reference",
+          "epistemic": "editorial_cross_reference",
+          "refs": [
+            "Genesis 2:7",
+            "Revelation 11:11"
+          ]
+        },
+        {
+          "rank": 7,
+          "id": "r11:xref:30984:38",
+          "title": "Revelation 11:11 -> Genesis 2:7 (\"the breath of life\")",
+          "relation": "cross_testament_reference",
+          "epistemic": "editorial_cross_reference",
+          "refs": [
+            "Revelation 11:11",
+            "Genesis 2:7"
+          ]
+        },
+        {
+          "rank": 8,
+          "id": "passage_lxx:H2416:G2222",
+          "title": "LXX lexical bridge: חַי (H2416) <-> ζωή (G2222, \"life\")",
+          "relation": "cross_language_lxx_bridge",
+          "epistemic": "documented_cross_language_bridge",
+          "refs": [
+            "Genesis 2:7",
+            "Revelation 11:11"
+          ]
+        },
+        {
+          "rank": 9,
+          "id": "passage_lxx:H0430:G2316",
+          "title": "LXX lexical bridge: אֱלֹהִים (H0430) <-> θεός (G2316, \"God\")",
+          "relation": "cross_language_lxx_bridge",
+          "epistemic": "documented_cross_language_bridge",
+          "refs": [
+            "Genesis 2:7",
+            "Revelation 11:11"
+          ]
+        },
+        {
+          "rank": 10,
+          "id": "r11:xref:21519:26995",
+          "title": "Ezekiel 37:5 -> John 20:22 (\"I will cause breath to enter\")",
+          "relation": "cross_testament_reference",
+          "epistemic": "editorial_cross_reference",
+          "refs": [
+            "Ezekiel 37:5",
+            "John 20:22"
+          ]
+        },
+        {
+          "rank": 11,
+          "id": "r11:xref:21523:26995",
+          "title": "Ezekiel 37:9 -> John 20:22 (\"breathed\")",
+          "relation": "cross_testament_reference",
+          "epistemic": "editorial_cross_reference",
+          "refs": [
+            "Ezekiel 37:9",
+            "John 20:22"
+          ]
+        },
+        {
+          "rank": 12,
+          "id": "r11:xref:26995:21523",
+          "title": "John 20:22 -> Ezekiel 37:9 (\"breathed\")",
+          "relation": "cross_testament_reference",
+          "epistemic": "editorial_cross_reference",
+          "refs": [
+            "John 20:22",
+            "Ezekiel 37:9"
+          ]
+        },
+        {
+          "rank": 13,
+          "id": "r11:xref:26995:21519",
+          "title": "John 20:22 -> Ezekiel 37:5 (\"I will cause breath to enter\")",
+          "relation": "cross_testament_reference",
+          "epistemic": "editorial_cross_reference",
+          "refs": [
+            "John 20:22",
+            "Ezekiel 37:5"
+          ]
+        },
+        {
+          "rank": 14,
+          "id": "passage_lxx:H7307:G4151",
+          "title": "LXX lexical bridge: רוּחַ (H7307) <-> πνεῦμα (G4151, \"spirit / Spirit\")",
+          "relation": "cross_language_lxx_bridge",
+          "epistemic": "documented_cross_language_bridge",
+          "refs": [
+            "Ezekiel 37:5-10",
+            "John 20:22"
+          ]
+        },
+        {
+          "rank": 15,
+          "id": "passage_lxx:H6680:G2036",
+          "title": "LXX lexical bridge: צָוָה (H6680) <-> εἶπον (G2036, \"to say\")",
+          "relation": "cross_language_lxx_bridge",
+          "epistemic": "documented_cross_language_bridge",
+          "refs": [
+            "Ezekiel 37:5-10",
+            "John 20:22"
+          ]
+        },
+        {
+          "rank": 16,
+          "id": "passage_lxx:H0559:G3004",
+          "title": "LXX lexical bridge: אָמַר (H0559) <-> λέγω (G3004, \"to say\")",
+          "relation": "cross_language_lxx_bridge",
+          "epistemic": "documented_cross_language_bridge",
+          "refs": [
+            "Ezekiel 37:5-10",
+            "John 20:22"
+          ]
+        },
+        {
+          "rank": 17,
+          "id": "r11:xref:21519:30984",
+          "title": "Ezekiel 37:5 -> Revelation 11:11 (\"the breath of life\")",
+          "relation": "cross_testament_reference",
+          "epistemic": "editorial_cross_reference",
+          "refs": [
+            "Ezekiel 37:5",
+            "Revelation 11:11"
+          ]
+        },
+        {
+          "rank": 18,
+          "id": "r11:xref:21524:30984",
+          "title": "Ezekiel 37:10 -> Revelation 11:11 (\"breath entered them\")",
+          "relation": "cross_testament_reference",
+          "epistemic": "editorial_cross_reference",
+          "refs": [
+            "Ezekiel 37:10",
+            "Revelation 11:11"
+          ]
+        },
+        {
+          "rank": 19,
+          "id": "r11:xref:30984:21524",
+          "title": "Revelation 11:11 -> Ezekiel 37:10 (\"breath entered them\")",
+          "relation": "cross_testament_reference",
+          "epistemic": "editorial_cross_reference",
+          "refs": [
+            "Revelation 11:11",
+            "Ezekiel 37:10"
+          ]
+        },
+        {
+          "rank": 20,
+          "id": "r11:xref:30984:21519",
+          "title": "Revelation 11:11 -> Ezekiel 37:5-14 (\"the breath of life\")",
+          "relation": "cross_testament_reference",
+          "epistemic": "editorial_cross_reference",
+          "refs": [
+            "Revelation 11:11",
+            "Ezekiel 37:5-14"
+          ]
+        },
+        {
+          "rank": 21,
+          "id": "passage_lxx:H2421:G2222",
+          "title": "LXX lexical bridge: חָיָה (H2421) <-> ζωή (G2222, \"life\")",
+          "relation": "cross_language_lxx_bridge",
+          "epistemic": "documented_cross_language_bridge",
+          "refs": [
+            "Ezekiel 37:5-10",
+            "Revelation 11:11"
+          ]
+        },
+        {
+          "rank": 22,
+          "id": "passage_lxx:H0935:G1525",
+          "title": "LXX lexical bridge: בּוֹא (H0935) <-> εἰσέρχομαι (G1525, \"to enter\")",
+          "relation": "cross_language_lxx_bridge",
+          "epistemic": "documented_cross_language_bridge",
+          "refs": [
+            "Ezekiel 37:5-10",
+            "Revelation 11:11"
+          ]
+        },
+        {
+          "rank": 23,
+          "id": "passage_lxx:H3069:G2316",
+          "title": "LXX lexical bridge: יְהֹוִה (H3069) <-> θεός (G2316, \"God\")",
+          "relation": "cross_language_lxx_bridge",
+          "epistemic": "documented_cross_language_bridge",
+          "refs": [
+            "Ezekiel 37:5-10",
+            "Revelation 11:11"
+          ]
+        },
+        {
+          "rank": 24,
+          "id": "r13:subgraph:path:0:2",
+          "title": "Modern editorial cross-reference (reciprocal) (OT↔NT): Genesis 2:7 ↔ John 20:22 (\"breathed\")",
+          "relation": "steiner_direct_link",
+          "epistemic": "editorial_cross_reference",
+          "score": 962,
+          "refs": [
+            "Genesis 2:7",
+            "John 20:22"
+          ]
+        },
+        {
+          "rank": 25,
+          "id": "r13:subgraph:path:1:2",
+          "title": "Modern editorial cross-reference (OT↔NT): Ezekiel 37:5 → John 20:22 (\"I will cause breath to enter\")",
+          "relation": "steiner_direct_link",
+          "epistemic": "editorial_cross_reference",
+          "score": 866,
+          "refs": [
+            "Ezekiel 37:5",
+            "John 20:22"
+          ]
+        }
+      ],
+      "word_identity": null,
+      "connected": true,
+      "complete_multi_anchor": [
+        {
+          "id": "r13:subgraph:diamond:Genesis 2:7+Ezekiel 37:5-10+John 20:22+Revelation 11:11",
+          "refs": [
+            "Genesis 2:7",
+            "John 20:22",
+            "Ezekiel 37:5",
+            "Revelation 11:11",
+            "Genesis 2:5",
+            "Genesis 3:19"
+          ]
+        }
+      ],
+      "pairwise_count": 25,
+      "indirect_count": 3
+    },
+    {
+      "id": "C06",
+      "category": "multi_anchor",
+      "tool": "get_Connection",
+      "args": {
+        "items": [
+          "H5146",
+          "H5162"
+        ],
+        "connections": 25
+      },
+      "expected": true,
+      "baseline_rank": null,
+      "first_matching_rank": null,
+      "baseline_top1": null,
+      "status": "ok",
+      "ms": 6920,
+      "top1": "intersect:H5146+H5162",
+      "top": [
+        {
+          "rank": 1,
+          "id": "intersect:H5146+H5162",
+          "title": "H5146 + H5162 co-occur in 1 verse(s)",
+          "relation": "same_verse_co_attestation",
+          "epistemic": "documented_collocation_or_cooccurrence",
+          "refs": [
+            "Genesis 5:29"
+          ]
+        },
+        {
+          "rank": 2,
+          "id": "r11:intersect:verse:H5146:H5162:135",
+          "title": "Direct textual convergence: \"H5146\" + \"H5162\" in Genesis 5:29",
+          "relation": "verified_lexical_grammatical",
+          "epistemic": "direct_textual_evidence",
+          "refs": [
+            "Genesis 5:29"
+          ]
+        },
+        {
+          "rank": 3,
+          "id": "r13:wp:H5146:H5162",
+          "title": "Attested biblical wordplay: נֹחַ (H5146) ↔ נָחַם (H5162)",
+          "relation": "orthographic_wordplay",
+          "epistemic": "direct_textual_evidence",
+          "refs": [
+            "Genesis 5:29",
+            "Genesis 5:30"
+          ]
+        },
+        {
+          "rank": 4,
+          "id": "r13:wp:H5162:H5146",
+          "title": "Attested biblical wordplay: נָחַם (H5162) ↔ נֹחַ (H5146)",
+          "relation": "orthographic_wordplay",
+          "epistemic": "direct_textual_evidence",
+          "refs": [
+            "Genesis 5:29",
+            "Genesis 5:30"
+          ]
+        },
+        {
+          "rank": 5,
+          "id": "r13:beam:H5146-H5162",
+          "title": "Multi-hop pattern (wordplay): Noah → to be sorry: comfort",
+          "relation": "multihop_proof_path",
+          "epistemic": "shared_motif_evidence",
+          "refs": [
+            "Genesis 5:29",
+            "Genesis 5:30"
+          ]
+        },
+        {
+          "rank": 6,
+          "id": "r11:intersect:pericope:136:135",
+          "title": "Close pericope proximity: \"H5146\" (Genesis 5:30) ↔ \"H5162\" (Genesis 5:29)",
+          "relation": "shared_motif",
+          "epistemic": "shared_motif_evidence",
+          "refs": [
+            "Genesis 5:30",
+            "Genesis 5:29"
+          ]
+        },
+        {
+          "rank": 7,
+          "id": "r11:intersect:pericope:146:145",
+          "title": "Close pericope proximity: \"H5146\" (Genesis 6:8) ↔ \"H5162\" (Genesis 6:7)",
+          "relation": "shared_motif",
+          "epistemic": "shared_motif_evidence",
+          "refs": [
+            "Genesis 6:8",
+            "Genesis 6:7"
+          ]
+        }
+      ],
+      "word_identity": null,
+      "connected": true,
+      "complete_multi_anchor": [
+        {
+          "id": "intersect:H5146+H5162",
+          "refs": [
+            "Genesis 5:29"
+          ]
+        },
+        {
+          "id": "r11:intersect:verse:H5146:H5162:135",
+          "refs": [
+            "Genesis 5:29"
+          ],
+          "target": {
+            "strongs": "H5162",
+            "script": "נָחַם",
+            "transliteration": "na.cham",
+            "gloss": "to be sorry: comfort"
+          }
+        },
+        {
+          "id": "r13:wp:H5146:H5162",
+          "refs": [
+            "Genesis 5:29",
+            "Genesis 5:30"
+          ],
+          "target": {
+            "strongs": "H5162",
+            "script": "נָחַם",
+            "transliteration": "nchm",
+            "gloss": "to be sorry: comfort"
+          }
+        },
+        {
+          "id": "r13:wp:H5162:H5146",
+          "refs": [
+            "Genesis 5:29",
+            "Genesis 5:30"
+          ],
+          "target": {
+            "strongs": "H5146",
+            "script": "נֹחַ",
+            "transliteration": "nch",
+            "gloss": "Noah"
+          }
+        },
+        {
+          "id": "r13:beam:H5146-H5162",
+          "refs": [
+            "Genesis 5:29",
+            "Genesis 5:30"
+          ],
+          "target": {
+            "strongs": "H5162",
+            "script": "נָחַם",
+            "transliteration": "na.cham",
+            "gloss": "to be sorry: comfort"
+          }
+        },
+        {
+          "id": "r11:intersect:pericope:136:135",
+          "refs": [
+            "Genesis 5:30",
+            "Genesis 5:29"
+          ],
+          "target": {
+            "strongs": "H5162",
+            "script": "נָחַם",
+            "transliteration": "na.cham",
+            "gloss": "to be sorry: comfort"
+          }
+        },
+        {
+          "id": "r11:intersect:pericope:146:145",
+          "refs": [
+            "Genesis 6:8",
+            "Genesis 6:7"
+          ],
+          "target": {
+            "strongs": "H5162",
+            "script": "נָחַם",
+            "transliteration": "na.cham",
+            "gloss": "to be sorry: comfort"
+          }
+        }
+      ],
+      "pairwise_count": 6,
+      "indirect_count": 1
     }
   ]
 }
