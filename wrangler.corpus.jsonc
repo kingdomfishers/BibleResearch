@@ -16,7 +16,7 @@
   "vars": {
     "R12_RELEASE_ID": "r13-discovery-3",
     "R12_ASSET_SHA256": "fb41be32c11135a5aacdac7101907b2a7ba0878472742db4160518986d9fd422",
-    "R12_SOURCE_COMMIT": "68311c67daa7a33516025f3f079d8aac1283744e"
+    "R12_SOURCE_COMMIT": "d79d243017f2d85031c61b679f367d14202a930a"
   },
   "observability": {
     "enabled": true,
