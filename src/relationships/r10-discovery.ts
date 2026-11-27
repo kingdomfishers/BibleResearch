@@ -3090,7 +3090,7 @@ export async function discoverBiblicalConnections(
         ep.mt_ref = hydratedEntries[0].vVal.mt_ref;
       }
 
-      if (fastManifest?.direct_b64gz && ep.verse_id > 0 && chapterVidsForEp.length > 0) {
+      if (!query.lite_subgraph_mode && explicitPassageVidSet.size <= 4 && fastManifest?.direct_b64gz && ep.verse_id > 0 && chapterVidsForEp.length > 0) {
         const chunkSize = fastManifest.verse_chunk_size || 64;
         const anchorEndVid = hydratedEntries.length > 0 ? hydratedEntries[hydratedEntries.length - 1].vid : ep.verse_id;
         for (const nVid of chapterVidsForEp) {
@@ -3568,7 +3568,7 @@ export async function discoverBiblicalConnections(
           ? 'lexical'
           : 'open_discovery';
   const profileSliceLimit = isPassageOnlyQuery
-    ? (query.mode === 'bridge' ? 6 : (query.lite_subgraph_mode ? 4 : 5))
+    ? (query.mode === 'bridge' ? 5 : (query.lite_subgraph_mode ? 3 : 4))
     : (resolvedConcepts.length >= 3 ? Math.min(8, resolvedConcepts.length * 2 + 2) : 6);
   const rawCandidateStrongs = [...new Set([...prioritized, ...matchedStrongs])];
   const orderedCandidateStrongs = isPassageOnlyQuery
@@ -3654,9 +3654,11 @@ export async function discoverBiblicalConnections(
     const idfBonus = Math.min(80, Math.max(0, Math.round((Math.log(31203 / effTotalVerses) - 3) * 16)));
     const hubPenalty = prof.total_verses > 250 && !multiConcept ? 140 : 0;
     const profBgPenalty = isPassageOnlyQuery ? (query.mode === 'bridge' ? 95 : 225) : 0;
+    const profDefaultSense = resolveDisplaySense(prof, [], explicitToks);
 
     // A. Clusters
-    for (const cl of prof.clusters || []) {
+    const clusterSlice = query.lite_subgraph_mode ? [] : (prof.clusters || []).slice(0, isPassageOnlyQuery ? 2 : 4);
+    for (const cl of clusterSlice) {
       const anchorNodes: R10Node[] = [
         {
           id: `lemma:${prof.bs}`,
@@ -3810,9 +3812,17 @@ export async function discoverBiblicalConnections(
         ? rawClusterPassages.filter(p => !isYearUnitWithoutDayPassage([p]) && !/\b(?:hundred|thousand)\b/i.test(p.snippet || ''))
         : rawClusterPassages;
       if (clusterPassages.length === 0) continue;
-      const clusterSense = resolveDisplaySense(prof, clusterPassages, explicitToks);
+      const clusterSense = isPassageOnlyQuery ? profDefaultSense : resolveDisplaySense(prof, clusterPassages, explicitToks);
       const clusterVids = new Set(cl.vids);
-      const matchingForms = (prof.forms || []).filter(f => f.vid && clusterVids.has(f.vid));
+      const matchingForms: any[] = [];
+      const clForms = prof.forms || [];
+      for (let fi = 0; fi < clForms.length && fi < 60; fi++) {
+        const f = clForms[fi];
+        if (f?.vid && clusterVids.has(f.vid)) {
+          matchingForms.push(f);
+          if (matchingForms.length >= 3) break;
+        }
+      }
       const originalWords: R10OriginalWordRef[] = [
         {
           lemma_key: clusterSense.lk,
@@ -3880,7 +3890,7 @@ export async function discoverBiblicalConnections(
           verse: 1,
           testament: bookForVid(xr.to_vid) <= 39 ? 'OT' : 'NT',
         };
-        const xrSense = resolveDisplaySense(prof, [fromP, toP], explicitToks);
+        const xrSense = isPassageOnlyQuery ? profDefaultSense : resolveDisplaySense(prof, [fromP, toP], explicitToks);
         crossReferencesOut.push({
           from_ref: fromP.ref,
           to_ref: xr.to_ref,
@@ -3923,7 +3933,8 @@ export async function discoverBiblicalConnections(
         Number(recordWitnessesExplicitPassage(a.witnesses?.map(w => w.passage) || []))
       );
     }
-    nonFuncGram = nonFuncGram.slice(0, 5);
+    const fastPassageOrLite = isPassageOnlyQuery || Boolean(query.lite_subgraph_mode);
+    nonFuncGram = nonFuncGram.slice(0, fastPassageOrLite ? 4 : 5);
 
     for (const gr of nonFuncGram) {
       const grPassages = gr.witnesses?.map(w => w.passage) || [];
@@ -3936,7 +3947,7 @@ export async function discoverBiblicalConnections(
       if (seenGramPairs.has(gramPairKey)) continue;
       seenGramPairs.add(gramPairKey);
       const gramBgPenalty = isPassageOnlyQuery && !isPassageWitnessGram ? (query.mode === 'bridge' ? 110 : 245) : 0;
-      const gramSense = resolveDisplaySense(prof, grPassages, explicitToks);
+      const gramSense = fastPassageOrLite ? profDefaultSense : resolveDisplaySense(prof, grPassages, explicitToks);
       const gTier: R10EvidenceTier = (grPassages.length > 0 && (gr.independent_witness_count ?? gr.occurrences) >= 2) ? 2 : 3;
       const gBase = TIER_BASE_SCORE[gTier];
       const gSpec = idfBonus + 25;
@@ -3983,7 +3994,8 @@ export async function discoverBiblicalConnections(
 
     // C. Documented LXX Bridges (exclude Greek/Hebrew article & particle noise such as G3588)
     let lxxAdded = 0;
-    for (let idx = 0; idx < (prof.lxx_relations || []).length && lxxAdded < 6; idx++) {
+    const lxxCap = fastPassageOrLite ? 4 : 6;
+    for (let idx = 0; idx < (prof.lxx_relations || []).length && lxxAdded < lxxCap; idx++) {
       const rel = prof.lxx_relations[idx];
       if (isLxxFunctionEquivalent(rel?.target_strongs, rel?.script)) continue;
       lxxAdded++;
@@ -3995,7 +4007,7 @@ export async function discoverBiblicalConnections(
         verse: 1,
         testament: 'OT' as const,
       }));
-      const lxxSense = resolveDisplaySense(prof, lxxPassages, explicitToks);
+      const lxxSense = fastPassageOrLite ? profDefaultSense : resolveDisplaySense(prof, lxxPassages, explicitToks);
       const isHeadingMatch = rel.type === 'lxx_heading_witness' &&
         parsedRefs.some(pr => new RegExp(`\\b${pr.chapter}:${pr.verse ?? 0}\\b`).test(String(rel.ref || '')));
       const lxxBgPenalty = isPassageOnlyQuery && !isHeadingMatch ? (query.mode === 'bridge' ? 100 : 235) : 0;
@@ -4056,7 +4068,7 @@ export async function discoverBiblicalConnections(
     }
 
     // D. Lexical relations (validate same-script consonant overlap >= 2 for shares_root and attach sample witnesses)
-    const lexSense = resolveDisplaySense(prof, [], explicitToks);
+    const lexSense = profDefaultSense;
     const profForLex = lexSense.lk === prof.lk && lexSense.gl === prof.gl
       ? prof
       : { ...prof, lk: lexSense.lk, sc: lexSense.sc, tr: lexSense.tr, gl: lexSense.gl };
@@ -4072,7 +4084,8 @@ export async function discoverBiblicalConnections(
       );
     };
     const srcConsSet = extractConsSet(prof.sc);
-    for (let idx = 0; idx < Math.min(5, (prof.lexical_relations || []).length); idx++) {
+    const lexCap = fastPassageOrLite ? 4 : 5;
+    for (let idx = 0; idx < Math.min(lexCap, (prof.lexical_relations || []).length); idx++) {
       const lrel = prof.lexical_relations[idx];
       const tBs = String(lrel?.target_strongs || '');
       if (lrel?.type === 'shares_root' && tBs && prof.bs[0] === tBs[0]) {
@@ -4107,7 +4120,10 @@ export async function discoverBiblicalConnections(
 
     // D2. Direct Collocated Vocabulary (top non-stop-hub collocations from attested cluster contexts)
     const seenCollocTargets = new Set<string>();
-    for (const clForColloc of (prof.clusters || []).slice(0, 3)) {
+    const collocClusters = query.lite_subgraph_mode ? [] : (prof.clusters || []).slice(0, isPassageOnlyQuery ? 2 : 3);
+    const maxCollocTargets = isPassageOnlyQuery ? 2 : 5;
+    const maxCollocPerCluster = isPassageOnlyQuery ? 2 : 3;
+    for (const clForColloc of collocClusters) {
       const samplePassages = (clForColloc.sample_passages || []).slice(0, 6).map(p => ({
         verse_id: p.verse_id,
         ref: p.ref,
@@ -4119,7 +4135,7 @@ export async function discoverBiblicalConnections(
         snippet: p.snippet,
         is_psalm_heading: p.book === 19 && p.verse === 0,
       }));
-      const collocSense = resolveDisplaySense(prof, samplePassages, explicitToks);
+      const collocSense = fastPassageOrLite ? profDefaultSense : resolveDisplaySense(prof, samplePassages, explicitToks);
       let clusterCollocAdded = 0;
       for (const cw of clForColloc.collocated_words || []) {
         if (!cw.bs || cw.bs === prof.bs || seenCollocTargets.has(cw.bs)) continue;
@@ -4160,9 +4176,9 @@ export async function discoverBiblicalConnections(
             final_score: collocScore,
           },
         });
-        if (clusterCollocAdded >= 3 || seenCollocTargets.size >= 5) break;
+        if (clusterCollocAdded >= maxCollocPerCluster || seenCollocTargets.size >= maxCollocTargets) break;
       }
-      if (seenCollocTargets.size >= 5) break;
+      if (seenCollocTargets.size >= maxCollocTargets) break;
     }
   }
 
@@ -4495,7 +4511,7 @@ export async function discoverBiblicalConnections(
       }
     }
 
-    if (isPassageOnlyQuery && query.mode !== 'bridge' && pericopeNeighbors.length > 0) {
+    if (!query.lite_subgraph_mode && explicitPassageVidSet.size <= 4 && isPassageOnlyQuery && query.mode !== 'bridge' && pericopeNeighbors.length > 0) {
       const neighborXrefCands: Array<{
         nEp: R10PassageRef; parentRef: string; dist: number; toVid: number; toRef: string;
         phrase: string; isReciprocal: boolean; lexCount: number; lxxCount: number; idf10: number; overlapBonus: number;
