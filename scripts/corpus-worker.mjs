@@ -119,9 +119,9 @@ const PINNED_BASE_PATHS = new Set([
 const pinnedBaseCache = new Map();
 const shardLru = new Map();
 let shardInflightCount = 0;
-const MAX_LRU_SHARDS = 64;
-const MAX_LRU_BYTES = 10 * 1024 * 1024;
-const MAX_SINGLE_LRU_BYTES = 512 * 1024;
+const MAX_LRU_SHARDS = 256;
+const MAX_LRU_BYTES = 16 * 1024 * 1024;
+const MAX_SINGLE_LRU_BYTES = 2 * 1024 * 1024;
 let shardLruBytes = 0;
 let r12TraceIsolateId;
 

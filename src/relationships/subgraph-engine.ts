@@ -109,6 +109,7 @@ export interface SubgraphRequest {
   max_nodes?: number;
   max_edges?: number;
   include_exploratory?: boolean;
+  include_v3_ppr?: boolean;
   release_id?: string;
 }
 
@@ -654,7 +655,7 @@ export async function findConnectedSubgraph(
 
   const maxHops = Math.min(3, Math.max(1, Number(request.max_hops ?? 3)));
   const maxNodes = Math.min(120, Math.max(12, Number(request.max_nodes ?? 60)));
-  const maxEdges = Math.min(400, Math.max(16, Number(request.max_edges ?? 140)));
+  const maxEdges = Math.min(400, Math.max(16, Number(request.max_edges ?? 110)));
   const includeExploratory = request.include_exploratory !== false;
   const reader = createCachingReader(rawReader, 22);
 
@@ -666,7 +667,8 @@ export async function findConnectedSubgraph(
         {
           query: a,
           mode: 'discover',
-          limit: 12,
+          limit: 10,
+          lite_subgraph_mode: true,
           skip_v3_verification: true,
           filters: {
             include_orthographic: includeExploratory,
@@ -687,7 +689,9 @@ export async function findConnectedSubgraph(
             query: rawAnchors.join(' ; '),
             mode: 'bridge',
             compare_targets: rawAnchors,
-            limit: 20,
+            limit: 16,
+            lite_subgraph_mode: true,
+            skip_v3_verification: true,
             skip_v3_shortlist: true,
             filters: {
               include_orthographic: includeExploratory,
@@ -747,12 +751,13 @@ export async function findConnectedSubgraph(
         termIds.add(pid);
         ensureNode({ id: pid, kind: 'passage', label: ep.ref, ref: ep.ref }, i);
         if (ep.book && ep.chapter) {
+          const isWholeChapter = !String(ep.ref).includes(':');
           anchorRanges.push({
             anchorIdx: i,
             book: Number(ep.book),
             chapter: Number(ep.chapter),
-            vStart: Number(ep.verse ?? 1),
-            vEnd: Number(ep.end_verse ?? ep.verse ?? 1),
+            vStart: isWholeChapter ? 1 : Number(ep.verse ?? 1),
+            vEnd: isWholeChapter ? 200 : Number(ep.end_verse ?? ep.verse ?? 1),
           });
         }
       }
@@ -786,8 +791,15 @@ export async function findConnectedSubgraph(
 
     // If passage anchor has focal original words in strongest_connections, register rare focal words
     if (refsList.length > 0) {
+      const iRanges = anchorRanges.filter((ar) => ar.anchorIdx === i);
       for (const conn of (res.strongest_connections || []).slice(0, 6)) {
-        const hitsPassage = (conn.passages || []).some((p) => refsList.includes(p.ref));
+        const hitsPassage = (conn.passages || []).some(
+          (p) =>
+            refsList.includes(p.ref) ||
+            iRanges.some(
+              (ar) => p.book === ar.book && p.chapter === ar.chapter && p.verse >= ar.vStart && (p.end_verse ?? p.verse) <= ar.vEnd,
+            ),
+        );
         if (!hitsPassage) continue;
         for (const ow of (conn.original_words || []).slice(0, 2)) {
           const bs = padStrongs(ow.strongs || '');
@@ -1035,9 +1047,9 @@ export async function findConnectedSubgraph(
     // Non-fatal if motifs shard unavailable
   }
 
-  // Typed Conductance PPR (Top-128 per anchor) + Typed CSR + rankBridgePivots augmentation
+  // Typed Conductance PPR (Top-128 per anchor) + Typed CSR + rankBridgePivots augmentation (explicit opt-in to stay within CF Free 10 ms CPU)
   try {
-    if (anchorRecords.length >= 2) {
+    if (request.include_v3_ppr && anchorRecords.length >= 2) {
       await augmentSubgraphWithV3PprAndCsr({
         reader,
         anchorRecords,

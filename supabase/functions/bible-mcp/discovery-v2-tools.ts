@@ -1304,27 +1304,21 @@ export async function handleGetPassage(read: DatabaseReader, input: {
     && input.realworld === 0
     && input.word_depth === 0;
 
-  // Pick anchor verse ref(s) for R12 discovery: 1 richest anchor for multi-verse chapters in clues mode, up to 2 for <=3 verses.
+  // Pass the full passage (or current page span) to R13 discovery so connections reflect the entire passage rather than verse 1 alone.
   const anchorVerseRefs: string[] = [];
   if (input.depth > 0 && versesRaw.length > 0) {
-    let richest: Rec | null = null;
-    let richestScore = -1;
-    for (const v of versesRaw) {
-      const xrCount = asArr(v.xrefs).length;
-      if (xrCount > richestScore) {
-        richestScore = xrCount;
-        richest = v;
-      }
+    const firstV = versesRaw[0];
+    const lastV = versesRaw[versesRaw.length - 1];
+    const firstRef = str(firstV?.ref);
+    const lastVerseNr = Number(lastV?.verse);
+    const totalInRange = Number(compact.pagination?.total_verses ?? versesRaw.length);
+    let rangeRef = parsed.normalized;
+    if (versesRaw.length < totalInRange && firstRef) {
+      rangeRef = Number(firstV?.chapter) === Number(lastV?.chapter) && Number(firstV?.book) === Number(lastV?.book) && Number.isInteger(lastVerseNr) && lastVerseNr > Number(firstV?.verse)
+        ? `${firstRef}-${lastVerseNr}`
+        : `${firstRef}..${str(lastV?.ref) || ''}`;
     }
-    const firstRef = str(versesRaw[0].ref);
-    const richRef = richest ? str(richest.ref) : '';
-    if (view === 'clues' && versesRaw.length > 3) {
-      const chosen = richRef || firstRef;
-      if (chosen) anchorVerseRefs.push(chosen);
-    } else {
-      if (firstRef) anchorVerseRefs.push(firstRef);
-      if (richRef && !anchorVerseRefs.includes(richRef)) anchorVerseRefs.push(richRef);
-    }
+    if (rangeRef) anchorVerseRefs.push(rangeRef);
   }
 
   const discoveryLimit = view === 'clues' && versesRaw.length > 3
@@ -1827,9 +1821,13 @@ export async function handleGetPassage(read: DatabaseReader, input: {
         }
       : null;
     const clueConns = passageConnections.map(c => projectClue(c, 'clues'));
+    const passageWarnings = discoveryPartial
+      ? ['Graph discovery unavailable; returned passage text and lexicon only.']
+      : [];
     const resultPacket: Rec = {
-      status: 'ok',
+      status: discoveryPartial ? 'partial' : 'ok',
       view: 'clues',
+      ...(passageWarnings.length ? { warnings: passageWarnings } : {}),
       passage: parsed.normalized,
       pagination: compact.pagination,
       ...(geography.status === 'ok' ? { geography } : { geography: { status: geography.status } }),
@@ -1884,9 +1882,13 @@ export async function handleGetPassage(read: DatabaseReader, input: {
       }))
     : passageConnections.map(c => projectClue(c, view));
 
+  const fullWarnings = discoveryPartial
+    ? ['Graph discovery unavailable; returned passage text and lexicon only.']
+    : [];
   return {
-    status: 'ok',
+    status: discoveryPartial ? 'partial' : 'ok',
     ...(!compactFlag ? { view } : {}),
+    ...(fullWarnings.length ? { warnings: fullWarnings } : {}),
     passage: parsed.normalized,
     pagination: compact.pagination,
     geography,
@@ -3043,7 +3045,7 @@ export async function handleGetConnection(
       all_endpoints_connected: allEndpointsConnected && isGraphComplete,
       graph_proof: clueGraphProof,
       ...(!directLinkFound ? { no_direct_link_reason: 'No direct verse co-occurrence, lexical/LXX match, explicit cross-reference, or verified pairwise motif connected at least two requested items.' } : {}),
-      connections: connections.slice(0, Math.min(maxConnections, 5)).map(c => projectClue(c, 'clues')),
+      connections: connections.slice(0, Math.min(maxConnections, 8)).map(c => projectClue(c, 'clues')),
       ...(!directLinkFound && individualSuggestions.length > 0
         ? {
             individual_suggestions: individualSuggestions.slice(0, 3).map(s => ({

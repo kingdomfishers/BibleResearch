@@ -3238,6 +3238,7 @@ export async function handleDiscoverBiblicalConnectionsV1(ctx, params = {}) {
     limit,
     cursor: params.cursor ? String(params.cursor) : null,
     max_hops: params.max_hops !== undefined ? finiteOr(params.max_hops, 3) : 3,
+    ...(params.include_v3_verification !== undefined ? { include_v3_verification: parseBoolParam(params.include_v3_verification, false) } : {}),
     release_id: releaseId,
   }, releaseId);
   if (selectedOccurrence || discoveryScope) {
@@ -4818,8 +4819,9 @@ export async function handleDiscoverSubgraphV1(ctx, params = {}) {
     anchors: rawAnchors,
     max_hops: params.max_hops !== undefined ? finiteOr(params.max_hops, 3) : 3,
     max_nodes: params.max_nodes !== undefined ? finiteOr(params.max_nodes, 60) : 60,
-    max_edges: params.max_edges !== undefined ? finiteOr(params.max_edges, 160) : 160,
+    max_edges: params.max_edges !== undefined ? finiteOr(params.max_edges, 110) : 110,
     include_exploratory: params.include_exploratory !== false,
+    ...(params.include_v3_ppr !== undefined ? { include_v3_ppr: parseBoolParam(params.include_v3_ppr, false) } : {}),
     release_id: releaseId,
   });
 }

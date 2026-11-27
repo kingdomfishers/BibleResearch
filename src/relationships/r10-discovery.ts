@@ -1394,13 +1394,22 @@ function scoreCandidatesR13(
     else if (evType === 'multi_passage_motif' || evType === 'collocation' || evType === 'translation_alignment') F = 0.78;
     else if (evType === 'shared_consonantal_pattern') F = 0.52;
 
-    const P = Math.max(0.05, Math.min(1, 0.35 + (sc.specificity_bonus || 0) / 350));
+    const rawP = Math.max(0.05, Math.min(1, 0.35 + (sc.specificity_bonus || 0) / 350));
     const indCount = Math.max(
       r.r12_metadata?.independent_group_count || 0,
       (isCrossTest ? 1 : 0) + (r.passages.length >= 2 ? 1 : 0),
     );
+    const hasStrongEvidenceAxis =
+      evType === 'explicit_biblical_interpretation' ||
+      evType === 'attested_textual_wordplay' ||
+      evType === 'cross_testament_correspondence' ||
+      evType === 'documented_root_family' ||
+      indCount >= 2 ||
+      r.evidence_tier <= 2;
+    // Prevent pure statistical rarity from dominating single-axis weak/editorial candidates.
+    const P = hasStrongEvidenceAxis ? rawP : Math.min(0.75, rawP);
     const I = Math.min(1, 0.2 + indCount * 0.25 + ((r.score_components.witness_bonus || 0) / 140));
-    const R = sup === 'all_concepts' ? 0.96 : (sup === 'meaningful_subset' ? 0.74 : (ctx.queryIntent === 'passage_intertext' ? 0.82 : 0.48));
+    const R = sup === 'all_concepts' ? 0.96 : (sup === 'meaningful_subset' ? 0.74 : (ctx.queryIntent === 'passage_intertext' ? 0.84 : 0.48));
     let baseNovelty = 0.35;
     if (evType === 'attested_textual_wordplay' || evType === 'symbolic_chain' || evType === 'multi_passage_motif') baseNovelty = 0.92;
     else if (evType === 'multi_hop_pattern' || evType === 'physical_world_bridge' || evType === 'cross_testament_correspondence') baseNovelty = 0.82;
@@ -1419,8 +1428,8 @@ function scoreCandidatesR13(
       N,
       U: Math.round(U * 1000) / 1000,
       eKey: 0.55 * E + 0.45 * F,
-      pKey: 0.5 * P + 0.3 * I + 0.2 * N,
-      rKey: 0.7 * R + 0.3 * ((E + I) / 2),
+      pKey: 0.45 * P + 0.35 * I + 0.2 * N,
+      rKey: 0.65 * R + 0.35 * ((E + I) / 2),
     };
   });
 
@@ -1439,7 +1448,7 @@ function scoreCandidatesR13(
     const rawRrf = 1 / (60 + rE[idx]) + 1 / (60 + rP[idx]) + 1 / (60 + rR[idx]);
     const rrf = Math.round((rawRrf / maxRrf) * 1000) / 1000;
     const effN = m.evType === 'proximate_wordplay_candidate' ? Math.min(m.N, 0.25) : m.N;
-    const delta = Math.round(m.I * 20 + effN * 18 + rrf * 15 - m.U * 35);
+    const delta = Math.round(m.I * 24 + m.E * 12 + effN * 14 + rrf * 16 - m.U * 35);
     const finalScore = Math.max(10, m.r.score_components.final_score + delta);
     const evidenceStrength = Math.round(Math.max(0, Math.min(1, m.E * 0.45 + m.F * 0.25 + m.P * 0.15 + m.I * 0.15 - m.U * 0.25)) * 1000) / 1000;
     const explorationValue = Math.round(Math.max(0, Math.min(1, m.R * 0.45 + effN * 0.35 + rrf * 0.2)) * 1000) / 1000;
@@ -2945,9 +2954,13 @@ export async function discoverBiblicalConnections(
   const explicitPassageVidSet = new Set<number>();
   const passageContentStrongs: string[] = [];
   const passageOtherStrongs: string[] = [];
-  for (const ep of explicitPassages) {
+  const MAX_EXPLICIT_SPAN_VERSES = 14;
+  for (let epIdx = 0; epIdx < explicitPassages.length; epIdx++) {
+    const ep = explicitPassages[epIdx];
+    const pr = parsedRefs[epIdx];
     let verses;
     let chapterVidsForEp: number[] = [];
+    let targetSpanVids: number[] = [];
     if (fastManifest?.direct_b64gz) {
       const pad = String(ep.book).padStart(2, '0');
       const index = await readR10Json<any>(reader, releaseId, `evidence-passages/book-${pad}.json.gz`, budget);
@@ -2955,8 +2968,30 @@ export async function discoverBiblicalConnections(
         if (index.chapter_vids) bookChapterVids.set(ep.book, index.chapter_vids);
         chapterVidsForEp = (index.chapter_vids?.[String(ep.chapter)] || []).map((v: any) => Number(v));
         for (const vid of chapterVidsForEp) contextVerseIds.add(vid);
-        const vid = index.coord_to_vid[`${ep.chapter}:${ep.verse}`];
-        if (vid) await hydratePassageByVid(Number(vid), true);
+        if (pr && pr.verse === null && chapterVidsForEp.length > 0) {
+          targetSpanVids = chapterVidsForEp.slice();
+        } else if (ep.end_verse && ep.end_verse > ep.verse) {
+          for (let vn = ep.verse; vn <= ep.end_verse; vn++) {
+            const vid = Number(index.coord_to_vid[`${ep.chapter}:${vn}`] || 0);
+            if (vid > 0) targetSpanVids.push(vid);
+          }
+        } else {
+          const vid = Number(index.coord_to_vid[`${ep.chapter}:${ep.verse}`] || 0);
+          if (vid > 0) targetSpanVids.push(vid);
+        }
+        if (targetSpanVids.length > MAX_EXPLICIT_SPAN_VERSES) {
+          const sampled: number[] = [];
+          const n = targetSpanVids.length;
+          for (let k = 0; k < MAX_EXPLICIT_SPAN_VERSES; k++) {
+            const idxPos = k === MAX_EXPLICIT_SPAN_VERSES - 1
+              ? n - 1
+              : Math.floor((k * (n - 1)) / (MAX_EXPLICIT_SPAN_VERSES - 1));
+            const sv = targetSpanVids[idxPos];
+            if (!sampled.includes(sv)) sampled.push(sv);
+          }
+          targetSpanVids = sampled;
+        }
+        await Promise.all(targetSpanVids.map(vid => hydratePassageByVid(vid, true)));
         verses = bookCache.get(ep.book);
       } else if (index?.verses) {
         verses = index.verses;
@@ -2964,7 +2999,7 @@ export async function discoverBiblicalConnections(
       }
     } else if (fastManifest?.selective) {
       const vid = await readSelectiveKey(reader, releaseId, 'refs', `${ep.book}:${ep.chapter}:${ep.verse}`, budget);
-      if (vid) await hydratePassageByVid(Number(vid), true);
+      if (vid) { targetSpanVids = [Number(vid)]; await hydratePassageByVid(Number(vid), true); }
       verses = bookCache.get(ep.book);
     } else if (fastManifest?.packed) {
       const bookFile = `evidence-passages/book-${String(ep.book).padStart(2, '0')}.json.gz`;
@@ -2972,74 +3007,118 @@ export async function discoverBiblicalConnections(
       chapterVidsForEp = (index?.chapter_vids?.[String(ep.chapter)] || []).map((v: any) => Number(v));
       for (const vid of chapterVidsForEp) contextVerseIds.add(vid);
       const v = await readR10Key(reader, releaseId, bookFile, `${ep.chapter}:${ep.verse}`, 'verses', budget);
-      if (v) { await hydratePassageByVid(Number(v.verse_id), true); verses = bookCache.get(ep.book); }
+      if (v) { targetSpanVids = [Number(v.verse_id)]; await hydratePassageByVid(Number(v.verse_id), true); verses = bookCache.get(ep.book); }
     } else verses = await loadBookData(ep.book);
+
     if (verses) {
+      const hydratedEntries: Array<{ vid: number; vVal: any }> = [];
       for (const [vKey, vVal] of Object.entries(verses) as [string, any][]) {
-        if (vVal.chapter === ep.chapter && vVal.verse === ep.verse) {
-          ep.verse_id = Number(vKey);
+        const vid = Number(vKey);
+        const inExplicitRange =
+          targetSpanVids.length > 0
+            ? targetSpanVids.includes(vid)
+            : vVal.chapter === ep.chapter &&
+              (pr?.verse === null
+                ? true
+                : vVal.verse >= ep.verse && vVal.verse <= (ep.end_verse ?? ep.verse));
+        if (inExplicitRange) hydratedEntries.push({ vid, vVal });
+      }
+      hydratedEntries.sort((a, b) => a.vid - b.vid);
+
+      const perVerseDistinctStrongs: string[][] = [];
+      for (const { vid, vVal } of hydratedEntries) {
+        explicitPassageVidSet.add(vid);
+        if (ep.verse_id === 0 && vVal.chapter === ep.chapter && vVal.verse === ep.verse) {
+          ep.verse_id = vid;
           ep.snippet = vVal.en;
           ep.mt_ref = vVal.mt_ref;
-          explicitPassageVidSet.add(ep.verse_id);
-          const meta = chunkMetaCache.get(ep.verse_id);
-          const verseContentStrongs: string[] = [];
-          for (const t of vVal.toks || []) {
-            explicitToks.push(t);
-            if (!t.s || PRONOUN_OR_FUNC_STRONGS.has(t.s)) continue;
-            const isFuncClass = isMaculaFuncClass(t.cl);
-            if (!isFuncClass && !GENERIC_LIGHT_VERB_STRONGS.has(t.s) && !SMALL_NUMERAL_STRONGS.has(t.s)) {
-              if (!verseContentStrongs.includes(t.s)) verseContentStrongs.push(t.s);
-              if (!passageContentStrongs.includes(t.s)) passageContentStrongs.push(t.s);
-            } else if (!isFuncClass && !passageOtherStrongs.includes(t.s)) {
-              passageOtherStrongs.push(t.s);
+        }
+        const meta = chunkMetaCache.get(vid);
+        const verseContentStrongs: string[] = [];
+        for (const t of vVal.toks || []) {
+          explicitToks.push(t);
+          if (!t.s || PRONOUN_OR_FUNC_STRONGS.has(t.s)) continue;
+          const isFuncClass = isMaculaFuncClass(t.cl);
+          if (!isFuncClass && !GENERIC_LIGHT_VERB_STRONGS.has(t.s) && !SMALL_NUMERAL_STRONGS.has(t.s)) {
+            if (!verseContentStrongs.includes(t.s)) verseContentStrongs.push(t.s);
+          } else if (!isFuncClass && !passageOtherStrongs.includes(t.s)) {
+            passageOtherStrongs.push(t.s);
+          }
+        }
+        perVerseDistinctStrongs.push(verseContentStrongs);
+        const verseRef: R10PassageRef = vVal.verse === ep.verse && vVal.chapter === ep.chapter && hydratedEntries.length === 1
+          ? ep
+          : {
+              verse_id: vid,
+              ref: vVal.ref || `${bookById.get(ep.book)?.name || `Book ${ep.book}`} ${vVal.chapter}:${vVal.verse}`,
+              ...(vVal.mt_ref ? { mt_ref: vVal.mt_ref } : {}),
+              book: ep.book,
+              chapter: vVal.chapter,
+              verse: vVal.verse,
+              testament: ep.book <= 39 ? 'OT' : 'NT',
+              ...(vVal.en ? { snippet: vVal.en } : {}),
+              is_psalm_heading: ep.book === 19 && vVal.verse === 0,
+            };
+        explicitPassageMeta.push({
+          ep: verseRef,
+          xrefs: meta?.xrefs || [],
+          eventIds: meta?.events || [],
+          scenes: meta?.scenes || [],
+          contentStrongs: verseContentStrongs,
+        });
+      }
+      // Round-robin content lemmas across ALL verses in the span so middle/closing verses are represented equally.
+      const maxPerVerseLen = perVerseDistinctStrongs.reduce((m, arr) => Math.max(m, arr.length), 0);
+      for (let pos = 0; pos < maxPerVerseLen; pos++) {
+        for (const vArr of perVerseDistinctStrongs) {
+          const s = vArr[pos];
+          if (s && !passageContentStrongs.includes(s)) passageContentStrongs.push(s);
+        }
+      }
+
+      if (ep.verse_id === 0 && hydratedEntries[0]) {
+        ep.verse_id = hydratedEntries[0].vid;
+        ep.snippet = hydratedEntries[0].vVal.en;
+        ep.mt_ref = hydratedEntries[0].vVal.mt_ref;
+      }
+
+      if (fastManifest?.direct_b64gz && ep.verse_id > 0 && chapterVidsForEp.length > 0) {
+        const chunkSize = fastManifest.verse_chunk_size || 64;
+        const anchorEndVid = hydratedEntries.length > 0 ? hydratedEntries[hydratedEntries.length - 1].vid : ep.verse_id;
+        for (const nVid of chapterVidsForEp) {
+          const dist = Math.min(Math.abs(nVid - ep.verse_id), Math.abs(nVid - anchorEndVid));
+          if (explicitPassageVidSet.has(nVid) || dist < 1 || dist > 12 || seenPericopeVids.has(nVid)) continue;
+          const nChunkHex = Math.floor((nVid - 1) / chunkSize).toString(16).padStart(3, '0');
+          const nChunkPath = `fast-verses/chunk-${nChunkHex}.json.gz`;
+          if (!budget.pages?.has(nChunkPath)) {
+            if (dist <= 4 && pericopeBoundaryReads < 1 && budget.used < budget.max - 10) {
+              pericopeBoundaryReads++;
+              await readR10Json(reader, releaseId, nChunkPath, budget);
+            } else {
+              continue;
             }
           }
-          explicitPassageMeta.push({
-            ep,
-            xrefs: meta?.xrefs || [],
-            eventIds: meta?.events || [],
-            scenes: meta?.scenes || [],
-            contentStrongs: verseContentStrongs,
+          const nChunk = await budget.pages?.get(nChunkPath);
+          const sum = nChunk?.summaries?.[String(nVid)];
+          if (!sum) continue;
+          seenPericopeVids.add(nVid);
+          const [sBook, sChapter, sVerse, sRef, sEn, sMtRef] = sum;
+          pericopeNeighbors.push({
+            ep: {
+              verse_id: nVid,
+              ref: sRef,
+              ...(sMtRef !== null && sMtRef !== undefined ? { mt_ref: sMtRef } : {}),
+              book: sBook,
+              chapter: sChapter,
+              verse: sVerse,
+              testament: sBook <= 39 ? 'OT' : 'NT',
+              snippet: sEn,
+              is_psalm_heading: sBook === 19 && sVerse === 0,
+            },
+            xrefs: nChunk?.xrefs?.[String(nVid)] || [],
+            dist,
+            parentRef: ep.ref,
           });
-          if (fastManifest?.direct_b64gz && ep.verse_id > 0 && chapterVidsForEp.length > 0) {
-            const chunkSize = fastManifest.verse_chunk_size || 64;
-            for (const nVid of chapterVidsForEp) {
-              const dist = Math.abs(nVid - ep.verse_id);
-              if (dist < 1 || dist > 12 || seenPericopeVids.has(nVid)) continue;
-              const nChunkHex = Math.floor((nVid - 1) / chunkSize).toString(16).padStart(3, '0');
-              const nChunkPath = `fast-verses/chunk-${nChunkHex}.json.gz`;
-              if (!budget.pages?.has(nChunkPath)) {
-                if (dist <= 4 && pericopeBoundaryReads < 1 && budget.used < budget.max - 10) {
-                  pericopeBoundaryReads++;
-                  await readR10Json(reader, releaseId, nChunkPath, budget);
-                } else {
-                  continue;
-                }
-              }
-              const nChunk = await budget.pages?.get(nChunkPath);
-              const sum = nChunk?.summaries?.[String(nVid)];
-              if (!sum) continue;
-              seenPericopeVids.add(nVid);
-              const [sBook, sChapter, sVerse, sRef, sEn, sMtRef] = sum;
-              pericopeNeighbors.push({
-                ep: {
-                  verse_id: nVid,
-                  ref: sRef,
-                  ...(sMtRef !== null && sMtRef !== undefined ? { mt_ref: sMtRef } : {}),
-                  book: sBook,
-                  chapter: sChapter,
-                  verse: sVerse,
-                  testament: sBook <= 39 ? 'OT' : 'NT',
-                  snippet: sEn,
-                  is_psalm_heading: sBook === 19 && sVerse === 0,
-                },
-                xrefs: nChunk?.xrefs?.[String(nVid)] || [],
-                dist,
-                parentRef: ep.ref,
-              });
-            }
-          }
-          break;
         }
       }
     }
@@ -3481,7 +3560,7 @@ export async function discoverBiblicalConnections(
           ? 'lexical'
           : 'open_discovery';
   const profileSliceLimit = isPassageOnlyQuery
-    ? (query.mode === 'bridge' ? 6 : 5)
+    ? (query.mode === 'bridge' ? 6 : (explicitPassageVidSet.size > 1 ? Math.min(7, Math.max(5, explicitPassageVidSet.size)) : 5))
     : (resolvedConcepts.length >= 3 ? Math.min(8, resolvedConcepts.length * 2 + 2) : 6);
   const rawCandidateStrongs = [...new Set([...prioritized, ...matchedStrongs])];
   const orderedCandidateStrongs = isPassageOnlyQuery
@@ -3494,7 +3573,7 @@ export async function discoverBiblicalConnections(
   const loadedProfiles: LemmaProfile[] = [];
   const profileByStrongs = new Map<string, LemmaProfile>();
   for (const bs of profileStrongsToLoad) {
-    if (isPassageOnlyQuery && loadedProfiles.length >= 5 && budget.used >= budget.max - 18) break;
+    if (isPassageOnlyQuery && loadedProfiles.length >= profileSliceLimit && budget.used >= budget.max - 18) break;
     const prof = await readProfile(reader, releaseId, fastManifest, bs, budget);
     if (prof) { loadedProfiles.push(prof); profileByStrongs.set(bs, prof); }
   }
@@ -5793,6 +5872,26 @@ export async function discoverBiblicalConnections(
   const uniqueMap = new Map<string, R10EvidenceRecord>();
   const seenLemmaPairKeys = new Set<string>();
   const seenXrefPairs = new Map<string, string>();
+  const consolidatedTargetKeys = new Map<string, { primaryId: string; channels: Set<string> }>();
+  const convergenceTargetKeyFor = (item: R10EvidenceRecord): string | null => {
+    const id = item.evidence_id;
+    if (id.startsWith('r11:cluster:') || id.startsWith('r13:motif:') || id.startsWith('r12:event:') || id.startsWith('r12:prop:')) {
+      return null;
+    }
+    if (item.source_node_id.startsWith('lemma:') && item.target_node_id.startsWith('lemma:') && item.source_node_id !== item.target_node_id) {
+      const a = item.source_node_id;
+      const b = item.target_node_id;
+      return `pair:${a <= b ? `${a}<->${b}` : `${b}<->${a}`}`;
+    }
+    if (item.passages.length <= 2) {
+      const nonAnchor = item.passages.find(p => p.verse_id > 0 && !explicitPassageVidSet.has(p.verse_id));
+      const tv = nonAnchor?.verse_id || (item.passages[0]?.verse_id || 0);
+      if (tv > 0 && (item.target_node_id.startsWith('passage:') || isPassageOnlyQuery)) {
+        return `target_vid:${tv}`;
+      }
+    }
+    return null;
+  };
   for (const item of filtered) {
     if (uniqueMap.has(item.evidence_id)) continue;
     if (item.evidence_id.startsWith('r11:xref:')) {
@@ -5821,6 +5920,58 @@ export async function discoverBiblicalConnections(
       const pairKey = `${famTag}:${item.source_node_id}->${item.target_node_id}`;
       if (seenLemmaPairKeys.has(pairKey)) continue;
       seenLemmaPairKeys.add(pairKey);
+    }
+    const cKey = query.lite_subgraph_mode ? null : convergenceTargetKeyFor(item);
+    const channelTag = cKey ? (item.evidence_type || inferEvidenceType(item)) : '';
+    if (cKey && consolidatedTargetKeys.has(cKey)) {
+      const cons = consolidatedTargetKeys.get(cKey)!;
+      const primary = uniqueMap.get(cons.primaryId);
+      if (primary) {
+        const addedChannel = !cons.channels.has(channelTag);
+        cons.channels.add(channelTag);
+        for (const p of item.passages) {
+          if (primary.passages.length < 4 && !primary.passages.some(x => x.verse_id === p.verse_id && x.ref === p.ref)) {
+            primary.passages.push(p);
+          }
+        }
+        for (const ow of item.original_words || []) {
+          if ((primary.original_words || []).length < 4 && !(primary.original_words || []).some(w => w.strongs === ow.strongs)) {
+            primary.original_words.push(ow);
+          }
+        }
+        for (const mt of item.matched_terms || []) {
+          if ((primary.matched_terms || []).length < 8 && !(primary.matched_terms || []).includes(mt)) {
+            primary.matched_terms.push(mt);
+          }
+        }
+        if (addedChannel) {
+          const extraChannels = Math.min(2, cons.channels.size - 1);
+          const convBonus = 14;
+          primary.score_components = {
+            ...primary.score_components,
+            witness_bonus: (primary.score_components.witness_bonus || 0) + convBonus,
+            final_score: Math.min(995, primary.score_components.final_score + convBonus),
+          };
+          if (primary.r12_metadata) {
+            primary.r12_metadata = {
+              ...primary.r12_metadata,
+              independent_group_count: Math.max(
+                primary.r12_metadata.independent_group_count || 1,
+                1 + extraChannels,
+              ),
+            };
+          }
+          if (!primary.summary.includes('Convergent evidence:')) {
+            primary.summary = `${primary.summary} Convergent evidence: ${[...cons.channels].join(' + ')}.`;
+          } else {
+            primary.summary = primary.summary.replace(/Convergent evidence: [^.]+\./, `Convergent evidence: ${[...cons.channels].join(' + ')}.`);
+          }
+        }
+        continue;
+      }
+    }
+    if (cKey) {
+      consolidatedTargetKeys.set(cKey, { primaryId: item.evidence_id, channels: new Set([channelTag]) });
     }
     uniqueMap.set(item.evidence_id, item);
   }
@@ -5935,7 +6086,8 @@ export async function discoverBiblicalConnections(
   rankedAll.sort((a, b) => supportRank[supportClass(b)] - supportRank[supportClass(a)] ||
     b.score_components.final_score - a.score_components.final_score || a.evidence_tier - b.evidence_tier);
 
-  if (!query.skip_v3_verification) {
+  // V3 BMW/PPR/E_perp enrichment stays opt-in so default worker discovery stays comfortably within Cloudflare Free 10 ms CPU.
+  if (query.include_v3_verification && !query.skip_v3_verification) {
     await runV3DiscoveryAndVerification({
       reader,
       query,
@@ -5983,25 +6135,27 @@ export async function discoverBiblicalConnections(
   let hasMoreOcc = occOffset + occLimit < targetVids.length;
 
   let hydratedOccPassages: R10PassageRef[] = [];
-  if (
-    !query.cluster_id &&
-    occOffset === 0 &&
-    focusProf?.first_occ_passages?.length &&
-    pagedOccVids.length > 0 &&
-    (occLimit <= focusProf.first_occ_passages.length || pagedOccVids.length <= focusProf.first_occ_passages.length)
-  ) {
-    hydratedOccPassages = focusProf.first_occ_passages.slice(0, pagedOccVids.length);
-  } else {
-    for (const vid of pagedOccVids) {
-      const p = await hydratePassageByVid(vid);
-      if (!p) break;
-      hydratedOccPassages.push(p);
+  if (!query.lite_subgraph_mode) {
+    if (
+      !query.cluster_id &&
+      occOffset === 0 &&
+      focusProf?.first_occ_passages?.length &&
+      pagedOccVids.length > 0 &&
+      (occLimit <= focusProf.first_occ_passages.length || pagedOccVids.length <= focusProf.first_occ_passages.length)
+    ) {
+      hydratedOccPassages = focusProf.first_occ_passages.slice(0, pagedOccVids.length);
+    } else {
+      for (const vid of pagedOccVids) {
+        const p = await hydratePassageByVid(vid);
+        if (!p) break;
+        hydratedOccPassages.push(p);
+      }
     }
   }
   hasMoreOcc = occOffset + hydratedOccPassages.length < targetVids.length;
 
   // When expanding or paging through occurrences, synthesize individual occurrence evidence cards
-  if ((query.mode === 'expand' || query.focus_lemma || query.cluster_id || offset >= rankedAll.length) && focusProf) {
+  if (!query.lite_subgraph_mode && (query.mode === 'expand' || query.focus_lemma || query.cluster_id || offset >= rankedAll.length) && focusProf) {
     for (const p of hydratedOccPassages) {
       const occEvId = `r11:occ:${focusProf.bs}:${p.verse_id}`;
       if (!uniqueMap.has(occEvId)) {
@@ -6052,22 +6206,24 @@ export async function discoverBiblicalConnections(
 
   // Lazy post-ranking snippet & stub-ref hydration for top displayed connections within budget
   let postSnippetReads = 0;
-  for (const rec of pagedRecords.slice(0, 8)) {
-    for (let pi = 0; pi < rec.passages.length; pi++) {
-      const p = rec.passages[pi];
-      const isStubRef = Boolean(p && /^Verse \d+$/.test(p.ref));
-      if (!p || (!isStubRef && p.snippet) || !p.verse_id || p.verse_id <= 0) continue;
-      if (bookCache.get(p.book)?.[String(p.verse_id)] || (postSnippetReads < 4 && budget.used < budget.max - 6)) {
-        const usedBefore = budget.used;
-        const hp = await hydratePassageByVid(p.verse_id, false);
-        if (budget.used > usedBefore) postSnippetReads++;
-        if (hp?.snippet || hp?.ref) {
-          rec.passages[pi] = applyRangeRef({
-            ...p,
-            ...(isStubRef ? { ref: hp.ref, book: hp.book, chapter: hp.chapter, verse: hp.verse, testament: hp.testament } : {}),
-            ...(hp.snippet ? { snippet: hp.snippet } : {}),
-            ...(hp.mt_ref ? { mt_ref: hp.mt_ref } : {}),
-          }, isStubRef ? hp.ref : p.ref);
+  if (!query.lite_subgraph_mode) {
+    for (const rec of pagedRecords.slice(0, 8)) {
+      for (let pi = 0; pi < rec.passages.length; pi++) {
+        const p = rec.passages[pi];
+        const isStubRef = Boolean(p && /^Verse \d+$/.test(p.ref));
+        if (!p || (!isStubRef && p.snippet) || !p.verse_id || p.verse_id <= 0) continue;
+        if (bookCache.get(p.book)?.[String(p.verse_id)] || (postSnippetReads < 4 && budget.used < budget.max - 6)) {
+          const usedBefore = budget.used;
+          const hp = await hydratePassageByVid(p.verse_id, false);
+          if (budget.used > usedBefore) postSnippetReads++;
+          if (hp?.snippet || hp?.ref) {
+            rec.passages[pi] = applyRangeRef({
+              ...p,
+              ...(isStubRef ? { ref: hp.ref, book: hp.book, chapter: hp.chapter, verse: hp.verse, testament: hp.testament } : {}),
+              ...(hp.snippet ? { snippet: hp.snippet } : {}),
+              ...(hp.mt_ref ? { mt_ref: hp.mt_ref } : {}),
+            }, isStubRef ? hp.ref : p.ref);
+          }
         }
       }
     }
@@ -6144,7 +6300,7 @@ export async function discoverBiblicalConnections(
   }
 
   // Construct Connection Paths from top evidence records (multi-step for R12 proof paths)
-  const connectionPaths: R10ConnectionPath[] = pagedRecords.slice(0, 8).map(r => {
+  const connectionPaths: R10ConnectionPath[] = query.lite_subgraph_mode ? [] : pagedRecords.slice(0, 8).map(r => {
     if (r.r12_metadata?.steps?.length) {
       const steps = r.r12_metadata.steps;
       const firstSt = steps[0];
@@ -6328,26 +6484,34 @@ export async function discoverBiblicalConnections(
       multi_cluster_mode: clusters.length >= 2,
     },
     strongest_connections: summaries,
-    clusters,
-    bridges,
+    clusters: query.lite_subgraph_mode ? [] : clusters,
+    bridges: query.lite_subgraph_mode ? [] : bridges,
     connection_paths: connectionPaths,
-    related_discoveries: {
-      additional_motifs: [...matchedMotifs].map(mId => ({
-        motif_id: mId,
-        label: motifsData?.motifs?.[mId]?.label || mId,
-        summary: `Verified original-language motif occurrences across ${motifsData?.motifs?.[mId]?.total_verses || 0} verses.`,
-        passage_count: motifsData?.motifs?.[mId]?.total_verses || 0,
-      })),
-      roots_and_wordplay: summaries.filter(s => s.predicate === 'orthographic_wordplay' || s.predicate === 'orthographic_overlap' || s.predicate === 'cross_language_bridge'),
-      cross_references: crossReferencesOut,
-      literary_parallels: summaries.filter(s => s.predicate === 'literary_pattern' || s.predicate === 'literary_correspondence'),
-      biblical_events: matchedEvents.slice(0, 6).map(e => ({
-        event_id: e.event_id,
-        title: e.title,
-        timing_label: e.start_date || undefined,
-        passages: e.passages.slice(0, 4),
-      })),
-    },
+    related_discoveries: query.lite_subgraph_mode
+      ? {
+          additional_motifs: [],
+          roots_and_wordplay: [],
+          cross_references: [],
+          literary_parallels: [],
+          biblical_events: [],
+        }
+      : {
+          additional_motifs: [...matchedMotifs].map(mId => ({
+            motif_id: mId,
+            label: motifsData?.motifs?.[mId]?.label || mId,
+            summary: `Verified original-language motif occurrences across ${motifsData?.motifs?.[mId]?.total_verses || 0} verses.`,
+            passage_count: motifsData?.motifs?.[mId]?.total_verses || 0,
+          })),
+          roots_and_wordplay: summaries.filter(s => s.predicate === 'orthographic_wordplay' || s.predicate === 'orthographic_overlap' || s.predicate === 'cross_language_bridge'),
+          cross_references: crossReferencesOut,
+          literary_parallels: summaries.filter(s => s.predicate === 'literary_pattern' || s.predicate === 'literary_correspondence'),
+          biblical_events: matchedEvents.slice(0, 6).map(e => ({
+            event_id: e.event_id,
+            title: e.title,
+            timing_label: e.start_date || undefined,
+            passages: e.passages.slice(0, 4),
+          })),
+        },
     controls_and_alternatives: controls,
     pagination: {
       total_available: totalAvailable,

@@ -451,6 +451,7 @@ export interface DiscoverConnectionsQuery {
   max_hops?: number;
   release_id?: string;
   skip_v3_verification?: boolean;
+  include_v3_verification?: boolean;
   skip_v3_shortlist?: boolean;
   lite_subgraph_mode?: boolean;
 }
