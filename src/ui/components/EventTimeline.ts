@@ -7,17 +7,50 @@
 // === @section:imports ===
 import { BibleRPC } from '../../api/rpc';
 import type { ActivePassage, ReaderTimeline, VerseGeographyPacket } from '../../api/types';
+import type { ContextToolChip } from '../context-tools/ContextToolDialog';
 import { action, el, status, yearLabel } from '../study-dom';
 import type { ContextPreview } from './ContextPreview';
 
 // === @section:ui:main ===
-export function createEventTimeline(preview: ContextPreview, onPlace: (key: string) => void) {
+export function createEventTimeline(
+  preview: ContextPreview,
+  onPlace: (key: string) => void,
+  onOpenTimeline?: () => void,
+) {
   const element = el('section', 'passage-context'); element.setAttribute('aria-label', 'Passage time and place');
   const where = el('div', 'context-places'), when = el('div', 'context-time');
+  const contextStrip = el('div', 'context-tools-strip');
+  contextStrip.hidden = true;
   where.append(el('span', 'context-label', 'WHERE'), status('Resolving places…'));
-  when.append(el('span', 'context-label', 'WHEN'), status('Loading event context…'));
-  element.append(where, when);
+  const makeWhenLabelRow = () => {
+    const row = el('div', 'context-when-header');
+    row.append(el('span', 'context-label', 'WHEN'));
+    if (onOpenTimeline) {
+      row.append(action('Parallel Timeline ⤢', onOpenTimeline, 'context-timeline-expand-btn'));
+    }
+    return row;
+  };
+  when.append(makeWhenLabelRow(), status('Loading event context…'));
+  element.append(where, when, contextStrip);
   let generation = 0;
+  function setContextChips(chips: ContextToolChip[], onSelect: (chip: ContextToolChip) => void) {
+    const visible = chips.filter(chip => chip.kind !== 'place');
+    contextStrip.replaceChildren();
+    if (!visible.length) {
+      contextStrip.hidden = true;
+      return;
+    }
+    contextStrip.hidden = false;
+    contextStrip.append(el('span', 'context-label', 'TOOLS'));
+    for (const chip of visible) {
+      const btn = action(chip.label, () => onSelect(chip), `context-tool-chip context-tool-chip--${chip.kind}`);
+      if (chip.badge) {
+        const badge = el('span', 'context-tool-chip__badge', chip.badge);
+        btn.append(badge);
+      }
+      contextStrip.append(btn);
+    }
+  }
   function setGeography(packet: VerseGeographyPacket | null) {
     where.replaceChildren(el('span', 'context-label', 'WHERE'));
     if (!packet || !packet.locations.length) {
@@ -33,7 +66,7 @@ export function createEventTimeline(preview: ContextPreview, onPlace: (key: stri
 
   // === @section:ui:events ===
   function render(data: ReaderTimeline) {
-    when.replaceChildren(el('span', 'context-label', 'WHEN'));
+    when.replaceChildren(makeWhenLabelRow());
     const summary = el('div', 'time-summary');
     summary.append(el('strong', '', data.events[0]?.era ?? data.summary?.label ?? 'No setting date established'),
       el('span', 'study-muted', `Model: ${data.model_id.replaceAll('-', ' ')}`));
@@ -70,15 +103,16 @@ export function createEventTimeline(preview: ContextPreview, onPlace: (key: stri
   // === @section:logic:load ===
   async function load(p: ActivePassage, modelId = 'theographic-verse-v1') {
     const request = ++generation;
-    when.replaceChildren(el('span', 'context-label', 'WHEN'), status('Loading event context…'));
+    when.replaceChildren(makeWhenLabelRow(), status('Loading event context…'));
     const result = await BibleRPC.getReaderTimeline(p, modelId);
     if (request !== generation) return;
     if (!result.data) {
-      when.replaceChildren(el('span', 'context-label', 'WHEN'), status(result.error ?? 'Timeline unavailable.'), action('Retry timeline', () => { void load(p, modelId); })); return;
+      when.replaceChildren(makeWhenLabelRow(), status(result.error ?? 'Timeline unavailable.'), action('Retry timeline', () => { void load(p, modelId); })); return;
     }
     render(result.data);
   }
-  return { element, load, setGeography, reset: () => {
+  return { element, load, setGeography, setContextChips, reset: () => {
     generation++; where.replaceChildren(el('span', 'context-label', 'WHERE'), status('Resolving places…'));
+    contextStrip.replaceChildren(); contextStrip.hidden = true;
   } };
 }

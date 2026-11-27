@@ -5,6 +5,8 @@
  * and candidate/interpretive patterns.
  */
 
+import type { CanonicalEpistemicClass } from './epistemic-taxonomy.ts';
+
 export type R10NodeKind =
   | 'lemma'
   | 'sense'
@@ -41,20 +43,10 @@ export type R10Predicate =
   | 'multihop_proof_path'
   | 'interpretive_hypothesis';
 
-export type R10EpistemicClass =
-  | 'direct_textual_evidence'
-  | 'authorial_typology_or_quote'
-  | 'documented_lexical_relationship'
-  | 'documented_collocation_or_cooccurrence'
-  | 'documented_cross_language_bridge'
-  | 'verified_cross_reference'
-  | 'editorial_cross_reference'
-  | 'shared_motif_evidence'
-  | 'candidate_literary_pattern'
-  | 'orthographic_similarity_only'
-  | 'external_world_bridge'
-  | 'interpretive_hypothesis'
-  | 'user_note';
+export type R10EpistemicClass = CanonicalEpistemicClass;
+
+export type { CanonicalEpistemicClass } from './epistemic-taxonomy.ts';
+export { normalizeEpistemicClass } from './epistemic-taxonomy.ts';
 
 export type R10QueryIntent =
   | 'passage_intertext'
@@ -233,6 +225,33 @@ export interface R13ScoreBreakdown {
   formula?: string;
 }
 
+export interface V3ScoreMeta {
+  e_perp_bits: number;
+  raw_textual_bits: number;
+  physical_bits_capped: number;
+  n_eff: number;
+  axis_factor: number;
+  single_axis_floor: number;
+  max_axis_rarity_bits: number;
+  dominant_register: 'TEXTUAL_WITNESS' | 'LINGUISTIC_GRAMMATICAL' | 'STRUCTURAL_RHETORICAL' | 'PHYSICAL_ANALOGICAL';
+  p_null_approx: number;
+  independent_axes: Array<{ axis: string; bits: number; is_physical: boolean }>;
+  tritextual?: {
+    sources: string[];
+    evidence_bits: number;
+    agrees_lxx_against_mt: number;
+    agrees_mt_against_lxx: number;
+    composite_splice: number;
+  };
+  sequence_parallel?: {
+    arc_kind: string;
+    raw_score: number;
+    p_null: number;
+    evidence_bits: number;
+    has_inversion: boolean;
+  };
+}
+
 export interface R10EvidenceRecord {
   evidence_id: string;
   predicate: R10Predicate;
@@ -283,6 +302,8 @@ export interface R10EvidenceRecord {
   };
   score_breakdown?: R13ScoreBreakdown;
   r12_metadata?: R12EvidenceMetadata;
+  v3_score?: V3ScoreMeta;
+  expand_id?: string;
 }
 
 export interface R10ConnectionSummary {
@@ -317,6 +338,8 @@ export interface R10ConnectionSummary {
     why_ranked_high: string;
   };
   r12_metadata?: R12EvidenceMetadata;
+  v3_score?: V3ScoreMeta;
+  expand_id?: string;
 }
 
 export interface R10PathStep {
@@ -427,6 +450,9 @@ export interface DiscoverConnectionsQuery {
   cursor?: string | null;
   max_hops?: number;
   release_id?: string;
+  skip_v3_verification?: boolean;
+  skip_v3_shortlist?: boolean;
+  lite_subgraph_mode?: boolean;
 }
 
 export interface DiscoverConnectionsResult {

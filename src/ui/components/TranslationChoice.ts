@@ -21,28 +21,102 @@ export function translationLabel(english: string, grammar: string | null): strin
 export function createTranslationChoice(p: ActivePassage, token: VerseTranslationToken, canSave: boolean) {
   const element = document.createElement('div');
   element.className = 'translation-choice'; element.dir = 'ltr'; element.lang = 'en';
+
+  const source = token.source_english ?? token.primary_english ?? '';
+  const label = (english: string) => translationLabel(english, token.grammar_code);
+  let current = token.primary_english ?? source;
+  let hasChoice = token.has_choice;
+  let hasError = false;
+  let editing = false;
+  let saving = false;
+  let suppressBlur = false;
+
+  const glossRow = document.createElement('div');
+  glossRow.className = 'here-gloss-row';
+  const hereGloss = document.createElement('span');
+  hereGloss.className = 'here-gloss';
+  const editBtn = document.createElement('button');
+  editBtn.type = 'button';
+  editBtn.className = 'translation-edit-btn';
+  editBtn.textContent = '✎';
+  editBtn.title = 'Choose custom English rendering';
+  editBtn.setAttribute('aria-label', `Choose custom English rendering for word ${token.word_position}`);
+  editBtn.setAttribute('aria-expanded', 'false');
+  glossRow.append(hereGloss, editBtn);
+
   const select = document.createElement('select');
   select.className = 'english-slot';
   select.setAttribute('aria-label', `English translation for word ${token.word_position}: ${token.original_word}`);
-  const source = token.source_english ?? token.primary_english ?? '';
-  const label = (english: string) => translationLabel(english, token.grammar_code);
   for (const english of token.english_translations) {
     const option = document.createElement('option'); option.value = english;
     option.textContent = label(english); select.append(option);
   }
-  let current = token.primary_english ?? source;
-  select.value = current;
-  select.title = `${label(current)} · ${token.grammar_code ?? 'Grammar unavailable'}`;
   select.disabled = !canSave;
+  select.hidden = true;
+
   const actions = document.createElement('div'); actions.className = 'translation-actions';
   const status = document.createElement('span');
   status.className = 'translation-status'; status.setAttribute('role', 'status');
-  status.textContent = token.has_choice ? 'Saved' : token.word_id < 0 ? 'Sample' : 'Source';
+  status.textContent = hasChoice ? 'Saved' : token.word_id < 0 ? 'Sample' : 'Source';
   const reset = document.createElement('button'); reset.type = 'button';
   reset.className = 'translation-reset'; reset.textContent = 'Reset';
   reset.setAttribute('aria-label', `Reset translation for word ${token.word_position} to source`);
-  reset.hidden = !token.has_choice; reset.disabled = !canSave;
-  actions.append(status, reset); element.append(select, actions);
+  reset.hidden = !hasChoice; reset.disabled = !canSave;
+  actions.append(status, reset);
+  element.append(glossRow, select, actions);
+
+  function syncDisplay() {
+    const currentLabel = label(current);
+    const titleText = `${currentLabel} · ${token.grammar_code ?? 'Grammar unavailable'}`;
+    hereGloss.textContent = currentLabel;
+    hereGloss.title = titleText;
+    select.value = current;
+    select.title = titleText;
+    element.classList.toggle('has-choice', hasChoice);
+    actions.hidden = !(editing || saving || hasChoice || hasError);
+  }
+
+  function setEditing(next: boolean) {
+    editing = next;
+    element.classList.toggle('is-editing', editing);
+    editBtn.setAttribute('aria-expanded', String(editing));
+    select.hidden = !editing;
+    syncDisplay();
+    if (editing && !select.disabled) {
+      select.focus();
+    }
+  }
+
+  syncDisplay();
+
+  editBtn.addEventListener('click', () => {
+    setEditing(!editing);
+  });
+
+  element.addEventListener('pointerdown', (e) => {
+    if ((e.target as Element | null)?.closest('button, select')) {
+      suppressBlur = true;
+      setTimeout(() => { suppressBlur = false; }, 0);
+    }
+  });
+
+  element.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && editing) {
+      e.preventDefault();
+      e.stopPropagation();
+      select.value = current;
+      setEditing(false);
+      editBtn.focus();
+    }
+  });
+
+  element.addEventListener('focusout', (e) => {
+    if (!editing || saving || suppressBlur) return;
+    const nextTarget = e.relatedTarget;
+    if (nextTarget instanceof Node && element.contains(nextTarget)) return;
+    setEditing(false);
+  });
+
   select.addEventListener('change', () => { void save(select.value); });
   reset.addEventListener('click', () => { void save(null); });
   return element;
@@ -50,22 +124,32 @@ export function createTranslationChoice(p: ActivePassage, token: VerseTranslatio
   // === @section:logic:save ===
   async function save(english: string | null) {
     const hadChoice = !reset.hidden;
+    const hadFocusInside = element.contains(document.activeElement);
+    saving = true;
     select.disabled = true; reset.disabled = true;
     status.textContent = 'Saving…'; status.classList.remove('save-error');
+    hasError = false;
+    actions.hidden = false;
     element.setAttribute('aria-busy', 'true');
     const response = await BibleRPC.saveTranslation(p, token, english);
     if (response.source === 'live' && response.data) {
       current = response.data.english;
-      reset.hidden = !response.data.saved;
-      status.textContent = response.data.saved ? 'Saved' : 'Source restored';
+      hasChoice = response.data.saved;
+      reset.hidden = !hasChoice;
+      status.textContent = hasChoice ? 'Saved' : 'Source restored';
     } else {
+      hasChoice = hadChoice;
+      hasError = true;
       reset.hidden = !hadChoice;
       status.textContent = response.error ?? 'Could not save. Please retry.';
       status.classList.add('save-error');
     }
-    select.value = current;
-    select.title = `${label(current)} · ${token.grammar_code ?? 'Grammar unavailable'}`;
     select.disabled = !canSave; reset.disabled = !canSave;
     element.setAttribute('aria-busy', 'false');
+    saving = false;
+    setEditing(false);
+    if (hadFocusInside && document.activeElement === document.body) {
+      editBtn.focus({ preventScroll: true });
+    }
   }
 }

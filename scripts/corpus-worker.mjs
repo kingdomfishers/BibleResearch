@@ -21,6 +21,27 @@ import { Buffer } from 'node:buffer';
 import { packedShardEntry } from './relationship-shard-codec.mjs';
 import { gunzipSync } from 'node:zlib';
 import {
+  NUM_VERSES,
+  coalescePackedRanges,
+  lookupPackedInt,
+  lookupPackedKey,
+  parseBmwIndex,
+  parseCsrPart,
+  parseNodesBin,
+  parsePackedIntIndex,
+  parsePackedKeyIndex,
+  parsePprShard,
+} from '../src/relationships/v3-binary-index.ts';
+import {
+  normStrongs4,
+  v3ClauseShardId,
+  v3MtLxxShardId,
+  v3ProfileShardId,
+  v3RahlfsShardId,
+  v3VerseChunkId,
+  wrapBinaryNodesTable,
+} from '../src/relationships/v3-runtime-adapter.ts';
+import {
   fnv1a64Hex,
   handleDiscoverBiblicalConnectionsV1,
   handleDiscoverPatternsV1,
@@ -37,6 +58,15 @@ import {
   handleQueryRelationshipsV2,
   handleResolveFastLookupV1,
   handleResolveResearchConceptV1,
+  handleGetLiterarySourceV1,
+  handleAnalyzeLiteraryStructureV1,
+  handleLxxConcordanceV3,
+  handleTriTextualDiffV3,
+  handleClauseRoleQueryV3,
+  handleSequenceParallelsV3,
+  handleWordplayScanV3,
+  handleExpandClueV3,
+  handleSetCombineV3,
 } from './corpus-relationships-rpc.mjs';
 
 const CORS_HEADERS = {
@@ -47,10 +77,39 @@ const CORS_HEADERS = {
 
 // In-memory isolate cache for hot metadata & frequently accessed shards
 let cachedCatalog = null;
+let cachedCatalogLite = null;
+let cachedVerseU16 = null;
 let cachedVerseById = null;
 let cachedVerseByCoord = null;
 let cachedBooksById = null;
 let cachedLxxBooksByNo = null;
+
+function lookupVerseByIdFromU16(id) {
+  if (!cachedVerseU16) return null;
+  const vid = Number(id);
+  if (!Number.isInteger(vid) || vid < 1 || vid * 3 > cachedVerseU16.length) return null;
+  const off = (vid - 1) * 3;
+  return { id: vid, book: cachedVerseU16[off], chapter: cachedVerseU16[off + 1], verse_nr: cachedVerseU16[off + 2] };
+}
+
+function lookupVerseIdByCoordFromU16(coord) {
+  if (!cachedVerseU16 || !coord) return null;
+  const parts = String(coord).split(':');
+  if (parts.length !== 3) return null;
+  const b = Number(parts[0]), c = Number(parts[1]), v = Number(parts[2]);
+  if (!Number.isInteger(b) || !Number.isInteger(c) || !Number.isInteger(v)) return null;
+  let lo = 0, hi = Math.floor(cachedVerseU16.length / 3) - 1;
+  while (lo <= hi) {
+    const mid = (lo + hi) >>> 1;
+    const off = mid * 3;
+    const mb = cachedVerseU16[off], mc = cachedVerseU16[off + 1], mv = cachedVerseU16[off + 2];
+    if (mb === b && mc === c && mv === v) return mid + 1;
+    if (mb < b || (mb === b && (mc < c || (mc === c && mv < v)))) lo = mid + 1;
+    else hi = mid - 1;
+  }
+  return null;
+}
+
 const PINNED_BASE_PATHS = new Set([
   '/v2/relationships/r11-v1.0/r10/concept-index.json.gz',
   '/v2/relationships/r11-v1.0/r10/explicit-and-typology.json.gz',
@@ -60,14 +119,60 @@ const PINNED_BASE_PATHS = new Set([
 const pinnedBaseCache = new Map();
 const shardLru = new Map();
 let shardInflightCount = 0;
-const MAX_LRU_SHARDS = 256;
-const MAX_LRU_BYTES = 16 * 1024 * 1024;
+const MAX_LRU_SHARDS = 64;
+const MAX_LRU_BYTES = 10 * 1024 * 1024;
+const MAX_SINGLE_LRU_BYTES = 512 * 1024;
 let shardLruBytes = 0;
 let r12TraceIsolateId;
 
-export function shardCacheStats() { return { entries: shardLru.size, decoded_bytes: shardLruBytes, inflight: shardInflightCount }; }
+const PINNED_V3_PATHS = new Set([
+  '/v3/rhetoric/onomastic-lexicon.json',
+]);
+let pinnedV3Bmw = null;
+let pinnedV3Nodes = undefined;
+const pinnedV3Idx = new Map();
+const v3BinaryCache = new Map();
+const MAX_V3_BINARY_ENTRIES = 36;
+const v3RecordLru = new Map();
+const MAX_V3_RECORDS = 2048;
+const v3Lru = new Map();
+let v3LruBytes = 0;
+const MAX_V3_LRU_ENTRIES = 4;
+const MAX_V3_LRU_BYTES = 4 * 1024 * 1024;
+const MAX_V3_SINGLE_BYTES = 2 * 1024 * 1024;
+
+function getV3Record(key) {
+  if (!v3RecordLru.has(key)) return undefined;
+  const val = v3RecordLru.get(key);
+  v3RecordLru.delete(key);
+  v3RecordLru.set(key, val);
+  return val;
+}
+
+function setV3Record(key, val) {
+  if (v3RecordLru.has(key)) v3RecordLru.delete(key);
+  v3RecordLru.set(key, val);
+  while (v3RecordLru.size > MAX_V3_RECORDS) {
+    v3RecordLru.delete(v3RecordLru.keys().next().value);
+  }
+}
+
+function setV3Lru(key, data, bytes, trace) {
+  if (bytes > MAX_V3_SINGLE_BYTES || bytes > MAX_V3_LRU_BYTES) { if (trace) trace.cache_skips++; return; }
+  const previous = v3Lru.get(key);
+  if (previous) { v3LruBytes -= previous.bytes; v3Lru.delete(key); }
+  v3Lru.set(key, { data, bytes }); v3LruBytes += bytes;
+  if (trace) trace.cache_stores++;
+  while (v3Lru.size > MAX_V3_LRU_ENTRIES || v3LruBytes > MAX_V3_LRU_BYTES) {
+    const oldest = v3Lru.keys().next().value;
+    v3LruBytes -= v3Lru.get(oldest).bytes; v3Lru.delete(oldest);
+    if (trace) trace.cache_evictions++;
+  }
+}
+
+export function shardCacheStats() { return { entries: shardLru.size + v3Lru.size, decoded_bytes: shardLruBytes + v3LruBytes, inflight: shardInflightCount }; }
 function setLru(key, data, bytes, trace) {
-  if (bytes > MAX_LRU_BYTES) { if (trace) trace.cache_skips++; return; }
+  if (bytes > MAX_SINGLE_LRU_BYTES || bytes > MAX_LRU_BYTES) { if (trace) trace.cache_skips++; return; }
   const previous = shardLru.get(key);
   if (previous) { shardLruBytes -= previous.bytes; shardLru.delete(key); }
   shardLru.set(key, { data, bytes }); shardLruBytes += bytes;
@@ -142,8 +247,11 @@ async function decompressGzipIfNeeded(bytes, trace) {
   if (!bytes || bytes.length < 2) return bytes;
   if (bytes[0] === 0x1f && bytes[1] === 0x8b) {
     if (trace) trace.phases.gzip_decode++;
-    // Records are already bounded by the packed index. Avoid constructing a
-    // stream pipeline and Response wrappers for every small gzip member.
+    if (bytes.byteLength >= 32768 && typeof DecompressionStream === 'function') {
+      const ds = new DecompressionStream('gzip');
+      const ab = await new Response(new Blob([bytes]).stream().pipeThrough(ds)).arrayBuffer();
+      return new Uint8Array(ab);
+    }
     return gunzipSync(bytes);
   }
   return bytes;
@@ -191,13 +299,25 @@ export async function loadJsonShardWithBytes(env, assetPath) {
   const trace = env.__r12Trace;
   // I/O promises stay request-local; only completed JSON is shared across requests.
   const inflight = env.__assetInflight ||= new Map();
-  const gzPath = assetPath.endsWith('.gz') || assetPath.includes('#bytes=') ? assetPath : `${assetPath}.gz`;
+  const isV3 = assetPath.startsWith('/v3/');
+  const skipGz = assetPath.endsWith('.gz') || assetPath.endsWith('.json') || assetPath.endsWith('.bin') || assetPath.includes('#bytes=');
+  const gzPath = skipGz ? assetPath : `${assetPath}.gz`;
   if (pinnedBaseCache.has(gzPath)) {
     if (trace) {
       trace.cache_hits++;
       trace.assets.push({ path: gzPath, cache_hit: true, decoded_bytes: 0 });
     }
     return { data: pinnedBaseCache.get(gzPath), bytes: 0 };
+  }
+  if (isV3 && v3Lru.has(gzPath)) {
+    const val = v3Lru.get(gzPath);
+    v3Lru.delete(gzPath);
+    v3Lru.set(gzPath, val);
+    if (trace) {
+      trace.cache_hits++;
+      trace.assets.push({ path: gzPath, cache_hit: true, decoded_bytes: 0 });
+    }
+    return { data: val.data, bytes: 0 };
   }
   if (shardLru.has(gzPath)) {
     const val = shardLru.get(gzPath);
@@ -224,9 +344,11 @@ export async function loadJsonShardWithBytes(env, assetPath) {
       trace.phases.text_decode++; trace.phases.json_parse++;
       trace.assets.push({ path: gzPath, cache_hit: false, encoded_bytes: rawBytes.length, decoded_bytes: decodedBytes.length });
     }
-    if (PINNED_BASE_PATHS.has(gzPath)) {
+    if (PINNED_BASE_PATHS.has(gzPath) || PINNED_V3_PATHS.has(gzPath)) {
       pinnedBaseCache.set(gzPath, parsed);
       if (trace) trace.cache_stores++;
+    } else if (isV3) {
+      setV3Lru(gzPath, parsed, decodedBytes.length, trace);
     } else {
       setLru(gzPath, parsed, decodedBytes.length, trace);
     }
@@ -237,9 +359,491 @@ export async function loadJsonShardWithBytes(env, assetPath) {
   finally { inflight.delete(gzPath); shardInflightCount--; }
 }
 
+async function getV3Bmw(env) {
+  const trace = env.__r12Trace;
+  if (pinnedV3Bmw) {
+    if (trace) trace.cache_hits++;
+    return pinnedV3Bmw;
+  }
+  const inflight = env.__assetInflight ||= new Map();
+  const key = '/v3/index/postings-bmw.bin';
+  if (inflight.has(key)) return await inflight.get(key);
+  const pending = (async () => {
+    const bytes = await readAssetBytes(env, key);
+    if (!bytes) return null;
+    const parsed = parseBmwIndex(bytes);
+    pinnedV3Bmw = parsed;
+    if (trace) trace.cache_stores++;
+    return parsed;
+  })();
+  inflight.set(key, pending);
+  try { return await pending; } finally { inflight.delete(key); }
+}
+
+async function loadV3CachedBinary(env, assetPath, parser) {
+  const trace = env.__r12Trace;
+  if (v3Lru.has(assetPath)) {
+    const val = v3Lru.get(assetPath);
+    v3Lru.delete(assetPath);
+    v3Lru.set(assetPath, val);
+    if (trace) trace.cache_hits++;
+    return val.data;
+  }
+  const inflight = env.__assetInflight ||= new Map();
+  if (inflight.has(assetPath)) return await inflight.get(assetPath);
+  const pending = (async () => {
+    const bytes = await readAssetBytes(env, assetPath);
+    if (!bytes) return null;
+    const parsed = parser(bytes);
+    setV3Lru(assetPath, parsed, bytes.byteLength, trace);
+    return parsed;
+  })();
+  inflight.set(assetPath, pending);
+  try { return await pending; } finally { inflight.delete(assetPath); }
+}
+
+async function loadV3BinaryGraph(env, assetPath, parser) {
+  const trace = env.__r12Trace;
+  if (v3BinaryCache.has(assetPath)) {
+    const val = v3BinaryCache.get(assetPath);
+    v3BinaryCache.delete(assetPath);
+    v3BinaryCache.set(assetPath, val);
+    if (trace) trace.cache_hits++;
+    return val;
+  }
+  const inflight = env.__assetInflight ||= new Map();
+  if (inflight.has(assetPath)) return await inflight.get(assetPath);
+  const pending = (async () => {
+    const bytes = await readAssetBytes(env, assetPath);
+    if (!bytes) return null;
+    const parsed = parser(bytes);
+    if (v3BinaryCache.size >= MAX_V3_BINARY_ENTRIES) {
+      v3BinaryCache.delete(v3BinaryCache.keys().next().value);
+    }
+    v3BinaryCache.set(assetPath, parsed);
+    if (trace) trace.cache_stores++;
+    return parsed;
+  })();
+  inflight.set(assetPath, pending);
+  try { return await pending; } finally { inflight.delete(assetPath); }
+}
+
+async function getV3NodesBin(env) {
+  const trace = env.__r12Trace;
+  if (pinnedV3Nodes !== undefined) {
+    if (trace && pinnedV3Nodes) trace.cache_hits++;
+    return pinnedV3Nodes;
+  }
+  const inflight = env.__assetInflight ||= new Map();
+  const key = '/v3/index/nodes.bin';
+  if (inflight.has(key)) return await inflight.get(key);
+  const pending = (async () => {
+    const bytes = await readAssetBytes(env, key);
+    if (!bytes) {
+      pinnedV3Nodes = null;
+      return null;
+    }
+    const parsed = wrapBinaryNodesTable(parseNodesBin(bytes));
+    pinnedV3Nodes = parsed;
+    if (trace) trace.cache_stores++;
+    return parsed;
+  })();
+  inflight.set(key, pending);
+  try { return await pending; } finally { inflight.delete(key); }
+}
+
+async function getV3PackedIdx(env, assetPath, kind) {
+  const trace = env.__r12Trace;
+  if (pinnedV3Idx.has(assetPath)) {
+    const hit = pinnedV3Idx.get(assetPath);
+    if (trace && hit) trace.cache_hits++;
+    return hit;
+  }
+  const inflight = env.__assetInflight ||= new Map();
+  if (inflight.has(assetPath)) return await inflight.get(assetPath);
+  const pending = (async () => {
+    const bytes = await readAssetBytes(env, assetPath);
+    if (!bytes) {
+      pinnedV3Idx.set(assetPath, null);
+      return null;
+    }
+    const parsed = kind === 'int' ? parsePackedIntIndex(bytes) : parsePackedKeyIndex(bytes);
+    pinnedV3Idx.set(assetPath, parsed);
+    if (trace) trace.cache_stores++;
+    return parsed;
+  })();
+  inflight.set(assetPath, pending);
+  try { return await pending; } finally { inflight.delete(assetPath); }
+}
+
+async function readV3PackedIntBatch(env, idx, packPrefix, ids, recPrefix) {
+  const trace = env.__r12Trace;
+  const out = new Map();
+  const missing = [];
+  for (const rawId of ids || []) {
+    const id = Number(rawId);
+    if (!Number.isFinite(id) || id < 0 || id > NUM_VERSES || out.has(id)) continue;
+    const hit = getV3Record(`${recPrefix}:${id}`);
+    if (hit !== undefined) {
+      if (trace) trace.cache_hits++;
+      out.set(id, hit);
+    } else {
+      missing.push(id);
+    }
+  }
+  if (missing.length === 0) return out;
+
+  const spans = coalescePackedRanges(idx, missing);
+  const hitIds = new Set();
+  await Promise.all(spans.map(async (span) => {
+    const packPath = `${packPrefix}-${String(span.fileIdx).padStart(2, '0')}.bin#bytes=${span.start}-${span.end}`;
+    const raw = await readAssetBytes(env, packPath);
+    if (!raw) return;
+    for (const item of span.items) {
+      try {
+        const gzSlice = raw.subarray(item.relStart, item.relStart + item.length);
+        const plain = await decompressGzipIfNeeded(gzSlice, trace);
+        const parsed = parseJsonShard(decodeJsonShard(plain));
+        setV3Record(`${recPrefix}:${item.id}`, parsed);
+        out.set(item.id, parsed);
+        hitIds.add(item.id);
+      } catch {
+        setV3Record(`${recPrefix}:${item.id}`, null);
+        out.set(item.id, null);
+      }
+    }
+  }));
+  for (const id of missing) {
+    if (!hitIds.has(id) && !out.has(id)) {
+      setV3Record(`${recPrefix}:${id}`, null);
+      out.set(id, null);
+    }
+  }
+  return out;
+}
+
+async function readV3PackedKey(env, idx, packPrefix, key, recPrefix) {
+  const trace = env.__r12Trace;
+  const cacheKey = `${recPrefix}:${key}`;
+  const hit = getV3Record(cacheKey);
+  if (hit !== undefined) {
+    if (trace) trace.cache_hits++;
+    return hit;
+  }
+  const loc = lookupPackedKey(idx, key);
+  if (!loc) {
+    setV3Record(cacheKey, null);
+    return null;
+  }
+  const packPath = `${packPrefix}-${String(loc.fileIdx).padStart(2, '0')}.bin#bytes=${loc.start}-${loc.start + loc.length - 1}`;
+  const raw = await readAssetBytes(env, packPath);
+  if (!raw) return null;
+  const plain = await decompressGzipIfNeeded(raw, trace);
+  const parsed = parseJsonShard(decodeJsonShard(plain));
+  setV3Record(cacheKey, parsed);
+  return parsed;
+}
+
+async function readV3PackedKeyBatch(env, idx, packPrefix, keys, recPrefix) {
+  const out = new Map();
+  const trace = env.__r12Trace;
+  const toRead = [];
+  for (const rawKey of keys || []) {
+    const key = String(rawKey || '');
+    if (!key || out.has(key)) continue;
+    const hit = getV3Record(`${recPrefix}:${key}`);
+    if (hit !== undefined) {
+      if (trace) trace.cache_hits++;
+      out.set(key, hit);
+      continue;
+    }
+    const loc = lookupPackedKey(idx, key);
+    if (!loc) {
+      setV3Record(`${recPrefix}:${key}`, null);
+      out.set(key, null);
+      continue;
+    }
+    toRead.push({ key, ...loc });
+  }
+  if (toRead.length === 0) return out;
+  toRead.sort((a, b) => a.fileIdx - b.fileIdx || a.start - b.start);
+  const spans = [];
+  for (const item of toRead) {
+    const itemEnd = item.start + item.length - 1;
+    const prev = spans[spans.length - 1];
+    if (prev && prev.fileIdx === item.fileIdx && item.start - prev.end - 1 <= 8192 && itemEnd - prev.start + 1 <= 196608) {
+      prev.end = Math.max(prev.end, itemEnd);
+      prev.items.push(item);
+    } else {
+      spans.push({ fileIdx: item.fileIdx, start: item.start, end: itemEnd, items: [item] });
+    }
+  }
+  await Promise.all(spans.map(async (span) => {
+    const packPath = `${packPrefix}-${String(span.fileIdx).padStart(2, '0')}.bin#bytes=${span.start}-${span.end}`;
+    const raw = await readAssetBytes(env, packPath);
+    if (!raw) return;
+    for (const item of span.items) {
+      try {
+        const relStart = item.start - span.start;
+        const gzSlice = raw.subarray(relStart, relStart + item.length);
+        const plain = await decompressGzipIfNeeded(gzSlice, trace);
+        const parsed = parseJsonShard(decodeJsonShard(plain));
+        setV3Record(`${recPrefix}:${item.key}`, parsed);
+        out.set(item.key, parsed);
+      } catch {
+        out.set(item.key, null);
+      }
+    }
+  }));
+  return out;
+}
+
+function makeV3Hooks(env) {
+  return {
+    getV3Bmw: () => getV3Bmw(env),
+    getV3Nodes: async () => (await getV3NodesBin(env)) ?? await loadJsonShard(env, '/v3/index/nodes.json.gz'),
+    getV3PprShard: (sid) => loadV3BinaryGraph(env, `/v3/graph/ppr-top64/shard-${String(sid & 31).padStart(2, '0')}.bin`, parsePprShard),
+    getV3CsrPart: (pid) => loadV3BinaryGraph(env, `/v3/graph/typed-csr/part-${String(pid & 15).padStart(2, '0')}.bin`, parseCsrPart),
+    getV3ProfileShard: (sid) => loadJsonShard(env, `/v3/profiles/shard-${String(sid).padStart(2, '0')}.json.gz`),
+    getV3VerseChunk: (cid) => loadJsonShard(env, `/v3/verses/chunk-${String(cid).padStart(2, '0')}.json.gz`),
+    getV3ClauseShard: (sid) => loadJsonShard(env, `/v3/rhetoric/clauses-${String(sid).padStart(2, '0')}.json.gz`),
+    getV3MtLxxShard: (sid) => loadV3CachedBinary(env, `/v3/align/mt-lxx-${String(sid).padStart(2, '0')}.bin`, (b) => parseJsonShard(decodeJsonShard(b))),
+    getV3RahlfsShard: (sid) => loadV3CachedBinary(env, `/v3/align/rahlfs-concordance-${String(sid).padStart(2, '0')}.bin`, (b) => parseJsonShard(decodeJsonShard(b))),
+    getV3RhetoricIndex: () => loadJsonShard(env, '/v3/rhetoric/rhetoric-index.json.gz'),
+    getV3Onomastic: () => loadJsonShard(env, '/v3/rhetoric/onomastic-lexicon.json'),
+    async getV3RhetoricBook(bookId) {
+      const key = String(Math.floor(Number(bookId)));
+      if (!key || key === 'NaN') return null;
+      const idx = await getV3PackedIdx(env, '/v3/rhetoric/rhetoric-book.idx', 'key');
+      if (idx) {
+        return await readV3PackedKey(env, idx, '/v3/rhetoric/rhetoric-book-pack', key, 'rb');
+      }
+      return null;
+    },
+    async getV3Profile(bs) {
+      const normBs = normStrongs4(bs) || String(bs || '');
+      if (!normBs) return null;
+      const k = `p:${normBs}`;
+      const hit = getV3Record(k);
+      if (hit !== undefined) {
+        if (env.__r12Trace) env.__r12Trace.cache_hits++;
+        return hit;
+      }
+      const idx = await getV3PackedIdx(env, '/v3/profiles/profiles.idx', 'key');
+      if (idx) {
+        return await readV3PackedKey(env, idx, '/v3/profiles/pack', normBs, 'p');
+      }
+      const shard = await loadJsonShard(env, `/v3/profiles/shard-${String(v3ProfileShardId(normBs)).padStart(2, '0')}.json.gz`);
+      const val = shard?.profiles?.[normBs] ?? null;
+      setV3Record(k, val);
+      return val;
+    },
+    async getV3ProfilesBatch(bss) {
+      const keys = [...new Set((bss || []).map(b => normStrongs4(b) || String(b || '')).filter(Boolean))];
+      const idx = await getV3PackedIdx(env, '/v3/profiles/profiles.idx', 'key');
+      if (idx) {
+        return await readV3PackedKeyBatch(env, idx, '/v3/profiles/pack', keys, 'p');
+      }
+      const out = new Map();
+      for (const b of keys) out.set(b, await this.getV3Profile(b));
+      return out;
+    },
+    async getV3Verse(vid) {
+      const nVid = Number(vid);
+      const k = `v:${nVid}`;
+      const hit = getV3Record(k);
+      if (hit !== undefined) {
+        if (env.__r12Trace) env.__r12Trace.cache_hits++;
+        return hit;
+      }
+      const idx = await getV3PackedIdx(env, '/v3/verses/verses.idx', 'int');
+      if (idx) {
+        const res = await readV3PackedIntBatch(env, idx, '/v3/verses/pack', [nVid], 'v');
+        return res.get(nVid) ?? null;
+      }
+      const chunk = await loadJsonShard(env, `/v3/verses/chunk-${String(v3VerseChunkId(nVid)).padStart(2, '0')}.json.gz`);
+      const val = chunk?.verses?.[String(nVid)] ?? null;
+      setV3Record(k, val);
+      return val;
+    },
+    async getV3VersesBatch(vids) {
+      const cleanVids = (vids || []).map(Number).filter(v => Number.isFinite(v) && v >= 1 && v <= NUM_VERSES);
+      const idx = await getV3PackedIdx(env, '/v3/verses/verses.idx', 'int');
+      if (idx) {
+        return await readV3PackedIntBatch(env, idx, '/v3/verses/pack', cleanVids, 'v');
+      }
+      const out = new Map();
+      const byChunk = new Map();
+      for (const v of cleanVids) {
+        const hit = getV3Record(`v:${v}`);
+        if (hit !== undefined) { out.set(v, hit); continue; }
+        const cid = v3VerseChunkId(v);
+        if (!byChunk.has(cid)) byChunk.set(cid, []);
+        byChunk.get(cid).push(v);
+      }
+      await Promise.all([...byChunk.entries()].map(async ([cid, vs]) => {
+        const chunk = await loadJsonShard(env, `/v3/verses/chunk-${String(cid).padStart(2, '0')}.json.gz`);
+        for (const v of vs) {
+          const val = chunk?.verses?.[String(v)] ?? null;
+          setV3Record(`v:${v}`, val);
+          out.set(v, val);
+        }
+      }));
+      return out;
+    },
+    async getV3VerseClauses(vid) {
+      const nVid = Number(vid);
+      const k = `c:${nVid}`;
+      const hit = getV3Record(k);
+      if (hit !== undefined) {
+        if (env.__r12Trace) env.__r12Trace.cache_hits++;
+        return hit;
+      }
+      const idx = await getV3PackedIdx(env, '/v3/rhetoric/clauses.idx', 'int');
+      if (idx) {
+        const res = await readV3PackedIntBatch(env, idx, '/v3/rhetoric/clauses-pack', [nVid], 'c');
+        return res.get(nVid) ?? null;
+      }
+      const shard = await loadJsonShard(env, `/v3/rhetoric/clauses-${String(v3ClauseShardId(nVid)).padStart(2, '0')}.json.gz`);
+      if (shard && Array.isArray(shard.verses) && !shard._byVid) {
+        const byVid = new Map();
+        for (const v of shard.verses) if (v?.vid) byVid.set(Number(v.vid), v);
+        shard._byVid = byVid;
+      }
+      const val = shard?._byVid?.get(nVid) ?? null;
+      setV3Record(k, val);
+      return val;
+    },
+    async getV3VerseClausesBatch(vids) {
+      const cleanVids = (vids || []).map(Number).filter(v => Number.isFinite(v) && v >= 1 && v <= NUM_VERSES);
+      const idx = await getV3PackedIdx(env, '/v3/rhetoric/clauses.idx', 'int');
+      if (idx) {
+        return await readV3PackedIntBatch(env, idx, '/v3/rhetoric/clauses-pack', cleanVids, 'c');
+      }
+      const out = new Map();
+      const bySid = new Map();
+      for (const v of cleanVids) {
+        const hit = getV3Record(`c:${v}`);
+        if (hit !== undefined) { out.set(v, hit); continue; }
+        const sid = v3ClauseShardId(v);
+        if (!bySid.has(sid)) bySid.set(sid, []);
+        bySid.get(sid).push(v);
+      }
+      await Promise.all([...bySid.entries()].map(async ([sid, vs]) => {
+        const shard = await loadJsonShard(env, `/v3/rhetoric/clauses-${String(sid).padStart(2, '0')}.json.gz`);
+        if (shard && Array.isArray(shard.verses) && !shard._byVid) {
+          const byVid = new Map();
+          for (const vr of shard.verses) if (vr?.vid) byVid.set(Number(vr.vid), vr);
+          shard._byVid = byVid;
+        }
+        for (const v of vs) {
+          const val = shard?._byVid?.get(v) ?? null;
+          setV3Record(`c:${v}`, val);
+          out.set(v, val);
+        }
+      }));
+      return out;
+    },
+    async getV3MtLxx(vid) {
+      const nVid = Number(vid);
+      const k = `m:${nVid}`;
+      const hit = getV3Record(k);
+      if (hit !== undefined) {
+        if (env.__r12Trace) env.__r12Trace.cache_hits++;
+        return hit;
+      }
+      const idx = await getV3PackedIdx(env, '/v3/align/mt-lxx.idx', 'int');
+      if (idx) {
+        const res = await readV3PackedIntBatch(env, idx, '/v3/align/mt-lxx-pack', [nVid], 'm');
+        return res.get(nVid) ?? null;
+      }
+      const shard = await loadV3CachedBinary(env, `/v3/align/mt-lxx-${String(v3MtLxxShardId(nVid)).padStart(2, '0')}.bin`, (b) => parseJsonShard(decodeJsonShard(b)));
+      const val = shard?.verses?.[String(nVid)] ?? null;
+      setV3Record(k, val);
+      return val;
+    },
+    async getV3MtLxxBatch(vids) {
+      const cleanVids = (vids || []).map(Number).filter(v => Number.isFinite(v) && v >= 1 && v <= NUM_VERSES);
+      const idx = await getV3PackedIdx(env, '/v3/align/mt-lxx.idx', 'int');
+      if (idx) {
+        return await readV3PackedIntBatch(env, idx, '/v3/align/mt-lxx-pack', cleanVids, 'm');
+      }
+      const out = new Map();
+      for (const v of cleanVids) out.set(v, await this.getV3MtLxx(v));
+      return out;
+    },
+    async getV3RahlfsConcordance(lemma) {
+      const lem = String(lemma || '').trim();
+      if (!lem) return null;
+      const k = `r:${lem}`;
+      const hit = getV3Record(k);
+      if (hit !== undefined) {
+        if (env.__r12Trace) env.__r12Trace.cache_hits++;
+        return hit;
+      }
+      const idx = await getV3PackedIdx(env, '/v3/align/rahlfs-concordance.idx', 'key');
+      if (idx) {
+        return await readV3PackedKey(env, idx, '/v3/align/rahlfs-concordance-pack', lem, 'r');
+      }
+      const shard = await loadV3CachedBinary(env, `/v3/align/rahlfs-concordance-${String(v3RahlfsShardId(lem)).padStart(2, '0')}.bin`, (b) => parseJsonShard(decodeJsonShard(b)));
+      const val = shard?.lemmas?.[lem] ?? null;
+      setV3Record(k, val);
+      return val;
+    },
+  };
+}
+
+function makeWorkerRpcCtx(env) {
+  return {
+    env,
+    loadJsonShard,
+    loadJsonShardWithBytes,
+    decodeB64GzJson: (b64, cacheKey) => decodeB64GzJson(env, b64, cacheKey),
+    decodeB64Gz: (b64, cacheKey) => decodeB64GzJson(env, b64, cacheKey),
+    readBinary: (assetPath) => readAssetBytes(env, assetPath),
+    v3Hooks: makeV3Hooks(env),
+    ensureCatalog: () => ensureCatalogLite(env),
+    getVerseIdByCoord: coord => lookupVerseIdByCoordFromU16(coord) ?? cachedVerseByCoord?.get(coord) ?? null,
+    getVerseById: id => lookupVerseByIdFromU16(id) ?? cachedVerseById?.get(id) ?? null,
+  };
+}
+
 async function loadJsonShard(env, assetPath) {
   const res = await loadJsonShardWithBytes(env, assetPath);
   return res ? res.data : null;
+}
+
+async function ensureCatalogLite(env) {
+  if (cachedCatalogLite) return cachedCatalogLite;
+  if (cachedCatalog) return cachedCatalog;
+  const inflight = env.__assetInflight ||= new Map();
+  if (inflight.has('catalog-lite')) return await inflight.get('catalog-lite');
+  const pending = (async () => {
+    try {
+      const [booksRes, binBytes] = await Promise.all([
+        loadJsonShard(env, '/v3/index/catalog-books.json'),
+        readAssetBytes(env, '/v3/index/catalog-verses.bin'),
+      ]);
+      if (booksRes && binBytes && binBytes.byteLength >= 6) {
+        const ab = new ArrayBuffer(binBytes.byteLength);
+        new Uint8Array(ab).set(binBytes);
+        cachedVerseU16 = new Uint16Array(ab);
+        cachedBooksById ||= new Map();
+        for (const b of booksRes.books || []) cachedBooksById.set(Number(b.id), b);
+        cachedLxxBooksByNo ||= new Map();
+        for (const lb of booksRes.lxx_swete_books || []) cachedLxxBooksByNo.set(Number(lb.book_no), lb);
+        cachedVerseById ||= { get: lookupVerseByIdFromU16 };
+        cachedVerseByCoord ||= { get: lookupVerseIdByCoordFromU16 };
+        cachedCatalogLite = booksRes;
+        return cachedCatalogLite;
+      }
+    } catch {
+      /* Fall back to full catalog metadata below. */
+    }
+    return ensureCatalog(env);
+  })();
+  inflight.set('catalog-lite', pending);
+  try { return await pending; } finally { inflight.delete('catalog-lite'); }
 }
 
 async function ensureCatalog(env) {
@@ -284,7 +888,7 @@ function jsonResponse(data, status = 200, cacheControl = 'public, max-age=3600')
 // ============================================================================
 
 async function handleLookupSyntaxTreeV1(env, params) {
-  await ensureCatalog(env);
+  const cat = await ensureCatalog(env);
   const editionKey = params.p_edition_key ?? null;
   let verseMeta = null;
 
@@ -366,7 +970,7 @@ async function handleLookupSyntaxTreeV1(env, params) {
 }
 
 async function handleLookupPassageTokensSyntaxV1(env, params) {
-  await ensureCatalog(env);
+  const cat = await ensureCatalog(env);
   const b = Number(params.p_book);
   const c = Number(params.p_chapter);
   const v = Number(params.p_verse);
@@ -451,7 +1055,7 @@ async function handleLookupPassageTokensSyntaxV1(env, params) {
 }
 
 async function handleLookupHebrewVerseEvidenceV1(env, params) {
-  await ensureCatalog(env);
+  const cat = await ensureCatalog(env);
   const b = Number(params.p_book);
   const c = Number(params.p_chapter);
   const v = Number(params.p_verse);
@@ -592,7 +1196,7 @@ async function handleLookupHebrewVerseEvidenceV1(env, params) {
 }
 
 async function handleLookupGreekVerseEvidenceV1(env, params) {
-  await ensureCatalog(env);
+  const cat = await ensureCatalog(env);
   const b = Number(params.p_book);
   const c = Number(params.p_chapter);
   const v = Number(params.p_verse);
@@ -743,15 +1347,15 @@ async function handleLookupGreekVerseEvidenceV1(env, params) {
 }
 
 async function handleLookupSeptuagintPassageV1(env, params) {
-  await ensureCatalog(env);
-  const bookNo = Number(params.p_book_no);
+  const cat = await ensureCatalog(env);
+  let bookNo = params.p_book_no != null ? Number(params.p_book_no) : null; if ((bookNo === null || !Number.isInteger(bookNo) || bookNo <= 0) && params.p_canonical_book != null) { const mapped = (cat.lxx_swete_books || []).find((lb) => Number(lb.canonical_book) === Number(params.p_canonical_book)); bookNo = mapped ? Number(mapped.book_no) : null; }
   const chapter = Number(params.p_chapter);
   const verseNr =
     params.p_verse_nr !== undefined && params.p_verse_nr !== null ? Number(params.p_verse_nr) : null;
   const chSuffix = params.p_chapter_suffix ?? '';
   const vSuffix = params.p_verse_suffix ?? '';
 
-  if (!cachedLxxBooksByNo.has(bookNo)) {
+  if (bookNo === null || !cachedLxxBooksByNo.has(bookNo)) {
     if ([7, 9, 22, 30].includes(bookNo)) {
       return {
         found: false,
@@ -863,7 +1467,7 @@ async function handleLookupSeptuagintPassageV1(env, params) {
 }
 
 async function handleLookupSeptuagintByCanonicalVerseV1(env, params) {
-  await ensureCatalog(env);
+  const cat = await ensureCatalog(env);
   const vid = Number(params.p_canonical_verse_id);
   const vMeta = cachedVerseById.get(vid);
   if (!vMeta) {
@@ -920,19 +1524,24 @@ async function handleGetReaderPassagesV1(env, params) {
     }
   }
 
-  const out = [];
-  for (const p of passages) {
+  await ensureCatalog(env);
+  const v3Hooks = makeV3Hooks(env);
+  const resolved = passages.map((p) => {
     const b = Number(p.book);
     const c = Number(p.chapter);
     const v = Number(p.verse);
-    const chBucket = Number(BigInt('0x' + fnv1a64Hex(`${b}:${c}`)) % 64n).toString(16).padStart(2, '0');
-    const liteShard = await loadJsonShard(env, `/v2/relationships/r8-v1.2/chapter-lite/shard-${chBucket}.json.gz`);
-    const liteChapter = await packedShardEntry(liteShard, `${b}:${c}`, '/v2/relationships/r8-v1.2', p => loadJsonShard(env, p));
-    const liteVerse = liteChapter?.[String(v)];
+    const vid = cachedVerseByCoord?.get(`${b}:${c}:${v}`) || null;
+    return { p, b, c, v, vid };
+  });
+  const v3Verses = await v3Hooks.getV3VersesBatch(resolved.map(r => r.vid).filter(Boolean));
+  const out = [];
+  for (const { p, b, c, v, vid } of resolved) {
     let text = null;
-    if (liteVerse && 'web' in liteVerse) {
-      text = liteVerse.web ?? null;
-    } else {
+    const v3V = vid ? v3Verses.get(vid) : null;
+    if (v3V && 'en' in v3V) {
+      text = v3V.en ?? null;
+    }
+    if (text === null) {
       const chShard = await loadJsonShard(env, `/v1/chapters/b${b}-c${c}.json.gz`);
       const vEntry = chShard?.verses?.[String(v)];
       const webp = (vEntry?.english_editions || []).find((e) => e.edition_id === 'webp-2026-11');
@@ -951,7 +1560,7 @@ async function handleGetReaderPassagesV1(env, params) {
 }
 
 async function handleGetVerseTranslationSourcesBatchV1(env, params) {
-  await ensureCatalog(env);
+  const cat = await ensureCatalog(env);
   const verseIds = Array.isArray(params.p_verse_ids) ? params.p_verse_ids.map(Number) : [];
   const chaptersToLoad = new Map();
   for (const vid of verseIds) {
@@ -1215,7 +1824,7 @@ async function handleGetReaderOverviewV1(env, params) {
 }
 
 async function handleGetReaderWordV1(env, params) {
-  await ensureCatalog(env);
+  const cat = await ensureCatalog(env);
   const wid = Number(params.p_word_id);
   const afterVid = Math.max(Number(params.p_after || 0), 0);
   const rendering = params.p_rendering ?? null;
@@ -1304,7 +1913,7 @@ async function handleCompareHebrewSeptuagintPassageV1(env, params) {
   let lxxVSuffix = params.p_lxx_verse_suffix || '';
 
   if (verseId !== null || (hebBook !== null && hebChapter !== null && hebVerse !== null)) {
-    queryMode = 'hebrew';
+    if (hebBook !== null && hebBook >= 40) return { schema_version: 1, status: 'invalid_request', message: 'Hebrew-Septuagint comparison applies to Old Testament passages (books 1-39); requested passage is in the New Testament Greek corpus.' }; queryMode = 'hebrew';
   } else if (lxxBookNo !== null && lxxChapter !== null && lxxVerseNr !== null) {
     queryMode = 'septuagint';
   } else {
@@ -1478,7 +2087,7 @@ async function handleCompareHebrewSeptuagintPassageV1(env, params) {
 
   let lxxWords = [];
   if (lxxBookNo !== null && lxxChapter !== null && lxxVerseNr !== null) {
-    const lxxShard = await loadJsonShard(env, `/v1/lxx/b${lxxBookNo}.json.gz`);
+    const lxxShard = await loadJsonShard(env, `/v1/lxx/b${lxxBookNo}.json.gz`); if (hebBook === 19 && lxxBookNo === 27 && mappings[0]?.mapping_kind === 'psalm_numbering_shift' && hebVerse >= 1 && lxxVerseNr === hebVerse + 1) { const swV1Text = (lxxShard?.words || []).filter((sw) => !sw.is_chapter_heading_marker && sw.chapter === lxxChapter && sw.verse_nr === 1).slice(0, 5).map((sw) => sw.word_text).join(' '); if (swV1Text && !/^(?:Εἰς\s+τὸ\s+τέλος|Ψαλμ|Ὠδ|ᾨδ|Αἴνεσις|Προσευχ|Συνέσεως|Στηλογραφία|Ἀλληλούια|Τῷ\s+Δαυ|Τοῦ\s+Δαυ|Μὴ\s+διαφθείρ|Δαυεὶδ|Ἀναβαθμ)/i.test(swV1Text)) { lxxVerseNr = hebVerse; mappings[0] = { ...mappings[0], lxx_verse_nr: hebVerse, rule_citation: `Psalms MT ${hebChapter}:${hebVerse} -> LXX Swete ${lxxChapter}:${hebVerse} (untitled psalm adjusted).` }; } }
     lxxWords = (lxxShard?.words || [])
       .filter(
         (sw) =>
@@ -1981,7 +2590,7 @@ async function handleLookupHebrewSeptuagintAlignmentsV1(env, params) {
 }
 
 async function handlePromptVerseWords(env, params) {
-  await ensureCatalog(env);
+  const cat = await ensureCatalog(env);
   const b = Number(params.p_book);
   const c = Number(params.p_chapter);
   const v = Number(params.p_verse);
@@ -2002,7 +2611,7 @@ async function handlePromptVerseWords(env, params) {
 }
 
 async function handlePromptWordOccurrences(env, params) {
-  await ensureCatalog(env);
+  const cat = await ensureCatalog(env);
   const q = String(params.p_word_query || '').trim();
   if (!q) return [];
   let snr = q.toUpperCase();
@@ -2021,7 +2630,7 @@ async function handlePromptWordOccurrences(env, params) {
 }
 
 async function handlePromptWordCooccurrences(env, params) {
-  await ensureCatalog(env);
+  const cat = await ensureCatalog(env);
   const q = String(params.p_word_query || '').trim();
   if (!q) return [];
   let snr = q.toUpperCase();
@@ -2059,7 +2668,7 @@ async function handlePromptWordCooccurrences(env, params) {
 // ============================================================================
 
 async function handleGetWordFormLemmasBatchV1(env, params) {
-  await ensureCatalog(env);
+  const cat = await ensureCatalog(env);
   const wordIds = Array.isArray(params.p_word_ids) ? params.p_word_ids.map(Number).filter((x) => Number.isFinite(x) && x > 0) : [];
   const bucketsToLoad = new Map();
   for (const wid of wordIds) {
@@ -2567,7 +3176,7 @@ async function handleGetHebrewImportStatusV1(env) {
 // ============================================================================
 
 async function handlePassageLensSourceV1(env, params) {
-  await ensureCatalog(env);
+  const cat = await ensureCatalog(env);
   const book = Number(params.p_book), chapter = Number(params.p_chapter), verse = Number(params.p_verse);
   if (![book, chapter, verse].every(Number.isInteger) || book < 1 || book > 66 || chapter < 1 || verse < 0) return { status: 'invalid_request' };
   const id = cachedVerseByCoord.get(`${book}:${chapter}:${verse}`);
@@ -2761,25 +3370,19 @@ const corpusWorker = {
           );
         }
         if (op === 'query_relationships_v2' || op === 'lookup_grammatical_relationships_v2') {
-          return jsonResponse(await handleQueryRelationshipsV2({ env, loadJsonShard }, params));
+          return jsonResponse(await handleQueryRelationshipsV2(makeWorkerRpcCtx(env), params));
         }
         if (op === 'resolve_research_concept_v1') {
-          return jsonResponse(await handleResolveResearchConceptV1({ env, loadJsonShard, loadJsonShardWithBytes }, params), 200, 'public, max-age=300');
+          return jsonResponse(await handleResolveResearchConceptV1(makeWorkerRpcCtx(env), params), 200, 'public, max-age=300');
         }
         if (op === 'discover_relationship_paths_v1') {
-          return jsonResponse(await handleDiscoverRelationshipPathsV1({ env, loadJsonShard, loadJsonShardWithBytes }, params), 200, 'public, max-age=300');
+          return jsonResponse(await handleDiscoverRelationshipPathsV1(makeWorkerRpcCtx(env), params), 200, 'public, max-age=300');
         }
         if (op === 'discover_biblical_connections_v1' || op === 'discover_biblical_connections_v2') {
-          return jsonResponse(await handleDiscoverBiblicalConnectionsV1({ env, loadJsonShard, loadJsonShardWithBytes, decodeB64GzJson: (b64, cacheKey) => decodeB64GzJson(env, b64, cacheKey) }, params), 200, 'public, max-age=300');
+          return jsonResponse(await handleDiscoverBiblicalConnectionsV1(makeWorkerRpcCtx(env), params), 200, 'public, max-age=300');
         }
         if (op === 'discover_patterns_v1' || op === 'compare_patterns_v1' || op === 'trace_evidence_v1' || op === 'discover_subgraph_v1') {
-          const r13Ctx = {
-            env,
-            loadJsonShard,
-            loadJsonShardWithBytes,
-            decodeB64GzJson: (b64, cacheKey) => decodeB64GzJson(env, b64, cacheKey),
-            decodeB64Gz: (b64, cacheKey) => decodeB64GzJson(env, b64, cacheKey),
-          };
+          const r13Ctx = makeWorkerRpcCtx(env);
           if (op === 'discover_patterns_v1') {
             return jsonResponse(await handleDiscoverPatternsV1(r13Ctx, params), 200, 'public, max-age=300');
           }
@@ -2792,28 +3395,50 @@ const corpusWorker = {
           return jsonResponse(await handleTraceEvidenceV1(r13Ctx, params), 200, 'public, max-age=300');
         }
         if (op === 'get_connection_evidence_v1') {
-          return jsonResponse(await handleGetConnectionEvidenceV1({ env, loadJsonShard, loadJsonShardWithBytes, decodeB64GzJson: (b64, cacheKey) => decodeB64GzJson(env, b64, cacheKey) }, params), 200, 'public, max-age=300');
+          return jsonResponse(await handleGetConnectionEvidenceV1(makeWorkerRpcCtx(env), params), 200, 'public, max-age=300');
         }
         if (op === 'expand_biblical_connection_v1') {
-          return jsonResponse(await handleExpandBiblicalConnectionV1({ env, loadJsonShard, loadJsonShardWithBytes, decodeB64GzJson: (b64, cacheKey) => decodeB64GzJson(env, b64, cacheKey) }, params), 200, 'public, max-age=300');
+          return jsonResponse(await handleExpandBiblicalConnectionV1(makeWorkerRpcCtx(env), params), 200, 'public, max-age=300');
         }
 
-        if (op === 'get_passage_compact_v1' || op === 'get_word_profiles_batch_v1' || op === 'resolve_fast_lookup_v1') {
-          const fastCtx = {
-            env,
-            loadJsonShard,
-            decodeB64Gz: (b64, k) => decodeB64GzJson(env, b64, k),
-            ensureCatalog: () => ensureCatalog(env),
-            getVerseIdByCoord: coord => cachedVerseByCoord?.get(coord) ?? null,
-            getVerseById: id => cachedVerseById?.get(id) ?? null,
-          };
+        if (op === 'get_passage_compact_v1' || op === 'get_word_profiles_batch_v1' || op === 'resolve_fast_lookup_v1' || op === 'get_literary_source_v1' || op === 'analyze_literary_structure_v1') {
+          const fastCtx = makeWorkerRpcCtx(env);
           if (op === 'get_passage_compact_v1') {
             return jsonResponse(await handleGetPassageCompactV1(fastCtx, params), 200, 'public, max-age=300');
           }
           if (op === 'get_word_profiles_batch_v1') {
             return jsonResponse(await handleGetWordProfilesBatchV1(fastCtx, params), 200, 'public, max-age=300');
           }
+          if (op === 'get_literary_source_v1') {
+            return jsonResponse(await handleGetLiterarySourceV1(fastCtx, params), 200, 'public, max-age=3600');
+          }
+          if (op === 'analyze_literary_structure_v1') {
+            return jsonResponse(await handleAnalyzeLiteraryStructureV1(fastCtx, params), 200, 'public, max-age=300');
+          }
           return jsonResponse(await handleResolveFastLookupV1(fastCtx, params), 200, 'public, max-age=300');
+        }
+
+        // BibleResearch v3 RPCs (S4)
+        if (op === 'lxx_concordance_v3') {
+          return jsonResponse(await handleLxxConcordanceV3(makeWorkerRpcCtx(env), params), 200, 'public, max-age=300');
+        }
+        if (op === 'tri_textual_diff_v3') {
+          return jsonResponse(await handleTriTextualDiffV3(makeWorkerRpcCtx(env), params), 200, 'public, max-age=300');
+        }
+        if (op === 'clause_role_query_v3') {
+          return jsonResponse(await handleClauseRoleQueryV3(makeWorkerRpcCtx(env), params), 200, 'public, max-age=300');
+        }
+        if (op === 'sequence_parallels_v3') {
+          return jsonResponse(await handleSequenceParallelsV3(makeWorkerRpcCtx(env), params), 200, 'public, max-age=300');
+        }
+        if (op === 'wordplay_scan_v3') {
+          return jsonResponse(await handleWordplayScanV3(makeWorkerRpcCtx(env), params), 200, 'public, max-age=300');
+        }
+        if (op === 'expand_clue_v3') {
+          return jsonResponse(await handleExpandClueV3(makeWorkerRpcCtx(env), params), 200, 'public, max-age=300');
+        }
+        if (op === 'set_combine_v3') {
+          return jsonResponse(await handleSetCombineV3(makeWorkerRpcCtx(env), params), 200, 'public, max-age=300');
         }
 
         return jsonResponse({ error: 'unknown_rpc_operation', operation: op }, 404, 'no-store');

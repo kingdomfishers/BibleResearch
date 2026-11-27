@@ -49,6 +49,13 @@ import {
   type CompactConnection,
   type CompactWord,
 } from './word-model.ts';
+import {
+  computeBridgeSpecificityBonus,
+  HIGH_DF_PROPER_NAME_HUBS,
+  isLxxFunctionEquivalent,
+  isVerifiedTextualProofEpistemic,
+  normalizeEpistemicClass,
+} from './literary/epistemic-taxonomy.ts';
 
 export const V2_READ_TOOL_NAMES = [
   'get_Passage',
@@ -449,7 +456,8 @@ function buildProfileDerivedConnections(profile: Rec, limit: number): CompactCon
   const out: CompactConnection[] = [];
   const greekSource = bs.startsWith('G');
 
-  for (const rawLxx of asArr(profile.lxx_relations).slice(0, 3)) {
+  for (const rawLxx of asArr(profile.lxx_relations)) {
+    if (out.length >= 3) break;
     const lx = asRec(rawLxx);
     if (!lx) continue;
     const tBs = str(lx.target_strongs);
@@ -457,6 +465,7 @@ function buildProfileDerivedConnections(profile: Rec, limit: number): CompactCon
     const tGl = str(lx.gloss);
     const cnt = typeof lx.count === 'number' ? lx.count : 0;
     if (!tSc && !tBs) continue;
+    if (isLxxFunctionEquivalent(tBs, tSc)) continue;
     out.push({
       id: `lxx:${bs}:${tBs || tSc}`,
       relation: 'lxx_translation_bridge',
@@ -642,7 +651,9 @@ function buildRareWordHighlights(
     const sc = str(prof.sc, str(tok.lemma));
     const tr = cleanTransliteration(str(prof.tr), sc);
     const gl = str(prof.gl, str(tok.gloss));
-    const lxx = asArr(prof.lxx_relations).map(asRec).filter((x): x is Rec => x !== null);
+    const lxx = asArr(prof.lxx_relations)
+      .map(asRec)
+      .filter((x): x is Rec => x !== null && !isLxxFunctionEquivalent(str(x.target_strongs), str(x.script)));
     const firstOcc = asArr(prof.first_occ_passages).map(asRec).filter((x): x is Rec => x !== null);
     const firstRef = str(firstOcc[0]?.ref);
 
@@ -1241,13 +1252,17 @@ export async function handleGetPassage(read: DatabaseReader, input: {
   );
 
   const literaryPromise = literaryLevel > 0
-    ? runLiteraryStructureMcp(read, {
-        passage: parsed.normalized,
-        passages: parsed.passages,
-        detail: literaryLevel === 2 ? 'standard' : 'compact',
-        compare_lxx: false,
-        include_alternatives: literaryLevel === 2,
-      }).catch(() => null)
+    ? withTimeout(
+        runLiteraryStructureMcp(read, {
+          passage: parsed.normalized,
+          passages: parsed.passages,
+          detail: literaryLevel === 2 && view !== 'clues' ? 'standard' : 'compact',
+          compare_lxx: false,
+          include_alternatives: literaryLevel === 2 && view !== 'clues',
+        }).catch(() => null),
+        3000,
+        null,
+      )
     : Promise.resolve(null);
 
   const [compact, rawGeo, rawChron, noteBatches, literarySummary] = await Promise.all([
@@ -1332,10 +1347,14 @@ export async function handleGetPassage(read: DatabaseReader, input: {
         )
       : Promise.resolve(null),
     ...anchorVerseRefs.map(ref =>
-      safeCallFirst(read, 'discover_biblical_connections_v2', {
-        query: ref,
-        limit: discoveryLimit,
-      }),
+      withTimeout(
+        safeCallFirst(read, 'discover_biblical_connections_v2', {
+          query: ref,
+          limit: discoveryLimit,
+        }),
+        4000,
+        null,
+      ),
     ),
   ]);
 
@@ -1697,7 +1716,7 @@ export async function handleGetPassage(read: DatabaseReader, input: {
     }
   }
 
-  if (view === 'clues' && !compactFlag) {
+  if (view === 'clues') {
     const isMultiVerseClues = versesOut.length > 1;
     const isChapterClues = versesOut.length > 4;
 
@@ -1792,7 +1811,7 @@ export async function handleGetPassage(read: DatabaseReader, input: {
 
     const litRec = asRec(literarySummary);
     const litSeg = asRec(litRec?.segmentation);
-    const clueLiterary = litRec && literaryLevel === 1
+    const clueLiterary = litRec
       ? {
           units_count: asArr(litSeg?.units).length,
           units: asArr(litSeg?.units).slice(0, 4).map(u => {
@@ -1806,7 +1825,7 @@ export async function handleGetPassage(read: DatabaseReader, input: {
             return kr ? { strongs: kr.strongs, script: kr.script, gloss: kr.gloss, count: kr.count } : kw;
           }),
         }
-      : literarySummary;
+      : null;
     const clueConns = passageConnections.map(c => projectClue(c, 'clues'));
     const resultPacket: Rec = {
       status: 'ok',
@@ -1833,6 +1852,14 @@ export async function handleGetPassage(read: DatabaseReader, input: {
         resultPacket.passage_connections = (resultPacket.passage_connections as unknown[]).slice(0, 3);
       }
       if (JSON.stringify(resultPacket).length > 11800) {
+        if (resultPacket.literary_summary && typeof resultPacket.literary_summary === 'object') {
+          const ls = asRec(resultPacket.literary_summary);
+          resultPacket.literary_summary = ls ? {
+            units_count: ls.units_count,
+            symmetries_count: ls.symmetries_count,
+            wordplays_count: ls.wordplays_count,
+          } : ls;
+        }
         resultPacket.verses = (clueVerses as Rec[]).map(v => ({
           ref: v.ref,
           en: v.en,
@@ -2372,7 +2399,7 @@ export async function handleGetConnection(
         const maxCnt = lxxList.reduce((m, x) => Math.max(m, Number(x.count ?? 1)), 1);
         for (const lx of lxxList) {
           const tbs = str(lx.target_strongs).toUpperCase();
-          if (!tbs || BRIDGE_STOPWORD_STRONGS.has(padStrongsToken(tbs))) continue;
+          if (!tbs || BRIDGE_STOPWORD_STRONGS.has(padStrongsToken(tbs)) || isLxxFunctionEquivalent(tbs, str(lx.script))) continue;
           const cnt = Number(lx.count ?? 1);
           // Skip secondary low-share co-occurrence noise (< 22% of the lemma's primary LXX translation count)
           if (maxCnt >= 10 && cnt < maxCnt * 0.22) continue;
@@ -2389,15 +2416,25 @@ export async function handleGetConnection(
       for (let j = i + 1; j < pSets.length; j++) {
         const a = pSets[i];
         const b = pSets[j];
-        // Bidirectional direct cross-references between passage A and passage B
+        // Bidirectional direct cross-references collapsed per unordered verse pair [minVid, maxVid]
+        const seenXrefVidPair = new Map<string, CompactConnection>();
         for (const [src, dst] of [[a, b], [b, a]] as const) {
           for (const v of src.verses) {
+            const fromVid = Number(v.verse_id || 0);
             for (const xr of asArr(v.xrefs)) {
-              const xc = buildXrefConnection(str(v.ref), Number(v.verse_id), xr);
+              const xc = buildXrefConnection(str(v.ref), fromVid, xr);
               const targetVid = Array.isArray(xr) ? Number(xr[0]) : Number(asRec(xr)?.target_vid ?? 0);
-              if (xc && dst.vids.has(targetVid)) {
-                pushTagged(xc, [a.idx, b.idx], false);
+              if (!xc || !dst.vids.has(targetVid)) continue;
+              const lo = Math.min(fromVid, targetVid);
+              const hi = Math.max(fromVid, targetVid);
+              const pairKey = `${lo}:${hi}`;
+              const existing = seenXrefVidPair.get(pairKey);
+              if (existing) {
+                existing.title = existing.title.replace(' -> ', ' <-> ') + ' (reciprocal)';
+                continue;
               }
+              seenXrefVidPair.set(pairKey, xc);
+              pushTagged(xc, [a.idx, b.idx], false);
             }
           }
         }
@@ -2549,6 +2586,10 @@ export async function handleGetConnection(
         for (const [src, dst] of [[a, b], [b, a]] as const) {
           for (const [tbs, info] of src.lxxOut.entries()) {
             if (!dst.strongsSet.has(tbs)) continue;
+            if (isLxxFunctionEquivalent(tbs, info.toSc)) continue;
+            const srcTv = Number(asRec(src.profiles[info.fromBs])?.total_verses ?? 0);
+            const dstTv = Number(asRec(dst.profiles[tbs])?.total_verses ?? 0);
+            if (Math.max(srcTv, dstTv) > 600) continue;
             const pairKey = [info.fromBs, tbs].sort().join(':');
             if (seenLxxPair.has(pairKey)) continue;
             seenLxxPair.add(pairKey);
@@ -2643,7 +2684,7 @@ export async function handleGetConnection(
       const conn: CompactConnection = {
         id: `r13:subgraph:path:${i}:${j}`,
         relation: hops <= 1 ? 'steiner_direct_link' : 'steiner_bridge_path',
-        epistemic: str(p.epistemic_class, hops <= 1 ? 'documented_lexical_relationship' : 'multi_hop_research_path'),
+        epistemic: normalizeEpistemicClass(str(p.epistemic_class), hops <= 1 ? 'documented_lexical_relationship' : 'semantic_hypothesis'),
         tier,
         title: str(p.title, `${compareTargets[i]} <-> ${compareTargets[j]}`),
         why: str(p.why),
@@ -2656,7 +2697,7 @@ export async function handleGetConnection(
 
   const isVerifiedPairwiseCandidate = (t: typeof taggedCandidates[number]) => {
     if (t.matchedIndices.length < 2 || t.isIndirect) return false;
-    const ep = t.conn.epistemic || '';
+    const ep = normalizeEpistemicClass(t.conn.epistemic, 'semantic_hypothesis', t.conn.evidence_type);
     const id = t.conn.id || '';
     const evType = t.conn.evidence_type || '';
     if (ep === 'orthographic_similarity_only' || id.startsWith('r13:orth:') || id.startsWith('orth:')) return false;
@@ -2668,23 +2709,15 @@ export async function handleGetConnection(
       evType !== 'proximate_wordplay_witnessed_same_verse'
     ) return false;
     if (id.startsWith('r13:beam:') && ep !== 'direct_textual_evidence') return false;
-    return (
-      ep === 'direct_textual_evidence' ||
-      ep === 'authorial_typology_or_quote' ||
-      ep === 'documented_cross_language_bridge' ||
-      ep === 'explicit_intertextual_witness' ||
-      ep === 'documented_collocation_or_cooccurrence' ||
-      ep === 'documented_lexical_relationship' ||
-      ep === 'verified_cross_reference' ||
-      ep === 'editorial_cross_reference' ||
-      ep === 'shared_motif_evidence'
-    );
+    // Allow editorial xrefs only when no stronger textual/lexical proof exists, OR prefer verified classes:
+    if (isVerifiedTextualProofEpistemic(ep, evType)) return true;
+    return ep === 'documented_collocation_or_cooccurrence' || ep === 'shared_motif_evidence';
   };
 
-  // Rank pairwise proof candidates by evidential & original-language specificity (explicit/wordplay/lexical/LXX first, editorial xrefs last)
+  // Rank pairwise proof candidates by evidential & original-language specificity (explicit/wordplay/lexical/LXX first, hubs penalized)
   const scoreProofEdgePriority = (c: CompactConnection): number => {
     const id = c.id || '';
-    if (id.startsWith('r10:ident:') || id.startsWith('r13:si:') || id.startsWith('r13:interp:') || id.startsWith('r10:typo:')) return 110;
+    if (id.startsWith('nt_typological_citation:') || id.startsWith('r10:ident:') || id.startsWith('r13:si:') || id.startsWith('r13:interp:') || id.startsWith('r10:typo:')) return 110;
     if (id.startsWith('r10:wordplay:') || (id.startsWith('r13:wp:') && c.epistemic === 'direct_textual_evidence')) return 105;
     if (id.startsWith('passage_root_wordplay:') || id.startsWith('passage_lex_bridge:')) return 98;
     if (id.startsWith('r13:wp:') || id.startsWith('r10:interp:')) return 92;
@@ -2697,21 +2730,49 @@ export async function handleGetConnection(
     return 50;
   };
 
+  const mergedProfilesForSpec: Rec = {};
+  for (const e of itemEntries) {
+    Object.assign(mergedProfilesForSpec, asRec(e.compactPassage?.profiles) ?? {});
+  }
+  const computeConnSpecificity = (c: CompactConnection): number => {
+    const m = /([HG]\d{4})[^\w]*([HG]\d{4})?/i.exec(`${c.id} ${c.target?.strongs || ''} ${c.title || ''}`);
+    const bsA = m?.[1] ? padStrongsToken(m[1]) : (c.target?.strongs ? padStrongsToken(c.target.strongs) : '');
+    const bsB = m?.[2] ? padStrongsToken(m[2]) : '';
+    const pA = bsA ? asRec(mergedProfilesForSpec[bsA]) : null;
+    const pB = bsB ? asRec(mergedProfilesForSpec[bsB]) : null;
+    return computeBridgeSpecificityBonus(
+      typeof pA?.total_verses === 'number' ? pA.total_verses : undefined,
+      typeof pB?.total_verses === 'number' ? pB.total_verses : undefined,
+      bsA || undefined,
+      bsB || undefined,
+      str(pA?.entity_kind) || undefined,
+      str(pB?.entity_kind) || undefined,
+    );
+  };
+
   // Select at most ONE best independent verified edge per unordered anchor pair (u, v) (u < v)
-  const bestByPair = new Map<string, { u: number; v: number; conn: CompactConnection; priority: number }>();
-  const pairCandidates: Array<{ u: number; v: number; conn: CompactConnection; priority: number }> = [];
+  const bestByPair = new Map<string, { u: number; v: number; conn: CompactConnection; priority: number; specificity: number }>();
+  const pairCandidates: Array<{ u: number; v: number; conn: CompactConnection; priority: number; specificity: number }> = [];
   for (const t of taggedCandidates) {
     if (!isVerifiedPairwiseCandidate(t)) continue;
     // Skip 3+ way generic co-occurrence records when building pairwise edges
     if (t.conn.id.startsWith('intersect:') && t.matchedIndices.length >= 3) continue;
     const prio = scoreProofEdgePriority(t.conn);
+    const spec = computeConnSpecificity(t.conn);
     for (let a = 0; a < t.matchedIndices.length; a++) {
       for (let b = a + 1; b < t.matchedIndices.length; b++) {
-        pairCandidates.push({ u: t.matchedIndices[a], v: t.matchedIndices[b], conn: t.conn, priority: prio });
+        pairCandidates.push({ u: t.matchedIndices[a], v: t.matchedIndices[b], conn: t.conn, priority: prio, specificity: spec });
       }
     }
   }
-  pairCandidates.sort((a, b) => b.priority - a.priority || (a.conn.tier ?? 3) - (b.conn.tier ?? 3));
+  pairCandidates.sort((a, b) =>
+    (b.priority - a.priority) ||
+    (b.specificity - a.specificity) ||
+    ((a.conn.tier ?? 3) - (b.conn.tier ?? 3)) ||
+    (a.u - b.u) ||
+    (a.v - b.v) ||
+    a.conn.id.localeCompare(b.conn.id),
+  );
 
   const usedPairEvidenceIds = new Set<string>();
   for (const pc of pairCandidates) {
@@ -2906,6 +2967,7 @@ export async function handleGetConnection(
     .map(e => `Passage source unavailable: ${e.input}. Retry before treating missing connections as absence.`);
   for (const entry of itemEntries) if (entry.compactPassage?.profiles_status === 'partial') warnings.push(`Lexical profiles incomplete for ${entry.input}; retry for missing lexical bridges.`);
   if (!discRes) warnings.push('Graph discovery unavailable. Returned direct witnesses are partial; retry to retrieve graph connections.');
+  if (items.length >= 2 && !subgraphRes) warnings.push('Subgraph Steiner engine unavailable; returned connections are partial.');
 
   const projectConn = (c: CompactConnection): CompactConnection => {
     if (!compact) return projectClue(c, view);
@@ -3057,7 +3119,7 @@ async function fetchNodeNeighbors(
   limit: number,
   axisFilter?: AxisFilter,
   layerMode: 'source_only' | 'algorithm_only' | 'research_only' | 'combined' = 'algorithm_only',
-): Promise<{ resolvedNode: string; neighbors: CompactConnection[] }> {
+): Promise<{ resolvedNode: string; neighbors: CompactConnection[]; upstreamUnavailable?: boolean }> {
   const trimmed = node.trim();
   if (layerMode === 'research_only') {
     const kgConns = (await fetchKgNeighborsForChain(read, trimmed, limit)) as unknown as CompactConnection[];
@@ -3101,7 +3163,7 @@ async function fetchNodeNeighbors(
       limit: Math.min(25, limit * 3),
     }),
     isMultiVerseRange && parsedPassage
-      ? safeCallFirst(read, 'get_passage_compact_v1', {
+      ? fetchCompactPassage(read, {
           passages: parsedPassage.passages.slice(0, 4),
           max_verses: 30,
           offset: 0,
@@ -3234,9 +3296,9 @@ async function fetchNodeNeighbors(
   if (unseen.length === 0 && isPassageLike(trimmed)) {
     const parsed = parsePassageString(trimmed);
     if (parsed) {
-      const compact = await safeCallFirst(read, 'get_passage_compact_v1', {
-        passages: parsed.passages.slice(0, 1),
-        max_verses: 10,
+      const compact = rangeCompact ?? await fetchCompactPassage(read, {
+        passages: parsed.passages.slice(0, 2),
+        max_verses: 12,
         offset: 0,
         include_profiles: true,
         profile_limit: 16,
@@ -3261,12 +3323,12 @@ async function fetchNodeNeighbors(
             target: { strongs: padBs, script: str(p.sc), transliteration: str(p.tr), gloss: str(p.gl) },
           });
         }
-        if (axisFilter === 'lxx') {
+        if (!axisFilter || axisFilter === 'lxx') {
           for (const rawLx of asArr(p.lxx_relations).slice(0, 2)) {
             const lx = asRec(rawLx);
             const tBs = str(lx?.target_strongs);
             const tSc = str(lx?.script);
-            if (!tBs && !tSc) continue;
+            if ((!tBs && !tSc) || isLxxFunctionEquivalent(tBs, tSc)) continue;
             const lxxId = `lxx:${padBs}:${tBs || tSc}`;
             if (visitedEdges.has(lxxId)) continue;
             fallbackConns.push({
@@ -3278,6 +3340,25 @@ async function fetchNodeNeighbors(
               why: `Septuagint renders ${str(p.sc, padBs)} (${padBs}) as ${tSc}${str(lx?.gloss) ? ` ("${str(lx?.gloss)}")` : ''}.`,
               refs: [parsed.normalized],
               target: { strongs: tBs || undefined, script: tSc, gloss: str(lx?.gloss) },
+            });
+          }
+        }
+        if (axisFilter === 'wordplay') {
+          for (const rawWp of asArr(p.r13_wordplay).slice(0, 2)) {
+            const wp = asRec(rawWp);
+            const tBs = str(wp?.target_bs);
+            if (!tBs || visitedNodes.has(tBs.toLowerCase())) continue;
+            const wpId = `r13:wp:${padBs}:${tBs}`;
+            if (visitedEdges.has(wpId)) continue;
+            fallbackConns.push({
+              id: wpId,
+              relation: 'orthographic_wordplay',
+              epistemic: str(wp?.evidence_type) === 'attested_textual_wordplay' ? 'direct_textual_evidence' : 'candidate_literary_pattern',
+              tier: str(wp?.evidence_type) === 'attested_textual_wordplay' ? 2 : 4,
+              title: `Wordplay candidate from ${padBs}: ${str(p.sc, padBs)} <-> ${str(wp?.target_script, tBs)} (${tBs})`,
+              why: `Shared consonants "${str(wp?.shared_consonants)}" in context of ${parsed.normalized}.`,
+              refs: [parsed.normalized],
+              target: { strongs: tBs, script: str(wp?.target_script), gloss: str(wp?.target_gloss) },
             });
           }
         }
@@ -3347,18 +3428,29 @@ async function fetchNodeNeighbors(
     return (Number(isNoise(a)) - Number(isNoise(b))) || ((a.tier ?? 3) - (b.tier ?? 3));
   });
 
-  const filtered = filterConnectionsForPrimary(unseen, focusLemma ?? '', limit, Boolean(focusLemma));
+  const layerFiltered = layerMode === 'source_only'
+    ? unseen.filter(c => {
+        if (c.id.startsWith('r12:prop:') || c.relation === 'shared_external_property') return false;
+        const ep = normalizeEpistemicClass(c.epistemic, 'semantic_hypothesis', c.evidence_type);
+        return ep !== 'semantic_hypothesis' && ep !== 'external_world_fact' && ep !== 'user_note' && ep !== 'shared_motif_evidence';
+      })
+    : unseen;
+
+  const filtered = filterConnectionsForPrimary(layerFiltered, focusLemma ?? '', limit, Boolean(focusLemma));
+  const upstreamUnavailable = !disc && (!isMultiVerseRange || !rangeCompact);
   if (layerMode === 'combined') {
     const kgConns = (await fetchKgNeighborsForChain(read, focusLemma ?? trimmed, Math.min(6, limit))) as unknown as CompactConnection[];
     const unseenKg = kgConns.filter(c => !visitedEdges.has(c.id));
     return {
       resolvedNode: focusLemma ?? queryStr,
       neighbors: [...unseenKg, ...filtered].slice(0, limit),
+      ...(upstreamUnavailable ? { upstreamUnavailable: true } : {}),
     };
   }
   return {
     resolvedNode: focusLemma ?? queryStr,
     neighbors: filtered,
+    ...(upstreamUnavailable ? { upstreamUnavailable: true } : {}),
   };
 }
 
@@ -3594,7 +3686,7 @@ export function createDiscoveryV2Server(
           return errorReply('Provide next or next_id (a word, passage, or evidence_id) to start a new connection chain.');
         }
         const visitedNodes = new Set<string>([initialTarget.toLowerCase()]);
-        const { resolvedNode, neighbors } = await fetchNodeNeighbors(read, initialTarget, visitedNodes, new Set(), limit, axis_filter, layer_mode);
+        const { resolvedNode, neighbors, upstreamUnavailable } = await fetchNodeNeighbors(read, initialTarget, visitedNodes, new Set(), limit, axis_filter, layer_mode);
         visitedNodes.add(resolvedNode.toLowerCase());
         const initPayload = {
           root: resolvedNode,
@@ -3617,8 +3709,13 @@ export function createDiscoveryV2Server(
               expires_at: new Date(Date.now() + CHAIN_DEFAULT_TTL_MS).toISOString(),
             };
         const compositeHandle = formatCompositeChainHandle(created.ok ? created.handle : null, fallbackState, sessionId);
+        const initStatus = upstreamUnavailable ? (neighbors.length > 0 ? 'partial' : 'unavailable') : 'ok';
         return jsonReply({
-          status: 'ok',
+          status: initStatus,
+          ...(upstreamUnavailable ? {
+            warnings: ['Upstream discovery graph temporarily unavailable while expanding chain seed; retry or inspect next_connections.'],
+            retryable: neighbors.length === 0,
+          } : {}),
           view: resolvedView,
           chain: compositeHandle,
           expires_at: fallbackState.expires_at,

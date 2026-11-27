@@ -1,0 +1,90 @@
+{
+  "version": "v3.1",
+  "description": "Frozen evaluation suites for BibleResearch v3 baseline, research-driven optimization, and blind final evaluation. Researchers must never read this file.",
+  "baseline_and_comparison": [
+    {
+      "id": "B1",
+      "domain": "Wordplay, names, and semantic/sonic contrasts",
+      "prompt": "Explore lexical wordplay, proper-name plays, and sonic or semantic contrasts in Micah 1:10-15 and Philemon 1:8-21. Verify each connection against original-language forms, roots, and contexts, distinguishing established wordplay or etymology from surface resemblance."
+    },
+    {
+      "id": "B2",
+      "domain": "Cross-testament MT <-> LXX <-> NT alignment",
+      "prompt": "Investigate how Isaiah 28:16, Isaiah 8:14, Psalm 118:22, and Habakkuk 2:4 shift across the Hebrew Masoretic Text, the Greek Septuagint, and their New Testament citations (such as Romans 9:33, 1 Peter 2:4-8, and Hebrews 10:37-38). Identify where NT wording follows the LXX against the MT, follows the MT against the LXX, splices multiple passages, or adapts wording."
+    },
+    {
+      "id": "B3",
+      "domain": "Literary structure, meaningful deviations, and de-creation",
+      "prompt": "Analyze recurring structural patterns, symmetries, and meaningful deviations in Amos 1:3-2:16, and examine how Genesis 1:1-2:3 relates structurally and conceptually to Jeremiah 4:23-26. Separate real structural boundaries and deliberate breaks from mechanical refrains or false symmetries."
+    },
+    {
+      "id": "B4",
+      "domain": "Physical objects and processes as biblical metaphors",
+      "prompt": "Trace metallurgical refining imagery (dross, lye/potash, silver, furnace, smelting, and testing) across Old and New Testament passages. Investigate how the physical properties and mechanisms of the refining process illuminate the biblical connections and intermediate bridges."
+    },
+    {
+      "id": "B5",
+      "domain": "Vocabulary-independent scene parallels and inversion",
+      "prompt": "Compare Judges 19 with Genesis 18-19, and compare Matthew 4:1-11 with Deuteronomy 6-8. Identify narrative sequence parallels, participant roles, hospitality or testing inversions, and intermediate bridge passages even where surface vocabulary differs."
+    },
+    {
+      "id": "B6",
+      "domain": "Distributed multi-book bridges from an obscure passage",
+      "prompt": "Begin with 2 Kings 2:19-22 (Elisha healing Jericho's waters with salt in a new bowl) and uncover unexpected lexical, physical, ritual, and intertextual connections across the Bible, including any intermediate bridge passages that connect this scene to larger canonical patterns."
+    }
+  ],
+  "development_optimization": [
+    {
+      "id": "D1",
+      "domain": "Distributed clues and typology",
+      "prompt": "Investigate Genesis 38 alongside Ruth 4 and Matthew 1:1-6. Trace legal, symbolic, lexical, and narrative clues (including pledge items, scarlet, twins, and royal genealogy) that link these passages across books."
+    },
+    {
+      "id": "D2",
+      "domain": "Naming reversals and prophetic restoration",
+      "prompt": "Examine Hosea 1-2 (the children's names and the valley of Achor) in relation to Joshua 7 and Romans 9:25-26, focusing on naming inversions, LXX renderings, and cross-book patterns."
+    },
+    {
+      "id": "D3",
+      "domain": "Ritual material analogies and purification",
+      "prompt": "Explore the cleansing ritual cluster in Leviticus 14 (bird, cedar, scarlet, hyssop, living water) in connection with Numbers 19, Psalm 51, and Hebrews 9, distinguishing lexical links, physical properties, and structural parallels."
+    },
+    {
+      "id": "D4",
+      "domain": "Prophetic narrative reversals and cosmic motifs",
+      "prompt": "Analyze Jonah 1-4 (the deep, plant, worm, east wind, forty days, and compassion) alongside Psalm 107 and Matthew 12:38-42, surfacing recurring motifs, wordplay, contrasts, and intermediate bridges."
+    }
+  ],
+  "frozen_holdout": [
+    {
+      "id": "H1",
+      "domain": "Recurring prophetic & NT typology",
+      "prompt": "Investigate how Exodus patterns are recombined across the Prophets and the New Testament, identifying exact original-language bridges, LXX shifts, and structural transformations."
+    },
+    {
+      "id": "H2",
+      "domain": "Multi-axis conceptual & physical network",
+      "prompt": "Trace the biblical network linking light, sight/eyes, knowledge, glory, and revelation across OT and NT, paying attention to sense distinctions, physical analogies, LXX terminology, and unexpected intermediate passages."
+    },
+    {
+      "id": "H3",
+      "domain": "Obscure sanctuary-ecology passage",
+      "prompt": "Explore Ezekiel 47:1-12 (the temple river) for unexpected textual, architectural, lexical, geographical, physical, and apocalyptic connections across Scripture."
+    },
+    {
+      "id": "H4",
+      "domain": "Onomastic irony, hospitality inversion, and narrative motif",
+      "prompt": "Investigate 1 Samuel 25 (Nabal, Abigail, and David) for wordplay, name meanings, hospitality contrasts, proverbial imagery (stone, wine, bundle of the living), and broader canonical parallels."
+    },
+    {
+      "id": "H5",
+      "domain": "Physical-ritual emblem across testaments",
+      "prompt": "Examine Numbers 21:4-9 (the fiery/bronze serpent, pole, looking, and healing) together with 2 Kings 18:4 and John 3:14-15, uncovering intermediate bridges, wordplay, and contrasting motifs."
+    },
+    {
+      "id": "H6",
+      "domain": "Prophetic sign-act and composite NT citation",
+      "prompt": "Investigate Zechariah 11:4-17 (two staffs Favor and Union, thirty pieces of silver, potter/foundry) alongside Jeremiah 18-19, Jeremiah 32, and Matthew 27:3-10, tracing MT/LXX/NT textual shifts and structural parallels."
+    }
+  ]
+}

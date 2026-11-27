@@ -1,0 +1,199 @@
+{
+  "generated_at": "2026-11-17",
+  "scope": "Research-only source catalog; none are imported; verify exact artifacts, notices, per-record rights and checksums before producing licensed bundles.",
+  "inputs": [
+    {
+      "id": "oewn",
+      "priority": 0,
+      "status": "publisher_license_verified_download_not_performed",
+      "release": "2025",
+      "domain": "modern English semantic synsets",
+      "license": "CC BY 4.0; retain Princeton WordNet attribution",
+      "publisher": "https://en-word.net/downloads",
+      "download": "https://en-word.net/static/english-wordnet-2025-json.zip",
+      "size_approx_mb": 9.5,
+      "allowed_relations": [
+        "hypernym",
+        "hyponym",
+        "meronym",
+        "holonym",
+        "antonym"
+      ],
+      "caution": "A modern English synset is not a verified biblical Hebrew/Greek lexical sense; require explicit candidate mapping."
+    },
+    {
+      "id": "wikidata",
+      "priority": 0,
+      "status": "publisher_license_verified_no_extract",
+      "release": "pin SPARQL result date/hash or dump",
+      "domain": "cross-domain physical and object properties",
+      "license": "CC0 for structured namespace data only",
+      "publisher": "https://www.wikidata.org/wiki/Wikidata:Licensing",
+      "download": "https://www.wikidata.org/wiki/Wikidata:Database_download",
+      "allowed_properties": [
+        "P31",
+        "P279",
+        "P361",
+        "P527",
+        "P186"
+      ],
+      "caution": "Use full p:/ps: statement nodes when qualifiers/ranks matter; wdt: loses qualifiers. Only map prevalidated QIDs."
+    },
+    {
+      "id": "envo",
+      "priority": 1,
+      "status": "publisher_license_verified_no_extract",
+      "release": "pin OBO/GitHub release",
+      "domain": "environmental materials, processes, land and water systems",
+      "license": "CC0 1.0 on native ENVO claims; imported ontology terms may have different licenses",
+      "publisher": "https://obofoundry.org/ontology/envo.html",
+      "download": "http://purl.obolibrary.org/obo/envo.json",
+      "allowed_relations": [
+        "subClassOf",
+        "part_of"
+      ],
+      "caution": "Terminology and class membership do not prove physical laws or interpret biblical imagery."
+    },
+    {
+      "id": "chebi",
+      "priority": 1,
+      "status": "publisher_license_verified_no_extract",
+      "release": "pin download release",
+      "domain": "chemical and material classification",
+      "license": "CC BY 4.0 per ChEBI publisher",
+      "publisher": "https://www.ebi.ac.uk/chebi/about",
+      "download": "https://www.ebi.ac.uk/chebi/downloads",
+      "allowed_relations": [
+        "is_a",
+        "has_role",
+        "part_of"
+      ],
+      "caution": "Useful for copper, sulfur, water, salts; avoid asserting ancient material identification from a vague gloss."
+    },
+    {
+      "id": "uberon",
+      "priority": 2,
+      "status": "publisher_license_verified_no_extract",
+      "release": "pin native -basic variant when suitable",
+      "domain": "body parts, eye, skin, blood, anatomy",
+      "license": "CC BY 3.0 per OBO Foundry registry; imported dependencies separate",
+      "publisher": "https://obofoundry.org/ontology/uberon.html",
+      "download": "http://purl.obolibrary.org/obo/uberon/uberon-basic.obo",
+      "allowed_relations": [
+        "is_a",
+        "part_of"
+      ],
+      "caution": "Taxonomic anatomy terms do not prove physiological functions or symbolic claims."
+    },
+    {
+      "id": "pato",
+      "priority": 2,
+      "status": "publisher_license_verified_no_extract",
+      "release": "pin native base variant when suitable",
+      "domain": "qualities: brightness, size, color, heat, shape",
+      "license": "CC BY 3.0 per OBO Foundry registry",
+      "publisher": "https://obofoundry.org/ontology/pato.html",
+      "download": "http://purl.obolibrary.org/obo/pato/pato-base.owl",
+      "allowed_relations": [
+        "is_a"
+      ],
+      "caution": "Vocabulary of qualities ONLY: PATO does not assert that a specific biblical lamp is bright or a plant red."
+    },
+    {
+      "id": "pleiades",
+      "priority": 2,
+      "status": "publisher_license_verified_no_extract",
+      "release": "pin numbered quarterly snapshot",
+      "domain": "ancient place names and locations",
+      "license": "CC BY 3.0",
+      "publisher": "https://pleiades.stoa.org/downloads",
+      "download": "https://pleiades.stoa.org/downloads",
+      "allowed_relations": [
+        "alternative_names",
+        "locations"
+      ],
+      "caution": "Keep uncertain ancient identification and time scope; do not override existing biblical place canon."
+    },
+    {
+      "id": "sefaria-links",
+      "priority": 2,
+      "status": "publisher_license_verified_no_extract",
+      "release": "pin extract hash/date",
+      "domain": "Jewish commentary and reception link graph",
+      "license": "Links CC BY; full text licenses independent",
+      "publisher": "https://developers.sefaria.org/docs/usage-of-our-name-and-logo",
+      "download": "https://developers.sefaria.org/reference/get-links",
+      "allowed_relations": [
+        "text_link",
+        "commentary_link"
+      ],
+      "caution": "Use link metadata only; commentary/reception is not independent proof of the biblical author's intent."
+    },
+    {
+      "id": "wiktionary",
+      "priority": 3,
+      "status": "rights_complex_not_pilot",
+      "release": "pin dump",
+      "domain": "word forms and etymological leads",
+      "license": "CC BY-SA 4.0 / GFDL; verify individual field and derivative obligations",
+      "publisher": "https://en.wiktionary.org/wiki/Wiktionary:Copyrights",
+      "download": "https://kaikki.org/dictionary/index.html",
+      "allowed_relations": [
+        "candidate_derivation",
+        "form_variant"
+      ],
+      "caution": "Imported derivations can be incorrect, modern, unreviewed or incompatible with public-release obligations."
+    },
+    {
+      "id": "conceptnet",
+      "priority": 3,
+      "status": "rights_complex_not_pilot",
+      "release": "pin release",
+      "domain": "commonsense candidate generation",
+      "license": "CC BY-SA 4.0; inspect subset rights",
+      "publisher": "https://github.com/commonsense/conceptnet5/wiki/Downloads",
+      "download": "https://github.com/commonsense/conceptnet5/wiki/Downloads",
+      "allowed_relations": [
+        "RelatedTo",
+        "UsedFor",
+        "HasProperty"
+      ],
+      "caution": "Many crowd-sourced assertions are weak and noisy; never convert into biblical facts."
+    },
+    {
+      "id": "bhsa",
+      "priority": 99,
+      "status": "excluded_pending_permission",
+      "release": "n/a",
+      "domain": "Hebrew grammar",
+      "license": "CC BY-NC",
+      "publisher": "https://etcbc.github.io/bhsa/",
+      "download": null,
+      "allowed_relations": [],
+      "caution": "Do not republish in BibleResearch immutable public asset bundle without rights clearance."
+    }
+  ],
+  "policy": {
+    "import_scope": "only evidence that fills a measured gap; no full knowledge graph mirror",
+    "manifest_minimum": [
+      "provider",
+      "release",
+      "checksum",
+      "license",
+      "download_url",
+      "mapping_method",
+      "source_id",
+      "derivation_lineage",
+      "excluded_fields"
+    ],
+    "mapping": "biblical sense to external concept stays candidate until independent validation",
+    "categories": [
+      "TEXTUAL",
+      "LINGUISTIC",
+      "EXTERNAL_WORLD",
+      "HYPOTHESIS",
+      "RECEPTION"
+    ],
+    "unsupported_claims": "reject or label; do not rank as direct biblical evidence"
+  }
+}

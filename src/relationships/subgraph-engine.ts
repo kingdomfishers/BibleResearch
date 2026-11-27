@@ -8,7 +8,15 @@
 
 import type { AssetReadResult, AssetReader } from './adjacency-loader.ts';
 import { DEFAULT_R10_RELEASE, discoverBiblicalConnections } from './r10-discovery.ts';
-import type { R10ConnectionSummary, R10EpistemicClass } from './r10-types.ts';
+import type { DiscoverConnectionsResult, R10ConnectionSummary, R10EpistemicClass } from './r10-types.ts';
+import {
+  HIGH_DF_PROPER_NAME_HUBS,
+  computeBridgeSpecificityBonus,
+  normalizeEpistemicClass,
+} from './epistemic-taxonomy.ts';
+import { GRAPH_PARTITIONS, NUM_VERSES, lookupPprTop64, type PprEntry } from './v3-binary-index.ts';
+import { reconstructPassagePpr } from './v3-scorer.ts';
+import { V3RuntimeSession, findV3BridgePivots, normStrongs4 } from './v3-runtime-adapter.ts';
 
 export type SubgraphNodeKind = 'lemma' | 'passage' | 'motif' | 'person' | 'concept';
 
@@ -160,6 +168,7 @@ const GENERIC_HUB_STRONGS = new Set([
   'H0376', 'H1121', 'H0776', 'H3117', 'H1697', 'H4428', 'H5971', 'H1004', 'H3478', 'H0413',
   'G3588', 'G2532', 'G1161', 'G0846', 'G1722', 'G1519', 'G3754', 'G1510', 'G3004', 'G2316',
   'G2962', 'G0444', 'G1093', 'G3956',
+  ...HIGH_DF_PROPER_NAME_HUBS,
 ]);
 
 function padStrongs(raw: string): string {
@@ -193,11 +202,18 @@ function classifyEdgeFamily(conn: R10ConnectionSummary): SubgraphEdgeFamily {
 function createCachingReader(baseReader: AssetReader, maxUniqueReads = 24): AssetReader {
   const jsonCache = new Map<string, Promise<AssetReadResult | null>>();
   let reads = 0;
-  return {
+  const cached: AssetReader = {
     readJson(assetPath: string): Promise<AssetReadResult | null> {
       const existing = jsonCache.get(assetPath);
       if (existing) return existing;
-      if (reads >= maxUniqueReads && !assetPath.includes('fast-manifest') && !assetPath.includes('concept-index') && !assetPath.includes('explicit-and-typology') && !assetPath.includes('motifs-and-patterns')) {
+      if (
+        reads >= maxUniqueReads &&
+        !assetPath.includes('fast-manifest') &&
+        !assetPath.includes('concept-index') &&
+        !assetPath.includes('explicit-and-typology') &&
+        !assetPath.includes('motifs-and-patterns') &&
+        !assetPath.startsWith('/v3/')
+      ) {
         return Promise.resolve(null);
       }
       reads++;
@@ -212,7 +228,17 @@ function createCachingReader(baseReader: AssetReader, maxUniqueReads = 24): Asse
           },
         }
       : {}),
+    ...(baseReader.readBinary
+      ? {
+          readBinary(assetPath: string): Promise<Uint8Array | null> {
+            return baseReader.readBinary!(assetPath);
+          },
+        }
+      : {}),
   };
+  const hooks = (baseReader as unknown as { __v3Hooks?: unknown }).__v3Hooks;
+  if (hooks) (cached as unknown as { __v3Hooks?: unknown }).__v3Hooks = hooks;
+  return cached;
 }
 
 // === @section:logic:steiner-kmb ===
@@ -289,6 +315,306 @@ function findShortestBoundedPath(
   return best;
 }
 
+const CSR_PARTITION_TO_FAMILY: Record<number, SubgraphEdgeFamily> = {
+  0: 'shared_rare_vocabulary',
+  1: 'verified_cross_reference',
+  2: 'translates_in_lxx',
+  3: 'shares_root',
+  4: 'wordplay_consonantal',
+};
+
+const CSR_PARTITION_TO_EPISTEMIC: Record<number, { epistemic: R10EpistemicClass; tier: 1 | 2 | 3 | 4 | 5; pred: string }> = {
+  0: { epistemic: 'documented_collocation_or_cooccurrence', tier: 3, pred: 'shared_rare_vocabulary' },
+  1: { epistemic: 'editorial_cross_reference', tier: 4, pred: 'cross_reference_witness' },
+  2: { epistemic: 'documented_cross_language_bridge', tier: 3, pred: 'cross_language_bridge' },
+  3: { epistemic: 'documented_lexical_relationship', tier: 3, pred: 'verified_lexical_grammatical' },
+  4: { epistemic: 'candidate_literary_pattern', tier: 4, pred: 'orthographic_wordplay' },
+};
+
+async function augmentSubgraphWithV3PprAndCsr(params: {
+  reader: AssetReader;
+  anchorRecords: SubgraphDiscoveryPacket['anchors'];
+  perAnchorResults: DiscoverConnectionsResult[];
+  nodesById: Map<string, SubgraphNode>;
+  edgesById: Map<string, SubgraphEdge>;
+  ensureNode: (partial: Omit<SubgraphNode, 'anchor_indices' | 'is_steiner_bridge'>, anchorIdx?: number) => SubgraphNode;
+  includeExploratory: boolean;
+}): Promise<void> {
+  const { reader, anchorRecords, perAnchorResults, nodesById, edgesById, ensureNode, includeExploratory } = params;
+  const session = new V3RuntimeSession(reader);
+  const nodes = await session.getNodes();
+  if (!nodes) return;
+
+  const anchorGroups: Array<{ vids: number[]; strongs: string[]; seedIds: number[]; termNodeIds: Set<string> }> = [];
+  const allSeedIds: number[] = [];
+  const vidToAnchorIndices = new Map<number, number[]>();
+
+  for (let i = 0; i < anchorRecords.length; i++) {
+    const ar = anchorRecords[i];
+    const res = perAnchorResults[i];
+    const vids: number[] = [];
+    const seedIds: number[] = [];
+    for (const ep of res.parsed_query?.explicit_passages || []) {
+      if (ep.verse_id && ep.verse_id >= 1 && ep.verse_id <= NUM_VERSES) {
+        const span = Math.min(11, Math.max(0, Number(ep.end_verse ?? ep.verse ?? 1) - Number(ep.verse ?? 1)));
+        for (let d = 0; d <= span; d++) {
+          const vid = ep.verse_id + d;
+          if (vid < 1 || vid > NUM_VERSES || vids.includes(vid)) continue;
+          vids.push(vid);
+          seedIds.push(vid);
+          allSeedIds.push(vid);
+          const arr = vidToAnchorIndices.get(vid) || [];
+          if (!arr.includes(i)) arr.push(i);
+          vidToAnchorIndices.set(vid, arr);
+        }
+      }
+    }
+    for (const bs of ar.resolved_strongs) {
+      const n4 = normStrongs4(bs);
+      const nid = n4 ? nodes.key_to_id[n4] : undefined;
+      if (nid) {
+        seedIds.push(nid);
+        allSeedIds.push(nid);
+      }
+    }
+    anchorGroups.push({
+      vids,
+      strongs: ar.resolved_strongs,
+      seedIds,
+      termNodeIds: new Set(ar.terminal_node_ids),
+    });
+  }
+
+  if (allSeedIds.length === 0) return;
+  const pprShards = await session.preloadPprShards(allSeedIds);
+  const pprLookup = (seedId: number): PprEntry[] => {
+    const sh = pprShards.get(seedId & 31);
+    return sh ? lookupPprTop64(sh, seedId) : [];
+  };
+
+  // Reconstruct Top-128 PPR neighborhood per anchor
+  const top128Maps: Array<Map<number, number>> = [];
+  for (const ag of anchorGroups) {
+    const terms = ag.strongs
+      .map((raw) => {
+        const bs = normStrongs4(raw);
+        const nid = bs ? nodes.key_to_id[bs] : undefined;
+        if (!nid) return null;
+        const meta = nodes.node_meta[nid - nodes.entity_offset];
+        const df = Math.max(1, Number(meta?.[1]) || 10);
+        return { nodeId: nid, idf: Math.max(0.25, Math.log2(NUM_VERSES / df)), axisKey: String(meta?.[0] || bs) };
+      })
+      .filter((x): x is NonNullable<typeof x> => Boolean(x));
+
+    const dist = reconstructPassagePpr(ag.vids, terms, pprLookup);
+    const sortedTop128 = [...dist.mass.entries()]
+      .filter(([nid, m]) => nid > 0 && m > 0.0005)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 128);
+    top128Maps.push(new Map(sortedTop128));
+  }
+
+  // Count in how many anchors' Top-128 PPR neighborhoods each node appears
+  const anchorCoverageCount = new Map<number, number>();
+  for (const m of top128Maps) {
+    for (const nid of m.keys()) {
+      anchorCoverageCount.set(nid, (anchorCoverageCount.get(nid) ?? 0) + 1);
+    }
+  }
+
+  // Synthesize high-rarity intermediate bridge pivots using rankBridgePivots
+  const pivots = await findV3BridgePivots(
+    session,
+    anchorGroups.map((g) => ({ vids: g.vids, strongs: g.strongs })),
+    6,
+  );
+  const qualifiedPivots = pivots.filter((p) => p.geometricMeanMass >= 0.004 && p.axisCount >= 2 && p.pivotScore >= 0.02);
+
+  // Collect candidate nodeIds to inspect CSR edges: all anchor seeds + top shared PPR entities + qualified pivots
+  const inspectNodeIds = new Set<number>(allSeedIds);
+  for (const p of qualifiedPivots) inspectNodeIds.add(p.vid);
+  const sharedPprNodes: Array<{ nid: number; hits: number; minMass: number }> = [];
+  for (const [nid, hits] of anchorCoverageCount.entries()) {
+    if (hits < 2) continue;
+    if (nid >= nodes.entity_offset) {
+      const meta = nodes.node_meta[nid - nodes.entity_offset];
+      const key = session.resolveNodeKey(nodes, nid) || '';
+      if ((meta && meta[1] > 450) || GENERIC_HUB_STRONGS.has(key)) continue;
+    }
+    let minMass = Infinity;
+    for (const m of top128Maps) {
+      const val = m.get(nid);
+      if (val !== undefined && val < minMass) minMass = val;
+    }
+    if (minMass >= 0.0025) {
+      sharedPprNodes.push({ nid, hits, minMass });
+    }
+  }
+  sharedPprNodes.sort((a, b) => b.hits - a.hits || b.minMass - a.minMass);
+  for (const sn of sharedPprNodes.slice(0, 24)) inspectNodeIds.add(sn.nid);
+
+  const mapV3NodeIdToSubgraphId = async (nid: number): Promise<string | null> => {
+    if (nid >= 1 && nid <= NUM_VERSES) {
+      const v = await session.getVerse(nid);
+      const ref = v?.ref || `Verse ${nid}`;
+      const pid = `passage:${ref}`;
+      const ownerAnchors = vidToAnchorIndices.get(nid) || [];
+      if (ownerAnchors.length > 0) {
+        for (const aIdx of ownerAnchors) {
+          ensureNode({ id: pid, kind: 'passage', label: ref, ref }, aIdx);
+          if (!anchorRecords[aIdx].terminal_node_ids.includes(pid)) {
+            anchorRecords[aIdx].terminal_node_ids.push(pid);
+          }
+        }
+      } else {
+        ensureNode({ id: pid, kind: 'passage', label: ref, ref });
+      }
+      return pid;
+    }
+    const key = session.resolveNodeKey(nodes, nid);
+    if (!key) return null;
+    if (/^[HG]\d{4}$/.test(key)) {
+      if (GENERIC_HUB_STRONGS.has(key)) return null;
+      const meta = nodes.node_meta[nid - nodes.entity_offset];
+      const df = meta ? Number(meta[1]) : undefined;
+      if (df && df > 450 && !nodesById.has(`lemma:${key}`)) return null;
+      const existing = nodesById.get(`lemma:${key}`);
+      if (!existing) {
+        const prof = await session.getProfile(key);
+        ensureNode({
+          id: `lemma:${key}`,
+          kind: 'lemma',
+          label: prof ? `${prof.sc || key} (${prof.gl || key})` : key,
+          strongs: key,
+          ...(prof?.sc ? { script: prof.sc } : {}),
+          ...(prof?.tr ? { transliteration: prof.tr } : {}),
+          ...(prof?.gl ? { gloss: prof.gl } : {}),
+          ...(df ? { total_verses: df } : {}),
+        });
+      }
+      return `lemma:${key}`;
+    }
+    if (key.startsWith('lxx:')) {
+      const lem = key.slice(4);
+      ensureNode({ id: key, kind: 'lemma', label: `${lem} (LXX)`, transliteration: lem });
+      return key;
+    }
+    return null;
+  };
+
+  // Preload verse/profile info for inspected nodes and their verified CSR edges
+  const inspectedArr = [...inspectNodeIds].slice(0, 32);
+  const [csrLists, uSgIds] = await Promise.all([
+    Promise.all(inspectedArr.map((nid) => session.lookupCsr(nid))),
+    Promise.all(inspectedArr.map((nid) => mapV3NodeIdToSubgraphId(nid))),
+  ]);
+
+  const relevantVNodes = new Set<number>();
+  for (let idx = 0; idx < inspectedArr.length; idx++) {
+    if (!uSgIds[idx]) continue;
+    for (const edge of csrLists[idx]) {
+      if (edge.partition === 5 || (edge.partition === 4 && !includeExploratory)) continue;
+      const minW = edge.partition === 2 || edge.partition === 3 || edge.partition === 4 ? 0.035 : 0.045;
+      if (edge.weight < minW) continue;
+      const vNid = edge.toNodeId;
+      const vIsRelevant =
+        inspectNodeIds.has(vNid) ||
+        (anchorCoverageCount.get(vNid) ?? 0) >= 2 ||
+        anchorGroups.some((g) => g.seedIds.includes(vNid));
+      if (vIsRelevant) relevantVNodes.add(vNid);
+    }
+  }
+  const vSgMap = new Map<number, string | null>();
+  const relevantArr = [...relevantVNodes];
+  const vSgResults = await Promise.all(relevantArr.map((nid) => mapV3NodeIdToSubgraphId(nid)));
+  for (let i = 0; i < relevantArr.length; i++) vSgMap.set(relevantArr[i], vSgResults[i]);
+
+  for (let idx = 0; idx < inspectedArr.length; idx++) {
+    const uNid = inspectedArr[idx];
+    const uSgId = uSgIds[idx];
+    if (!uSgId) continue;
+
+    for (const edge of csrLists[idx]) {
+      // Never use CONCEPT_PROC (partition 5) to establish Steiner proof connectivity
+      if (edge.partition === 5) continue;
+      if (edge.partition === 4 && !includeExploratory) continue;
+
+      const minW = edge.partition === 2 || edge.partition === 3 || edge.partition === 4 ? 0.035 : 0.045;
+      if (edge.weight < minW) continue;
+
+      // Require target node to be either in an anchor set, a shared PPR node, or a qualified pivot
+      const vNid = edge.toNodeId;
+      const vSgId = vSgMap.get(vNid);
+      if (!vSgId || uSgId === vSgId) continue;
+
+      const family = CSR_PARTITION_TO_FAMILY[edge.partition];
+      const meta = CSR_PARTITION_TO_EPISTEMIC[edge.partition];
+      if (!family || !meta) continue;
+
+      // EV05 consonantal check for same-script shares_root CSR edges
+      const uNode = nodesById.get(uSgId);
+      const vNode = nodesById.get(vSgId);
+      if (
+        family === 'shares_root' &&
+        uNode?.strongs &&
+        vNode?.strongs &&
+        uNode.strongs[0] === vNode.strongs[0] &&
+        uNode.script &&
+        vNode.script
+      ) {
+        const getCons = (s: string) =>
+          new Set(
+            [...String(s || '').normalize('NFD')]
+              .filter((ch) => {
+                const cp = ch.codePointAt(0) || 0;
+                return (cp >= 0x05d0 && cp <= 0x05ea) || (cp >= 0x03b1 && cp <= 0x03c9) || (cp >= 0x0391 && cp <= 0x03a9);
+              })
+              .map((c) => c.toLowerCase()),
+          );
+        const cA = getCons(uNode.script);
+        const cB = getCons(vNode.script);
+        if (cA.size > 0 && cB.size > 0 && [...cB].filter((c) => cA.has(c)).length < 2) continue;
+      }
+
+      const pairKey = [uSgId, vSgId].sort().join('<->') + `:${family}`;
+      const rawScore = Math.round(220 + Math.min(180, edge.weight * 420));
+      const existing = edgesById.get(pairKey);
+      if (existing && existing.score >= rawScore) continue;
+
+      const normWeight = Math.max(0.2, Math.min(0.95, edge.weight * 2.2));
+      const cost = Math.max(0.18, Math.round(((1.18 - normWeight) + (meta.tier - 1) * 0.18) * 1000) / 1000);
+      const partName = GRAPH_PARTITIONS[edge.partition] || 'CSR';
+
+      edgesById.set(pairKey, {
+        id: pairKey,
+        evidence_id: `v3:csr:${partName}:${uNid}:${vNid}`,
+        from_node: uSgId,
+        to_node: vSgId,
+        family,
+        predicate: meta.pred,
+        epistemic_class: meta.epistemic,
+        evidence_tier: meta.tier,
+        weight: Math.round(normWeight * 1000) / 1000,
+        cost,
+        score: rawScore,
+        title: `Typed Conductance ${partName} bridge: ${uNode?.label || uSgId} <-> ${vNode?.label || vSgId}`,
+        summary: `Verified v3 ${partName} Conductance CSR edge (w=${edge.weight.toFixed(3)}) linking ${uSgId} and ${vSgId}.`,
+        witness_refs: [uNode?.ref, vNode?.ref].filter((r): r is string => Boolean(r)),
+        original_words: [uNode, vNode]
+          .filter((n): n is SubgraphNode => Boolean(n?.strongs))
+          .map((n) => ({
+            strongs: n.strongs,
+            lemma_script: n.script || n.label,
+            transliteration: n.transliteration || '',
+            gloss: n.gloss || '',
+          })),
+        in_steiner_tree: false,
+        is_closure_edge: false,
+      });
+    }
+  }
+}
+
 // === @section:logic:find-subgraph ===
 
 export async function findConnectedSubgraph(
@@ -328,7 +654,7 @@ export async function findConnectedSubgraph(
 
   const maxHops = Math.min(3, Math.max(1, Number(request.max_hops ?? 3)));
   const maxNodes = Math.min(120, Math.max(12, Number(request.max_nodes ?? 60)));
-  const maxEdges = Math.min(400, Math.max(16, Number(request.max_edges ?? 160)));
+  const maxEdges = Math.min(400, Math.max(16, Number(request.max_edges ?? 140)));
   const includeExploratory = request.include_exploratory !== false;
   const reader = createCachingReader(rawReader, 22);
 
@@ -341,6 +667,7 @@ export async function findConnectedSubgraph(
           query: a,
           mode: 'discover',
           limit: 12,
+          skip_v3_verification: true,
           filters: {
             include_orthographic: includeExploratory,
             include_candidate_patterns: true,
@@ -360,7 +687,8 @@ export async function findConnectedSubgraph(
             query: rawAnchors.join(' ; '),
             mode: 'bridge',
             compare_targets: rawAnchors,
-            limit: 24,
+            limit: 20,
+            skip_v3_shortlist: true,
             filters: {
               include_orthographic: includeExploratory,
               include_candidate_patterns: true,
@@ -396,6 +724,7 @@ export async function findConnectedSubgraph(
 
   // 1. Register terminal anchor nodes from each anchor's resolved Strong's and explicit passages
   const anchorRecords: SubgraphDiscoveryPacket['anchors'] = [];
+  const anchorRanges: Array<{ anchorIdx: number; book: number; chapter: number; vStart: number; vEnd: number }> = [];
   for (let i = 0; i < rawAnchors.length; i++) {
     const input = rawAnchors[i];
     const res = perAnchorResults[i];
@@ -417,6 +746,15 @@ export async function findConnectedSubgraph(
         const pid = `passage:${ep.ref}`;
         termIds.add(pid);
         ensureNode({ id: pid, kind: 'passage', label: ep.ref, ref: ep.ref }, i);
+        if (ep.book && ep.chapter) {
+          anchorRanges.push({
+            anchorIdx: i,
+            book: Number(ep.book),
+            chapter: Number(ep.chapter),
+            vStart: Number(ep.verse ?? 1),
+            vEnd: Number(ep.end_verse ?? ep.verse ?? 1),
+          });
+        }
       }
     }
 
@@ -544,8 +882,22 @@ export async function findConnectedSubgraph(
         gloss: w.gloss,
       });
     }
-    for (const r of pRefs.slice(0, 3)) {
-      ensureNode({ id: `passage:${r}`, kind: 'passage', label: r, ref: r });
+    for (const p of (conn.passages || []).slice(0, 4)) {
+      const r = p?.ref;
+      if (!r || /^Verse \d+$/.test(r)) continue;
+      const pid = `passage:${r}`;
+      const matchedAnchor = anchorRanges.find(
+        (ar) => p.book === ar.book && p.chapter === ar.chapter && p.verse >= ar.vStart && (p.end_verse ?? p.verse) <= ar.vEnd,
+      );
+      if (matchedAnchor) {
+        ensureNode({ id: pid, kind: 'passage', label: r, ref: r }, matchedAnchor.anchorIdx);
+        const rec = anchorRecords[matchedAnchor.anchorIdx];
+        if (rec && !rec.terminal_node_ids.includes(pid)) {
+          rec.terminal_node_ids.push(pid);
+        }
+      } else {
+        ensureNode({ id: pid, kind: 'passage', label: r, ref: r });
+      }
     }
 
     const candidatePairs: Array<[string, string]> = [];
@@ -574,7 +926,18 @@ export async function findConnectedSubgraph(
     const rawScore = Number(conn.score ?? 100);
     const tier = (conn.evidence_tier || 3) as 1 | 2 | 3 | 4 | 5;
     const normWeight = Math.max(0.15, Math.min(1.0, rawScore / 450));
-    const cost = Math.round(((1.15 - normWeight) + (tier - 1) * 0.18) * 1000) / 1000;
+    const hasHighDfProperHub = words.some(w => {
+      const p = padStrongs(w.strongs);
+      return Boolean(p && HIGH_DF_PROPER_NAME_HUBS.has(p));
+    });
+    const specBonus = computeBridgeSpecificityBonus(
+      undefined,
+      undefined,
+      words[0]?.strongs,
+      words[1]?.strongs,
+    );
+    const hubCostAdj = hasHighDfProperHub ? 0.32 : specBonus >= 16 ? -0.08 : 0;
+    const cost = Math.round(((1.15 - normWeight) + (tier - 1) * 0.18 + hubCostAdj) * 1000) / 1000;
 
     for (let idx = 0; idx < candidatePairs.length; idx++) {
       const [u, v] = candidatePairs[idx];
@@ -589,7 +952,7 @@ export async function findConnectedSubgraph(
         to_node: v,
         family,
         predicate: pred,
-        epistemic_class: conn.epistemic_class,
+        epistemic_class: normalizeEpistemicClass(conn.epistemic_class),
         evidence_tier: tier,
         weight: Math.round(normWeight * 1000) / 1000,
         cost: Math.max(0.1, cost),
@@ -650,7 +1013,7 @@ export async function findConnectedSubgraph(
                   to_node: `lemma:${toBs}`,
                   family: 'genealogical_relation',
                   predicate: 'genealogical_relation',
-                  epistemic_class: 'direct_textual_evidence',
+                  epistemic_class: 'external_world_fact',
                   evidence_tier: 1,
                   weight: 0.92,
                   cost: 0.23,
@@ -670,6 +1033,23 @@ export async function findConnectedSubgraph(
     }
   } catch {
     // Non-fatal if motifs shard unavailable
+  }
+
+  // Typed Conductance PPR (Top-128 per anchor) + Typed CSR + rankBridgePivots augmentation
+  try {
+    if (anchorRecords.length >= 2) {
+      await augmentSubgraphWithV3PprAndCsr({
+        reader,
+        anchorRecords,
+        perAnchorResults,
+        nodesById,
+        edgesById,
+        ensureNode,
+        includeExploratory,
+      });
+    }
+  } catch {
+    // Non-fatal when v3/ assets are absent (e.g. synthetic test fixtures)
   }
 
   // Build adjacency map
@@ -725,7 +1105,7 @@ export async function findConnectedSubgraph(
         path_score: pathScore,
         node_ids: sp.nodeIds,
         edge_ids: sp.edgeIds,
-        epistemic_class: pathEdges.length === 1 ? String(pathEdges[0].epistemic_class) : 'multi_hop_research_path',
+        epistemic_class: pathEdges.length === 1 ? String(pathEdges[0].epistemic_class) : 'semantic_hypothesis',
         evidence_tier: worstTier,
         title:
           pathEdges.length === 1
@@ -861,7 +1241,7 @@ export async function findConnectedSubgraph(
         to_node: pathEdges[pathEdges.length - 1].to_node,
         evidence_id: pathEdges.map((e) => e.evidence_id).join(' -> '),
         predicate: pathEdges.length === 1 ? primaryEdge.predicate : 'steiner_bridge_path',
-        epistemic_class: pathEdges.length === 1 ? String(primaryEdge.epistemic_class) : 'multi_hop_research_path',
+        epistemic_class: pathEdges.length === 1 ? normalizeEpistemicClass(primaryEdge.epistemic_class) : 'semantic_hypothesis',
         evidence_tier: worstTier,
         witness_refs: [...new Set(pathEdges.flatMap((e) => e.witness_refs))].slice(0, 6),
         summary: pathEdges.map((e) => e.title).join(' -> '),

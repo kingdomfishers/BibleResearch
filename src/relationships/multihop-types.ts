@@ -2,6 +2,8 @@
 // @feature: relationships-r9c
 // Shared TypeScript contracts for R9C evidence-based multi-hop relationship discovery.
 
+import type { CanonicalEpistemicClass } from './epistemic-taxonomy.ts';
+
 // === @section:types:entities-and-layers ===
 export type EntityKind = 'lemma' | 'root' | 'sense';
 
@@ -11,13 +13,7 @@ export type GraphLayer =
   | 'contextual'
   | 'lxx_translation';
 
-export type EpistemicClass =
-  | 'direct_textual_evidence'
-  | 'documented_lexical_relationship'
-  | 'statistical_association'
-  | 'translation_correspondence'
-  | 'candidate_textual_evidence'
-  | 'interpretive_hypothesis';
+export type EpistemicClass = CanonicalEpistemicClass | 'candidate_textual_evidence';
 
 export type EdgeDirection = 'directed' | 'symmetric';
 export type TraversalDirection = 'forward' | 'reverse' | 'symmetric';

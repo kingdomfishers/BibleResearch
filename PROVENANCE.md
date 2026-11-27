@@ -40,3 +40,20 @@ Every imported or deterministically derived relationship and annotation in the C
 2. **Corpus & Provenance Population:** `node scripts/import-canonical-lexical-db.mjs` + `scripts/import-macula.mjs` + `scripts/import-lxx-swete.mjs`
 3. **Deterministic Lookup RPCs:** `supabase/migrations/20261105233000_canonical_lookup_rpcs.sql` & `supabase/migrations/20261106063000_septuagint_comparison_rpcs.sql`
 4. **End-to-End Validation Suite:** `node scripts/verify-canonical-lexical-db.mjs`, `node scripts/verify-openapi.mjs`, and `node scripts/verify-septuagint-layer.mjs`
+
+---
+
+## 4. BibleResearch v3 Stage S1 Provenance & Build Rules (2026-11-25)
+
+| Release Key | Upstream Repository / Edition | Pinned Commit / Version | License | Licensing Boundary Enforced |
+| :--- | :--- | :--- | :--- | :--- |
+| `openscriptorium-lxx-morph-2026-11` | `OpenScriptorium/lxx-morph` (`db/seeds/lxx_morph/*.json`, `db/seeds/mt_alignment/*`) | `c91f6b1e8fb3ba37df701e6ae31f675ace71a2b2` | CC BY 4.0 | **Strict Code & Auto-File Exclusion:** Only the `60` non-auto CC BY 4.0 seed JSON files (`59` Rahlfs 1935 books + `_null_resolutions.json`, manifest SHA-256 `366bf5f5d9fcaea9ffe3b2c55f14397e8f80c655b62f83c0fd750f808b09976a`) and `mt_alignment/{verse_pairs.jsonl, word_links.jsonl.gz, eval_300.json}` (`9f883fc6...`, `6df82d8e...`, `3b2cc515...`) are ingested via clean-room JS (`scripts/v3/ingest-lxx-morph.mjs`). All `*.auto.json` files and ISC `.rb`/`.rake` scripts are strictly excluded. Swete `CC BY-SA 4.0` data (`v1/lxx/`) is never copied into `.artifacts-r12/staging-bundle/v3/align/`. |
+| `oewn-2025-json` | OpenEnglishWordNet `2025` (`english-wordnet-2025-json.zip`) | `2025` (`7d749f6e2c39e6970e4997839dcf6e42fd281f3c2fae0171d2192bae8cfa4b51`) | CC BY 4.0 | `107,519` synsets and antonym/hypernym relations; attached strictly through Skew-Safe LLR-Margin Sense Gate (`gamma_min = 3.0` bits, `AMBIGUOUS` abstention) in `scripts/v3/build-sense-ontology.mjs`. |
+| `wikidata-r12-pilot-cc0` | `scripts/fixtures/r12-external-pilot.json` | `2026-11-18-wbgetentities-pinned` (`a4ad6620dc0fd15a7c91786a1548a277dc3ef00a13a0dc851065ab7a3f71d582`) | CC0 1.0 | `37` Wikidata concepts and `124` unique `ORIGINAL_WIKIDATA_STATEMENT` claims; tagged `epistemic_layer = 'EXTERNAL_WORLD'` and isolated from textual Strong's evidence. |
+
+### Stage S1 Reproducible Build & Gate G1 Verification
+1. `node scripts/v3/sanitize-step-lexicon.mjs` -> `.artifacts-r12/v3-build/sanitized-lexicon.json`
+2. `node scripts/v3/ingest-lxx-morph.mjs` -> `.artifacts-r12/v3-build/lxx-alignment.json` + `.artifacts-r12/staging-bundle/v3/align/{mt-lxx-00..31.bin,rahlfs-concordance.bin}`
+3. `node scripts/v3/build-sense-ontology.mjs` -> `.artifacts-r12/v3-build/sense-ontology.json`
+4. `node --test research/v3/s1-hygiene.test.mjs research/v3/s1-lxx-align.test.mjs research/v3/s1-ontology.test.mjs`
+

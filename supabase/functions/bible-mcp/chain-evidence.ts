@@ -1,13 +1,54 @@
 // Match an explicitly selected chain hop to existing evidence, without inventing edges.
 import { parsePassageString } from './bible-ref.ts';
 
+export type AxisFilter = 'lexical' | 'lxx' | 'wordplay' | 'structure' | 'concept_proc' | 'xref';
+
 export interface ChainEvidence {
   id: string;
+  expand_id?: string;
   relation: string;
   epistemic: string;
   refs: string[];
+  axes?: string[];
+  e_perp?: { bits: number; p_null?: number; register?: string };
   title?: string;
   target?: { strongs?: string; script?: string; transliteration?: string; gloss?: string };
+}
+
+/** Classify whether a candidate edge belongs to the requested progressive research axis. */
+export function matchesAxisFilter(evidence: ChainEvidence, axisFilter?: AxisFilter): boolean {
+  if (!axisFilter) return true;
+  const id = (evidence.id || '').toLowerCase();
+  const rel = (evidence.relation || '').toLowerCase();
+  const ep = (evidence.epistemic || '').toLowerCase();
+  const axes = (evidence.axes || []).map(a => a.toLowerCase());
+
+  switch (axisFilter) {
+    case 'xref':
+      return id.startsWith('r11:xref:') || id.startsWith('xref:') || rel.includes('cross_reference');
+    case 'lxx':
+      return id.startsWith('lxx') || id.startsWith('r11:lxx:') || id.startsWith('passage_lxx:') ||
+        rel.includes('lxx') || ep.includes('cross_language') || axes.some(a => a.startsWith('lxx:'));
+    case 'wordplay':
+      return id.startsWith('r13:wp:') || id.startsWith('r10:wordplay:') || id.startsWith('passage_root_wordplay:') ||
+        rel.includes('wordplay') || rel.includes('talion') || rel.includes('onomastic') ||
+        axes.some(a => a.includes('wordplay') || a.startsWith('wp:'));
+    case 'structure':
+      return id.startsWith('r13:interp:') || id.startsWith('r13:motif:') || id.startsWith('r12:scene:') ||
+        id.startsWith('v3:seq:') || id.startsWith('r10:typo:') || id.startsWith('r10:ident:') ||
+        rel.includes('sequence') || rel.includes('typolog') || rel.includes('motif') || rel.includes('chiasm') ||
+        axes.some(a => a.includes('sequence') || a.includes('typology'));
+    case 'concept_proc':
+      return id.startsWith('prop:') || id.startsWith('r12:prop:') || ep.includes('external_world') ||
+        rel.includes('property') || axes.some(a => a.startsWith('concept:') || a.startsWith('phys:'));
+    case 'lexical':
+      return id.startsWith('lex:') || id.startsWith('r11:lex:') || id.startsWith('gram:') ||
+        id.startsWith('shared_lemma') || id.startsWith('direct_in_passage:') ||
+        id.startsWith('passage_lex_bridge:') || id.startsWith('passage_root_bridge:') ||
+        id.startsWith('passage_lexeme:') || id.startsWith('rare:') || id.startsWith('first_occ:') ||
+        rel.includes('root') || rel.includes('lexical') || rel.includes('lemma') ||
+        axes.some(a => a.startsWith('lemma:'));
+  }
 }
 
 function overlaps(a: string, b: string): boolean {
@@ -35,7 +76,7 @@ export function selectChainEvidence(
   fromNode: string,
   selected: string,
 ): ChainEvidence | undefined {
-  const explicit = candidates.find(c => c.id === selected);
+  const explicit = candidates.find(c => c.id === selected || (c.expand_id && c.expand_id === selected));
   if (explicit) return explicit;
   if (overlaps(fromNode, selected)) return undefined;
 
@@ -69,6 +110,12 @@ export function selectChainEvidence(
 }
 
 export function chainEvidenceTarget(evidence: ChainEvidence, fromNode: string): string {
+  const fromIsPassage = Boolean(parsePassageString(fromNode));
+  const tStrongs = evidence.target?.strongs?.trim();
+  const isPassageToPassage = /^(r13:motif:|r12:scene:|r10:ident:|r10:typo:|r11:xref:|xref:|shared_lemma|passage_)/.test(evidence.id || '');
+  if (!fromIsPassage && tStrongs && !isPassageToPassage && padStrongsBase(tStrongs) !== padStrongsBase(fromNode)) {
+    return tStrongs;
+  }
   return evidence.refs.find(ref => !overlaps(fromNode, ref)) ||
-    evidence.target?.strongs || evidence.refs[0] || evidence.id;
+    tStrongs || evidence.refs[0] || evidence.id;
 }

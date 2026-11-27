@@ -139,4 +139,16 @@ Deterministic, reproducible import pipeline in `scripts/import-lexical-formation
 - **Noncanonical Source-Only Preservation:** `128` terminal/constituent nodes in 3 noncanonical NT verses (`MRK 16:99!1..33`, `JHN 5:4!1..27`, `ROM 16:24!1..11`) are preserved in `/v1/syntax/unmapped` and `/tables/macula_syntax_unmapped_nodes/` without fabricating canonical `public.verses` rows.
 - **License Gating Preserved:** Restricted UBS SDBH (`sdbh`, `lexdomain`, `coredomain`, `contextualdomain`) and UBS MARBLE / Louw-Nida (`domain`, `ln`) XML attributes are stripped during parsing and never exported to public static assets.
 
+## BibleResearch v3 Stage S1 Open-License Sources (2026-11-25)
+
+Stage S1 builds `.artifacts-r12/v3-build/{sanitized-lexicon,lxx-alignment,sense-ontology}.json` and `.artifacts-r12/staging-bundle/v3/align/` (`mt-lxx-00..31.bin` + `rahlfs-concordance.bin`) using strictly **CC BY 4.0 / CC0 1.0 / Public Domain** data. Legacy CC BY-SA 4.0 `lxx_swete_words` (`v1/lxx/`) is strictly isolated and excluded from `v3/align/` and `v3-build/`.
+
+| Source | Pinned Commit / Version | License | Scope & SHA-256 Digest |
+| :--- | :--- | :--- | :--- |
+| [OpenScriptorium/lxx-morph](https://github.com/OpenScriptorium/lxx-morph) | `c91f6b1e8fb3ba37df701e6ae31f675ace71a2b2` | CC BY 4.0 | Ingests ONLY the `60` non-auto JSON files under `db/seeds/lxx_morph/*.json` (`59` Rahlfs 1935 books + `_null_resolutions.json`, manifest SHA-256 `366bf5f5d9fcaea9ffe3b2c55f14397e8f80c655b62f83c0fd750f808b09976a`; `*.auto.json` and ISC `.rb`/`.rake` pipeline code strictly excluded) plus `db/seeds/mt_alignment/`: `verse_pairs.jsonl` (`9f883fc6645547f152c9b963666717d45e589836a5365b0ed94b423d7bfe227a`), `word_links.jsonl.gz` (`6df82d8ef8105be7893e4c95e159709382e4b9884e6c74512249a3674021f7a8`), and `eval_300.json` (`3b2cc515f2c16c878c69cd8ff93a8e9c3bc8034b2efa689d0ab8a5372937bb9c`). |
+| [OpenEnglishWordNet (OEWN 2025)](https://en-word.net/downloads) | `2025` (`english-wordnet-2025-json.zip`) | CC BY 4.0 (Princeton WordNet attribution) | `107,519` synsets and lexical relations unpacked locally under `.artifacts-r12/external-cache/oewn-2025/`; archive SHA-256 `7d749f6e2c39e6970e4997839dcf6e42fd281f3c2fae0171d2192bae8cfa4b51`. |
+| Wikidata (`scripts/fixtures/r12-external-pilot.json`) | `2026-11-18-wbgetentities-pinned` | CC0 1.0 | `37` curated physical concepts and `124` unique `wbgetentities` statements (`wd:P31`, `P279`, `P361`, `P527`, `P186`, `P1552`); extract SHA-256 `a4ad6620dc0fd15a7c91786a1548a277dc3ef00a13a0dc851065ab7a3f71d582`. |
+| [STEPBible/STEPBible-Data](https://github.com/STEPBible/STEPBible-Data) | `be4191f0082aeedddb0eff0c02c966292b2bd641` | CC BY 4.0 | Sanitized via `scripts/v3/sanitize-step-lexicon.mjs` (`19,566` profiles; grammatical prefix markers purged, proper/construct variants segregated into `B#prop`, inflectional states collapsed, genuine polysemes retained, niqqud-aware lookup built). |
+
+
 

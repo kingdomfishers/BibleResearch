@@ -71,6 +71,19 @@ const CORPUS_RO_OPS = new Set<string>([
   'discover_biblical_connections_v2',
   'get_connection_evidence_v1',
   'expand_biblical_connection_v1',
+  'discover_patterns_v1',
+  'compare_patterns_v1',
+  'trace_evidence_v1',
+  'discover_subgraph_v1',
+  'get_literary_source_v1',
+  'analyze_literary_structure_v1',
+  'lxx_concordance_v3',
+  'tri_textual_diff_v3',
+  'clause_role_query_v3',
+  'sequence_parallels_v3',
+  'wordplay_scan_v3',
+  'expand_clue_v3',
+  'set_combine_v3',
 ]);
 
 export function isStaticCorpusRpc(name: string): boolean {

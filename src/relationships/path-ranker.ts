@@ -821,7 +821,7 @@ export function mapLayerToR12Epistemic(
   if (
     step.quality === 'candidate' ||
     step.quality === 'candidate_relation' ||
-    step.epistemic_class === 'interpretive_hypothesis' ||
+    step.epistemic_class === 'semantic_hypothesis' ||
     step.predicate === 'SHARES_STRUCTURAL_PATTERN' ||
     step.predicate === 'SHARES_ORTHOGRAPHIC_FORM'
   ) {

@@ -19,7 +19,10 @@ export type WordplayOverlapKind =
   | 'metathesis'
   | 'edit_distance_1'
   | 'phonetic_similarity'
-  | 'consonantal_subsequence_only';
+  | 'consonantal_subsequence_only'
+  | 'syntactic_talion'
+  | 'clause_polyptoton'
+  | 'onomastic_valence_play';
 
 export interface NormalizedOriginalForm {
   script: string;
@@ -91,8 +94,105 @@ const GREEK_PHONETIC_CLASS: Readonly<Record<string, string>> = {
   'α': 'V', 'ε': 'V', 'η': 'V', 'ι': 'V', 'ο': 'V', 'υ': 'V', 'ω': 'V',
 };
 
-const HEBREW_PREFIXES = new Set(['ה', 'ו', 'מ', 'ל', 'ב', 'כ', 'ש', 'ת', 'י', 'נ']);
-const HEBREW_SUFFIXES = ['ים', 'ות', 'ת', 'ה', 'י', 'נ', 'כ', 'ו'];
+const HEBREW_PROCLITICS = new Set(['ו', 'ב', 'כ', 'ל', 'מ', 'ה', 'ש']);
+const HEBREW_MATRES = new Set(['ו', 'י']);
+const HEBREW_SUFFIXES = ['ים', 'ות', 'ה', 'י', 'נ', 'כ', 'ו', 'ת'];
+
+const GREEK_VERB_ENDINGS = [
+  'εσθαι', 'ασθαι', 'ησθαι', 'ομεθα', 'εσθε', 'ονται', 'ωνται', 'ουσιν', 'ουσι',
+  'ασιν', 'ησαν', 'θησαν', 'θησ', 'θην', 'θη', 'σαν', 'σα', 'ειν', 'εναι',
+  'εισ', 'ει', 'ωμεν', 'ητε', 'ετε', 'ομεν', 'οντο', 'ατο', 'μαι', 'σαι',
+  'ται', 'νται', 'ατεω', 'ιζω', 'αζω', 'ευω', 'εω', 'αω', 'οω', 'μι', 'σι',
+  'ω', 'ησ', 'η', 'ον', 'εσ', 'ε',
+];
+
+const GREEK_NOMINAL_CASE_ENDINGS = [
+  'οισιν', 'αισιν', 'ουσιν', 'ουμεν', 'οισ', 'αισ', 'ουσ', 'ων', 'ασ', 'ησ',
+  'ωσ', 'οσ', 'ον', 'ου', 'α', 'η', 'ω', 'ι', 'σ', 'ν',
+];
+
+export function stripGreekInflectionalStem(
+  cleanGreek: string,
+  grammarCode = '',
+  posClass = '',
+): string {
+  let s = cleanGreek;
+  if (s.length <= 3) return s;
+  const gc = grammarCode.toUpperCase();
+  const pc = posClass.toLowerCase();
+  const isVerb = pc === 'verb' || /^V-/.test(gc);
+
+  if (isVerb) {
+    for (const suf of GREEK_VERB_ENDINGS) {
+      if (s.length - suf.length >= 3 && s.endsWith(suf)) {
+        s = s.slice(0, s.length - suf.length);
+        break;
+      }
+    }
+    return s;
+  }
+
+  if (!pc && !gc) {
+    // Unknown POS: check multi-char Greek verb endings (incl. contract -εω/-αω/-οω) before nominal -ω/-ν/-σ
+    for (const suf of GREEK_VERB_ENDINGS) {
+      if (suf.length >= 2 && s.length - suf.length >= 3 && s.endsWith(suf)) {
+        s = s.slice(0, s.length - suf.length);
+        return s;
+      }
+    }
+  }
+
+  for (const suf of GREEK_NOMINAL_CASE_ENDINGS) {
+    if (s.length - suf.length >= 3 && s.endsWith(suf)) {
+      s = s.slice(0, s.length - suf.length);
+      break;
+    }
+  }
+  // Strip trailing derivational -ι- (from -ιος/-ιον/-ια/-ιῳ) when stem >= 4 (e.g., αιωνι -> αιων, εκουσι -> εκουσ, κυρι -> κυρ)
+  if (s.length >= 4 && s.endsWith('ι')) {
+    s = s.slice(0, -1);
+  }
+  if (s.length >= 5 && (s.endsWith('μω') || s.endsWith('μο'))) {
+    s = s.slice(0, -2);
+  }
+  return s;
+}
+
+export function stripHebrewProcliticsWithLemma(surfaceCons: string, lemmaCons?: string): string {
+  let s = surfaceCons;
+  if (!s) return s;
+  if (!lemmaCons) return s;
+  let stripped = 0;
+  while (s.length > lemmaCons.length && stripped < 2 && HEBREW_PROCLITICS.has(s[0])) {
+    if (lemmaCons.startsWith(s[0]) && s.length <= lemmaCons.length + 1) break;
+    // Strip proclitic only when absent from lemmaScript start (or surface carries extra prefix before lemma)
+    if (!lemmaCons.startsWith(s[0]) || s.slice(1).startsWith(lemmaCons.slice(0, Math.min(2, lemmaCons.length)))) {
+      s = s.slice(1);
+      stripped++;
+    } else {
+      break;
+    }
+  }
+  return s;
+}
+
+export function countHebrewNonMaterConsonants(cons: string): number {
+  if (!cons) return 0;
+  let count = 0;
+  for (let i = 0; i < cons.length; i++) {
+    const ch = cons[i];
+    if (HEBREW_MATRES.has(ch)) {
+      // Initial waw/yod radical (e.g. ילד, ירד, ידע, ודע) is consonantal
+      if (i === 0 && cons.length >= 3) count++;
+      continue;
+    }
+    if (i === cons.length - 1 && (ch === 'ה' || ch === 'א') && cons.length >= 3) {
+      continue;
+    }
+    count++;
+  }
+  return count;
+}
 
 export function detectLanguage(script: string, strongsHint?: string): 'hbo' | 'grc' {
   if (strongsHint && /^G/i.test(strongsHint.trim())) return 'grc';
@@ -145,16 +245,20 @@ function collapseMatresHebrew(cons: string): string {
   return out + last;
 }
 
-function stripOrdinaryHebrewAffixes(cons: string): string {
+function stripOrdinaryHebrewAffixes(cons: string, lemmaCons?: string): string {
   let s = cons;
   for (const suf of HEBREW_SUFFIXES) {
-    if (s.length - suf.length >= 3 && s.endsWith(suf)) {
+    const minRemain = suf.length >= 2 ? 2 : 3;
+    if (s.length - suf.length >= minRemain && s.endsWith(suf)) {
       s = s.slice(0, s.length - suf.length);
       break;
     }
   }
-  if (s.length >= 4 && HEBREW_PREFIXES.has(s[0])) {
-    s = s.slice(1);
+  // Lemma-guarded proclitic stripping: never strip leading מ/ה/ש/etc. if present in lemmaScript
+  if (s.length >= 4 && (!lemmaCons || !lemmaCons.startsWith(s[0]))) {
+    if (lemmaCons ? HEBREW_PROCLITICS.has(s[0]) : ['ו', 'ב', 'כ', 'ל'].includes(s[0])) {
+      s = s.slice(1);
+    }
   }
   return s;
 }
@@ -173,21 +277,30 @@ function buildNgrams(text: string, size: number): string[] {
   return out;
 }
 
-export function normalizeOriginalForm(script: string, strongsHint?: string): NormalizedOriginalForm {
+export function normalizeOriginalForm(
+  script: string,
+  strongsHint?: string,
+  grammarCode?: string,
+  posClass?: string,
+  lemmaScript?: string,
+): NormalizedOriginalForm {
   const language = detectLanguage(script, strongsHint);
   // Split multi-form comma/semicolon dictionary headwords (e.g., H0894 "בָּבֶ֫ל, בָּבֶל")
   // so repeated lexical entries do not concatenate into artificial double-length skeletons.
   const primaryScript = String(script || '').split(/[,;/]/)[0]?.trim() || String(script || '');
+  const cleanLemma =
+    lemmaScript && !lemmaScript.startsWith('[')
+      ? String(lemmaScript).split(/[,;/]/)[0]?.trim() || ''
+      : '';
   if (language === 'grc') {
     const clean = stripGreekLetters(primaryScript);
+    const stem = stripGreekInflectionalStem(clean, grammarCode, posClass);
     let phon = '';
-    for (const ch of clean) {
+    for (const ch of stem) {
       const cls = GREEK_PHONETIC_CLASS[ch] || ch;
       if (cls === 'V' && phon.endsWith('V')) continue;
       phon += cls;
     }
-    const strippedAffixStem = clean.replace(/(οσ|ον|ησ|ω|ειν|εσθαι|μαι)$/, '');
-    const stem = strippedAffixStem.length >= 3 ? strippedAffixStem : clean;
     return {
       script: primaryScript,
       language,
@@ -196,15 +309,18 @@ export function normalizeOriginalForm(script: string, strongsHint?: string): Nor
       skeletonNoMatres: stem,
       strippedAffixStem: stem,
       phoneticClass: phon.replace(/V/g, '') || phon,
-      ngrams2: buildNgrams(clean, 2),
-      ngrams3: buildNgrams(clean, 3),
+      ngrams2: buildNgrams(stem, 2),
+      ngrams3: buildNgrams(stem, 3),
     };
   }
 
-  const cons = stripHebrewConsonants(primaryScript, false);
-  const consDot = stripHebrewConsonants(primaryScript, true);
+  const rawCons = stripHebrewConsonants(primaryScript, false);
+  const rawConsDot = stripHebrewConsonants(primaryScript, true);
+  const lemmaCons = cleanLemma ? stripHebrewConsonants(cleanLemma, false) : undefined;
+  const cons = lemmaCons ? stripHebrewProcliticsWithLemma(rawCons, lemmaCons) : rawCons;
+  const consDot = lemmaCons ? stripHebrewProcliticsWithLemma(rawConsDot, lemmaCons) : rawConsDot;
   const noMatres = collapseMatresHebrew(cons);
-  const stripped = stripOrdinaryHebrewAffixes(noMatres.length >= 3 ? noMatres : cons);
+  const stripped = stripOrdinaryHebrewAffixes(cons, lemmaCons ?? cons);
   let phon = '';
   for (const ch of noMatres) {
     phon += HEBREW_PHONETIC_CLASS[ch] || ch;
@@ -313,22 +429,46 @@ export function compareOriginalForms(
     formal_score: 0,
   };
   if (a.language !== b.language || !a.consonantal || !b.consonantal) return empty;
-  const cA = a.consonantal;
-  const cB = b.consonantal;
+  const isGrc = a.language === 'grc';
+  // For Greek, compare POS-stripped inflectional stems so suffixes (-μος/-ιος/-ρον/-ος/-ον/-οις) never create false overlaps.
+  const cA = isGrc ? (a.strippedAffixStem || a.consonantal) : a.consonantal;
+  const cB = isGrc ? (b.strippedAffixStem || b.consonantal) : b.consonantal;
   if (cA.length < 2 || cB.length < 2) return empty;
 
   const minLen = Math.min(cA.length, cB.length);
   const maxLen = Math.max(cA.length, cB.length);
   const lcs = longestCommonSubstring(cA, cB);
-  const noMatresLcs = longestCommonSubstring(a.skeletonNoMatres, b.skeletonNoMatres);
-  const bestLcs = noMatresLcs.length > lcs.length ? noMatresLcs : lcs;
+  const noMatresLcs = isGrc ? lcs : longestCommonSubstring(a.skeletonNoMatres, b.skeletonNoMatres);
+  const stemLcs = isGrc ? lcs : longestCommonSubstring(a.strippedAffixStem, b.strippedAffixStem);
+  let bestLcs = noMatresLcs.length > lcs.length ? noMatresLcs : lcs;
+  if (stemLcs.length > bestLcs.length) bestLcs = stemLcs;
 
   const editDist = weightedConsonantalDistance(cA, cB, a.language);
-  const noMatresDist = weightedConsonantalDistance(a.skeletonNoMatres, b.skeletonNoMatres, a.language);
+  const noMatresDist = isGrc ? editDist : weightedConsonantalDistance(a.skeletonNoMatres, b.skeletonNoMatres, a.language);
   const bestEdit = Math.min(editDist, noMatresDist);
 
+  // Detect 3-char consonantal frame when single medial consonant differs (e.g., צדקה <-> צעקה)
+  if (!isGrc && bestLcs.length === 2 && minLen >= 4 && editDist <= 1.0 && cA[0] === cB[0] && cA.slice(-2) === cB.slice(-2)) {
+    bestLcs = cA[0] + cA.slice(-2);
+  }
+
+  const hasStrongHebrewRoot = (cons: string) => /[^אהוי]/.test(cons);
   const phonDist = weightedConsonantalDistance(a.phoneticClass, b.phoneticClass, a.language);
-  const metathesis = isConsonantalMetathesis(cA, cB) || isConsonantalMetathesis(a.skeletonNoMatres, b.skeletonNoMatres);
+  const metathesis = isGrc
+    ? cA.length >= 3 && isConsonantalMetathesis(cA, cB)
+    : hasStrongHebrewRoot(cA) &&
+      hasStrongHebrewRoot(cB) &&
+      ((
+        a.strippedAffixStem.length >= 3 &&
+        b.strippedAffixStem.length >= 3 &&
+        isConsonantalMetathesis(a.strippedAffixStem, b.strippedAffixStem)
+      ) || (
+        !cA.endsWith('ות') && !cB.endsWith('ות') &&
+        !cA.endsWith('ים') && !cB.endsWith('ים') &&
+        countHebrewNonMaterConsonants(cA) >= 3 &&
+        countHebrewNonMaterConsonants(cB) >= 3 &&
+        isConsonantalMetathesis(cA, cB)
+      ));
 
   // IDF-weighted shared n-gram strength (caps common 2-consonant substrings while boosting distinctive stems)
   let ngramScore = 0;
@@ -343,10 +483,10 @@ export function compareOriginalForms(
   let overlapKind: WordplayOverlapKind | null = null;
   let baseFormal = 0;
 
-  if (cA === cB) {
+  if (cA === cB && (!isGrc || cA.length >= 3)) {
     overlapKind = 'consonantal_exact';
     baseFormal = 0.96;
-  } else if (a.skeletonNoMatres === b.skeletonNoMatres && a.skeletonNoMatres.length >= 2) {
+  } else if (!isGrc && a.skeletonNoMatres === b.skeletonNoMatres && a.skeletonNoMatres.length >= 2) {
     overlapKind = 'consonantal_exact';
     baseFormal = 0.9;
   } else if (metathesis) {
@@ -355,19 +495,28 @@ export function compareOriginalForms(
   } else if (a.strippedAffixStem === b.strippedAffixStem && a.strippedAffixStem.length >= 3) {
     overlapKind = 'prefix_suffix_overlap';
     baseFormal = 0.84;
-  } else if ((cA.includes(cB) || cB.includes(cA)) && minLen >= 2 && maxLen - minLen <= 2) {
+  } else if (
+    (cA.includes(cB) || cB.includes(cA)) &&
+    (isGrc ? minLen >= 3 : minLen >= 2) &&
+    maxLen - minLen <= 2
+  ) {
     overlapKind = minLen >= 3 ? 'prefix_suffix_overlap' : 'shared_consonantal_substring';
     baseFormal = minLen >= 3 ? 0.8 : 0.72;
-  } else if (bestLcs.length >= 3 || (bestLcs.length === 2 && minLen <= 3 && maxLen <= 4 && bestEdit <= 1.5)) {
+  } else if (
+    (isGrc || (hasStrongHebrewRoot(cA) && hasStrongHebrewRoot(cB))) &&
+    (bestLcs.length >= 3 ||
+      (!isGrc && bestLcs.length === 2 && minLen <= 3 && maxLen <= 4 && bestEdit <= 1.5))
+  ) {
     overlapKind = bestLcs.length >= 3 ? 'shared_consonantal_substring' : 'edit_distance_1';
     baseFormal = bestLcs.length >= 3 ? 0.68 : 0.56;
-  } else if (bestEdit <= 1.0 && minLen >= 3) {
+  } else if ((isGrc || (hasStrongHebrewRoot(cA) && hasStrongHebrewRoot(cB))) && bestEdit <= 1.0 && minLen >= (isGrc ? 4 : 3)) {
     overlapKind = 'edit_distance_1';
     baseFormal = 0.64;
   } else if (
     phonDist <= 0.6 &&
     Math.min(a.phoneticClass.length, b.phoneticClass.length) >= 3 &&
-    Math.abs(a.phoneticClass.length - b.phoneticClass.length) <= 1
+    Math.abs(a.phoneticClass.length - b.phoneticClass.length) <= 1 &&
+    (isGrc ? bestLcs.length >= 3 : countHebrewNonMaterConsonants(bestLcs) >= 2)
   ) {
     overlapKind = 'phonetic_similarity';
     baseFormal = 0.52;
@@ -405,20 +554,35 @@ export function detectWordplayContextCues(
   // Strictly require textual/exegetical wordplay or naming markers rather than bare conjunctions/prepositions
   // like H4480 (min) or H3588 (ki) alone, which cause coincidental same-verse promotion (e.g., Lev 16:14, Isa 29:19).
   if (language === 'hbo') {
-    if (allStrongs.has('H4100') && allStrongs.has('H7200') && /\bwhat do you see\b/.test(combinedEn)) {
+    const hasInterrogativeSee =
+      (allStrongs.has('H4100') && allStrongs.has('H7200')) ||
+      (/\bwhat do you see\b/.test(combinedEn) && allStrongs.has('H7200'));
+    if (hasInterrogativeSee) {
+      cues.add('prophetic_vision_qa');
+    }
+    const hasPropheticEcho =
+      allStrongs.has('H7200') &&
+      allStrongs.has('H559') &&
+      allStrongs.has('H3068') &&
+      (allStrongs.has('H3588') || allStrongs.has('H3541') || allStrongs.has('H4100'));
+    if (hasPropheticEcho) {
       cues.add('prophetic_vision_qa');
     }
     const hasCausalNaming =
       allStrongs.has('H7121') &&
       (allStrongs.has('H8034') || /\bcalled (?:its|his|her) name\b|\bnamed (?:him|her|it)\b/.test(combinedEn)) &&
-      (allStrongs.has('H3588') || allStrongs.has('H3651') || allStrongs.has('H0559') || /\bbecause\b|\btherefore\b|\bsaying\b/.test(combinedEn));
+      (allStrongs.has('H3588') || allStrongs.has('H3651') || allStrongs.has('H0559') || allStrongs.has('H559') || /\bbecause\b|\btherefore\b|\bsaying\b/.test(combinedEn));
     if (hasCausalNaming) {
       cues.add('naming_etiological_formula');
     }
     const hasCreationFormation =
       (allStrongs.has('H3335') || allStrongs.has('H1129') || allStrongs.has('H3947')) &&
       allStrongs.has('H4480') &&
-      /\b(?:formed man|dust (?:of|from) the ground|taken out of|built)\b/.test(combinedEn);
+      (/\b(?:formed man|dust (?:of|from) the ground|taken out of|built)\b/.test(combinedEn) ||
+        allStrongs.has('H0120') ||
+        allStrongs.has('H120') ||
+        allStrongs.has('H0127') ||
+        allStrongs.has('H127'));
     if (hasCreationFormation) {
       cues.add('creation_formation_cue');
     }
@@ -426,7 +590,11 @@ export function detectWordplayContextCues(
     if (allStrongs.has('G3177') || (allStrongs.has('G3004') && /\bwhich is(?:,| )?\s*(?:by )?interpretation\b|\bthat is to say\b/.test(combinedEn))) {
       cues.add('greek_interpretation_formula');
     }
-    if ((allStrongs.has('G3686') || allStrongs.has('G2564')) && allStrongs.has('G3754')) {
+    if (
+      (allStrongs.has('G3686') || allStrongs.has('G2564')) &&
+      allStrongs.has('G3754') &&
+      allStrongs.has('G3177')
+    ) {
       cues.add('naming_formula');
     }
     if (allStrongs.has('G0499') || (allStrongs.has('G1510') && /\b(?:which (?:is|are)|meaning)\b/.test(combinedEn))) {
@@ -458,9 +626,20 @@ export interface CorpusWordplayOptions {
   maxVerseFreqForPureOrth?: number;
 }
 
+function isLikelyProperNameProfile(p: CorpusWordplayInputProfile, norm: NormalizedOriginalForm): boolean {
+  const gl = String(p.gloss || '');
+  if (!gl) return false;
+  // Proper nouns in STEP/OSHB glosses start with a capitalized personal/place name and lack lowercase verb/noun lead-ins
+  const firstGloss = gl.split(/[,;/]/)[0].trim();
+  const isCapName = /^[A-Z][a-z'’\-]{2,}$/.test(firstGloss) && !/^(The|And|For|But|Not|In|On|At|To|Of|A|An|Is|Are|Be|Or|If|As|My|Thy|His|Her|Our)$/.test(firstGloss);
+  return isCapName && !norm.language.startsWith('g');
+}
+
 function classifyPairEdge(params: {
   src: CorpusWordplayInputProfile;
   tgt: CorpusWordplayInputProfile;
+  normSrc: NormalizedOriginalForm;
+  normTgt: NormalizedOriginalForm;
   metrics: WordplayPairMetrics;
   srcConsLen: number;
   tgtConsLen: number;
@@ -469,15 +648,30 @@ function classifyPairEdge(params: {
   sameVerseVids: number[];
   adjacentVerseVids: number[];
   cueKinds: string[];
+  hasOracleBodyVisionCooccurrence: boolean;
 }): WordplayCandidateEdge | null {
-  const { src, tgt, metrics, srcConsLen, tgtConsLen, sharedRootKey, isFormationDerived, sameVerseVids, adjacentVerseVids, cueKinds } = params;
+  const {
+    src,
+    tgt,
+    normSrc,
+    normTgt,
+    metrics,
+    srcConsLen,
+    tgtConsLen,
+    sharedRootKey,
+    isFormationDerived,
+    sameVerseVids,
+    adjacentVerseVids,
+    cueKinds,
+    hasOracleBodyVisionCooccurrence,
+  } = params;
   // Require real shared consonantal overlap (>= 2) before asserting a common root/derivation;
   // prevents unshared alternative proper names (e.g. Babylon H0894 vs Pekod H6489) from claiming proven_common_root.
   const hasSharedStemLetters = metrics.comparable && metrics.shared_consonants.length >= 2;
   const provenRoot = Boolean((sharedRootKey || isFormationDerived) && hasSharedStemLetters);
   const proxSame = sameVerseVids.length;
   const proxAdj = adjacentVerseVids.length;
-  const hasCue = cueKinds.length > 0 && (proxSame > 0 || proxAdj > 0);
+  const rawHasCue = cueKinds.length > 0 && (proxSame > 0 || proxAdj > 0);
   const witnessVids = [...new Set([...sameVerseVids, ...adjacentVerseVids])].slice(0, 6);
 
   if (!metrics.comparable && !provenRoot) return null;
@@ -496,23 +690,38 @@ function classifyPairEdge(params: {
   let overlapKind: WordplayOverlapKind = metrics.overlap_kind;
   let epistemic: WordplayCandidateEdge['epistemic_class'];
 
-  // Strip trailing weak mater-lectionis He ('ה') when evaluating 2-letter shared consonants against >= 4-letter lemmas
-  // (e.g., הָרָה H2029 [הרה] vs אוּרִיָּה H0223 [אוריה] share only 'רה', which is 1 root consonant 'ר' + final mater '-ה').
-  const maxConsLen = Math.max(srcConsLen, tgtConsLen);
-  const nonMaterSharedLen =
-    src.bs.startsWith('H') &&
-    metrics.shared_consonants.length === 2 &&
-    metrics.shared_consonants.endsWith('ה') &&
-    maxConsLen >= 4
-      ? 1
-      : metrics.shared_consonants.length;
+  // Strip weak mater-lectionis letters when counting shared consonants in Hebrew
+  const nonMaterSharedLen = src.bs.startsWith('H')
+    ? countHebrewNonMaterConsonants(metrics.shared_consonants)
+    : metrics.shared_consonants.length;
+
+  const exactNoMaterSkeleton =
+    Boolean(normSrc.skeletonNoMatres && normTgt.skeletonNoMatres) &&
+    normSrc.skeletonNoMatres === normTgt.skeletonNoMatres &&
+    normSrc.skeletonNoMatres.length >= 2;
+
+  const hasExplicitNamingOrCreationCue = cueKinds.some(
+    c =>
+      c === 'naming_etiological_formula' ||
+      c === 'creation_formation_cue' ||
+      c === 'greek_interpretation_formula' ||
+      c === 'naming_formula',
+  );
+  // Prophetic vision Q&A cues ("what do you see?") bind only content/vision pairs — never a vocative speaker/prophet name paired with a 2-consonant common noun like עָמוֹס <-> עַם.
+  const visionCueBound =
+    cueKinds.includes('prophetic_vision_qa') &&
+    hasOracleBodyVisionCooccurrence &&
+    (!isLikelyProperNameProfile(src, normSrc) && !isLikelyProperNameProfile(tgt, normTgt));
+
+  const pairBoundCue = hasExplicitNamingOrCreationCue || visionCueBound;
+  const hasCue = rawHasCue && pairBoundCue;
 
   const cueOverlapQualified =
     hasCue &&
     (proxSame > 0 || proxAdj > 0) &&
     metrics.formal_score >= 0.56 &&
     (nonMaterSharedLen >= 3 ||
-      (nonMaterSharedLen === 2 && minConsLen <= 3 && maxConsLen <= 4 && metrics.edit_distance <= 1.2));
+      (nonMaterSharedLen === 2 && (exactNoMaterSkeleton || provenRoot || hasExplicitNamingOrCreationCue)));
 
   const exactHomophonePun =
     (proxSame > 0 || proxAdj > 0) &&
@@ -526,7 +735,7 @@ function classifyPairEdge(params: {
     epistemic = 'direct_textual_evidence';
   } else if (metrics.comparable && (proxSame > 0 || proxAdj > 0) && metrics.formal_score >= 0.52) {
     evidenceType = 'proximate_wordplay_candidate';
-    epistemic = 'candidate_literary_pattern';
+    epistemic = nonMaterSharedLen >= 3 ? 'candidate_literary_pattern' : 'orthographic_similarity_only';
   } else if (isFormationDerived && provenRoot) {
     evidenceType = 'morphological_derivation';
     overlapKind = 'shared_root';
@@ -535,12 +744,18 @@ function classifyPairEdge(params: {
     evidenceType = 'documented_root_family';
     overlapKind = 'shared_root';
     epistemic = 'documented_lexical_relationship';
-  } else if (metrics.overlap_kind === 'phonetic_similarity') {
-    evidenceType = 'phonetic_similarity';
-    epistemic = 'orthographic_similarity_only';
   } else {
-    evidenceType = 'shared_consonantal_pattern';
-    epistemic = 'orthographic_similarity_only';
+    // Pure consonantal/phonetic edges (without proximity or documented root) require >= 3 shared non-mater consonants or >= 3-char metathesis
+    if (nonMaterSharedLen < 3 && metrics.overlap_kind !== 'metathesis') {
+      return null;
+    }
+    if (metrics.overlap_kind === 'phonetic_similarity') {
+      evidenceType = 'phonetic_similarity';
+      epistemic = 'orthographic_similarity_only';
+    } else {
+      evidenceType = 'shared_consonantal_pattern';
+      epistemic = 'orthographic_similarity_only';
+    }
   }
 
   const rarityFactor = 1 / Math.log2(4 + Math.min(src.total_verses, tgt.total_verses) * 0.25);
@@ -576,6 +791,36 @@ function classifyPairEdge(params: {
       ? 'Documented in STEP/OSHB lexical root or formation records; shared derivation still does not guarantee identical contextual meaning.'
       : ETYMOLOGY_DISCLAIMER,
   };
+}
+
+/** Re-validate whether a serialized corpus wordplay edge qualifies as attested_textual_wordplay. */
+export function isVerifiedAttestedWordplayEdge(
+  edge: any,
+  srcProfile?: { bs?: string; gl?: string; gloss?: string; script?: string; sc?: string } | null,
+  tgtProfile?: { bs?: string; gl?: string; gloss?: string; script?: string; sc?: string } | null,
+): boolean {
+  if (!edge || String(edge.evidence_type || '') !== 'attested_textual_wordplay') return false;
+  if (!edge.has_explicit_cue && Number(edge.proximity_same_verse || 0) === 0 && Number(edge.proximity_adjacent_verse || 0) === 0) {
+    return false;
+  }
+  const srcBs = canonicalStrongsKey(edge.source_bs || srcProfile?.bs || '');
+  const shared = String(edge.shared_consonants || '');
+  const nonMaterShared = srcBs.startsWith('H') ? countHebrewNonMaterConsonants(shared) : shared.length;
+  if (nonMaterShared >= 3) return true;
+  if (nonMaterShared < 2) return false;
+  // For 2-consonant Hebrew pairs (e.g. קַיִץ H7019 <-> קֵץ H7093), require exact consonant-skeleton identity,
+  // proven root, or explicit naming formula — rejecting proper-name substring accidents like עָמוֹס (עמס) <-> עַם (עם).
+  if (edge.proven_common_root) return true;
+  const cues: string[] = Array.isArray(edge.cue_kinds) ? edge.cue_kinds : [];
+  if (cues.some(c => c === 'naming_etiological_formula' || c === 'creation_formation_cue' || c === 'naming_formula')) {
+    return true;
+  }
+  const nfA = normalizeOriginalForm(String(edge.source_script || srcProfile?.sc || srcProfile?.script || ''), srcBs);
+  const nfB = normalizeOriginalForm(String(edge.target_script || tgtProfile?.sc || tgtProfile?.script || ''), String(edge.target_bs || tgtProfile?.bs || ''));
+  if (nfA.skeletonNoMatres && nfB.skeletonNoMatres && nfA.skeletonNoMatres === nfB.skeletonNoMatres) {
+    return true;
+  }
+  return false;
 }
 
 const WORDPLAY_STOP_STRONGS = new Set([
@@ -791,14 +1036,31 @@ export function buildCorpusWordplayIndex(
     }
 
     const cueSet = new Set<string>();
+    let hasOracleBodyVisionCooccurrence = false;
     if (verseLookup) {
       // Only inspect cues in the actual witness verses where both lemmas co-occur (same verse or adjacent pair),
-      // never expanding ±1 verse beyond an adjacent pair.
+      // never expanding +-1 verse beyond an adjacent pair.
       const witnessCheckVids = [...new Set([...meta.sameVids.slice(0, 3), ...meta.adjVids.slice(0, 4)])];
       const win: VerseWordplayContextInput[] = [];
       for (const vid of witnessCheckVids) {
         const vl = verseLookup.get(vid);
-        if (vl) win.push(vl);
+        if (vl) {
+          win.push(vl);
+          const list = vl.strongsList.map(s => s.toUpperCase());
+          const idxSee = list.findIndex(s => s === 'H7200' || s === 'H4100');
+          const idxA = list.lastIndexOf(pA.bs);
+          const idxB = list.lastIndexOf(pB.bs);
+          // Vision object and oracle interpretation follow the "what do you see?" question (or span adjacent verses)
+          if (idxA >= 0 && idxB >= 0) {
+            if (idxSee < 0 || (idxA > idxSee && idxB > idxSee)) {
+              hasOracleBodyVisionCooccurrence = true;
+            }
+          } else if (idxSee >= 0 && ((idxA > idxSee && idxB < 0) || (idxB > idxSee && idxA < 0))) {
+            // Pair spans adjacent verses where the seen vision object sits after "what do you see?" in verse i
+            // and the interpretation word sits in verse i+1
+            hasOracleBodyVisionCooccurrence = true;
+          }
+        }
       }
       if (win.length > 0) {
         for (const cue of detectWordplayContextCues(win, nfA.language)) cueSet.add(cue);
@@ -809,6 +1071,8 @@ export function buildCorpusWordplayIndex(
     const forward = classifyPairEdge({
       src: pA,
       tgt: pB,
+      normSrc: nfA,
+      normTgt: nfB,
       metrics,
       srcConsLen: nfA.consonantal.length,
       tgtConsLen: nfB.consonantal.length,
@@ -817,6 +1081,7 @@ export function buildCorpusWordplayIndex(
       sameVerseVids: meta.sameVids,
       adjacentVerseVids: meta.adjVids,
       cueKinds,
+      hasOracleBodyVisionCooccurrence,
     });
     if (forward) {
       pushDirected(pA.bs, forward);
@@ -843,4 +1108,666 @@ export function buildCorpusWordplayIndex(
   }
 
   return edgesByBs;
+}
+
+export function canonicalStrongsKey(raw: string): string {
+  const s = String(raw || '').trim().toUpperCase();
+  const m = /^([HG])0*(\d+)([A-Z]?)$/.exec(s);
+  return m ? `${m[1]}${m[2]}${m[3]}` : s;
+}
+
+export interface WordplayTokenInput {
+  id: string;
+  verseId: number;
+  book?: number;
+  ref: string;
+  index: number;
+  surfaceForm: string;
+  transliteration?: string;
+  gloss?: string;
+  strongs: string;
+  lemmaKey?: string;
+  lemmaScript?: string;
+  grammarCode?: string;
+  posClass?: string;
+  stem?: string | null;
+  isFunctionWord?: boolean;
+}
+
+export interface WordplayClauseInput {
+  startIndex: number;
+  endIndex: number;
+  subjectLemmas?: string[];
+  objectLemmas?: string[];
+}
+
+export interface TalionPolyptotonMatch {
+  tokenA: WordplayTokenInput;
+  tokenB: WordplayTokenInput;
+  kind: 'syntactic_talion' | 'clause_polyptoton';
+  sharedStem: string;
+  shiftSummary: string;
+  cues: string[];
+  score: number;
+}
+
+const TALION_STOP_STRONGS = new Set([
+  'H1961', 'H559', 'H6213', 'H935', 'H1980', 'H5414', 'H1696', 'H7200', 'H3068', 'H430', 'H1121', 'H3117', 'H3605',
+  'G1510', 'G3004', 'G1096', 'G4160', 'G2064', 'G2192', 'G2316', 'G2962', 'G444', 'G846',
+]);
+
+function extractMorphPolarityFeatures(tok: WordplayTokenInput): {
+  voice: 'active' | 'passive' | 'middle' | null;
+  tense: string | null;
+  posTag: string;
+  caseTag: string | null;
+} {
+  const gc = (tok.grammarCode || '').toUpperCase();
+  const pc = (tok.posClass || '').toLowerCase();
+  const lang = detectLanguage(tok.surfaceForm, tok.strongs);
+  if (lang === 'grc') {
+    const vMatch = /^V-([0-9A-Z])([A-Z])([A-Z])/.exec(gc) || /^V-([A-Z])([A-Z])([A-Z])/.exec(gc);
+    if (vMatch) {
+      const tenseChar = vMatch[1];
+      const voiceChar = vMatch[2];
+      const voice = voiceChar === 'P' ? 'passive' : voiceChar === 'M' || voiceChar === 'D' ? 'middle' : 'active';
+      return { voice, tense: tenseChar, posTag: 'V', caseTag: null };
+    }
+    const nMatch = /^([NA])-(?:[0-9])?([NGDAV])/.exec(gc);
+    if (nMatch) {
+      return { voice: null, tense: null, posTag: nMatch[1], caseTag: nMatch[2] };
+    }
+    if (gc === 'ADV' || pc === 'adverb') {
+      return { voice: null, tense: null, posTag: 'ADV', caseTag: 'ADV' };
+    }
+    return { voice: null, tense: null, posTag: pc || gc, caseTag: null };
+  }
+
+  // Hebrew morphhb/ETCBC grammar codes: e.g. HVqrmsc (Qal active), HVNi3ms (Niphal passive), HVP/HVH/HVt
+  const stemProp = (tok.stem || '').toLowerCase();
+  const hMatch = /V([a-zA-Z])([a-zA-Z])/.exec(tok.grammarCode || '');
+  let voice: 'active' | 'passive' | 'middle' | null = null;
+  let tense: string | null = null;
+  if (hMatch) {
+    const stemCode = hMatch[1];
+    tense = hMatch[2];
+    if (['N', 'P', 'u', 'h', 'O', 'K'].includes(stemCode) || /niphal|pual|hophal|passive/i.test(stemProp)) {
+      voice = 'passive';
+    } else if (['t', 'M'].includes(stemCode) || /hit/i.test(stemProp)) {
+      voice = 'middle';
+    } else {
+      voice = 'active';
+    }
+  }
+  const nPos = /([NA][a-z])/.exec(tok.grammarCode || '')?.[1] ?? pc;
+  let hCaseTag: string | null = null;
+  if (!hMatch && /^(?:H?(?:R[^/]*|T[^/]*|C[^/]*)\/)?[NA]/.test(tok.grammarCode || '')) {
+    const gcRaw = tok.grammarCode || '';
+    const prefMatch = /^H?([RTC][^/]*)\//.exec(gcRaw);
+    const stateMatch = /[NA][a-z]{2,3}([ca])/.exec(gcRaw);
+    const sufMatch = /\/(Sp[123][mfc][sp])/.exec(gcRaw);
+    const parts = [prefMatch ? prefMatch[1] : '', stateMatch ? stateMatch[1] : '', sufMatch ? sufMatch[1] : ''].filter(Boolean);
+    if (parts.length) hCaseTag = parts.join(':');
+  }
+  return { voice, tense, posTag: hMatch ? 'V' : nPos, caseTag: hCaseTag };
+}
+
+/**
+ * Detect Syntactic Talion & Clause Polyptoton across adjacent condition/consequence,
+ * active/passive, mirror case-inversion, or cognate case/POS-shifted pairs (e.g. 1 Cor 3:17, Matt 21:41, Gen 9:6, Mark 2:27).
+ */
+export function detectSyntacticTalionAndPolyptoton(
+  tokens: WordplayTokenInput[],
+  clauses?: WordplayClauseInput[],
+): TalionPolyptotonMatch[] {
+  const out: TalionPolyptotonMatch[] = [];
+  const seen = new Set<string>();
+
+  const clauseIdxOf = (tokIndex: number): number => {
+    if (!clauses?.length) return -1;
+    return clauses.findIndex(c => tokIndex >= c.startIndex && tokIndex <= c.endIndex);
+  };
+
+  interface RawCandidatePair {
+    i: number;
+    j: number;
+    a: WordplayTokenInput;
+    b: WordplayTokenInput;
+    stemA: string;
+    morphA: ReturnType<typeof extractMorphPolarityFeatures>;
+    morphB: ReturnType<typeof extractMorphPolarityFeatures>;
+    sameStrong: boolean;
+    sameLemma: boolean;
+    isStopStrongs: boolean;
+    voiceFlip: boolean;
+    tenseFlip: boolean;
+    posOrCaseFlip: boolean;
+    caseFlipPair: [string, string] | null;
+    hasCondMarker: boolean;
+    hasContrastMarker: boolean;
+    actantFlip: boolean;
+    clIdxA: number;
+    clIdxB: number;
+  }
+
+  const rawPairs: RawCandidatePair[] = [];
+  const preTokens = tokens.map((tok, idx) => {
+    if (tok.isFunctionWord || !tok.strongs) return null;
+    const cs = canonicalStrongsKey(tok.strongs);
+    const nf = normalizeOriginalForm(
+      tok.surfaceForm,
+      tok.strongs,
+      tok.grammarCode,
+      tok.posClass,
+      tok.lemmaScript,
+    );
+    const stem = nf.strippedAffixStem || nf.consonantal;
+    return {
+      idx,
+      tok,
+      cs,
+      nf,
+      stem,
+      morph: extractMorphPolarityFeatures(tok),
+      clIdx: clauseIdxOf(tok.index),
+      gcUpper: (tok.grammarCode || '').toUpperCase(),
+    };
+  });
+
+  for (let i = 0; i < preTokens.length; i++) {
+    const pA = preTokens[i];
+    if (!pA) continue;
+    const { tok: a, cs: csA, nf: nfA, stem: stemA, morph: morphA, clIdx: clIdxA, gcUpper: gcA } = pA;
+    if (stemA.length < 3 && csA !== 'H1818') continue;
+
+    for (let j = i + 1; j < Math.min(preTokens.length, i + 18); j++) {
+      const pB = preTokens[j];
+      if (!pB) continue;
+      const { tok: b, cs: csB, nf: nfB, stem: stemB, morph: morphB, clIdx: clIdxB, gcUpper: gcB } = pB;
+      if (Math.abs(b.verseId - a.verseId) > 1) break;
+      if (nfA.language !== nfB.language) continue;
+
+      const sameStrong = csA === csB;
+      const sameLemma = Boolean(a.lemmaKey && b.lemmaKey && a.lemmaKey === b.lemmaKey);
+      const sameStem = stemA.length >= 3 && stemA === stemB;
+      if (!sameStrong && !sameLemma && !sameStem) continue;
+      const isStopStrongs = (sameStrong || sameLemma) && TALION_STOP_STRONGS.has(csA);
+
+      if (gcA && gcB && gcA === gcB && nfA.consonantal === nfB.consonantal) continue;
+      const voiceFlip = Boolean(
+        morphA.voice &&
+        morphB.voice &&
+        morphA.voice !== morphB.voice &&
+        (morphA.voice === 'passive' || morphB.voice === 'passive'),
+      );
+      const tenseFlip = Boolean(
+        morphA.posTag === 'V' &&
+        morphB.posTag === 'V' &&
+        morphA.tense &&
+        morphB.tense &&
+        morphA.tense !== morphB.tense,
+      );
+      const caseFlip = Boolean(morphA.caseTag && morphB.caseTag && morphA.caseTag !== morphB.caseTag);
+      const posOrCaseFlip = Boolean(morphA.posTag !== morphB.posTag || caseFlip);
+      if (!voiceFlip && !tenseFlip && !posOrCaseFlip) continue;
+
+      // Check conditional / talion & contrast markers in window [i-6 .. j+2]
+      const winStart = Math.max(0, i - 6);
+      const winEnd = Math.min(tokens.length, j + 3);
+      const winSlice = tokens.slice(winStart, winEnd);
+      const hasCondMarker = winSlice
+        .some(t => ['G1487', 'G1437', 'G3739', 'H3588', 'H518', 'H834'].includes(canonicalStrongsKey(t.strongs)));
+      const hasContrastMarker = tokens
+        .slice(i + 1, j)
+        .some(t => ['G3756', 'G3361', 'G235', 'G1223', 'H3808', 'H408', 'H369'].includes(canonicalStrongsKey(t.strongs)));
+
+      // Check clause subject/object actant swap when clauses are provided
+      let actantFlip = false;
+      if (clauses && clIdxA >= 0 && clIdxB >= 0 && clIdxA !== clIdxB) {
+        const cA = clauses[clIdxA];
+        const cB = clauses[clIdxB];
+        const subjA = new Set(cA.subjectLemmas || []);
+        const objA = new Set(cA.objectLemmas || []);
+        const subjB = new Set(cB.subjectLemmas || []);
+        const objB = new Set(cB.objectLemmas || []);
+        actantFlip =
+          [...subjA].some(s => objB.has(s)) ||
+          [...objA].some(o => subjB.has(o)) ||
+          (subjA.size > 0 && subjB.size > 0 && [...subjA].every(s => !subjB.has(s)));
+      }
+
+      rawPairs.push({
+        i,
+        j,
+        a,
+        b,
+        stemA,
+        morphA,
+        morphB,
+        sameStrong,
+        sameLemma,
+        isStopStrongs,
+        voiceFlip,
+        tenseFlip,
+        posOrCaseFlip,
+        caseFlipPair: caseFlip ? [morphA.caseTag!, morphB.caseTag!] : null,
+        hasCondMarker,
+        hasContrastMarker,
+        actantFlip,
+        clIdxA,
+        clIdxB,
+      });
+    }
+  }
+
+  // Detect mirrored nominal case-inversions within the same verse (e.g., Mark 2:27 N->A paired with A->N)
+  const mirrorIndices = new Set<number>();
+  for (let p = 0; p < rawPairs.length; p++) {
+    const rp1 = rawPairs[p];
+    if (!rp1.caseFlipPair || rp1.a.verseId !== rp1.b.verseId) continue;
+    const [c1A, c1B] = rp1.caseFlipPair;
+    for (let q = p + 1; q < rawPairs.length; q++) {
+      const rp2 = rawPairs[q];
+      if (!rp2.caseFlipPair || rp2.a.verseId !== rp1.a.verseId || rp2.b.verseId !== rp1.a.verseId) continue;
+      if (rp1.a.strongs === rp2.a.strongs) continue;
+      const [c2A, c2B] = rp2.caseFlipPair;
+      const reversed = c1A === c2B && c1B === c2A;
+      const interleaved =
+        (rp1.i < rp2.i && rp2.j < rp1.j) ||
+        (rp1.i < rp2.i && rp2.i < rp1.j && rp1.j < rp2.j);
+      if (reversed && interleaved && (rp1.hasContrastMarker || rp2.hasContrastMarker || rp1.clIdxA !== rp1.clIdxB)) {
+        mirrorIndices.add(p);
+        mirrorIndices.add(q);
+      }
+    }
+  }
+
+  for (let p = 0; p < rawPairs.length; p++) {
+    const rp = rawPairs[p];
+    const isMirrorCaseInversion = mirrorIndices.has(p);
+    if (rp.isStopStrongs && !isMirrorCaseInversion) continue;
+
+    const isAdjacentCognatePolyptoton = rp.j - rp.i <= 2 && (rp.posOrCaseFlip || rp.tenseFlip || rp.voiceFlip);
+    const isTalion =
+      isMirrorCaseInversion ||
+      (rp.voiceFlip && (rp.sameStrong || rp.sameLemma)) ||
+      (rp.tenseFlip && (rp.sameStrong || rp.sameLemma) && (rp.hasCondMarker || rp.actantFlip || rp.j - rp.i <= 4)) ||
+      (rp.actantFlip && (rp.voiceFlip || rp.tenseFlip));
+
+    if (!isTalion && !isAdjacentCognatePolyptoton) continue;
+
+    const pairId = `${rp.a.id}|${rp.b.id}`;
+    if (seen.has(pairId)) continue;
+    seen.add(pairId);
+
+    const kind: TalionPolyptotonMatch['kind'] = isTalion ? 'syntactic_talion' : 'clause_polyptoton';
+    const cues: string[] = [kind];
+    if (rp.voiceFlip) cues.push('voice_inversion');
+    if (rp.tenseFlip) cues.push('tense_aspect_shift');
+    if (rp.posOrCaseFlip) cues.push('case_pos_polyptoton');
+    if (isMirrorCaseInversion) cues.push('mirror_case_inversion');
+    if (rp.actantFlip) cues.push('actant_role_flip');
+
+    const shiftSummary = [
+      rp.voiceFlip ? `${rp.morphA.voice}->${rp.morphB.voice}` : '',
+      rp.tenseFlip ? `${rp.morphA.tense}->${rp.morphB.tense}` : '',
+      rp.posOrCaseFlip ? `${rp.morphA.caseTag || rp.morphA.posTag}->${rp.morphB.caseTag || rp.morphB.posTag}` : '',
+    ]
+      .filter(Boolean)
+      .join(', ');
+
+    out.push({
+      tokenA: rp.a,
+      tokenB: rp.b,
+      kind,
+      sharedStem: rp.stemA,
+      shiftSummary,
+      cues,
+      score: Math.min(
+        0.98,
+        Math.round(
+          (0.82 +
+            (rp.voiceFlip ? 0.1 : 0) +
+            (isMirrorCaseInversion ? 0.11 : 0) +
+            (rp.actantFlip ? 0.05 : 0) +
+            (rp.j - rp.i <= 3 ? 0.04 : 0)) *
+            1000,
+        ) / 1000,
+      ),
+    });
+  }
+
+  return out;
+}
+
+export interface OnomasticEtymologyEntry {
+  strongs: string;
+  rootStrongs: string[];
+  rootConsonants: string;
+  etyGlosses: string[];
+  synonyms: string[];
+  antonyms: string[];
+  valence: -1 | 0 | 1;
+  source: string;
+}
+
+/**
+ * Documented CC BY 4.0 (OSHB HebrewStrong.xml + STEP TBESG/TBESH + OEWN 2025) proper-noun
+ * etymologies and semantic polarity for runtime analysis without requiring external 72 MB WordNet files.
+ * Build pipelines (`build-v3-rhetoric.mjs`) extend this dynamically across the full corpus lexicon.
+ */
+export const BUILTIN_ONOMASTIC_LEXICON: Readonly<Record<string, OnomasticEtymologyEntry>> = {
+  G3682: {
+    strongs: 'G3682',
+    rootStrongs: ['G3685', 'G8518'],
+    rootConsonants: 'ον',
+    etyGlosses: ['profitable', 'useful', 'profit', 'benefit'],
+    synonyms: ['useful', 'helpful', 'profitable', 'beneficial', 'serviceable'],
+    antonyms: ['useless', 'unprofitable', 'worthless', 'unserviceable'],
+    valence: 1,
+    source: 'TBESG:G3682',
+  },
+  G4074: {
+    strongs: 'G4074',
+    rootStrongs: ['G4073'],
+    rootConsonants: 'πετρ',
+    etyGlosses: ['stone', 'rock'],
+    synonyms: ['stone', 'rock'],
+    antonyms: [],
+    valence: 0,
+    source: 'TBESG:G4074G',
+  },
+  H8208: {
+    strongs: 'H8208',
+    rootStrongs: ['H8231', 'H8233'],
+    rootConsonants: 'שפר',
+    etyGlosses: ['beautiful', 'fair', 'pleasant', 'goodly'],
+    synonyms: ['beautiful', 'fair', 'pleasant', 'goodly', 'comely'],
+    antonyms: ['ugly', 'shame', 'shameful', 'nakedness', 'disgrace', 'foul'],
+    valence: 1,
+    source: 'OSHB:H8208',
+  },
+  H4796: {
+    strongs: 'H4796',
+    rootStrongs: ['H4751', 'H4843'],
+    rootConsonants: 'מר',
+    etyGlosses: ['bitter', 'bitterness', 'bitter springs'],
+    synonyms: ['bitter', 'bitterness', 'sorrow', 'grief', 'calamity', 'evil'],
+    antonyms: ['good', 'sweet', 'pleasant', 'joy', 'gladness'],
+    valence: -1,
+    source: 'OSHB:H4796',
+  },
+  H392: {
+    strongs: 'H392',
+    rootStrongs: ['H391', 'H3576'],
+    rootConsonants: 'כזב',
+    etyGlosses: ['deceitful', 'lying', 'deception'],
+    synonyms: ['deceitful', 'deceptive', 'lying', 'false', 'vain'],
+    antonyms: ['truth', 'faithful', 'true'],
+    valence: -1,
+    source: 'OSHB:H392',
+  },
+  H1036: {
+    strongs: 'H1036',
+    rootStrongs: ['H1004', 'H6083'],
+    rootConsonants: 'עפר',
+    etyGlosses: ['house of dust', 'dust'],
+    synonyms: ['dust', 'ash', 'earth'],
+    antonyms: [],
+    valence: -1,
+    source: 'OSHB:H1036',
+  },
+  H4762: {
+    strongs: 'H4762',
+    rootStrongs: ['H4761', 'H3423'],
+    rootConsonants: 'רש',
+    etyGlosses: ['summit', 'possession', 'heir'],
+    synonyms: ['heir', 'possessor', 'dispossess', 'inheritance'],
+    antonyms: [],
+    valence: 0,
+    source: 'OSHB:H4762',
+  },
+  H6630: {
+    strongs: 'H6630',
+    rootStrongs: ['H6629', 'H3318'],
+    rootConsonants: 'צאנ',
+    etyGlosses: ['sheep pasture', 'flock', 'go out'],
+    synonyms: ['flock', 'sheep', 'exit', 'go out'],
+    antonyms: [],
+    valence: 0,
+    source: 'OSHB:H6630',
+  },
+  H1018: {
+    strongs: 'H1018',
+    rootStrongs: ['H1004', 'H681'],
+    rootConsonants: 'אצל',
+    etyGlosses: ['house of the side', 'near', 'taking away'],
+    synonyms: ['side', 'near', 'take away'],
+    antonyms: [],
+    valence: 0,
+    source: 'OSHB:H1018',
+  },
+  H5037: {
+    strongs: 'H5037',
+    rootStrongs: ['H5036', 'H5039'],
+    rootConsonants: 'נבל',
+    etyGlosses: ['fool', 'dolt', 'folly'],
+    synonyms: ['fool', 'foolish', 'folly', 'senseless', 'vile'],
+    antonyms: ['wise', 'wisdom', 'discreet', 'understanding'],
+    valence: -1,
+    source: 'OSHB:H5037',
+  },
+  H5146: {
+    strongs: 'H5146',
+    rootStrongs: ['H5162', 'H5117'],
+    rootConsonants: 'נח',
+    etyGlosses: ['rest', 'comfort'],
+    synonyms: ['rest', 'comfort', 'quiet'],
+    antonyms: ['toil', 'labor', 'affliction'],
+    valence: 1,
+    source: 'OSHB:H5146',
+  },
+  H120: {
+    strongs: 'H120',
+    rootStrongs: ['H127', 'H119'],
+    rootConsonants: 'אדם',
+    etyGlosses: ['humankind', 'red', 'ground'],
+    synonyms: ['ground', 'earth', 'dust', 'red'],
+    antonyms: [],
+    valence: 0,
+    source: 'OSHB:H120',
+  },
+  H3819: {
+    strongs: 'H3819',
+    rootStrongs: ['H3808', 'H5971'],
+    rootConsonants: 'עמי',
+    etyGlosses: ['not my people'],
+    synonyms: ['not my people', 'rejected'],
+    antonyms: ['my people', 'beloved'],
+    valence: -1,
+    source: 'OSHB:H3819',
+  },
+  H3818: {
+    strongs: 'H3818',
+    rootStrongs: ['H3808', 'H7355'],
+    rootConsonants: 'רחם',
+    etyGlosses: ['not pitied', 'no mercy'],
+    synonyms: ['no mercy', 'unpitied'],
+    antonyms: ['mercy', 'compassion', 'pity'],
+    valence: -1,
+    source: 'OSHB:H3818',
+  },
+};
+
+const POSITIVE_VALENCE_TOKENS = new Set([
+  'good', 'beautiful', 'fair', 'pleasant', 'useful', 'helpful', 'profitable', 'profit', 'benefit',
+  'joy', 'gladness', 'blessing', 'blessed', 'sweet', 'honor', 'honour', 'glory', 'wise', 'wisdom',
+  'righteous', 'holy', 'love', 'beloved', 'mercy', 'compassion', 'comfort', 'rest', 'heal', 'life',
+  'clean', 'pure', 'peace', 'salvation', 'grace', 'truth', 'faithful', 'delight', 'worthy',
+]);
+
+const NEGATIVE_VALENCE_TOKENS = new Set([
+  'bad', 'evil', 'wicked', 'ugly', 'foul', 'useless', 'unprofitable', 'worthless', 'bitter',
+  'bitterness', 'shame', 'shameful', 'nakedness', 'disgrace', 'dishonor', 'sorrow', 'grief',
+  'pain', 'calamity', 'curse', 'cursed', 'fool', 'foolish', 'folly', 'deceit', 'deceitful',
+  'lying', 'false', 'vain', 'empty', 'sin', 'iniquity', 'transgression', 'death', 'destroy',
+  'defiled', 'unclean', 'trouble', 'affliction', 'woe', 'lament', 'mourning', 'weep',
+]);
+
+export function scoreGlossValence(gloss: string): -1 | 0 | 1 {
+  if (!gloss) return 0;
+  const words = gloss.toLowerCase().replace(/[^a-z\s-]/g, ' ').split(/[\s-]+/).filter(Boolean);
+  let pos = 0;
+  let neg = 0;
+  for (const w of words) {
+    if (POSITIVE_VALENCE_TOKENS.has(w)) pos++;
+    if (NEGATIVE_VALENCE_TOKENS.has(w)) neg++;
+  }
+  if (pos > neg) return 1;
+  if (neg > pos) return -1;
+  return 0;
+}
+
+export interface OnomasticValenceMatch {
+  properToken: WordplayTokenInput;
+  targetToken: WordplayTokenInput;
+  etymology: OnomasticEtymologyEntry;
+  matchChannel: 'etymological_root' | 'etymological_synonym_antonym' | 'evaluative_valence_contrast';
+  sharedConsonants: string;
+  cues: string[];
+  score: number;
+}
+
+/**
+ * Resolve proper nouns within a ±10-verse window against etymological glosses/roots,
+ * OEWN synonyms/antonyms, and evaluative valence (+1 vs -1).
+ */
+export function detectOnomasticValenceWordplays(
+  tokens: WordplayTokenInput[],
+  customLexicon?: ReadonlyMap<string, OnomasticEtymologyEntry> | Readonly<Record<string, OnomasticEtymologyEntry>>,
+  customValenceMap?: ReadonlyMap<string, -1 | 0 | 1>,
+): OnomasticValenceMatch[] {
+  const out: OnomasticValenceMatch[] = [];
+  const seen = new Set<string>();
+
+  const lookupEntry = (strongs: string): OnomasticEtymologyEntry | undefined => {
+    const cs = canonicalStrongsKey(strongs);
+    if (!cs) return undefined;
+    if (customLexicon instanceof Map) {
+      return customLexicon.get(cs) ?? BUILTIN_ONOMASTIC_LEXICON[cs];
+    }
+    if (customLexicon && typeof customLexicon === 'object') {
+      const rec = customLexicon as Record<string, OnomasticEtymologyEntry>;
+      return rec[cs] ?? BUILTIN_ONOMASTIC_LEXICON[cs];
+    }
+    return BUILTIN_ONOMASTIC_LEXICON[cs];
+  };
+
+  let sortedByVid = true;
+  for (let k = 1; k < tokens.length; k++) {
+    if (tokens[k].verseId < tokens[k - 1].verseId) {
+      sortedByVid = false;
+      break;
+    }
+  }
+
+  const tgtCache = new Array<{ words: string[]; valence: -1 | 0 | 1 } | undefined>(tokens.length);
+  const getTgtMeta = (idx: number, tgt: WordplayTokenInput) => {
+    let m = tgtCache[idx];
+    if (!m) {
+      const words = (tgt.gloss || '')
+        .toLowerCase()
+        .replace(/[^a-z\s-]/g, ' ')
+        .split(/[\s-]+/)
+        .filter(w => w.length >= 3);
+      const csTgt = canonicalStrongsKey(tgt.strongs);
+      const valence = customValenceMap?.get(csTgt) ?? scoreGlossValence(tgt.gloss || '');
+      m = { words, valence };
+      tgtCache[idx] = m;
+    }
+    return m;
+  };
+
+  for (let i = 0; i < tokens.length; i++) {
+    const pn = tokens[i];
+    if (!pn.strongs) continue;
+    const csPn = canonicalStrongsKey(pn.strongs);
+    const entry = lookupEntry(csPn);
+    if (!entry) continue;
+
+    const rootSet = new Set(entry.rootStrongs.map(canonicalStrongsKey));
+    const synSet = new Set(entry.synonyms.map(s => s.toLowerCase()));
+    const antSet = new Set(entry.antonyms.map(s => s.toLowerCase()));
+
+    let winStart = 0;
+    let winEnd = tokens.length;
+    if (sortedByVid) {
+      winStart = i;
+      while (winStart > 0 && pn.verseId - tokens[winStart - 1].verseId <= 10) winStart--;
+      winEnd = i + 1;
+      while (winEnd < tokens.length && tokens[winEnd].verseId - pn.verseId <= 10) winEnd++;
+    }
+
+    for (let j = winStart; j < winEnd; j++) {
+      if (i === j) continue;
+      const tgt = tokens[j];
+      if (tgt.isFunctionWord || !tgt.strongs) continue;
+      if (pn.book !== undefined && tgt.book !== undefined && pn.book !== tgt.book) continue;
+      const verseDiff = Math.abs(tgt.verseId - pn.verseId);
+      if (verseDiff > 10) continue;
+
+      const csTgt = canonicalStrongsKey(tgt.strongs);
+      if (csTgt === csPn) continue;
+      // Do not pair unrelated high-frequency discourse words on valence alone
+      if (TALION_STOP_STRONGS.has(csTgt)) continue;
+
+      const pairKey = [csPn, csTgt].sort().join('|');
+      if (seen.has(pairKey)) continue;
+
+      const { words: tgtGlossWords, valence: tgtValence } = getTgtMeta(j, tgt);
+
+      let matchChannel: OnomasticValenceMatch['matchChannel'] | null = null;
+      let score = 0;
+      const cues: string[] = ['onomastic_etymology'];
+
+      if (rootSet.has(csTgt)) {
+        matchChannel = 'etymological_root';
+        score = Math.max(0.82, 0.95 - verseDiff * 0.01);
+        cues.push('etymological_root_match');
+      } else if (tgtGlossWords.some(w => antSet.has(w))) {
+        matchChannel = 'etymological_synonym_antonym';
+        score = Math.max(0.78, 0.92 - verseDiff * 0.012);
+        cues.push('etymological_antonym');
+      } else if (tgtGlossWords.some(w => synSet.has(w))) {
+        matchChannel = 'etymological_synonym_antonym';
+        score = Math.max(0.75, 0.88 - verseDiff * 0.012);
+        cues.push('etymological_synonym');
+      } else if (
+        entry.valence !== 0 &&
+        tgtValence !== 0 &&
+        entry.valence === -tgtValence &&
+        verseDiff === 0 &&
+        Math.abs(tgt.index - pn.index) <= 6
+      ) {
+        matchChannel = 'evaluative_valence_contrast';
+        score = 0.86;
+        cues.push('evaluative_valence_contrast');
+      }
+
+      if (!matchChannel) continue;
+      seen.add(pairKey);
+
+      out.push({
+        properToken: pn,
+        targetToken: tgt,
+        etymology: entry,
+        matchChannel,
+        sharedConsonants: entry.rootConsonants,
+        cues,
+        score: Math.round(score * 1000) / 1000,
+      });
+    }
+  }
+
+  return out.sort((a, b) => b.score - a.score);
 }

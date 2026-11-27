@@ -271,13 +271,17 @@ const EPISTEMIC_LABELS: Record<R10EpistemicClass, string> = {
   documented_lexical_relationship: 'Lexical',
   documented_collocation_or_cooccurrence: 'Co-occurrence',
   documented_cross_language_bridge: 'LXX bridge',
+  translation_correspondence: 'Translation correspondence',
+  grammatical_observation: 'Grammatical observation',
+  observed_textual_count: 'Textual count',
   verified_cross_reference: 'Cross-ref',
   editorial_cross_reference: 'Editorial cross-ref',
   shared_motif_evidence: 'Shared motif',
+  statistical_association: 'Statistical association',
   candidate_literary_pattern: 'Candidate pattern',
   orthographic_similarity_only: 'Orthographic similarity',
-  external_world_bridge: 'External bridge',
-  interpretive_hypothesis: 'Interpretive hypothesis',
+  external_world_fact: 'External bridge',
+  semantic_hypothesis: 'Semantic hypothesis',
   user_note: 'My hypothesis',
 };
 
@@ -286,22 +290,26 @@ const EPISTEMIC_STRENGTH_RANK: Record<R10EpistemicClass, number> = {
   authorial_typology_or_quote: 2,
   documented_lexical_relationship: 3,
   documented_cross_language_bridge: 4,
-  verified_cross_reference: 5,
-  documented_collocation_or_cooccurrence: 6,
-  editorial_cross_reference: 7,
-  shared_motif_evidence: 8,
-  candidate_literary_pattern: 9,
-  orthographic_similarity_only: 10,
-  external_world_bridge: 11,
-  interpretive_hypothesis: 12,
-  user_note: 13,
+  translation_correspondence: 5,
+  grammatical_observation: 6,
+  observed_textual_count: 7,
+  verified_cross_reference: 8,
+  documented_collocation_or_cooccurrence: 9,
+  editorial_cross_reference: 10,
+  shared_motif_evidence: 11,
+  statistical_association: 12,
+  candidate_literary_pattern: 13,
+  orthographic_similarity_only: 14,
+  external_world_fact: 15,
+  semantic_hypothesis: 16,
+  user_note: 17,
 };
 
 const CAUTION_CLASSES = new Set<R10EpistemicClass>([
   'candidate_literary_pattern',
   'orthographic_similarity_only',
-  'external_world_bridge',
-  'interpretive_hypothesis',
+  'external_world_fact',
+  'semantic_hypothesis',
   'user_note',
 ]);
 
@@ -314,7 +322,7 @@ function isCautionClass(cls: R10EpistemicClass, tier: R10EvidenceTier): boolean 
 }
 
 function weakestEpistemic(classes: R10EpistemicClass[]): R10EpistemicClass {
-  let weakest = classes[0] ?? 'interpretive_hypothesis';
+  let weakest = classes[0] ?? 'semantic_hypothesis';
   let maxRank = EPISTEMIC_STRENGTH_RANK[weakest] ?? 0;
   for (const cls of classes) {
     const rank = EPISTEMIC_STRENGTH_RANK[cls] ?? 0;
@@ -1538,7 +1546,7 @@ export function createDiscoveryGraph(
             shortLabel: truncateLabel(rg.neighbor_label, svgLayout.labelMaxChars),
             originalLabel: rg.neighbor_script ? `${rg.neighbor_script} · ${rg.neighbor_label}` : rg.neighbor_label,
             originalShortLabel: rg.neighbor_script || truncateLabel(rg.neighbor_label, svgLayout.labelMaxChars),
-            epistemicClass: 'interpretive_hypothesis',
+            epistemicClass: 'semantic_hypothesis',
             evidenceTier: 6,
             why: `${rg.predicate_label}: ${rg.assertion_text}`,
             passage: null,
@@ -1572,8 +1580,8 @@ export function createDiscoveryGraph(
           toLabel,
           relationLabel: `${rg.predicate_label}${rg.is_potentially_stale ? ' [stale]' : ''}`,
           predicate: 'interpretive_hypothesis',
-          epistemicClass: 'interpretive_hypothesis',
-          weakestEpistemicClass: 'interpretive_hypothesis',
+          epistemicClass: 'semantic_hypothesis',
+          weakestEpistemicClass: 'semantic_hypothesis',
           evidenceTier: 6,
           layers: new Set([layerKey]),
           why: rg.assertion_text,
@@ -1698,7 +1706,7 @@ export function createDiscoveryGraph(
     const grounded = visibleNodes.filter(
       n =>
         n.evidenceTier <= 6 &&
-        n.epistemicClass !== 'interpretive_hypothesis' &&
+        n.epistemicClass !== 'semantic_hypothesis' &&
         n.epistemicClass !== 'orthographic_similarity_only' &&
         n.epistemicClass !== 'user_note'
     );

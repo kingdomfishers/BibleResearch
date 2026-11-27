@@ -6,6 +6,15 @@
 
 // === @section:imports ===
 import { callCorpusRpc, type CorpusClientOptions } from './corpus-client';
+import {
+  comparePatternsRpc,
+  discoverBiblicalConnectionsRpc,
+  discoverPatternsRpc,
+  discoverSubgraphRpc,
+  expandBiblicalConnectionRpc,
+  getConnectionEvidenceRpc,
+  traceEvidenceRpc,
+} from './r10-rpc';
 import type {
   ConceptResolutionResult,
   GraphLayer,
@@ -764,6 +773,13 @@ export const RelationshipsRPC = {
   lookupLxxTranslations,
   resolveResearchConcept,
   discoverRelationshipPaths,
+  discoverBiblicalConnections: discoverBiblicalConnectionsRpc,
+  getConnectionEvidence: getConnectionEvidenceRpc,
+  expandBiblicalConnection: expandBiblicalConnectionRpc,
+  discoverSubgraph: discoverSubgraphRpc,
+  discoverPatterns: discoverPatternsRpc,
+  comparePatterns: comparePatternsRpc,
+  traceEvidence: traceEvidenceRpc,
   buildNotePrefillFromCrossReference,
   buildNotePrefillFromLexicalEdge,
   extractRelationshipEvaluation,

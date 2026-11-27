@@ -277,7 +277,7 @@ export function createDatabaseReader(
           name === 'discover_subgraph_v1'
             ? [502, 503, 504]
             : [500, 502, 503, 504];
-        for (let attempt = 0; attempt < 2 && retryableCorpusStatuses.includes(corpRes.status); attempt++) {
+        for (let attempt = 0; attempt < 1 && retryableCorpusStatuses.includes(corpRes.status); attempt++) {
           await corpRes.body?.cancel();
           const backoffMs = 80 * (attempt + 1) + Math.floor(Math.random() * 100);
           await new Promise(resolve => setTimeout(resolve, backoffMs));

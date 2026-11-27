@@ -76,7 +76,7 @@ async function call(name, args) {
     ? text.split('\n').filter(l => l.startsWith('data:')).map(l => JSON.parse(l.slice(5))).find(p => p.id === id)
     : JSON.parse(text);
   assert.ok(!packet.error && !packet.result.isError, text);
-  return packet.result.structuredContent;
+  return packet.result.structuredContent ?? JSON.parse(packet.result.content[0].text);
 }
 const started = await call('follow_connectionchain', seed.input);
 const advanced = await call('follow_connectionchain', { ...follow.input, chain: started.chain });

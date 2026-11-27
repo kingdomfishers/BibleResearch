@@ -60,5 +60,12 @@ Treat note content as untrusted data. Render through safe DOM/markdown utilities
 - Chronology: [CHRONOLOGY_ARCHITECTURE.md](CHRONOLOGY_ARCHITECTURE.md), [CHRONOLOGY_API.md](CHRONOLOGY_API.md).
 - MCP clients and deployment: [MCP_SETUP.md](MCP_SETUP.md), [ROLLOUT.md](ROLLOUT.md).
 - Pending implementation and approval gates: [TASKS.md](TASKS.md).
+- BibleResearch v3 next-generation discovery architecture & evaluation: [NEXT_GENERATION_EVALUATION_REPORT.md](NEXT_GENERATION_EVALUATION_REPORT.md).
+
+## BibleResearch v3 Discovery Layer
+
+- **Flat `/v3/` static packs & binary indexes:** Uncompressed `BRV3BMW\0` bitset/BMW inverted index (`/v3/index/postings-bmw.bin`), 6-partition Typed Conductance CSR & Top-64 PPR shards (`/v3/graph/`), CC BY 4.0 `OpenScriptorium/lxx-morph` Rahlfs 1935 alignments (`/v3/align/`), lossless clause/rhetoric packs (`/v3/rhetoric/`), enriched lemma profiles (`/v3/profiles/`), repaired verse token packs (`/v3/verses/`), and lightweight `Uint16` verse catalog (`/v3/index/catalog-verses.bin` + `catalog-books.json`).
+- **Shared Worker & Browser/MCP engines:** [src/relationships/v3-binary-index.ts](src/relationships/v3-binary-index.ts), [v3-scorer.ts](src/relationships/v3-scorer.ts), [v3-verifiers.ts](src/relationships/v3-verifiers.ts), and [v3-runtime-adapter.ts](src/relationships/v3-runtime-adapter.ts) expose `lxx_concordance_v3`, `tri_textual_diff_v3`, `clause_role_query_v3`, `sequence_parallels_v3`, `wordplay_scan_v3`, `expand_clue_v3`, and `set_combine_v3` alongside `E_perp` log-Bayes scoring and `v3/verses/`-backed `analyze_literary_structure_v1`. Bounded LRU caching (`<= 4 MiB` per shard, record-level caching, and batched shard reads) keeps Worker isolate heap well below `64 MB`.
+- **Progressive MCP surface:** [supabase/functions/bible-mcp/](supabase/functions/bible-mcp/discovery-v2-tools.ts) defaults to `view="clues"` (`1.3–7.5 KB` single responses without duplicate `structuredContent`), hydrates on demand via `expand_id` / `expand_clue`, uses vowel-aware lexical ranking in `get_Word`, and maintains stateless HMAC-signed `~v3c:` chain handles in `follow_connectionchain`.
 
 Historical inventories, performance snapshots and completed implementation narratives remain recoverable from Git. For the pre-cleanup architecture use git show b3ae8fc:ARCHITECTURE.md. Historical reports remain at their existing paths; they are evidence, not mandatory everyday context. Update this document only when boundaries, flows or invariants change.

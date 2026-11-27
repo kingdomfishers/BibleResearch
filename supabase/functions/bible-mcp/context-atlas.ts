@@ -1416,7 +1416,7 @@ export function queryMcpTribeLineage(params: {
 }
 
 // === @section:sacred-architecture ===
-export type ArchitecturePlanId = 'tabernacle' | 'first_temple' | 'second_temple' | 'jerusalem_gates';
+export type ArchitecturePlanId = 'tabernacle' | 'first_temple' | 'second_temple' | 'jerusalem_gates' | 'ezekiel_temple';
 
 interface ArchitectureElement {
   id: string;
@@ -1514,6 +1514,21 @@ const ARCHITECTURE_PLANS: Record<ArchitecturePlanId, ArchitecturePlan> = {
       { id: 'water_fountain_dung_gates', plan_id: 'jerusalem_gates', name: 'Water, Fountain, Dung, Valley, Corner, Ephraim, Old & Fish Gates', hebrew: 'שַׁעַר הַמַּיִם / הָעַיִן / הָאַשְׁפֹּת / הַגַּיְא / הַדָּגִים', strongs: ['H4325', 'H5869', 'H830', 'H1516', 'H6438', 'H1709'], zone: 'City Perimeter Circuit', position: 'Counterclockwise from Sheep -> Fish -> Old -> Ephraim -> Corner -> Valley -> Dung -> Fountain -> Water -> Horse -> East -> Inspection', compass_orientation: 'Full city circuit (N, W, S, E)', dimensions_cubits: 'Valley-to-Dung span ~1,000 cubits (Neh 3:13); Corner-to-Ephraim ~400 cubits (2 Kgs 14:13)', summary: 'Remaining gates of Nehemiah\'s wall circuit framing the Water Gate plaza (Neh 8:1), Hinnom Valley western/southern walls, and northern Tyrian fish trade.', historical_note: 'Neh 3 and Neh 12 preserve the primary pre-Hellenistic gate sequence.', scripture_refs: ['Neh 2:13-15', 'Neh 3:1-32', 'Neh 8:1', 'Neh 12:31-39', 'Zeph 1:10'] },
     ],
   },
+  ezekiel_temple: {
+    id: 'ezekiel_temple',
+    title: "Ezekiel's Visionary Temple & Living River (Ezek 40–48)",
+    era: 'Exilic Vision, 573 BCE ("25th year of our exile", Ezek 40:1)',
+    orientation: 'Concentric square sanctuary mountain (500 × 500 cubits / reeds) oriented East-to-West, with healing river issuing beneath the southern threshold eastward into the Arabah and Salt Sea',
+    epistemic_note: 'Prophetic visionary architectural plan in Ezekiel 40–48 measured with a 6-cubit measuring reed (each long cubit = ordinary cubit + handbreadth, Ezek 40:5). Distinct from Solomon\'s Temple, Zerubbabel/Herod\'s Second Temple, and physical city topography.',
+    elements: [
+      { id: 'ezek_outer_east_gate', plan_id: 'ezekiel_temple', name: 'Outer East Gate & Glory Entry', hebrew: 'הַשַּׁעַר הַקָּדִים', strongs: ['H8179', 'H6921', 'H3519'], zone: 'Outer Wall East Perimeter', position: 'Outer eastern monumental gatehouse (50 × 25 cubits), shut for the prince alone after YHWH\'s glory enters', compass_orientation: 'East', dimensions_cubits: '50 cubits long × 25 cubits wide; 7 steps ascending to outer court', summary: 'Three-guardchamber eastern gatehouse through which the glory of the God of Israel returns from the east (Ezek 43:1–4).', historical_note: 'Remains shut to general traffic after YHWH enters (Ezek 44:1–3), parallel to the North and South outer gates of 50 × 25 cubits.', scripture_refs: ['Ezek 40:6-16', 'Ezek 43:1-4', 'Ezek 44:1-3'] },
+      { id: 'ezek_inner_court_altar', plan_id: 'ezekiel_temple', name: 'Inner Court & Stepped Altar of Burnt Offering', hebrew: 'מִזְבֵּחַ / עֲזָרָה', strongs: ['H4196', 'H5835', 'H2025'], zone: 'Center of Inner Court', position: '100 × 100 cubit Inner Court elevated 8 steps above Outer Court, East of Temple porch', compass_orientation: 'Center axis East of Sanctuary', dimensions_cubits: 'Altar hearth (harel) 12 × 12 cubits rising in stepped ledges (16 × 16, 14 × 14, 12 × 12)', summary: 'Stepped four-horned stone/metal altar surrounded by Zadokite priestly chambers in the central 100 × 100 cubit court.', historical_note: 'Unlike Exod 20:26 (no steps to Tabernacle altar), Ezekiel\'s altar ascends eastward by steps (Ezek 43:17).', scripture_refs: ['Ezek 40:47', 'Ezek 43:13-17'] },
+      { id: 'ezek_sanctuary_hekal_debir', plan_id: 'ezekiel_temple', name: 'Sanctuary Nave (Hekal) & Inner Cube (Debir)', hebrew: 'הֵיכָל / קֹדֶשׁ הַקֳּדָשִׁים', strongs: ['H1964', 'H6944', 'H4908'], zone: 'Western Temple House', position: '10 steps west above Inner Court: Porch (Ulam) 20 × 12, Nave (Hekal) 40 × 20, Most Holy 20 × 20', compass_orientation: 'East–West inward axis', dimensions_cubits: 'Ulam 20 × 12; Hekal 40 × 20; Most Holy Place 20 × 20; wooden table-altar 3 × 2 × 2', summary: 'Three-stage sanctuary carved with alternating cherubim (two faces: man and lion) and palm trees; no Ark or bronze veil-sea mentioned.', historical_note: 'Only the wooden altar ("table before YHWH", Ezek 41:22) is described inside the Hekal rather than lampstand/showbread vessels.', scripture_refs: ['Ezek 40:48-49', 'Ezek 41:1-26'] },
+      { id: 'ezek_temple_threshold_river', plan_id: 'ezekiel_temple', name: 'Threshold Trickle & Four-Measured River', hebrew: 'מִפְתַּן / נַחַל', strongs: ['H4670', 'H5158', 'H4325'], zone: 'Temple South Flank -> Outer East Gate', position: 'Issuing eastward from beneath the Temple threshold south of the altar, passing south of the shut Outer East Gate', compass_orientation: 'Flowing Eastward', dimensions_cubits: '4 successive measurements × 1,000 cubits: ankles -> knees -> loins -> impassable swimming river (4,000 cubits = ~2 km)', summary: 'Supernaturally self-multiplying stream increasing from a threshold trickle to a deep river without tributaries.', historical_note: 'Typologically taken up in Joel 3:18, Zech 14:8, and Rev 22:1–2.', scripture_refs: ['Ezek 47:1-5', 'Joel 3:18', 'Zech 14:8', 'Rev 22:1'] },
+      { id: 'ezek_healing_trees_salt_sea', plan_id: 'ezekiel_temple', name: 'Healing Riverbanks, Arabah, Salt Sea & En-gedi to En-eglaim', hebrew: 'הָעֲרָבָה / יָם הַמֶּלַח / עֵין גֶּדִי / עֵין עֶגְלַיִם', strongs: ['H6160', 'H3220', 'H4417', 'H5872', 'H5882', 'H6086'], zone: 'Eastern Descent to Dead Sea', position: 'Flowing down into the Arabah Rift and into the Salt (Dead) Sea, turning stagnant brine fresh', compass_orientation: 'East / Southeast into Dead Sea Basin', dimensions_cubits: 'Shoreline fishery spanning En-gedi to En-eglaim; two banks lined with diverse fruit trees', summary: 'Heals the lifeless Salt Sea so fishermen spread nets from En-gedi to En-eglaim; shoreline trees fruit every month with healing leaves; marshes (gēḇeʾ / biṣṣāh) preserved for salt.', historical_note: 'Preserves salt marshes intentionally for mineral/covenant salt supply alongside healed freshwater fisheries.', scripture_refs: ['Ezek 47:6-12', 'Rev 22:2'] },
+      { id: 'ezek_priestly_chambers_allotment', plan_id: 'ezekiel_temple', name: 'Zadokite Priestly Chambers & Sacred District (Terumah)', hebrew: 'לִשְׁכוֹת / תְּרוּמָה', strongs: ['H3957', 'H8641', 'H6659'], zone: 'Outer/Inner Sanctuary Flanks & Holy District', position: 'Three-story northern and southern sacred chambers and surrounding 25,000 × 25,000 cubit/reed sacred district', compass_orientation: 'North & South flanks of Temple; central land allotment', dimensions_cubits: '500 × 500 cubit/reed Temple square within 25,000 × 10,000 Priestly portion', summary: 'Holy chambers where Zadokite priests eat most holy offerings and change sacred linen vestments before entering the outer court.', historical_note: 'Ezekiel 48 distributes tribal bands horizontally north-to-south around the central Sanctuary district.', scripture_refs: ['Ezek 42:1-14', 'Ezek 45:1-5', 'Ezek 48:8-22'] },
+    ],
+  },
 };
 
 function resolveArchitecturePlanId(rawPlan?: string, passage?: string): ArchitecturePlanId | null {
@@ -1521,7 +1536,8 @@ function resolveArchitecturePlanId(rawPlan?: string, passage?: string): Architec
     const p = rawPlan.trim().toLowerCase().replace(/[\s-]+/g, '_');
     if (p === 'tabernacle' || p.includes('mishkan') || p.includes('tent')) return 'tabernacle';
     if (p === 'first_temple' || p === '1st_temple' || p.includes('solomon')) return 'first_temple';
-    if (p === 'second_temple' || p === '2nd_temple' || p.includes('herod')) return 'second_temple';
+    if (p === 'second_temple' || p === '2nd_temple' || p.includes('herod') || p.includes('zerubbabel')) return 'second_temple';
+    if (p === 'ezekiel_temple' || p.includes('ezekiel') || p.includes('ezek')) return 'ezekiel_temple';
     if (p === 'jerusalem_gates' || p.includes('jerusalem') || p.includes('gate') || p.includes('wall')) return 'jerusalem_gates';
   }
   if (passage) {
@@ -1530,9 +1546,11 @@ function resolveArchitecturePlanId(rawPlan?: string, passage?: string): Architec
       const { book, chapter, start_verse } = parsed.passages[0];
       if (book === 2 || book === 3 || book === 4 || (book === 58 && chapter === 9 && start_verse <= 5)) return 'tabernacle';
       if (book === 11 || book === 12 || book === 13 || book === 14) return 'first_temple';
-      if (book === 15 || book === 16 || book === 36 || book === 38) return 'jerusalem_gates';
+      if (book === 26 && chapter >= 40) return 'ezekiel_temple';
+      if (book === 37 || book === 38) return 'second_temple';
+      if (book === 15 || book === 16 || book === 36) return 'jerusalem_gates';
       if (book >= 40) return 'second_temple';
-      return 'jerusalem_gates';
+      return null;
     }
   }
   return null;
@@ -1550,6 +1568,21 @@ export function queryMcpSacredArchitecture(params: {
   const parsedPassage = params.passage ? parsePassageString(params.passage) : null;
   if (params.passage && !parsedPassage) {
     return { status: 'invalid_request', error: `Could not parse passage: ${params.passage}` };
+  }
+  if (params.passage && !planId && !params.plan && !elemQ && !normStrongs) {
+    return {
+      status: 'no_matching_plan',
+      query: {
+        plan: null,
+        element: null,
+        strongs: null,
+        passage: parsedPassage?.normalized ?? params.passage,
+      },
+      plans: [],
+      elements: [],
+      available_plans: Object.keys(ARCHITECTURE_PLANS),
+      note: `No dedicated sacred-architecture blueprint maps directly to ${parsedPassage?.normalized ?? params.passage}. Specify plan ("tabernacle", "first_temple", "second_temple", "ezekiel_temple", "jerusalem_gates"), an element keyword, or a Strong's ID.`,
+    };
   }
 
   const candidatePlans: ArchitecturePlan[] = planId
@@ -2145,7 +2178,14 @@ export async function queryMcpPlaces(
 
   const allPlaces = [...byLookup.values()];
   const rawQ = (params.query ?? '').trim();
+  const normalizePlaceText = (raw: string): string =>
+    String(raw || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[\s\-_''`]+/g, '');
   const q = rawQ.toLowerCase();
+  const qNorm = normalizePlaceText(rawQ);
   const normStrongs = normalizeStrongsCode(params.strongs || (/^[hg]0*\d+[a-z]?$/i.test(rawQ) ? rawQ : ''));
   const limit = Math.max(1, Math.min(30, Math.trunc(params.limit ?? 10)));
 
@@ -2159,14 +2199,17 @@ export async function queryMcpPlaces(
     }
     if (q && !(/^[hg]0*\d+[a-z]?$/i.test(q) && score > 0)) {
       const titleL = place.displayTitle.toLowerCase();
+      const titleNorm = normalizePlaceText(place.displayTitle);
       const lookupL = place.placeLookup.toLowerCase();
-      const aliasHit = place.aliases.some((a) => a.toLowerCase() === q);
-      const aliasPartial = !aliasHit && place.aliases.some((a) => a.toLowerCase().includes(q));
-      if (titleL === q || lookupL === q) score += 100;
+      const lookupNorm = normalizePlaceText(place.placeLookup);
+      const aliasHit = place.aliases.some((a) => a.toLowerCase() === q || (qNorm.length >= 2 && normalizePlaceText(a) === qNorm));
+      const aliasPartial = !aliasHit && place.aliases.some((a) => a.toLowerCase().includes(q) || (qNorm.length >= 2 && normalizePlaceText(a).includes(qNorm)));
+      if (titleL === q || lookupL === q || (qNorm.length >= 2 && (titleNorm === qNorm || lookupNorm === qNorm))) score += 100;
       else if (aliasHit) score += 85;
-      else if (titleL.startsWith(q)) score += 65;
+      else if (titleL.startsWith(q) || (qNorm.length >= 2 && titleNorm.startsWith(qNorm))) score += 65;
       else if (
         titleL.includes(q) ||
+        (qNorm.length >= 2 && (titleNorm.includes(qNorm) || lookupNorm.includes(qNorm))) ||
         aliasPartial ||
         lookupL.includes(q) ||
         (place.hebrew?.includes(rawQ) ?? false) ||

@@ -34,6 +34,7 @@ export type RpcName =
   | 'discover_biblical_connections_v1' | 'discover_biblical_connections_v2' | 'get_connection_evidence_v1' | 'expand_biblical_connection_v1'
   | 'discover_patterns_v1' | 'compare_patterns_v1' | 'trace_evidence_v1' | 'discover_subgraph_v1'
   | 'get_passage_compact_v1' | 'get_word_profiles_batch_v1' | 'resolve_fast_lookup_v1' | 'lookup_concept_properties_v1'
+  | 'get_literary_source_v1' | 'analyze_literary_structure_v1'
   | 'research_word_lens_v1' | 'research_word_bridge_v1' | 'research_passage_lens_v1' |
   'get_dlm_notes_for_verse_v1' | 'verify_dlm_lemma_occurrence_v1' |
   'get_notes_for_passage_v1' | 'get_notes_for_word_v1' | 'get_note_v1' | 'search_note_targets_v1' | 'list_note_connection_types_v1';

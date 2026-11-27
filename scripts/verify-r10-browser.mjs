@@ -74,7 +74,7 @@ async function runBrowserTests() {
   try {
     const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
     const page = await context.newPage();
-    page.on('pageerror', err => consoleErrors.push(String(err)));
+    page.on('pageerror', err => consoleErrors.push(err.stack || String(err)));
     page.on('console', msg => {
       if (msg.type() === 'error') consoleErrors.push(msg.text());
     });
@@ -161,6 +161,21 @@ async function runBrowserTests() {
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
     assert.ok(overflow <= 8, `Horizontal overflow on 390px mobile viewport: ${overflow}px`);
     await page.screenshot({ path: path.join(SHOTS_DIR, 'mobile-testB.png'), fullPage: false });
+
+    console.log('Browser R11 Lily pagination and Hebrew evidence...');
+    await page.fill('.js-discover-input', 'lily');
+    await page.click('.js-discover-form button[type="submit"]');
+    await page.waitForFunction(() => document.querySelector('.discover-occurrences-box')?.textContent?.includes('H7799'));
+    await page.waitForSelector('.js-focus-lemma[data-focus-lemma="H7799"]');
+    await page.click('.js-load-more-occurrences');
+    await page.waitForFunction(() => document.querySelector('.discover-occurrences-box')?.textContent?.includes('17 of 17'));
+    const lilyText = await page.textContent('.discover-occurrences-box');
+    for (const ref of ['1 Kings 7:26', 'Psalms 45:0', 'Hosea 14:5']) assert.ok(lilyText.includes(ref), ref);
+    const witnessCount = await page.locator('.discover-occurrences-box .js-nav-passage').count();
+    assert.equal(witnessCount, 17, 'Unique full Hebrew lily witnesses');
+    assert.ok((await page.textContent('.discover-panel')).includes('H7800'), 'Susa distinction notice');
+    assert.ok(await page.locator('.discover-cluster-card').count() >= 1);
+    await page.screenshot({ path: path.join(SHOTS_DIR, 'mobile-r11-lily.png'), fullPage: false });
 
     const criticalErrors = consoleErrors.filter(e => !e.includes('favicon'));
     assert.equal(criticalErrors.length, 0, `Console/page errors detected: ${criticalErrors.join(' | ')}`);

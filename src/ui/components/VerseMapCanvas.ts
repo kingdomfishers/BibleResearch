@@ -7,20 +7,43 @@
 // === @section:imports ===
 import 'maplibre-gl/dist/maplibre-gl.css';
 import type { GeographyEraPlace, GeographyLocation, VerseGeographyPacket } from '../../api/types';
+import { type CuratedMediaAsset, getMediaForPlace, renderMediaFigure } from '../context-tools/curated-media-manifest';
 
 // === @section:types ===
 export type BasemapMode = 'hybrid' | 'historical' | 'modern';
+export type MapTheme = 'light' | 'dark';
+
+export interface RouteStats {
+  totalKm: number;
+  totalMiles: number;
+  walkDays: number;
+  pointCount: number;
+}
+
 export interface VerseMapCanvasHandle {
   renderPacket: (packet: VerseGeographyPacket | null, selectedAltIds: Record<string, string>) => Promise<void>;
   focusPlace: (placeKey: string, altId?: string) => void;
   setBasemapMode: (mode: BasemapMode) => Promise<void>;
   setEraGazetteerVisible: (visible: boolean) => Promise<void>;
+  setTheme: (theme: MapTheme) => void;
+  getRouteStats: () => RouteStats;
   resize: () => void;
 }
 type MapLibreModule = typeof import('maplibre-gl');
 
 // === @section:logic:style ===
-function createMapStyle(): Record<string, unknown> {
+function readActiveTheme(): MapTheme {
+  return document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
+}
+
+function getThemePalette(theme: MapTheme) {
+  return theme === 'light'
+    ? { sea: '#d6e3ec', land: '#ece6d6', outline: '#b7c6d1', river: '#4e8ab3' }
+    : { sea: '#101b27', land: '#1b2634', outline: '#32475c', river: '#3b76a0' };
+}
+
+function createMapStyle(theme: MapTheme): Record<string, unknown> {
+  const palette = getThemePalette(theme);
   return {
     version: 8,
     name: 'BibleResearch Historical & Modern Open Map',
@@ -46,18 +69,21 @@ function createMapStyle(): Record<string, unknown> {
         attribution: '© OpenStreetMap contributors (ODbL)',
       },
       'ancient-basemap': { type: 'geojson', data: '/geo/ancient-basemap.geojson' },
+      'verse-uncertainty': { type: 'geojson', data: { type: 'FeatureCollection', features: [] } },
       'verse-regions': { type: 'geojson', data: { type: 'FeatureCollection', features: [] } },
       'verse-routes': { type: 'geojson', data: { type: 'FeatureCollection', features: [] } },
       'verse-points': { type: 'geojson', data: { type: 'FeatureCollection', features: [] } },
     },
     layers: [
-      { id: 'bg-sea', type: 'background', paint: { 'background-color': '#101b27' } },
-      { id: 'ne-land', type: 'fill', source: 'ancient-basemap', filter: ['==', ['get', 'feature_type'], 'land'], paint: { 'fill-color': '#1b2634', 'fill-outline-color': '#32475c' } },
-      { id: 'ne-water', type: 'fill', source: 'ancient-basemap', filter: ['==', ['get', 'feature_type'], 'water'], paint: { 'fill-color': '#101b27', 'fill-outline-color': '#32475c' } },
+      { id: 'bg-sea', type: 'background', paint: { 'background-color': palette.sea } },
+      { id: 'ne-land', type: 'fill', source: 'ancient-basemap', filter: ['==', ['get', 'feature_type'], 'land'], paint: { 'fill-color': palette.land, 'fill-outline-color': palette.outline } },
+      { id: 'ne-water', type: 'fill', source: 'ancient-basemap', filter: ['==', ['get', 'feature_type'], 'water'], paint: { 'fill-color': palette.sea, 'fill-outline-color': palette.outline } },
       { id: 'layer-physical', type: 'raster', source: 'physical-relief', paint: { 'raster-opacity': 0.55, 'raster-saturation': -0.35 } },
       { id: 'layer-cawm', type: 'raster', source: 'dare-ancient', paint: { 'raster-opacity': 0.72 } },
       { id: 'layer-osm', type: 'raster', source: 'osm-modern', paint: { 'raster-opacity': 0.24, 'raster-saturation': -0.4 } },
-      { id: 'ne-rivers', type: 'line', source: 'ancient-basemap', filter: ['==', ['get', 'feature_type'], 'river'], paint: { 'line-color': '#3b76a0', 'line-width': 1.8 } },
+      { id: 'ne-rivers', type: 'line', source: 'ancient-basemap', filter: ['==', ['get', 'feature_type'], 'river'], paint: { 'line-color': palette.river, 'line-width': 1.8 } },
+      { id: 'verse-uncertainty-fill', type: 'fill', source: 'verse-uncertainty', paint: { 'fill-color': ['match', ['get', 'confidence'], 'established', '#2f9e66', 'probable', '#d4af37', 'disputed', '#d97724', '#60a5fa'], 'fill-opacity': 0.11 } },
+      { id: 'verse-uncertainty-line', type: 'line', source: 'verse-uncertainty', paint: { 'line-color': ['match', ['get', 'confidence'], 'established', '#2f9e66', 'probable', '#d4af37', 'disputed', '#d97724', '#60a5fa'], 'line-width': 1.5, 'line-dasharray': [2, 3], 'line-opacity': 0.65 } },
       { id: 'verse-region-fill', type: 'fill', source: 'verse-regions', paint: { 'fill-color': ['match', ['get', 'confidence'], 'established', '#2f9e66', 'probable', '#d4af37', 'disputed', '#d97724', '#60a5fa'], 'fill-opacity': 0.22 } },
       { id: 'verse-region-line', type: 'line', source: 'verse-regions', paint: { 'line-color': ['match', ['get', 'confidence'], 'established', '#2f9e66', 'probable', '#d4af37', 'disputed', '#d97724', '#60a5fa'], 'line-width': 2.2, 'line-dasharray': [3, 2] } },
       { id: 'verse-route-line', type: 'line', source: 'verse-routes', paint: { 'line-color': '#d4af37', 'line-width': 2.6, 'line-dasharray': [2, 2] } },
@@ -68,10 +94,89 @@ function createMapStyle(): Record<string, unknown> {
 }
 
 // === @section:logic:features ===
+const EARTH_RADIUS_KM = 6371;
+const DEG_TO_RAD = Math.PI / 180;
+const RAD_TO_DEG = 180 / Math.PI;
+
+function haversineKm(a: [number, number], b: [number, number]): number {
+  const dLat = (b[1] - a[1]) * DEG_TO_RAD;
+  const dLon = (b[0] - a[0]) * DEG_TO_RAD;
+  const lat1 = a[1] * DEG_TO_RAD;
+  const lat2 = b[1] * DEG_TO_RAD;
+  const sinDLat = Math.sin(dLat / 2);
+  const sinDLon = Math.sin(dLon / 2);
+  const h = sinDLat * sinDLat + Math.cos(lat1) * Math.cos(lat2) * sinDLon * sinDLon;
+  return 2 * EARTH_RADIUS_KM * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+
+function buildCirclePolygon(lon: number, lat: number, radiusKm: number, steps = 48): [number, number][][] {
+  const angularDist = radiusKm / EARTH_RADIUS_KM;
+  const latRad = lat * DEG_TO_RAD;
+  const lonRad = lon * DEG_TO_RAD;
+  const ring: [number, number][] = [];
+  for (let i = 0; i <= steps; i++) {
+    const bearing = (2 * Math.PI * (i % steps)) / steps;
+    const sinLat = Math.sin(latRad) * Math.cos(angularDist) +
+      Math.cos(latRad) * Math.sin(angularDist) * Math.cos(bearing);
+    const destLat = Math.asin(Math.max(-1, Math.min(1, sinLat)));
+    const destLon = lonRad + Math.atan2(
+      Math.sin(bearing) * Math.sin(angularDist) * Math.cos(latRad),
+      Math.cos(angularDist) - Math.sin(latRad) * Math.sin(destLat),
+    );
+    ring.push([destLon * RAD_TO_DEG, destLat * RAD_TO_DEG]);
+  }
+  return [ring];
+}
+
+function resolveUncertaintyRadiusKm(
+  precisionKind: string,
+  confidenceLevel: string,
+  locationStatus: string,
+): number | null {
+  if (
+    precisionKind === 'approximate_region' ||
+    confidenceLevel === 'disputed' ||
+    confidenceLevel === 'regional' ||
+    locationStatus === 'disputed' ||
+    locationStatus === 'regional_only'
+  ) {
+    return 18;
+  }
+  if (precisionKind === 'site_area' || confidenceLevel === 'probable') {
+    return 6;
+  }
+  return null;
+}
+
+export function computeRouteStats(
+  locations: GeographyLocation[],
+  selectedAltIds: Record<string, string>,
+): RouteStats {
+  const coords: [number, number][] = [];
+  for (const loc of locations) {
+    if (loc.is_non_physical || loc.relationship_type === 'mentioned_location') continue;
+    const chosenAltId = selectedAltIds[loc.place_key];
+    const activeAlt = loc.alternative_locations.find(a => a.id === chosenAltId)
+      ?? loc.alternative_locations.find(a => a.rank_order === 1);
+    const lat = activeAlt?.latitude ?? loc.latitude;
+    const lon = activeAlt?.longitude ?? loc.longitude;
+    if (lat === null || lon === null) continue;
+    coords.push([lon, lat]);
+  }
+  let totalKm = 0;
+  for (let i = 1; i < coords.length; i++) {
+    totalKm += haversineKm(coords[i - 1], coords[i]);
+  }
+  const totalMiles = totalKm * 0.621371;
+  const walkDays = totalKm > 0 ? Math.round((totalKm / 30) * 10) / 10 : 0;
+  return { totalKm, totalMiles, walkDays, pointCount: coords.length };
+}
+
 function buildGeoJsonCollections(locations: GeographyLocation[], selectedAltIds: Record<string, string>) {
   const points: Record<string, unknown>[] = [];
   const regions: Record<string, unknown>[] = [];
   const routes: Record<string, unknown>[] = [];
+  const uncertainties: Record<string, unknown>[] = [];
   const routeCoords: [number, number][] = [];
   for (const loc of locations) {
     if (loc.is_non_physical) continue;
@@ -99,6 +204,16 @@ function buildGeoJsonCollections(locations: GeographyLocation[], selectedAltIds:
       if (isSelected && loc.relationship_type !== 'mentioned_location') {
         routeCoords.push([alt.longitude, alt.latitude]);
       }
+      if (isSelected) {
+        const radiusKm = resolveUncertaintyRadiusKm(alt.precision_kind, loc.confidence_level, alt.location_status);
+        if (radiusKm !== null) {
+          uncertainties.push({
+            type: 'Feature',
+            properties: { place_key: loc.place_key, confidence: loc.confidence_level, radius_km: radiusKm },
+            geometry: { type: 'Polygon', coordinates: buildCirclePolygon(alt.longitude, alt.latitude, radiusKm) },
+          });
+        }
+      }
       points.push({
         type: 'Feature',
         geometry: { type: 'Point', coordinates: [alt.longitude, alt.latitude] },
@@ -109,6 +224,7 @@ function buildGeoJsonCollections(locations: GeographyLocation[], selectedAltIds:
           confidence_level: loc.confidence_level, confidence_label: alt.confidence_label,
           evidence_explanation: loc.evidence_explanation, establishing_refs: loc.establishing_refs,
           source_url: alt.source_citations[0]?.url ?? loc.source.attribution,
+          strongs_csv: loc.strongs_numbers.join(','),
           visual_class: visualClass, is_alternative: !isSelected, is_selected_alt: isSelected,
         },
       });
@@ -117,7 +233,7 @@ function buildGeoJsonCollections(locations: GeographyLocation[], selectedAltIds:
   if (routeCoords.length >= 2) {
     routes.push({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: routeCoords } });
   }
-  return { points, regions, routes };
+  return { points, regions, routes, uncertainties };
 }
 
 // === @section:logic:viewport ===
@@ -150,6 +266,7 @@ const shortRoleBadge: Record<string, string> = {
   mentioned_location: 'MENTIONED',
   uncertain_location: 'ROUTE / REGION',
 };
+
 function renderDomMarkers(
   maplibregl: MapLibreModule,
   map: import('maplibre-gl').Map,
@@ -158,9 +275,11 @@ function renderDomMarkers(
   mode: BasemapMode,
   showGazetteer: boolean,
   onMarkerClick: (coords: [number, number], props: Record<string, string>) => void,
+  onGazetteerClick: (gp: GeographyEraPlace) => void,
 ): import('maplibre-gl').Marker[] {
   const markers: import('maplibre-gl').Marker[] = [];
   const activeKeys = new Set<string>();
+  const MarkerCtor = maplibregl.Marker ?? (maplibregl as unknown as { default: MapLibreModule }).default.Marker;
   for (const pt of points) {
     const props = pt.properties as Record<string, string>;
     activeKeys.add(props.place_key);
@@ -174,21 +293,35 @@ function renderDomMarkers(
     const subLabel = mode === 'historical' ? ''
       : mode === 'modern' ? `Ancient: ${props.ancient_name || props.biblical_name}`
         : `Modern: ${props.modern_name || props.biblical_name}`;
-    el.innerHTML = `<span class="pin-role">${roleText}</span>
-      <span class="pin-ancient">${primaryLabel}</span>
-      ${subLabel ? `<span class="pin-modern">${subLabel}</span>` : ''}`;
+
+    const roleSpan = document.createElement('span');
+    roleSpan.className = 'pin-role';
+    roleSpan.textContent = roleText;
+
+    const ancientSpan = document.createElement('span');
+    ancientSpan.className = 'pin-ancient';
+    ancientSpan.textContent = primaryLabel;
+
+    el.append(roleSpan, ancientSpan);
+    if (subLabel) {
+      const modernSpan = document.createElement('span');
+      modernSpan.className = 'pin-modern';
+      modernSpan.textContent = subLabel;
+      el.append(modernSpan);
+    }
+
     el.addEventListener('click', ev => { ev.stopPropagation(); onMarkerClick(coords, props); });
-    const MarkerCtor = maplibregl.Marker ?? (maplibregl as unknown as { default: MapLibreModule }).default.Marker;
     markers.push(new MarkerCtor({ element: el, anchor: 'bottom', offset: [0, -8] }).setLngLat(coords).addTo(map));
   }
   if (showGazetteer) {
-    const MarkerCtor = maplibregl.Marker ?? (maplibregl as unknown as { default: MapLibreModule }).default.Marker;
     for (const gp of eraGazetteer) {
       if (activeKeys.has(gp.place_key) || gp.latitude == null || gp.longitude == null) continue;
-      const el = document.createElement('div');
+      const el = document.createElement('button');
+      el.type = 'button';
       el.className = 'map-era-gazetteer-label';
       el.title = `Contemporary Biblical Place (${gp.place_type}): ${gp.ancient_name} · Modern: ${gp.modern_name ?? gp.biblical_name}`;
       el.textContent = mode === 'modern' ? `${gp.biblical_name} (${gp.modern_name ?? ''})` : gp.ancient_name;
+      el.addEventListener('click', ev => { ev.stopPropagation(); onGazetteerClick(gp); });
       markers.push(new MarkerCtor({ element: el, anchor: 'center' }).setLngLat([gp.longitude, gp.latitude]).addTo(map));
     }
   }
@@ -196,21 +329,117 @@ function renderDomMarkers(
 }
 
 // === @section:ui:popup ===
-function buildPopupHtml(props: Record<string, string>): string {
-  const linkHtml = props.source_url?.startsWith('http')
-    ? `<a href="${props.source_url}" target="_blank" rel="noopener noreferrer" style="color:#d4af37">Source citation ↗</a>` : '';
-  return `<div><strong style="color:#d4af37;font-size:13px">${props.ancient_name || props.biblical_name}</strong>
-    <div style="color:#cbd5e1;font-size:11px;margin-bottom:2px">Biblical: ${props.biblical_name} · Modern: ${props.modern_name || 'Regional / Unidentified'}</div>
-    <div style="font-size:11px;margin-bottom:4px"><code>${props.relationship_type}</code> · <strong>${props.confidence_level}</strong> (${props.confidence_label})</div>
-    <div style="font-size:11.5px;margin-bottom:4px">${props.evidence_explanation}</div>
-    <div style="color:#9ca3af;font-size:10.5px">Refs: ${props.establishing_refs} ${linkHtml}</div></div>`;
+function buildPopupDom(
+  props: Record<string, string>,
+  onOpenLightbox?: (asset: CuratedMediaAsset) => void,
+): HTMLElement {
+  const wrap = document.createElement('div');
+  wrap.className = 'map-popup-card';
+
+  const title = document.createElement('strong');
+  title.className = 'map-popup-title';
+  title.textContent = props.ancient_name || props.biblical_name;
+
+  const sub = document.createElement('div');
+  sub.className = 'map-popup-sub';
+  sub.textContent = `Biblical: ${props.biblical_name} · Modern: ${props.modern_name || 'Regional / Unidentified'}`;
+
+  const meta = document.createElement('div');
+  meta.className = 'map-popup-meta';
+  const relCode = document.createElement('code');
+  relCode.textContent = props.relationship_type;
+  const confStrong = document.createElement('strong');
+  confStrong.textContent = props.confidence_level;
+  meta.append(relCode, document.createTextNode(' · '), confStrong, document.createTextNode(` (${props.confidence_label})`));
+
+  const evidence = document.createElement('div');
+  evidence.className = 'map-popup-evidence';
+  evidence.textContent = props.evidence_explanation;
+
+  const refs = document.createElement('div');
+  refs.className = 'map-popup-refs';
+  refs.textContent = `Refs: ${props.establishing_refs}`;
+  if (props.source_url?.startsWith('http://') || props.source_url?.startsWith('https://')) {
+    const link = document.createElement('a');
+    link.href = props.source_url;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.className = 'map-popup-link';
+    link.textContent = 'Source citation ↗';
+    refs.append(document.createTextNode(' '), link);
+  }
+
+  wrap.append(title, sub, meta, evidence, refs);
+
+  const strongsList = props.strongs_csv
+    ? props.strongs_csv.split(',').map(s => s.trim()).filter(Boolean)
+    : undefined;
+  const mediaMatches = getMediaForPlace({
+    place_key: props.place_key,
+    biblical_name: props.biblical_name,
+    ancient_name: props.ancient_name,
+    strongs_numbers: strongsList,
+  });
+  if (mediaMatches.length > 0) {
+    const mediaBox = document.createElement('div');
+    mediaBox.className = 'map-popup-media';
+    mediaBox.append(renderMediaFigure(mediaMatches[0], { compact: true, onOpenLightbox }));
+    wrap.append(mediaBox);
+  }
+
+  return wrap;
 }
+
+function buildGazetteerPopupDom(
+  gp: GeographyEraPlace,
+  onOpenLightbox?: (asset: CuratedMediaAsset) => void,
+): HTMLElement {
+  const wrap = document.createElement('div');
+  wrap.className = 'map-popup-card';
+
+  const title = document.createElement('strong');
+  title.className = 'map-popup-title';
+  title.textContent = gp.ancient_name || gp.biblical_name;
+
+  const sub = document.createElement('div');
+  sub.className = 'map-popup-sub';
+  sub.textContent = `Biblical: ${gp.biblical_name} · Modern: ${gp.modern_name || 'Regional / Unidentified'}`;
+
+  const meta = document.createElement('div');
+  meta.className = 'map-popup-meta';
+  const typeCode = document.createElement('code');
+  typeCode.textContent = gp.place_type;
+  meta.append(document.createTextNode('Era Gazetteer · '), typeCode);
+
+  const coordsEl = document.createElement('div');
+  coordsEl.className = 'map-popup-refs';
+  coordsEl.textContent = `Coordinates: ${gp.latitude.toFixed(4)}°N, ${gp.longitude.toFixed(4)}°E`;
+
+  wrap.append(title, sub, meta, coordsEl);
+
+  const mediaMatches = getMediaForPlace({
+    place_key: gp.place_key,
+    biblical_name: gp.biblical_name,
+    ancient_name: gp.ancient_name,
+  });
+  if (mediaMatches.length > 0) {
+    const mediaBox = document.createElement('div');
+    mediaBox.className = 'map-popup-media';
+    mediaBox.append(renderMediaFigure(mediaMatches[0], { compact: true, onOpenLightbox }));
+    wrap.append(mediaBox);
+  }
+
+  return wrap;
+}
+
 function setGeoJsonSources(
   m: import('maplibre-gl').Map,
   points: Record<string, unknown>[],
   regions: Record<string, unknown>[],
   routes: Record<string, unknown>[],
+  uncertainties: Record<string, unknown>[],
 ) {
+  (m.getSource('verse-uncertainty') as import('maplibre-gl').GeoJSONSource)?.setData({ type: 'FeatureCollection', features: uncertainties as never[] });
   (m.getSource('verse-points') as import('maplibre-gl').GeoJSONSource)?.setData({ type: 'FeatureCollection', features: points as never[] });
   (m.getSource('verse-regions') as import('maplibre-gl').GeoJSONSource)?.setData({ type: 'FeatureCollection', features: regions as never[] });
   (m.getSource('verse-routes') as import('maplibre-gl').GeoJSONSource)?.setData({ type: 'FeatureCollection', features: routes as never[] });
@@ -223,8 +452,26 @@ function applyBasemapModeToLayers(m: import('maplibre-gl').Map, mode: BasemapMod
   if (m.getLayer('layer-osm')) m.setPaintProperty('layer-osm', 'raster-opacity', mode === 'modern' ? 0.92 : mode === 'hybrid' ? 0.24 : 0);
 }
 
+function applyThemeToMap(m: import('maplibre-gl').Map, theme: MapTheme) {
+  const palette = getThemePalette(theme);
+  if (m.getLayer('bg-sea')) m.setPaintProperty('bg-sea', 'background-color', palette.sea);
+  if (m.getLayer('ne-water')) {
+    m.setPaintProperty('ne-water', 'fill-color', palette.sea);
+    m.setPaintProperty('ne-water', 'fill-outline-color', palette.outline);
+  }
+  if (m.getLayer('ne-land')) {
+    m.setPaintProperty('ne-land', 'fill-color', palette.land);
+    m.setPaintProperty('ne-land', 'fill-outline-color', palette.outline);
+  }
+  if (m.getLayer('ne-rivers')) m.setPaintProperty('ne-rivers', 'line-color', palette.river);
+}
+
 // === @section:ui:init ===
-export function createVerseMapCanvas(container: HTMLElement, onSelectPlace: (placeKey: string, altId?: string) => void): VerseMapCanvasHandle {
+export function createVerseMapCanvas(
+  container: HTMLElement,
+  onSelectPlace: (placeKey: string, altId?: string) => void,
+  onOpenLightbox?: (asset: CuratedMediaAsset) => void,
+): VerseMapCanvasHandle {
   let maplibregl: MapLibreModule | null = null;
   let map: import('maplibre-gl').Map | null = null;
   let mapInitPromise: Promise<import('maplibre-gl').Map> | null = null;
@@ -233,23 +480,56 @@ export function createVerseMapCanvas(container: HTMLElement, onSelectPlace: (pla
   let currentPoints: Record<string, unknown>[] = [];
   let currentEraGazetteer: GeographyEraPlace[] = [];
   let currentMode: BasemapMode = 'hybrid';
+  let currentTheme: MapTheme = readActiveTheme();
+  let currentRouteStats: RouteStats = { totalKm: 0, totalMiles: 0, walkDays: 0, pointCount: 0 };
   let showGazetteer = true;
   let mapStyleReady = false;
+
   function clearMarkers() { domMarkers.forEach(mk => mk.remove()); domMarkers = []; }
-  function openPopupAt(coords: [number, number], props: Record<string, string>) {
+  function openPopupNode(coords: [number, number], content: HTMLElement) {
     if (!maplibregl || !map) return;
     popup?.remove();
     const PopupCtor = maplibregl.Popup ?? (maplibregl as unknown as { default: MapLibreModule }).default.Popup;
-    popup = new PopupCtor({ closeOnClick: false, offset: 14 }).setLngLat(coords).setHTML(buildPopupHtml(props)).addTo(map);
+    popup = new PopupCtor({ closeOnClick: false, offset: 14, maxWidth: '300px' })
+      .setLngLat(coords)
+      .setDOMContent(content)
+      .addTo(map);
+  }
+  function openPopupAt(coords: [number, number], props: Record<string, string>) {
+    openPopupNode(coords, buildPopupDom(props, onOpenLightbox));
+  }
+  function openGazetteerPopup(gp: GeographyEraPlace) {
+    openPopupNode([gp.longitude, gp.latitude], buildGazetteerPopupDom(gp, onOpenLightbox));
   }
   function refreshDomMarkers() {
     if (!maplibregl || !map) return;
     clearMarkers();
-    domMarkers = renderDomMarkers(maplibregl, map, currentPoints, currentEraGazetteer, currentMode, showGazetteer, (coords, props) => {
-      openPopupAt(coords, props);
-      onSelectPlace(props.place_key, props.alt_id);
-    });
+    domMarkers = renderDomMarkers(
+      maplibregl,
+      map,
+      currentPoints,
+      currentEraGazetteer,
+      currentMode,
+      showGazetteer,
+      (coords, props) => {
+        openPopupAt(coords, props);
+        onSelectPlace(props.place_key, props.alt_id);
+      },
+      gp => {
+        openGazetteerPopup(gp);
+      },
+    );
   }
+
+  const themeObserver = new MutationObserver(() => {
+    const next = readActiveTheme();
+    if (next !== currentTheme) {
+      currentTheme = next;
+      if (map && mapStyleReady) applyThemeToMap(map, next);
+    }
+  });
+  themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
   async function ensureMap() {
     if (map && mapStyleReady) return map;
     if (mapInitPromise) return mapInitPromise;
@@ -257,11 +537,13 @@ export function createVerseMapCanvas(container: HTMLElement, onSelectPlace: (pla
       const mod = await import('maplibre-gl') as unknown as { default?: MapLibreModule } & MapLibreModule;
       maplibregl = mod.default ?? mod;
       maplibregl.setWorkerUrl('/geo/maplibre-gl-worker.mjs');
+      currentTheme = readActiveTheme();
       map = new maplibregl.Map({
-        container, style: createMapStyle() as unknown as import('maplibre-gl').StyleSpecification,
+        container, style: createMapStyle(currentTheme) as unknown as import('maplibre-gl').StyleSpecification,
         center: [35.23, 31.78], zoom: 5.5, attributionControl: false,
       });
       map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
+      map.addControl(new maplibregl.ScaleControl({ maxWidth: 110, unit: 'metric' }), 'bottom-left');
       map.on('click', 'verse-point-core', e => {
         const feat = e.features?.[0];
         if (!feat || !maplibregl || !map) return;
@@ -278,6 +560,8 @@ export function createVerseMapCanvas(container: HTMLElement, onSelectPlace: (pla
         map!.once('load', done);
         setTimeout(done, 1200);
       });
+      applyThemeToMap(map!, currentTheme);
+      applyBasemapModeToLayers(map!, currentMode);
       return map!;
     })();
     return mapInitPromise;
@@ -289,14 +573,18 @@ export function createVerseMapCanvas(container: HTMLElement, onSelectPlace: (pla
       const m = await ensureMap();
       popup?.remove();
       if (!packet || !packet.has_physical_location || packet.locations.length === 0) {
-        currentPoints = []; currentEraGazetteer = []; clearMarkers();
-        setGeoJsonSources(m, [], [], []);
+        currentPoints = [];
+        currentEraGazetteer = [];
+        currentRouteStats = { totalKm: 0, totalMiles: 0, walkDays: 0, pointCount: 0 };
+        clearMarkers();
+        setGeoJsonSources(m, [], [], [], []);
         return;
       }
-      const { points, regions, routes } = buildGeoJsonCollections(packet.locations, selectedAltIds);
+      const { points, regions, routes, uncertainties } = buildGeoJsonCollections(packet.locations, selectedAltIds);
       currentPoints = points;
       currentEraGazetteer = packet.era_gazetteer ?? [];
-      setGeoJsonSources(m, points, regions, routes);
+      currentRouteStats = computeRouteStats(packet.locations, selectedAltIds);
+      setGeoJsonSources(m, points, regions, routes, uncertainties);
       refreshDomMarkers();
       const targetBounds = computeTargetBounds(points, packet.bounds);
       if (targetBounds) {
@@ -311,7 +599,7 @@ export function createVerseMapCanvas(container: HTMLElement, onSelectPlace: (pla
       }) ?? currentPoints.find(pt => (pt.properties as Record<string, unknown>).place_key === placeKey);
       if (!match) return;
       const coords = (match.geometry as { coordinates: [number, number] }).coordinates;
-      map.easeTo({ center: coords, zoom: Math.max(map.getZoom(), 7.2), duration: 350 });
+      map.flyTo({ center: coords, zoom: Math.max(map.getZoom(), 9), duration: 550 });
       openPopupAt(coords, match.properties as Record<string, string>);
     },
     async setBasemapMode(mode) {
@@ -324,6 +612,13 @@ export function createVerseMapCanvas(container: HTMLElement, onSelectPlace: (pla
       showGazetteer = visible;
       await ensureMap();
       refreshDomMarkers();
+    },
+    setTheme(theme) {
+      currentTheme = theme;
+      if (map && mapStyleReady) applyThemeToMap(map, theme);
+    },
+    getRouteStats() {
+      return { ...currentRouteStats };
     },
     resize() { map?.resize(); },
   };

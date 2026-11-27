@@ -1,0 +1,110 @@
+{
+  "B1": {
+    "mapping": {
+      "System X": "nomcp",
+      "System Y": "v2",
+      "System Z": "v3"
+    },
+    "files": {
+      "System X": "research/v3/baseline/report_nomcp_B1.md",
+      "System Y": "research/v3/baseline/report_live_B1.md",
+      "System Z": "research/v3/eval-final/report_v3_B1.md"
+    }
+  },
+  "B2": {
+    "mapping": {
+      "System X": "v2",
+      "System Y": "nomcp",
+      "System Z": "v3"
+    },
+    "files": {
+      "System X": "research/v3/baseline/report_live_B2.md",
+      "System Y": "research/v3/baseline/report_nomcp_B2.md",
+      "System Z": "research/v3/eval-final/report_v3_B2.md"
+    }
+  },
+  "B3": {
+    "mapping": {
+      "System X": "v3",
+      "System Y": "nomcp",
+      "System Z": "v2"
+    },
+    "files": {
+      "System X": "research/v3/eval-final/report_v3_B3.md",
+      "System Y": "research/v3/baseline/report_nomcp_B3.md",
+      "System Z": "research/v3/baseline/report_live_B3.md"
+    }
+  },
+  "B4": {
+    "mapping": {
+      "System X": "v3",
+      "System Y": "v2",
+      "System Z": "nomcp"
+    },
+    "files": {
+      "System X": "research/v3/eval-final/report_v3_B4.md",
+      "System Y": "research/v3/baseline/report_live_B4.md",
+      "System Z": "research/v3/baseline/report_nomcp_B4.md"
+    }
+  },
+  "B5": {
+    "mapping": {
+      "System X": "v2",
+      "System Y": "nomcp",
+      "System Z": "v3"
+    },
+    "files": {
+      "System X": "research/v3/baseline/report_live_B5.md",
+      "System Y": "research/v3/baseline/report_nomcp_B5.md",
+      "System Z": "research/v3/eval-final/report_v3_B5.md"
+    }
+  },
+  "B6": {
+    "mapping": {
+      "System X": "v2",
+      "System Y": "nomcp",
+      "System Z": "v3"
+    },
+    "files": {
+      "System X": "research/v3/baseline/report_live_B6.md",
+      "System Y": "research/v3/baseline/report_nomcp_B6.md",
+      "System Z": "research/v3/eval-final/report_v3_B6.md"
+    }
+  },
+  "H1": {
+    "mapping": {
+      "System X": "v2",
+      "System Y": "nomcp",
+      "System Z": "v3"
+    },
+    "files": {
+      "System X": "research/v3/eval-final/report_v2_H1.md",
+      "System Y": "research/v3/eval-final/report_nomcp_H1.md",
+      "System Z": "research/v3/eval-final/report_v3_H1.md"
+    }
+  },
+  "H2": {
+    "mapping": {
+      "System X": "v2",
+      "System Y": "v3",
+      "System Z": "nomcp"
+    },
+    "files": {
+      "System X": "research/v3/eval-final/report_v2_H2.md",
+      "System Y": "research/v3/eval-final/report_v3_H2.md",
+      "System Z": "research/v3/eval-final/report_nomcp_H2.md"
+    }
+  },
+  "H3": {
+    "mapping": {
+      "System X": "v2",
+      "System Y": "nomcp",
+      "System Z": "v3"
+    },
+    "files": {
+      "System X": "research/v3/eval-final/report_v2_H3.md",
+      "System Y": "research/v3/eval-final/report_nomcp_H3.md",
+      "System Z": "research/v3/eval-final/report_v3_H3.md"
+    }
+  }
+}

@@ -4,13 +4,22 @@
 
 import type { DatabaseQuery, DatabaseReader } from './catalog.ts';
 import type { GematriaResult } from './gematria.ts';
+import { isLxxFunctionEquivalent, normalizeEpistemicClass } from './literary/epistemic-taxonomy.ts';
 
 export interface CompactConnection {
   id: string;
+  expand_id?: string;
   relation: string;
   epistemic: string;
   evidence_type?: string;
   tier?: number;
+  e_perp?: {
+    bits: number;
+    p_null?: number;
+    register?: string;
+  };
+  axes?: string[];
+  bridge_preview?: string;
   title: string;
   why: string;
   refs: string[];
@@ -286,7 +295,7 @@ export function isFunctionWord(tok: { pos_class?: string; strongs?: string }): b
   const strongs = normalizeStrongs(tok.strongs);
   if (strongs === 'H3068') return false;
   if (strongs) {
-    if (FUNCTION_STRONGS.has(strongs) || /^H900\d*$/i.test(strongs)) {
+    if (FUNCTION_STRONGS.has(strongs) || /^H90\d{2}$/i.test(strongs)) {
       return true;
     }
   }
@@ -327,6 +336,78 @@ export function cleanTransliteration(raw?: string | null, fallbackScript?: strin
   }
   const translit = out.replace(/\s+/g, ' ').trim();
   return translit || fallback;
+}
+
+const PRIMARY_LEMMA_DISPLAY_OVERRIDES: Readonly<Record<string, {
+  badRegex: RegExp;
+  lemma?: string;
+  lemmaKey?: string;
+  transliteration?: string;
+  gloss: string;
+}>> = {
+  H1540: {
+    badRegex: /^(?:heglam|הֶגְלָם)$/i,
+    lemma: 'גָּלָה',
+    lemmaKey: 'lemma:h1540a',
+    transliteration: 'galah',
+    gloss: 'to uncover, reveal, go into exile',
+  },
+  H5158: {
+    badRegex: /\bpalm[- ]tree\b/i,
+    lemma: 'נַ֫חַל',
+    lemmaKey: 'lemma:h5158a',
+    transliteration: 'na.chal',
+    gloss: 'wadi, torrent, valley',
+  },
+  H2319: {
+    badRegex: /^new\s*\(/i,
+    gloss: 'new',
+  },
+  H4417: {
+    badRegex: /\bAlso:/i,
+    lemma: 'מֶ֫לַח',
+    lemmaKey: 'lemma:H4417',
+    transliteration: 'me.lach',
+    gloss: 'salt',
+  },
+  H6030: {
+    badRegex: /\bto dwell\b|עוּן/i,
+    lemma: 'עָנָה',
+    lemmaKey: 'lemma:H6030B',
+    transliteration: 'a.nah',
+    gloss: 'to answer, respond, sing',
+  },
+  H7462: {
+    badRegex: /עֵ֫קֶד|עקד|בֵּית|בֵּית|בית|Beth-eked/i,
+    lemma: 'רָעָה',
+    lemmaKey: 'lemma:H7462B',
+    transliteration: 'ra.ah',
+    gloss: 'to pasture, shepherd',
+  },
+};
+
+export function sanitizeLemmaDisplayFields(fields: {
+  strongs: string;
+  lemma: string;
+  lemmaKey?: string;
+  transliteration: string;
+  gloss: string;
+  anchored?: boolean;
+}): { lemma: string; lemmaKey?: string; transliteration: string; gloss: string } {
+  const cleanedGloss = (fields.gloss || '').replace(/\s*[;|]?\s*\bAlso:.*$/i, '').trim() || fields.gloss;
+  const normBs = normalizeStrongs(fields.strongs).replace(/^([HG])0*(\d+)[A-Z]*$/, (_, l: string, d: string) => `${l}${d.padStart(4, '0')}`);
+  const rule = PRIMARY_LEMMA_DISPLAY_OVERRIDES[normBs];
+  if (!rule) return cleanedGloss !== fields.gloss ? { ...fields, gloss: cleanedGloss } : fields;
+  const hitBadGloss = rule.badRegex.test(cleanedGloss || '') || /\bAlso:/i.test(fields.gloss || '');
+  const hitBadLemma = rule.badRegex.test(fields.lemma || '') || /h1540g/i.test(fields.lemmaKey || '');
+  if (!hitBadGloss && !hitBadLemma) return cleanedGloss !== fields.gloss ? { ...fields, gloss: cleanedGloss } : fields;
+  const forceLemmaReplace = normBs === 'H7462' && hitBadLemma;
+  return {
+    lemma: ((!fields.anchored || forceLemmaReplace) && hitBadLemma && rule.lemma) ? rule.lemma : fields.lemma,
+    lemmaKey: (!fields.anchored && hitBadLemma && rule.lemmaKey) ? rule.lemmaKey : fields.lemmaKey,
+    transliteration: (!fields.anchored && hitBadLemma && rule.transliteration) ? rule.transliteration : fields.transliteration,
+    gloss: hitBadGloss || (forceLemmaReplace && !fields.anchored) ? rule.gloss : cleanedGloss,
+  };
 }
 
 function compactSenses(
@@ -373,6 +454,20 @@ function compactSenses(
       push({ ...(key ? { key } : {}), gloss, note: 'Separate homograph lemma under the same Strong\'s number' });
     }
   }
+  // Ensure primary sense comes first when H5158B ("palm-tree") or H1540G ("Heglam") precedes the primary lemma sense.
+  if (result.length > 1 && base) {
+    const paddedBase = base.replace(/^([HG])0*(\d+)[A-Z]*$/, (_, l: string, d: string) => `${l}${d.padStart(4, '0')}`);
+    const rule = PRIMARY_LEMMA_DISPLAY_OVERRIDES[paddedBase];
+    if (rule && rule.badRegex.test(result[0].gloss || '')) {
+      const primaryIdx = result.findIndex(
+        (s, idx) => idx > 0 && !rule.badRegex.test(s.gloss || '') && !/Heglam/i.test(s.gloss || ''),
+      );
+      if (primaryIdx > 0) {
+        const [pri] = result.splice(primaryIdx, 1);
+        result.unshift(pri);
+      }
+    }
+  }
   return result.length > 0 ? result : undefined;
 }
 
@@ -391,6 +486,16 @@ function compactLxx(raw: unknown, sourceStrongs?: string): CompactWord['lxx'] | 
     const strongs = normalizeStrongs(firstNonEmpty(obj.strongs, obj.target_strongs, obj.greek_strongs))
       .replace(/^([HG])0*(\d+)([A-Z]*)$/, (_, language: string, digits: string, suffix: string) =>
         `${language}${digits.padStart(4, '0')}${suffix}`);
+    if (isLxxFunctionEquivalent(strongs, script)) {
+      continue;
+    }
+    // Filter clearly corrupt Swete G0065 (ἀγριέλαιος wild olive tree) <-> H6501/H6171 (פֶּרֶא/עָרוֹד wild donkey)
+    if (
+      (src === 'G0065' && (strongs === 'H6501' || strongs === 'H6171' || /פֶּ֫רֶא|פרא|עָרוֹד/.test(script))) ||
+      ((src === 'H6501' || src === 'H6171') && strongs === 'G0065')
+    ) {
+      continue;
+    }
     const count = typeof obj.count === 'number' && Number.isFinite(obj.count)
       ? obj.count
       : typeof obj.occurrences === 'number' && Number.isFinite(obj.occurrences)
@@ -414,12 +519,28 @@ function compactLxx(raw: unknown, sourceStrongs?: string): CompactWord['lxx'] | 
           : undefined)
       : undefined;
     if (targetKey) byTarget.set(targetKey, result.length);
+    const sanitizedLxx = sanitizeLemmaDisplayFields({
+      strongs,
+      lemma: script,
+      transliteration: '',
+      gloss,
+      anchored: false,
+    });
     result.push({
       ...(strongs ? { strongs } : {}),
-      script,
-      gloss,
+      script: sanitizedLxx.lemma,
+      gloss: sanitizedLxx.gloss,
       ...(count !== undefined ? { count } : {}),
       ...(direction ? { direction } : {}),
+    });
+  }
+  if (result.length > 1) {
+    result.sort((a, b) => {
+      const ca = a.count ?? 0;
+      const cb = b.count ?? 0;
+      const wa = ca <= 4 ? ca * 0.25 : ca;
+      const wb = cb <= 4 ? cb * 0.25 : cb;
+      return wb - wa;
     });
   }
   return result.length > 0 ? result : undefined;
@@ -469,10 +590,19 @@ export function compactWordFromData(opts: CompactWordOptions): CompactWord {
     anchored ? form : lemma,
   );
   const engArr = anchored ? asArray(wordRow?.english_translations).filter((x): x is string => typeof x === 'string') : [];
+  const profileSensesList = asArray(profile?.senses)
+    .map((s) => asRecord(s))
+    .filter((s): s is Record<string, unknown> => s !== null);
+  const matchingSenseGloss = (() => {
+    if (anchored || !lemmaKey) return '';
+    const lkLower = lemmaKey.toLowerCase();
+    const hit = profileSensesList.find((s) => firstNonEmpty(s.key, s.lk).toLowerCase() === lkLower);
+    return hit ? firstNonEmpty(hit.gl, hit.gloss) : '';
+  })();
   const gloss = normalizeText(
     anchored
       ? firstNonEmpty(token?.gloss, profile?.gloss, profile?.gl, engArr[0])
-      : firstNonEmpty(profile?.gloss, profile?.gl, wordRow?.short_gloss, wordRow?.definition),
+      : firstNonEmpty(matchingSenseGloss, wordRow?.short_gloss, profile?.gloss, profile?.gl, wordRow?.definition),
     180,
   );
   const grammar = anchored
@@ -489,16 +619,24 @@ export function compactWordFromData(opts: CompactWordOptions): CompactWord {
   const senseStatus = firstNonEmpty(token?.sense_status, profile?.sense_status);
   const lemmaCandidates = asArray(token?.lemma_candidates)
     .filter((x): x is string => typeof x === 'string' && x.trim().length > 0);
+  const sanitizedPrimary = sanitizeLemmaDisplayFields({
+    strongs,
+    lemma,
+    lemmaKey,
+    transliteration,
+    gloss,
+    anchored,
+  });
 
   const out: CompactWord = {
     ...(form ? { form } : {}),
-    lemma,
+    lemma: sanitizedPrimary.lemma,
     strongs,
-    ...(lemmaKey ? { lemma_key: lemmaKey } : {}),
+    ...(sanitizedPrimary.lemmaKey ? { lemma_key: sanitizedPrimary.lemmaKey } : {}),
     ...(senseStatus ? { sense_status: senseStatus } : {}),
     ...(lemmaCandidates.length > 0 ? { lemma_candidates: lemmaCandidates } : {}),
-    transliteration,
-    gloss,
+    transliteration: sanitizedPrimary.transliteration,
+    gloss: sanitizedPrimary.gloss,
     ...(senses ? { senses } : {}),
     ...(grammar ? { grammar } : {}),
     ...(pos ? { pos } : {}),
@@ -674,7 +812,8 @@ export function normalizeDiscoveryConnection(rawConn: Record<string, unknown>): 
 
   const title = normalizeText(
     firstNonEmpty(rawConn.title, rawConn.label, rawConn.headline, rawConn.summary, relationRaw)
-      .replace(/^R12 (\d+)-hop discovery: /, '$1-hop: '),
+      .replace(/^R12 (\d+)-hop discovery: /, '$1-hop: ')
+      .replace(/עוּן\s*\(H6030(?:,\s*"to dwell")?\)/g, 'עָנָה (H6030)'),
     140,
   );
   const id = firstNonEmpty(
@@ -684,14 +823,47 @@ export function normalizeDiscoveryConnection(rawConn: Record<string, unknown>): 
     rawConn.key,
     `${relationRaw}:${title.slice(0, 48)}`,
   );
-  const epistemic = firstNonEmpty(
+  const expandId = firstNonEmpty(
+    rawConn.expand_id,
+    rawConn.evidence_id,
+    rawConn.id,
+    rawConn.connection_id,
+    id,
+  );
+  const v3Score = asRecord(rawConn.v3_score);
+  const ePerp = v3Score && typeof v3Score.e_perp_bits === 'number'
+    ? {
+        bits: Number(v3Score.e_perp_bits.toFixed(2)),
+        ...(typeof v3Score.p_null_approx === 'number' ? { p_null: Number(v3Score.p_null_approx.toExponential(2)) } : {}),
+        ...(typeof v3Score.dominant_register === 'string' ? { register: v3Score.dominant_register } : {}),
+      }
+    : undefined;
+  const axes = v3Score
+    ? asArray(v3Score.independent_axes)
+        .map(a => asRecord(a))
+        .filter((a): a is Record<string, unknown> => a !== null)
+        .map(a => firstNonEmpty(a.axis))
+        .filter(Boolean)
+        .slice(0, 6)
+    : undefined;
+  const r12Meta = asRecord(rawConn.r12_metadata);
+  const r12Steps = asArray(r12Meta?.steps).map(s => asRecord(s)).filter((s): s is Record<string, unknown> => s !== null);
+  const bridgePreview = firstNonEmpty(
+    rawConn.bridge_preview,
+    r12Steps.length >= 2
+      ? r12Steps.map(s => firstNonEmpty(s.via, s.to_label, s.to_id)).filter(Boolean).slice(0, 3).join(' -> ')
+      : '',
+  );
+  const rawEpistemic = firstNonEmpty(
     rawConn.epistemic,
     rawConn.epistemic_class,
     rawConn.epistemic_status,
     rawConn.epistemic_layer,
     rawConn.certainty,
-    'textual_evidence',
+    'semantic_hypothesis',
   );
+  const evidenceType = firstNonEmpty(rawConn.evidence_type);
+  const epistemic = normalizeEpistemicClass(rawEpistemic, 'semantic_hypothesis', evidenceType);
   const rawTier = rawConn.tier ?? rawConn.evidence_tier ?? rawConn.confidence_tier;
   const tier = typeof rawTier === 'number' && Number.isFinite(rawTier) ? rawTier : undefined;
   let whyText = firstNonEmpty(
@@ -707,7 +879,10 @@ export function normalizeDiscoveryConnection(rawConn: Record<string, unknown>): 
     .replace(/--\[gram_grammatical_object_of\]-->/g, '—object of→')
     .replace(/--\[gram_modifies\]-->/g, '—modifies→')
     .replace(/--\[lex_source_provided_lexical_equivalent\]-->/g, '—source lexical equivalent→')
-    .replace(/^Syntactic dependency analysis identifies direct grammatical connection \(([^)]+)\) between /, '$1: ');
+    .replace(/^Syntactic dependency analysis identifies direct grammatical connection \(([^)]+)\) between /, '$1: ')
+    .replace(/עוּן\s*\(H6030,\s*"to dwell"\)/g, 'עָנָה (H6030, "to answer/sing")')
+    .replace(/עוּן\s*\(to dwell\)/g, 'עָנָה (to answer/sing)')
+    .replace(/עוּן\s*\(H6030\)/g, 'עָנָה (H6030)');
   const why = normalizeText(
     whyText,
     240,
@@ -720,18 +895,26 @@ export function normalizeDiscoveryConnection(rawConn: Record<string, unknown>): 
     firstNonEmpty(rawConn.uncertainty, rawConn.caveat, rawConn.epistemic_note, rawLimits[0]),
     180,
   );
-  const evidenceType = firstNonEmpty(rawConn.evidence_type);
   const matchedEndpoints = asArray(rawConn.matched_concepts ?? rawConn.matched_endpoints ?? rawConn.endpoint_matches)
     .filter((x): x is string => typeof x === 'string' && x.trim().length > 0)
+    .map(ep => {
+      if (ep === 'עוּן') return 'עָנָה';
+      if (ep === 'to dwell' && /\bH6030\b/i.test(id)) return 'to answer/sing';
+      return ep;
+    })
     .slice(0, 8);
   const scoreBreakdown = asRecord(rawConn.score_breakdown);
 
   return {
     id,
+    ...(expandId ? { expand_id: expandId } : {}),
     relation: relationRaw,
     epistemic,
     ...(evidenceType ? { evidence_type: evidenceType } : {}),
     ...(tier !== undefined ? { tier } : {}),
+    ...(ePerp ? { e_perp: ePerp } : {}),
+    ...(axes && axes.length > 0 ? { axes } : {}),
+    ...(bridgePreview ? { bridge_preview: normalizeText(bridgePreview, 120) } : {}),
     title,
     why,
     refs,
@@ -1023,6 +1206,22 @@ function compactFormationRecord(rec: Record<string, unknown>): Record<string, un
  * them: roots documented only for a different lemma under the same Strong's number are listed
  * separately and never presented as this word's etymology. Spelling similarity is kept apart.
  */
+async function withEtymTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((resolve) => {
+        timer = setTimeout(() => resolve(fallback), ms);
+      }),
+    ]);
+  } finally {
+    if (timer !== undefined) clearTimeout(timer);
+  }
+}
+
+const ETYM_TIMEOUT_SENTINEL = Symbol('etym_timeout');
+
 export async function buildWordEtymology(
   read: DatabaseReader,
   strongs: string,
@@ -1036,16 +1235,72 @@ export async function buildWordEtymology(
   let relatives: Array<Record<string, unknown>> = [];
   let otherHomographRoots: Array<Record<string, unknown>> = [];
   let components: Array<Record<string, unknown>> = [];
+  let nonEtymologicalGroupings: Array<Record<string, unknown>> = [];
   let activeLemmaKey = options.activeLemmaKey ?? '';
 
+  const sourceScript = firstNonEmpty(profile?.sc, profile?.lemma);
+  const sourceGloss = firstNonEmpty(profile?.gl, profile?.gloss);
+  const sourceCons = consonantKey(sourceScript);
+  const isProperProfile =
+    profile?.entity_kind === 'proper_person' ||
+    profile?.entity_kind === 'proper_place' ||
+    (/^[A-Z][a-zA-Z'’-]+(?:\s+[A-Z(]|$)/.test(sourceGloss) && !/^(?:to|a|an|the)\s/i.test(sourceGloss));
+  const sharedConsonantCount = (a: string, b: string): number => {
+    const ca = consonantKey(a);
+    const cb = consonantKey(b);
+    if (!ca || !cb) return 0;
+    return [...new Set(ca)].filter((ch) => cb.includes(ch)).length;
+  };
+  const sanitizeRelativeRecord = (rec: Record<string, unknown>, rawRecord?: Record<string, unknown>): Record<string, unknown> | null => {
+    const rBs = padStrongs(firstNonEmpty(rec.base_strongs, rawRecord?.base_strongs, rawRecord?.target_strongs, rawRecord?.strongs));
+    const rScript = firstNonEmpty(rec.lemma_script, rawRecord?.lemma_script, rawRecord?.script);
+    if (!rBs || !rScript) return null;
+    const out: Record<string, unknown> = { ...rec, base_strongs: rBs, lemma_script: rScript };
+    const rGloss = firstNonEmpty(out.primary_gloss, rawRecord?.primary_gloss, rawRecord?.gloss);
+    if (
+      rGloss &&
+      sourceGloss &&
+      rBs !== strongs &&
+      sourceCons &&
+      consonantKey(rScript) !== sourceCons &&
+      rGloss.toLowerCase() === sourceGloss.toLowerCase()
+    ) {
+      if (rBs === 'H4519') {
+        out.primary_gloss = 'Manasseh';
+      } else {
+        delete out.primary_gloss;
+        out.evidence_note = firstNonEmpty(
+          out.evidence_note,
+          'Inherited homograph gloss suppressed; inspect the target entry directly.',
+        );
+      }
+    }
+    const relType = firstNonEmpty(out.relation_type).toLowerCase();
+    if (relType === 'spelling_variant_of' && sourceScript && sharedConsonantCount(sourceScript, rScript) < 2) {
+      out.relation_type = 'co_referential_or_related_name';
+      out.evidence_note = firstNonEmpty(
+        out.evidence_note,
+        'Co-referential designation or alternate name rather than an orthographic spelling variant.',
+      );
+    }
+    return out;
+  };
+
+  let formationTimedOut = false;
   try {
-    const rows = await callRpc(
-      read,
-      'get_word_formation_v1',
-      { p_query: strongs, ...(options.wordId ? { p_word_id: options.wordId } : {}) },
-      1,
-      0,
+    const timed = await withEtymTimeout<Record<string, unknown>[] | typeof ETYM_TIMEOUT_SENTINEL>(
+      callRpc(
+        read,
+        'get_word_formation_v1',
+        { p_query: strongs, ...(options.wordId ? { p_word_id: options.wordId } : {}) },
+        1,
+        0,
+      ),
+      2000,
+      ETYM_TIMEOUT_SENTINEL,
     );
+    formationTimedOut = timed === ETYM_TIMEOUT_SENTINEL;
+    const rows = formationTimedOut ? [] : timed;
     const first = asRecord(rows[0]);
     if (first) {
       const matched = asArray(first.matched_lemmas)
@@ -1071,24 +1326,45 @@ export async function buildWordEtymology(
       const keptRootKeys = new Set<string>();
       for (const root of allRoots) {
         const lk = firstNonEmpty(root.lemma_key);
+        const rCompact = compactFormationRecord(root);
+        const rText = `${firstNonEmpty(root.root_script, root.lemma_script, root.primary_gloss, root.evidence_note)}`;
+        const looksLikeCompoundProperPlace =
+          !isProperProfile &&
+          (/^[A-Z][a-z]+-[a-z]+/i.test(firstNonEmpty(root.root_transliteration, root.primary_gloss)) ||
+            /\b(?:place|camp|boundary|valley|ephes-dammim)\b/i.test(rText));
         if (activeLc && lk.toLowerCase() === activeLc) {
-          roots.push(compactFormationRecord(root));
+          if (looksLikeCompoundProperPlace) continue;
+          roots.push(rCompact);
           keptRootKeys.add(firstNonEmpty(root.root_key));
         } else {
+          if (looksLikeCompoundProperPlace) continue;
           const rk = firstNonEmpty(root.root_key);
           otherHomographRoots.push({
-            ...compactFormationRecord(root),
+            ...rCompact,
             homograph_gloss: glossByLemma.get(lk.toLowerCase()) || undefined,
-            relatives: allRelatives.filter((r) => firstNonEmpty(r.root_key) === rk).map(compactFormationRecord).slice(0, 3),
+            relatives: allRelatives
+              .filter((r) => firstNonEmpty(r.root_key) === rk)
+              .map((r) => sanitizeRelativeRecord(compactFormationRecord(r), r))
+              .filter((r): r is Record<string, unknown> => r !== null)
+              .slice(0, 3),
             note: activeLc && lk
               ? 'Other homograph lemma; not the selected word.'
               : 'Lemma assignment unavailable; do not attribute this root to a selected sense.',
           });
         }
       }
-      relatives = allRelatives
-        .filter((r) => keptRootKeys.has(firstNonEmpty(r.root_key)))
-        .map(compactFormationRecord);
+      const NON_ETYM_TYPES = new Set(['shared_name_base', 'group_member_of']);
+      for (const r of allRelatives) {
+        if (!keptRootKeys.has(firstNonEmpty(r.root_key))) continue;
+        const cleaned = sanitizeRelativeRecord(compactFormationRecord(r), r);
+        if (!cleaned) continue;
+        const rType = firstNonEmpty(cleaned.relation_type, r.relation_type, r.type).toLowerCase();
+        if (NON_ETYM_TYPES.has(rType)) {
+          nonEtymologicalGroupings.push(cleaned);
+        } else {
+          relatives.push(cleaned);
+        }
+      }
       formations = asArray(first.lexical_formations ?? first.formations)
         .map((r) => asRecord(r))
         .filter((r): r is Record<string, unknown> => r !== null)
@@ -1123,27 +1399,91 @@ export async function buildWordEtymology(
     // Graceful degradation when word formation RPC is temporarily unavailable.
   }
 
+  // Fallback to verified STEPBible / HebrewStrong lexical_relations stored on the lemma profile
+  // (excluding shared_name_base, group_member_of, and cross-script entries) when RPC roots/relatives are absent.
+  const srcPrefix = strongs[0]?.toUpperCase() || '';
+  const profileLex = asArray(profile?.lexical_relations)
+    .map((r) => asRecord(r))
+    .filter((r): r is Record<string, unknown> => r !== null);
+  for (const lr of profileLex) {
+    const tBs = padStrongs(firstNonEmpty(lr.target_strongs));
+    const tScript = firstNonEmpty(lr.script);
+    let lType = firstNonEmpty(lr.type, 'derived_from_root_anchor').toLowerCase();
+    if (!tBs || !tScript || lType === 'shared_name_base' || lType === 'group_member_of' || lType === 'source_provided_lexical_equivalent') continue;
+    if (srcPrefix && tBs[0] !== srcPrefix) continue;
+    if (lType === 'shares_root') {
+      const sCons = consonantKey(firstNonEmpty(profile?.sc));
+      const tCons = consonantKey(tScript);
+      if (sCons.length > 0 && tCons.length > 0) {
+        const shared = [...new Set(sCons)].filter((ch) => tCons.includes(ch)).length;
+        if (shared < 2) continue;
+      }
+    }
+    const sourceBaseLen = sourceScript.normalize('NFD').replace(/[\u0300-\u036f\u0591-\u05c7]/g, '').replace(/[^\p{L}]/gu, '').length;
+    const targetBaseLen = tScript.normalize('NFD').replace(/[\u0300-\u036f\u0591-\u05c7]/g, '').replace(/[^\p{L}]/gu, '').length;
+    if (srcPrefix === 'G' && lType === 'derived_from' && sourceBaseLen >= 2 && sourceBaseLen <= 5 && targetBaseLen >= sourceBaseLen + 2) {
+      lType = 'related_compound_or_cognate';
+    }
+    const rootLabel = firstNonEmpty(lr.root);
+    let relGloss = firstNonEmpty(lr.gloss);
+    if (relGloss && sourceGloss && tBs !== strongs && sourceCons && consonantKey(tScript) !== sourceCons && relGloss.toLowerCase() === sourceGloss.toLowerCase()) {
+      relGloss = tBs === 'H4519' ? 'Manasseh' : '';
+    }
+    const lexText = `${rootLabel} ${tScript} ${relGloss}`;
+    const looksCompoundPlaceLex = !isProperProfile && (/^[A-Z][a-z]+-[a-z]+/i.test(relGloss) || /ephes-dammim|אֶ[\u0591-\u05c7]*פֶס\s+דַ[\u0591-\u05c7]*מִ[\u0591-\u05c7]*ים|\b(?:ephes|dammim|place|valley|boundary)\b/i.test(lexText));
+    if (looksCompoundPlaceLex) continue;
+    const lexSource = srcPrefix === 'G' ? 'STEPBible / GreekLexicon' : 'STEPBible / OpenScriptures HebrewLexicon';
+    if (rootLabel && roots.length === 0) {
+      roots.push({
+        root_key: `profile_root:${strongs}`,
+        root_script: rootLabel,
+        relation_type: lType,
+        source: lexSource,
+      });
+    }
+    if (!relatives.some((rel) => firstNonEmpty(rel.strongs, rel.base_strongs, rel.target_strongs) === tBs)) {
+      relatives.push({
+        strongs: tBs,
+        script: tScript,
+        ...(relGloss ? { gloss: relGloss } : {}),
+        relation_type: lType,
+        ...(rootLabel ? { root: rootLabel } : {}),
+        source: lexSource,
+      });
+    }
+  }
+
+  const documentedStrongsSet = new Set<string>(
+    relatives.map((r) => padStrongs(firstNonEmpty(r.strongs, r.base_strongs, r.target_strongs))).filter(Boolean),
+  );
+
   const orthEntry = asRecord(profile?.orth_entry);
   const profileCandidates = [
     ...asArray(orthEntry?.homographs),
     ...asArray(orthEntry?.candidates),
   ];
-  let spellingSuggestions = mapSpellingSuggestions(profileCandidates, safeLimit);
+  let spellingSuggestions = mapSpellingSuggestions(profileCandidates, safeLimit)
+    .filter((s) => !documentedStrongsSet.has(padStrongs(firstNonEmpty(s.strongs))));
 
-  if (spellingSuggestions.length === 0) {
+  if (spellingSuggestions.length === 0 && !formationTimedOut) {
     try {
-      const orthRows = await callRpc(
-        read,
-        'suggest_orthographic_candidates_v1',
-        { p_query: strongs, p_limit: safeLimit },
-        1,
-        0,
+      const orthRows = await withEtymTimeout(
+        callRpc(
+          read,
+          'suggest_orthographic_candidates_v1',
+          { p_query: strongs, p_limit: safeLimit },
+          1,
+          0,
+        ),
+        2000,
+        [],
       );
       const first = asRecord(orthRows[0]);
       const rawCandidates = first
         ? [...asArray(first.homographs), ...asArray(first.candidate_connections), ...asArray(first.candidates), ...asArray(first.items)]
         : orthRows;
-      spellingSuggestions = mapSpellingSuggestions(rawCandidates, safeLimit);
+      spellingSuggestions = mapSpellingSuggestions(rawCandidates, safeLimit)
+        .filter((s) => !documentedStrongsSet.has(padStrongs(firstNonEmpty(s.strongs))));
     } catch {
       // Optional orthographic fallback; leave empty on error.
     }
@@ -1157,6 +1497,9 @@ export async function buildWordEtymology(
       ? 'No verified root for the selected lemma; other or unassigned roots are separate.'
       : 'Lemma selection is unresolved; roots are listed separately without assigning them to a sense.');
   } else noteParts.push('No documented etymology, root, or formation record found for this word.');
+  if (isProperProfile) {
+    noteParts.push('For proper names, Scripture often uses narrative paronomasia (sound-play explanation) distinct from comparative ANE historical etymology.');
+  }
   if (spellingSuggestions.length > 0) noteParts.push(ORTHOGRAPHIC_WARNING);
 
   return {
@@ -1165,6 +1508,7 @@ export async function buildWordEtymology(
     ...(roots.length > 0 ? { roots: roots.slice(0, safeLimit) } : {}),
     ...(formations.length > 0 ? { formations: formations.slice(0, safeLimit) } : {}),
     ...(relatives.length > 0 ? { relatives: relatives.slice(0, safeLimit) } : {}),
+    ...(nonEtymologicalGroupings.length > 0 ? { non_etymological_groupings: nonEtymologicalGroupings.slice(0, safeLimit) } : {}),
     ...(otherHomographRoots.length > 0 ? { other_homograph_roots: otherHomographRoots.slice(0, 3) } : {}),
     ...(components.length > 0 ? { morphological_components: components } : {}),
     ...(spellingSuggestions.length > 0 ? { spelling_suggestions: spellingSuggestions } : {}),
@@ -1172,22 +1516,265 @@ export async function buildWordEtymology(
   };
 }
 
+// CC BY 4.0 OEWN 2025 human-readable synset labels for external property bridges.
+const OEWN_SYNSET_LABELS: Readonly<Record<string, string>> = {
+  'oewn:00019308-n': 'natural object',
+  'oewn:00020270-n': 'substance',
+  'oewn:00836693-n': 'breath',
+  'oewn:02415086-n': 'lamb',
+  'oewn:02882960-n': 'bow',
+  'oewn:02951254-n': 'candelabrum, candelabra',
+  'oewn:02951993-n': 'candlestick, candle holder',
+  'oewn:03187746-n': 'device',
+  'oewn:03307066-n': 'excavation',
+  'oewn:03579967-n': 'instrument',
+  'oewn:03641539-n': 'lamp',
+  'oewn:03670692-n': 'light, light source',
+  'oewn:03751646-n': 'menorah',
+  'oewn:04270870-n': 'source of illumination',
+  'oewn:04463386-n': 'torch',
+  'oewn:04569944-n': 'water system, water supply, water',
+  'oewn:04572661-n': 'weapon, arm, weapon system',
+  'oewn:04579630-n': 'well',
+  'oewn:04589115-n': 'wick, taper',
+  'oewn:04966849-n': 'chromatic color, chromatic colour, spectral color',
+  'oewn:04969961-n': 'red, redness',
+  'oewn:04972154-n': 'scarlet, vermilion, orange red',
+  'oewn:05271349-n': 'body substance',
+  'oewn:05305022-n': 'organ',
+  'oewn:05306677-n': 'sense organ, sensory receptor, receptor',
+  'oewn:05318579-n': 'eye, oculus, optic',
+  'oewn:05404811-n': 'liquid body substance, bodily fluid, body fluid',
+  'oewn:05407190-n': 'blood',
+  'oewn:07571428-n': 'solid food',
+  'oewn:07581905-n': 'foodstuff, food product',
+  'oewn:07582428-n': 'starches',
+  'oewn:07637670-n': 'baked goods',
+  'oewn:07687880-n': 'edible fat',
+  'oewn:07689142-n': 'vegetable oil, oil',
+  'oewn:07695101-n': 'bread, breadstuff, staff of life',
+  'oewn:07699909-n': 'matzo, matzoh, matzah',
+  'oewn:07721456-n': 'produce, green goods, green groceries',
+  'oewn:07721676-n': 'edible fruit',
+  'oewn:07769089-n': 'fig',
+  'oewn:07784670-n': 'pomegranate',
+  'oewn:07818393-n': 'grain, food grain, cereal',
+  'oewn:07819069-n': 'barley, barleycorn',
+  'oewn:07819521-n': 'wheat, wheat berry',
+  'oewn:07825072-n': 'ingredient, fixings',
+  'oewn:07825344-n': 'flavorer, flavourer, flavoring',
+  'oewn:07829083-n': 'salt, table salt, common salt',
+  'oewn:09262646-n': 'celestial body, heavenly body',
+  'oewn:09310874-n': 'geological formation, formation',
+  'oewn:09426302-n': 'rainbow',
+  'oewn:09438954-n': 'rock, stone',
+  'oewn:09466357-n': 'spring, fountain, outflow',
+  'oewn:09467004-n': 'star',
+  'oewn:09473603-n': 'sun',
+  'oewn:11441515-n': 'actinic radiation, actinic ray',
+  'oewn:11445694-n': 'atmospheric phenomenon',
+  'oewn:11471253-n': 'electromagnetic radiation, electromagnetic wave, nonparticulate radiation',
+  'oewn:11494354-n': 'light, visible light, visible radiation',
+  'oewn:11528510-n': 'smoke, fume',
+  'oewn:11545095-n': 'weather, weather condition, conditions',
+  'oewn:11546388-n': 'wind, air current, current of air',
+  'oewn:11643556-n': 'cedar, cedar tree, true cedar',
+  'oewn:11643755-n': 'cedar, cedarwood',
+  'oewn:11696293-n': 'reproductive structure',
+  'oewn:11699219-n': 'ovule',
+  'oewn:11704458-n': 'seed',
+  'oewn:12226211-n': 'herb, herbaceous plant',
+  'oewn:12421840-n': 'fig tree',
+  'oewn:12422189-n': 'fig, common fig, common fig tree',
+  'oewn:12869259-n': 'hyssop, Hyssopus officinalis',
+  'oewn:13104346-n': 'vascular plant, tracheophyte',
+  'oewn:13121436-n': 'vine',
+  'oewn:13124818-n': 'tree',
+  'oewn:13155706-n': 'fruit',
+  'oewn:13165571-n': 'grape, grapevine, grape vine',
+  'oewn:13461236-n': 'bodily process, body process, bodily function',
+  'oewn:13471379-n': 'combustion, burning',
+  'oewn:13502051-n': 'fire, flame, flaming',
+  'oewn:13547313-n': 'organic process, biological process',
+  'oewn:13551611-n': 'oxidation, oxidization, oxidisation',
+  'oewn:13557219-n': 'phase change, phase transition, state change',
+  'oewn:13578096-n': 'smoke, smoking',
+  'oewn:13593639-n': 'vaporization, vaporisation, vapor',
+  'oewn:13890262-n': 'curve, curved shape',
+  'oewn:13918793-n': 'bow, arc',
+  'oewn:14604877-n': 'material, stuff',
+  'oewn:14610949-n': 'alloy, metal',
+  'oewn:14643012-n': 'binary compound',
+  'oewn:14647071-n': 'chemical element, element',
+  'oewn:14649636-n': 'metallic element, metal',
+  'oewn:14651259-n': 'noble metal',
+  'oewn:14659900-n': 'copper, Cu, atomic number 29',
+  'oewn:14662977-n': 'gold, Au, atomic number 79',
+  'oewn:14666595-n': 'iron, Fe, atomic number 26',
+  'oewn:14679133-n': 'silver, Ag, atomic number 47',
+  'oewn:14724906-n': 'animal product',
+  'oewn:14741436-n': 'bronze',
+  'oewn:14837352-n': 'clay',
+  'oewn:14842408-n': 'compound, chemical compound',
+  'oewn:14845213-n': 'conductor',
+  'oewn:14846733-n': 'copper-base alloy',
+  'oewn:14865437-n': 'air',
+  'oewn:14865940-n': 'breath',
+  'oewn:14867162-n': 'earth, ground',
+  'oewn:14868863-n': 'soil, dirt',
+  'oewn:14869913-n': 'water, H2O',
+  'oewn:14888511-n': 'fat',
+  'oewn:14901736-n': 'gas',
+  'oewn:14958169-n': 'leaven, leavening',
+  'oewn:14963583-n': 'fluid',
+  'oewn:14964238-n': 'liquid',
+  'oewn:14983373-n': 'natural fiber, natural fibre',
+  'oewn:14983611-n': 'animal fiber, animal fibre',
+  'oewn:14991055-n': 'oil',
+  'oewn:15016279-n': 'plant material, plant substance',
+  'oewn:15122728-n': 'wood',
+  'oewn:15128784-n': 'wool',
+};
+
+const OEWN_ID_RE = /^oewn:\d{8}-[nvars]$/i;
+
+function resolveOewnReadableLabel(rawIdOrLabel: string, fallbackText = ''): string {
+  const key = rawIdOrLabel.trim().toLowerCase();
+  if (OEWN_SYNSET_LABELS[key]) return OEWN_SYNSET_LABELS[key];
+  if (OEWN_ID_RE.test(key)) {
+    return fallbackText || 'broader lexical concept (OEWN)';
+  }
+  return rawIdOrLabel;
+}
+
 function normalizeBridgeEntry(raw: Record<string, unknown>): Record<string, unknown> {
-  const source = firstNonEmpty(raw.source, raw.dataset, raw.origin, 'OEWN / Wikidata');
+  const propKey = firstNonEmpty(raw.property_key, raw.property);
+  const origin = firstNonEmpty(raw.assertion_origin);
+  const rawValueId = firstNonEmpty(raw.value_id, raw.oewn_id);
+  const rawValueLabel = firstNonEmpty(raw.value_label, raw.value, raw.label);
+  const isOewn = propKey.startsWith('oewn:') || origin.toUpperCase().includes('OEWN') || OEWN_ID_RE.test(rawValueId) || OEWN_ID_RE.test(rawValueLabel);
+  const isWikidata = !isOewn && (propKey.startsWith('wd:') || origin.toUpperCase().includes('WIKIDATA') || rawValueId.startsWith('wd:'));
+  const source = firstNonEmpty(
+    raw.source,
+    raw.dataset,
+    raw.origin,
+    isOewn ? 'OEWN 2025' : isWikidata ? 'Wikidata' : 'OEWN / Wikidata',
+  );
   const license = firstNonEmpty(
     raw.license,
-    source.toLowerCase().includes('wikidata') ? 'CC0' : 'CC BY 4.0',
+    isOewn ? 'CC BY 4.0' : source.toLowerCase().includes('wikidata') ? 'CC0' : 'CC BY 4.0',
+  );
+  const resolvedValueId = rawValueId || (OEWN_ID_RE.test(rawValueLabel) ? rawValueLabel.toLowerCase() : '');
+  const fallbackDesc = firstNonEmpty(raw.label, raw.gloss, raw.definition, raw.sense_gloss);
+  const cleanFallbackDesc = OEWN_ID_RE.test(fallbackDesc) ? '' : fallbackDesc;
+  const resolvedValueLabel = OEWN_ID_RE.test(rawValueLabel)
+    ? resolveOewnReadableLabel(rawValueLabel, cleanFallbackDesc)
+    : rawValueLabel || (resolvedValueId ? resolveOewnReadableLabel(resolvedValueId, cleanFallbackDesc) : '');
+  const propertyLabel = firstNonEmpty(
+    raw.property_label,
+    propKey === 'oewn:hypernym'
+      ? 'hypernym (broader category)'
+      : propKey === 'oewn:hypernym_l2'
+        ? 'hypernym L2 (higher category)'
+        : '',
   );
   return {
     ...raw,
+    ...(propertyLabel ? { property_label: propertyLabel } : {}),
+    ...(resolvedValueId ? { value_id: resolvedValueId } : {}),
+    ...(resolvedValueLabel ? { value_label: resolvedValueLabel } : {}),
     source,
     license,
   };
 }
 
+// Sense-gated physical/process ontology properties from v3 sense-ontology (CC BY 4.0 OEWN 2025 / CC0 Wikidata).
+const V3_SENSE_PHYSICAL_PROPS: Readonly<Record<string, {
+  domain: string;
+  props: Record<string, string | boolean>;
+  senseRequireRe?: RegExp;
+  senseRejectRe?: RegExp;
+}>> = {
+  H6884: { domain: 'metallurgy', props: { process: 'cupellation_refining', agent_medium: 'fire', removes: 'dross', tests_purity: true } },
+  H0974: { domain: 'metallurgy', props: { process: 'metallurgical_assay', tests_purity: true } },
+  H5509: { domain: 'metallurgy', props: { material_role: 'impurity_byproduct', separated_by: 'cupellation_refining', physical_state: 'solid_slag' } },
+  H1253: { domain: 'metallurgy', props: { material_role: 'alkali_flux', process: 'cupellation_refining', chemical_action: 'saponification_and_flux' }, senseRejectRe: /\bclean(?:ness|se)?\b/i },
+  H3564: { domain: 'metallurgy', props: { apparatus: 'smelting_furnace', energy_source: 'fire', process: 'cupellation_refining' } },
+  H3536: { domain: 'metallurgy', props: { apparatus: 'kiln_furnace', energy_source: 'fire', process: 'calcination' } },
+  H0861: { domain: 'metallurgy', props: { apparatus: 'smelting_furnace', energy_source: 'fire' } },
+  G2575: { domain: 'metallurgy', props: { apparatus: 'smelting_furnace', energy_source: 'fire' } },
+  G4448: { domain: 'metallurgy', props: { process: 'thermal_refining', agent_medium: 'fire' } },
+  G1381: { domain: 'metallurgy', props: { process: 'metallurgical_assay', tests_purity: true } },
+  H3701: { domain: 'metallurgy', props: { metal: 'silver', refined_by: 'cupellation_refining' } },
+  G0696: { domain: 'metallurgy', props: { metal: 'silver', refined_by: 'cupellation_refining' } },
+  H2091: { domain: 'metallurgy', props: { metal: 'gold', refined_by: 'cupellation_refining' } },
+  G5557: { domain: 'metallurgy', props: { metal: 'gold', refined_by: 'cupellation_refining' } },
+  H5178: { domain: 'metallurgy', props: { metal: 'copper_bronze' } },
+  G5475: { domain: 'metallurgy', props: { metal: 'copper_bronze' } },
+  H4647: { domain: 'metallurgy', props: { apparatus: 'bellows', supplies: 'air_draft', process: 'cupellation_refining' } },
+  H4715: { domain: 'metallurgy', props: { apparatus: 'crucible', process: 'cupellation_refining' } },
+  H0216: { domain: 'optics', props: { phenomenon: 'visible_light', emits_illumination: true } },
+  G5457: { domain: 'optics', props: { phenomenon: 'visible_light', emits_illumination: true } },
+  H5216: { domain: 'optics', props: { apparatus: 'oil_lamp', fuel: 'olive_oil', emits_illumination: true } },
+  G3088: { domain: 'optics', props: { apparatus: 'oil_lamp', fuel: 'olive_oil', emits_illumination: true } },
+  H4501: { domain: 'optics', props: { apparatus: 'lampstand', holds: 'oil_lamp', emits_illumination: true } },
+  G3087: { domain: 'optics', props: { apparatus: 'lampstand', holds: 'oil_lamp', emits_illumination: true } },
+  H3940: { domain: 'optics', props: { apparatus: 'torch', emits_illumination: true } },
+  G2985: { domain: 'optics', props: { apparatus: 'torch_lamp', emits_illumination: true } },
+  H0784: { domain: 'optics', props: { phenomenon: 'combustion', emits_heat_and_light: true } },
+  G4442: { domain: 'optics', props: { phenomenon: 'combustion', emits_heat_and_light: true } },
+  H4325: { domain: 'hydrology', props: { substance: 'water', physical_state: 'liquid' } },
+  G5204: { domain: 'hydrology', props: { substance: 'water', physical_state: 'liquid' } },
+  G4077: { domain: 'hydrology', props: { landform: 'natural_spring', yields: 'water' } },
+  H4599: { domain: 'hydrology', props: { landform: 'natural_spring', yields: 'water' } },
+  H5104: { domain: 'hydrology', props: { landform: 'river', contains: 'water' } },
+  G4215: { domain: 'hydrology', props: { landform: 'river', contains: 'water' } },
+  H5158: { domain: 'hydrology', props: { landform: 'wadi_seasonal_stream', contains: 'water' }, senseRejectRe: /\bpalm\b/i },
+  H5869: { domain: 'hydrology', props: { landform: 'natural_spring', yields: 'water' }, senseRequireRe: /\b(?:spring|fountain|well)\b/i },
+  H0730: { domain: 'botany', props: { organism: 'cedrus_libani', material: 'aromatic_timber' } },
+  H0231: { domain: 'botany', props: { organism: 'hyssop', ritual_use: 'sprinkling_cleansing' } },
+  G5301: { domain: 'botany', props: { organism: 'hyssop', ritual_use: 'sprinkling_cleansing' } },
+  H2132: { domain: 'botany', props: { organism: 'olive_tree', yields: 'olive_oil' } },
+  G1636: { domain: 'botany', props: { organism: 'olive_tree', yields: 'olive_oil' } },
+  H2233: { domain: 'botany', props: { botanical_part: 'seed', biological_role: 'reproduction' } },
+  G4690: { domain: 'botany', props: { botanical_part: 'seed', biological_role: 'reproduction' } },
+  H4671: { domain: 'botany', props: { agricultural_byproduct: 'chaff', separated_by: 'winnowing' } },
+  G0892: { domain: 'botany', props: { agricultural_byproduct: 'chaff', separated_by: 'winnowing' } },
+  H7898: { domain: 'botany', props: { plant_form: 'thorny_shrub' } },
+  H1612: { domain: 'botany', props: { organism: 'vitis_vinifera_vine', yields: 'grapes_wine' } },
+  G0288: { domain: 'botany', props: { organism: 'vitis_vinifera_vine', yields: 'grapes_wine' } },
+  H4417: { domain: 'minerals', props: { mineral: 'halite_salt', preserves_and_seasons: true, covenant_emblem: 'incorruptibility' } },
+  G0217: { domain: 'minerals', props: { mineral: 'halite_salt', preserves_and_seasons: true } },
+  H3722: { domain: 'materials', props: { substance: 'bitumen_pitch', process: 'waterproofing_sealing' }, senseRequireRe: /\b(?:pitch|cover|coat)\b/i },
+  H0068: { domain: 'minerals', props: { mineral: 'stone' } },
+  G3037: { domain: 'minerals', props: { mineral: 'stone' } },
+};
+
+function resolveSenseGatedPhysicalProps(
+  strongs: string,
+  gloss: string,
+  profile: Record<string, unknown> | null,
+): Record<string, unknown> | null {
+  const padBs = padStrongs(strongs);
+  const lk = firstNonEmpty(profile?.lk, profile?.lemma_key);
+  const senseContext = `${gloss} ${lk}`;
+  const rawProfProps = asRecord(profile?.physical_props);
+  const curated = padBs ? V3_SENSE_PHYSICAL_PROPS[padBs] : undefined;
+  if (curated) {
+    if (curated.senseRequireRe && !curated.senseRequireRe.test(senseContext)) return null;
+    if (curated.senseRejectRe && curated.senseRejectRe.test(senseContext)) return null;
+    return {
+      domain: curated.domain,
+      ...(rawProfProps ?? {}),
+      ...curated.props,
+    };
+  }
+  return rawProfProps ? { ...rawProfProps } : null;
+}
+
 /**
  * Combine biblical/physical definitions, OEWN/Wikidata property bridges, and
- * concept properties with explicit source/license attribution.
+ * sense-gated v3 physical/process properties with explicit source/license attribution.
  */
 export async function buildWordRealworld(
   read: DatabaseReader,
@@ -1201,10 +1788,19 @@ export async function buildWordRealworld(
 
   const pilotAnchor = asRecord(profile?.r12_pilot_anchor);
   const rawBridges = asArray(profile?.pilot_bridges ?? pilotAnchor?.property_bridges);
-  const propertyBridges = rawBridges
-    .map((b) => asRecord(b))
-    .filter((b): b is Record<string, unknown> => b !== null)
-    .map(normalizeBridgeEntry);
+  const seenBridges = new Set<string>();
+  const propertyBridges: Record<string, unknown>[] = [];
+  for (const rawB of rawBridges) {
+    const b = asRecord(rawB);
+    if (!b) continue;
+    const norm = normalizeBridgeEntry(b);
+    const dedupKey = `${firstNonEmpty(norm.property_key, norm.property)}|${firstNonEmpty(norm.value_label, norm.value)}|${firstNonEmpty(norm.target_strongs)}`;
+    if (seenBridges.has(dedupKey)) continue;
+    seenBridges.add(dedupKey);
+    propertyBridges.push(norm);
+  }
+
+  const physicalProperties = resolveSenseGatedPhysicalProps(strongs, gloss, profile);
 
   let conceptProperties: Array<Record<string, unknown>> = [];
   const conceptQuery = firstNonEmpty(strongs, gloss);
@@ -1224,13 +1820,20 @@ export async function buildWordRealworld(
       conceptProperties = items
         .map((c) => asRecord(c))
         .filter((c): c is Record<string, unknown> => c !== null)
+        .map((c) => {
+          const valLbl = firstNonEmpty(c.value_label, c.label, c.value);
+          if (OEWN_ID_RE.test(valLbl)) {
+            return normalizeBridgeEntry(c);
+          }
+          return c;
+        })
         .slice(0, 8);
     } catch {
       // Concept property RPC may be unavailable for some terms/environments.
     }
   }
 
-  if (!biblicalDef && !physicalDef && propertyBridges.length === 0 && conceptProperties.length === 0) {
+  if (!biblicalDef && !physicalDef && !physicalProperties && propertyBridges.length === 0 && conceptProperties.length === 0) {
     return {
       status: 'unavailable',
       note: 'No supported physical/real-world definition recorded for this word.',
@@ -1239,6 +1842,7 @@ export async function buildWordRealworld(
 
   const sources: string[] = [];
   if (biblicalDef || physicalDef) sources.push('Biblical lexicon');
+  if (physicalProperties) sources.push('v3 sense-ontology (CC BY 4.0)');
   if (propertyBridges.length > 0) sources.push('OEWN (CC BY 4.0) / Wikidata (CC0)');
   if (conceptProperties.length > 0) sources.push('Corpus concept properties');
 
@@ -1246,6 +1850,7 @@ export async function buildWordRealworld(
     status: 'ok',
     ...(biblicalDef ? { biblical_def: biblicalDef } : {}),
     ...(physicalDef ? { physical_def: physicalDef } : {}),
+    ...(physicalProperties ? { physical_properties: physicalProperties } : {}),
     ...(propertyBridges.length > 0 ? { property_bridges: propertyBridges } : {}),
     ...(conceptProperties.length > 0 ? { concept_properties: conceptProperties } : {}),
     sources,

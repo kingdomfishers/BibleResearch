@@ -71,6 +71,8 @@ const CORPUS_OPS = new Set([
   'discover_patterns_v1',
   'compare_patterns_v1',
   'trace_evidence_v1',
+  'discover_subgraph_v1',
+  'compare_hebrew_septuagint_passage_v1',
 ]);
 
 function makeReader(opts = {}) {

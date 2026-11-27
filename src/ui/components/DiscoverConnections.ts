@@ -10,7 +10,11 @@
 import {
   discoverBiblicalConnectionsRpc,
   expandBiblicalConnectionRpc,
+  expandClueV3Rpc,
   getConnectionEvidenceRpc,
+  traceEvidenceRpc,
+  type ExpandClueV3Result,
+  type V3DiscoverConnectionsResult,
 } from '../../api/r10-rpc';
 import type {
   ConnectionEvidenceResult,
@@ -20,6 +24,7 @@ import type {
   R10PassageRef,
   R10Predicate,
   R10ResolvedConcept,
+  V3ScoreMeta,
 } from '../../relationships/r10-types';
 import { BOOK_NAMES } from '../utils';
 import type { ContextPreview } from './ContextPreview';
@@ -103,12 +108,19 @@ export class DiscoverConnectionsPanel {
   private focusLemma: string | undefined = undefined;
   private compareTargets: string[] | undefined = undefined;
   private viewMode: 'cards' | 'map' = 'cards';
+  private verifiedOnly = false;
   private loading = false;
   private errorMsg: string | null = null;
-  private result: DiscoverConnectionsResult | null = null;
+  private result: V3DiscoverConnectionsResult | null = null;
   private evidenceCache = new Map<string, ConnectionEvidenceResult>();
   private evidenceErrors = new Map<string, string>();
   private openEvidenceIds = new Set<string>();
+  private traceCache = new Map<string, Record<string, unknown>>();
+  private traceErrors = new Map<string, string>();
+  private openTraceIds = new Set<string>();
+  private clueCache = new Map<string, ExpandClueV3Result>();
+  private clueErrors = new Map<string, string>();
+  private openClueIds = new Set<string>();
   private originSelection: WordDiscoveryOrigin | null = null;
   private activeOccurrenceAnchor: WordDiscoveryOrigin | null = null;
   private originResult: DiscoverConnectionsResult | null = null;
@@ -293,11 +305,11 @@ export class DiscoverConnectionsPanel {
     this.renderResults();
   }
 
-  public seedAndOpen(term: string, origin?: WordDiscoveryOrigin): void {
+  public seedAndOpen(term: string, origin?: WordDiscoveryOrigin, mode: DiscoveryMode = 'discover'): void {
     this.originSelection = origin ?? null;
     this.activeOccurrenceAnchor = origin ?? null;
     this.originResult = null;
-    this.currentMode = 'discover';
+    this.currentMode = mode;
     this.currentClusterId = undefined;
     this.focusLemma = undefined;
     this.compareTargets = undefined;
@@ -467,6 +479,178 @@ export class DiscoverConnectionsPanel {
       };
     }
     this.renderResults();
+  }
+
+  private async toggleTraceDrawer(evidenceId: string, forceReload = false): Promise<void> {
+    if (!forceReload && this.openTraceIds.has(evidenceId)) {
+      this.openTraceIds.delete(evidenceId);
+      this.renderResults();
+      return;
+    }
+    this.openTraceIds.add(evidenceId);
+    if (forceReload || !this.traceCache.has(evidenceId)) {
+      this.traceErrors.delete(evidenceId);
+      this.renderResults();
+      const res = await traceEvidenceRpc({ evidence_id: evidenceId });
+      if (res.data) {
+        this.traceCache.set(evidenceId, res.data);
+      } else {
+        this.traceErrors.set(evidenceId, res.error || 'Proof trace could not be loaded.');
+      }
+    }
+    this.renderResults();
+  }
+
+  private async toggleClueDrawer(
+    expandId: string,
+    detail: 'clue' | 'evidence' | 'full' = 'evidence',
+    forceReload = false
+  ): Promise<void> {
+    if (!forceReload && detail === 'evidence' && this.openClueIds.has(expandId)) {
+      this.openClueIds.delete(expandId);
+      this.renderResults();
+      return;
+    }
+    this.openClueIds.add(expandId);
+    const cached = this.clueCache.get(expandId);
+    if (forceReload || !cached || (detail === 'full' && cached.detail !== 'full')) {
+      this.clueErrors.delete(expandId);
+      this.renderResults();
+      const res = await expandClueV3Rpc({ expand_id: expandId, detail });
+      if (res.data && res.data.status !== 'not_found' && !res.data.error) {
+        this.clueCache.set(expandId, res.data);
+      } else {
+        this.clueErrors.set(expandId, res.data?.error || res.error || 'v3 clue details unavailable.');
+      }
+    }
+    this.renderResults();
+  }
+
+  private renderClueDrawer(expandId: string): string {
+    const clueErr = this.clueErrors.get(expandId);
+    if (clueErr) {
+      return `<div class="discover-evidence-drawer"><p class="study-muted" style="color:var(--gold)">${esc(clueErr)}</p></div>`;
+    }
+    const d = this.clueCache.get(expandId);
+    if (!d) {
+      return `<div class="discover-evidence-drawer"><p class="study-muted">Hydrating v3 clue (${esc(expandId)})…</p></div>`;
+    }
+    const ePerp = d.e_perp as Record<string, unknown> | undefined;
+    const ePerpBits = typeof ePerp?.ePerpBits === 'number'
+      ? ePerp.ePerpBits
+      : typeof ePerp?.e_perp_bits === 'number'
+        ? ePerp.e_perp_bits
+        : null;
+    const pivot = d.pivot;
+    const anchors = Array.isArray(d.anchors) ? d.anchors : [];
+    const concepts = pivot?.concepts || d.verse?.concepts || [];
+    const clauses = Array.isArray(d.clauses) ? d.clauses : [];
+
+    return `
+      <div class="discover-evidence-drawer discover-v3-clue-drawer">
+        <div class="discover-v3-clue-head">
+          <strong>v3 Clue Expansion (${esc(d.kind || d.detail)})</strong>
+          <span class="discover-badge">detail: ${esc(d.detail)}</span>
+          ${ePerpBits !== null ? `<span class="discover-badge is-eperp">E⊥ ${ePerpBits.toFixed(2)} bits</span>` : ''}
+          ${typeof d.csr_edge_count === 'number' ? `<span class="discover-badge">${d.csr_edge_count} CSR edges</span>` : ''}
+          ${d.detail !== 'full' ? `<button type="button" class="discover-chip js-expand-clue-full" data-expand-id="${esc(expandId)}">Load full clauses & CSR</button>` : ''}
+        </div>
+        ${pivot ? `<p style="margin:6px 0 4px"><strong>Pivot ${esc(pivot.ref)}:</strong> ${esc(pivot.en || '')}</p>` : ''}
+        ${d.verse ? `<p style="margin:6px 0 4px"><strong>${esc(d.verse.ref)}:</strong> ${esc(d.verse.en || '')}</p>` : ''}
+        ${anchors.length > 0 ? `<p class="study-muted" style="margin:4px 0"><strong>Bridged anchors:</strong> ${anchors.map(a => `${esc(a.ref)}${a.en ? ` — ${esc(a.en.slice(0, 72))}` : ''}`).join(' · ')}</p>` : ''}
+        ${concepts.length > 0 ? `
+          <div class="discover-v3-axes" style="margin-top:6px">
+            <span class="study-muted">Converging concepts:</span>
+            ${concepts.slice(0, 8).map(cp => `<span class="discover-v3-axis-tag">${esc(cp)}</span>`).join('')}
+          </div>
+        ` : ''}
+        ${clauses.length > 0 ? `
+          <div style="margin-top:6px">
+            <strong style="font-size:12px">Clauses (${clauses.length}):</strong>
+            <div class="discover-chips-row" style="margin-top:4px">
+              ${clauses.slice(0, 6).map(cl => `<span class="discover-chip">${esc(cl.predicate?.lm || cl.predicate?.g || cl.predicate?.s || 'clause')} [${esc(cl.polarity || 'POS')}]${cl.slot_atom?.verb_stem ? ` · ${esc(String(cl.slot_atom.verb_stem))}` : ''}</span>`).join('')}
+            </div>
+          </div>
+        ` : ''}
+        ${!pivot && !d.verse && d.title ? `
+          <p class="study-muted" style="margin:4px 0">${esc(d.title)}${Array.isArray(d.passages) && d.passages.length ? ` · ${esc(d.passages.map(p => typeof p === 'string' ? p : String((p as any).ref || '')).filter(Boolean).join(', '))}` : ''}</p>
+        ` : ''}
+      </div>
+    `;
+  }
+
+  private renderBridgePivotsSection(res: V3DiscoverConnectionsResult): string {
+    const v3Pivots = res.bridge_pivots || [];
+    const bridgeItems = (res.bridges || []).filter(
+      b => b.evidence_id?.startsWith('r13:v3bridge:') || b.bridging_node?.grounding_source?.includes('v3') || v3Pivots.length === 0
+    );
+    if (bridgeItems.length === 0 && v3Pivots.length === 0) return '';
+
+    return `
+      <div class="discover-v3-pivots-strip">
+        <span class="study-muted"><strong>Intermediate Bridge Pivots:</strong></span>
+        ${v3Pivots.map(pv => {
+          const refLabel = pv.ref || `vid:${pv.vid}`;
+          const expandId = pv.expand_id || '';
+          return `
+            <span class="discover-v3-pivot-pill">
+              <span class="discover-badge is-pivot">Pivot${pv.axis_count ? ` · ${pv.axis_count} axes` : ''}</span>
+              <strong>${esc(refLabel)}</strong>
+              ${pv.bridged_axes?.length ? `<small class="study-muted">(${esc(pv.bridged_axes.slice(0, 3).join(', '))})</small>` : ''}
+              ${expandId ? `<button type="button" class="discover-chip js-expand-clue" data-expand-id="${esc(expandId)}">${this.openClueIds.has(expandId) ? 'Hide clue' : 'Expand clue'}</button>` : ''}
+            </span>
+          `;
+        }).join('')}
+        ${bridgeItems.map(b => {
+          const p = b.bridging_node?.passage;
+          const isV3Pivot = b.evidence_id?.startsWith('r13:v3bridge:') || b.bridging_node?.grounding_source?.includes('v3');
+          const matchingConn = res.strongest_connections.find(c => c.evidence_id === b.evidence_id);
+          const expandId = matchingConn?.expand_id || (isV3Pivot ? b.evidence_id : '');
+          return `
+            <span class="discover-v3-pivot-pill">
+              <span class="discover-badge is-pivot">${isV3Pivot ? 'PPR Bridge Pivot' : 'Bridge'}</span>
+              ${p
+                ? `<button type="button" class="discover-chip js-nav-passage" data-book="${p.book}" data-chapter="${p.chapter}" data-verse="${p.verse}">${esc(p.ref || b.bridging_node.label)}</button>`
+                : `<strong>${esc(b.bridging_node?.label || b.bridge_id)}</strong>`}
+              ${expandId ? `<button type="button" class="discover-chip js-expand-clue" data-expand-id="${esc(expandId)}">${this.openClueIds.has(expandId) ? 'Hide pivot' : 'Inspect pivot'}</button>` : ''}
+            </span>
+          `;
+        }).join('')}
+      </div>
+      ${[...this.openClueIds].filter(id => id.startsWith('v3:bridge:') && !res.strongest_connections.some(c => (c.expand_id || c.evidence_id) === id)).map(id => this.renderClueDrawer(id)).join('')}
+    `;
+  }
+
+  private renderTraceDrawer(evidenceId: string): string {
+    const trErr = this.traceErrors.get(evidenceId);
+    if (trErr) {
+      return `<div class="discover-evidence-drawer"><p class="study-muted" style="color:var(--gold)">${esc(trErr)}</p></div>`;
+    }
+    const trData = this.traceCache.get(evidenceId);
+    if (!trData) {
+      return `<div class="discover-evidence-drawer"><p class="study-muted">Tracing witness chain for ${esc(evidenceId)}…</p></div>`;
+    }
+    const chain = Array.isArray(trData.proof_chain)
+      ? (trData.proof_chain as Array<Record<string, unknown>>)
+      : Array.isArray(trData.steps)
+        ? (trData.steps as Array<Record<string, unknown>>)
+        : [];
+    const note = typeof trData.epistemic_note === 'string'
+      ? trData.epistemic_note
+      : typeof trData.limitation === 'string'
+        ? trData.limitation
+        : '';
+    return `
+      <div class="discover-evidence-drawer">
+        <strong>Traced Proof Chain (${esc(String(trData.status || 'ok'))})</strong>
+        ${note ? `<p class="study-muted" style="margin:4px 0">${esc(note)}</p>` : ''}
+        ${chain.length > 0 ? `
+          <div class="discover-chips-row" style="margin-top:6px">
+            ${chain.map(st => `<span class="discover-chip">${esc(String(st.from_label || st.from_id || ''))} --[${esc(String(st.relation_type || st.predicate || 'link'))}]--> <strong>${esc(String(st.to_label || st.to_id || ''))}</strong></span>`).join('')}
+          </div>
+        ` : `<p class="study-muted" style="margin:4px 0">${esc(String(trData.summary || trData.title || 'Verified terminal witness node.'))}</p>`}
+      </div>
+    `;
   }
 
   private async toggleEvidenceDrawer(evidenceId: string, forceReload = false): Promise<void> {
@@ -849,11 +1033,19 @@ export class DiscoverConnectionsPanel {
 
   private renderCard(c: R10ConnectionSummary): string {
     const isOpen = this.openEvidenceIds.has(c.evidence_id);
+    const isTraceOpen = this.openTraceIds.has(c.evidence_id);
+    const clueId = c.expand_id || c.evidence_id;
+    const isClueOpen = this.openClueIds.has(clueId);
     const evData = this.evidenceCache.get(c.evidence_id);
     const evErr = this.evidenceErrors.get(c.evidence_id);
     const m = c.r12_metadata;
+    const sb = c.score_breakdown;
+    const v3: V3ScoreMeta | undefined = c.v3_score;
+    const isBridgePivot = c.evidence_id.startsWith('r13:v3bridge:') || Boolean(c.expand_id?.startsWith('v3:bridge:'));
+    const canExpandV3Clue = Boolean(c.expand_id || v3 || isBridgePivot || c.evidence_id.startsWith('r13:v3'));
     const isCaution = c.evidence_tier >= 5 || c.predicate === 'orthographic_overlap' || m?.epistemic_layer === 'EXTERNAL_WORLD';
     const verificationLabel = c.evidence_tier <= 4 ? 'Verified source evidence' : 'Candidate / hypothesis';
+    const canTrace = Boolean(m?.steps?.length || c.evidence_id.startsWith('r12:') || c.evidence_id.startsWith('r13:') || c.evidence_tier <= 4);
 
     return `
       <article class="discover-conn-card tier-${c.evidence_tier}" data-evidence-id="${esc(c.evidence_id)}">
@@ -861,13 +1053,25 @@ export class DiscoverConnectionsPanel {
           <span class="discover-badge ${isCaution ? 'is-caution' : ''}">${esc(verificationLabel)}</span>
           <span class="discover-badge ${isCaution ? 'is-caution' : ''}">${esc(tierBadgeLabel(c.evidence_tier, c.predicate))}</span>
           <span class="discover-badge">${esc(c.epistemic_class.replace(/_/g, ' '))}</span>
+          ${isBridgePivot ? `<span class="discover-badge is-pivot">Bridge Pivot</span>` : ''}
+          ${v3 ? `<span class="discover-badge is-eperp" title="raw_textual=${v3.raw_textual_bits.toFixed(2)}b · physical_capped=${v3.physical_bits_capped.toFixed(2)}b · n_eff=${v3.n_eff.toFixed(2)} · axis_factor=${v3.axis_factor.toFixed(2)} · p_null≈${v3.p_null_approx.toExponential(1)}">E⊥ ${v3.e_perp_bits.toFixed(1)}b · ${v3.n_eff.toFixed(1)} ax · ${esc(v3.dominant_register.replace(/_/g, ' '))}</span>` : ''}
+          ${v3?.tritextual ? `<span class="discover-badge">Tri-Textual ${v3.tritextual.evidence_bits.toFixed(1)}b${v3.tritextual.composite_splice > 0 ? ` · ${v3.tritextual.composite_splice} splice` : ''}</span>` : ''}
+          ${v3?.sequence_parallel ? `<span class="discover-badge ${v3.sequence_parallel.has_inversion ? 'is-caution' : ''}">Seq ${v3.sequence_parallel.has_inversion ? 'INVERSION' : esc(v3.sequence_parallel.arc_kind)} (p=${v3.sequence_parallel.p_null.toFixed(3)})</span>` : ''}
           ${m ? `<span class="discover-badge ${m.epistemic_status === 'EXPLORATORY' ? 'is-caution' : ''}">R12 ${esc(m.epistemic_layer)} · ${m.meaningful_hops}h · interest ${m.interest.toFixed(2)}${m.K !== undefined ? ` · K=${m.K.toFixed(2)}` : ''}${m.alternative_path_count ? ` (+${m.alternative_path_count} alt)` : ''}</span>` : ''}
           ${m?.endpoint_epistemic_status ? `<span class="discover-badge ${m.endpoint_epistemic_status === 'EXPLORATORY_STEP_CHAIN' ? 'is-caution' : ''}">${esc(m.endpoint_epistemic_status.replace(/_/g, ' '))}</span>` : ''}
           ${m?.external_bridge?.bridge_kind ? `<span class="discover-badge is-caution">${esc(m.external_bridge.bridge_kind === 'external_concept_equivalence' ? 'Concept equivalence' : 'External bridge')}</span>` : ''}
+          ${sb ? `<span class="discover-badge" title="E=${sb.E} F=${sb.F} P=${sb.P} I=${sb.I} R=${sb.R} N=${sb.N} U=${sb.U}">Ev ${(sb.evidence_strength ?? 0).toFixed(2)} · Exp ${(sb.exploration_value ?? 0).toFixed(2)}</span>` : ''}
           <span class="study-muted">Score ${c.score} · ${c.witness_count} witness(es)</span>
         </div>
         <h4 class="discover-conn-title">${esc(c.title)}</h4>
         <p class="discover-conn-summary">${esc(c.explanation)}</p>
+        ${v3?.independent_axes?.length ? `
+          <div class="discover-v3-axes">
+            <span class="study-muted">Axes:</span>
+            ${v3.independent_axes.slice(0, 4).map(a => `<span class="discover-v3-axis-tag ${a.is_physical ? 'is-physical' : ''}">${esc(a.axis)} (${a.bits.toFixed(1)}b)</span>`).join('')}
+          </div>
+        ` : ''}
+        ${sb ? `<p class="study-muted" style="font-size:11px;margin:2px 0 4px"><strong>R13 Factors:</strong> E=${sb.E.toFixed(2)} · F=${sb.F.toFixed(2)} · P=${sb.P.toFixed(2)} · I=${sb.I.toFixed(2)} · R=${sb.R.toFixed(2)} · N=${sb.N.toFixed(2)} · U=${sb.U.toFixed(2)} · RRF=${sb.rrf.toFixed(3)}</p>` : ''}
         ${m?.external_bridge ? `
           <p class="study-muted"><strong>External property:</strong> ${esc(m.external_bridge.property_key)}=${esc(m.external_bridge.value_label)} (${esc(m.external_bridge.mapping_status)} mapping${m.external_bridge.assertion_origin ? ` · ${esc(m.external_bridge.assertion_origin.toLowerCase().replace(/_/g, ' '))}` : ''} · independent biblical support=0)</p>
         ` : ''}
@@ -894,11 +1098,15 @@ export class DiscoverConnectionsPanel {
         </div>
         <div class="discover-conn-actions">
           <button type="button" class="study-button js-toggle-evidence" data-evidence-id="${esc(c.evidence_id)}">${isOpen ? 'Hide evidence' : 'Inspect biblical evidence'}</button>
+          ${canExpandV3Clue ? `<button type="button" class="study-button js-expand-clue" data-expand-id="${esc(clueId)}">${isClueOpen ? 'Hide v3 clue' : 'Expand v3 clue'}</button>` : ''}
+          ${canTrace ? `<button type="button" class="study-button js-trace-evidence" data-evidence-id="${esc(c.evidence_id)}">${isTraceOpen ? 'Hide trace' : 'Trace proof path'}</button>` : ''}
           <button type="button" class="study-button js-copy-path" data-conn-id="${esc(c.connection_id)}">Copy path</button>
           <button type="button" class="study-button js-card-bridge" data-conn-id="${esc(c.connection_id)}" data-concepts="${esc(c.matched_concepts.join(' '))}">Bridge</button>
           <button type="button" class="study-button js-card-compare" data-conn-id="${esc(c.connection_id)}" data-concepts="${esc(c.matched_concepts.join(' '))}">Compare</button>
           <button type="button" class="study-button js-card-challenge" data-conn-id="${esc(c.connection_id)}">Challenge</button>
         </div>
+        ${isClueOpen ? this.renderClueDrawer(clueId) : ''}
+        ${isTraceOpen ? this.renderTraceDrawer(c.evidence_id) : ''}
         ${isOpen ? this.renderEvidenceDrawer(c.evidence_id, evData, evErr) : ''}
       </article>
     `;
@@ -1023,6 +1231,10 @@ export class DiscoverConnectionsPanel {
               <button type="submit" class="study-button">Add</button>
             </form>
             <button type="button" class="study-button js-toggle-view">${this.viewMode === 'cards' ? 'Show cluster map' : 'Card view'}</button>
+            <label class="discover-chip" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px">
+              <input type="checkbox" class="js-verified-only-toggle" ${this.verifiedOnly ? 'checked' : ''} />
+              <span>Verified evidence only</span>
+            </label>
           </div>
         </div>
 
@@ -1041,14 +1253,28 @@ export class DiscoverConnectionsPanel {
 
         ${this.renderClusters(res)}
 
+        ${this.renderBridgePivotsSection(res)}
+
+        ${(() => {
+          const visibleConns = this.verifiedOnly
+            ? res.strongest_connections.filter(
+                c =>
+                  c.evidence_tier <= 5 &&
+                  c.epistemic_class !== 'orthographic_similarity_only' &&
+                  c.epistemic_class !== 'external_world_fact' &&
+                  c.epistemic_class !== 'candidate_literary_pattern',
+              )
+            : res.strongest_connections;
+          return `
         <div class="discover-section">
-          <h3>Strongest Connections</h3>
-          ${res.strongest_connections.length > 0
-            ? `<div class="discover-card-list">${res.strongest_connections.map(c => this.renderCard(c)).join('')}</div>`
+          <h3>Strongest Connections${this.verifiedOnly ? ` (${visibleConns.length} verified shown)` : ''}</h3>
+          ${visibleConns.length > 0
+            ? `<div class="discover-card-list">${visibleConns.map(c => this.renderCard(c)).join('')}</div>`
             : `<p class="study-muted">No connections matched this query/filter combination.</p>`
           }
           ${res.pagination.has_more ? `<button type="button" class="study-button load-more js-load-more">Load more connections (${res.pagination.total_available - res.strongest_connections.length} remaining)</button>` : ''}
-        </div>
+        </div>`;
+        })()}
 
         ${res.connection_paths.length > 0 ? `
           <div class="discover-section">
@@ -1175,6 +1401,11 @@ export class DiscoverConnectionsPanel {
       this.renderResults();
     });
 
+    this.resultsSlot.querySelector<HTMLInputElement>('.js-verified-only-toggle')?.addEventListener('change', e => {
+      this.verifiedOnly = (e.currentTarget as HTMLInputElement).checked;
+      this.renderResults();
+    });
+
     this.resultsSlot.querySelector<HTMLFormElement>('.js-add-concept-form')?.addEventListener('submit', e => {
       e.preventDefault();
       const extra = this.resultsSlot.querySelector<HTMLInputElement>('.js-add-concept-input')?.value.trim();
@@ -1189,6 +1420,27 @@ export class DiscoverConnectionsPanel {
       btn.addEventListener('click', () => {
         const id = btn.dataset.evidenceId;
         if (id) void this.toggleEvidenceDrawer(id);
+      });
+    });
+
+    this.resultsSlot.querySelectorAll<HTMLButtonElement>('.js-trace-evidence').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.evidenceId;
+        if (id) void this.toggleTraceDrawer(id);
+      });
+    });
+
+    this.resultsSlot.querySelectorAll<HTMLButtonElement>('.js-expand-clue').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const expandId = btn.dataset.expandId;
+        if (expandId) void this.toggleClueDrawer(expandId, 'evidence');
+      });
+    });
+
+    this.resultsSlot.querySelectorAll<HTMLButtonElement>('.js-expand-clue-full').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const expandId = btn.dataset.expandId;
+        if (expandId) void this.toggleClueDrawer(expandId, 'full', true);
       });
     });
 

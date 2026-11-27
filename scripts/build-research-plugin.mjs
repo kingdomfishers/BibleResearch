@@ -29,4 +29,9 @@ for (const file of ['SKILL.md', 'references/tool-contracts.md', 'agents/openai.y
   await fs.mkdir(path.dirname(target), { recursive: true });
   await fs.copyFile(path.join(skillRoot, file), target);
 }
+const mcpLiteraryDir = path.join(root, 'supabase/functions/bible-mcp/literary');
+await fs.mkdir(mcpLiteraryDir, { recursive: true });
+for (const file of ['literary-structure.mjs', 'literary-types.ts', 'wordplay-engine.ts', 'literary-engine.ts', 'literary-pack-loader.ts']) {
+  await fs.copyFile(path.join(root, 'src/relationships', file), path.join(mcpLiteraryDir, file));
+}
 console.log(`Built BibleResearch ${manifest.version} at ${output}`);

@@ -152,7 +152,7 @@ export const ResearchOpSchema = z.discriminatedUnion('op', [
     op: z.literal('set_combine'),
     id: z.string().trim().min(1).max(64).optional(),
     combine: z.enum(['intersect', 'union', 'difference']).optional().default('intersect'),
-    refs: z.array(z.string().trim().min(1).max(64)).min(1).max(6).optional(),
+    refs: z.array(z.string().trim().min(1).max(64)).min(1).max(16).optional(),
     include: z.array(z.string().trim().min(1).max(64)).min(1).max(8).optional(),
     exclude: z.array(z.string().trim().min(1).max(64)).max(8).optional(),
     testament: z.enum(['OT', 'NT', 'ALL']).optional(),
@@ -489,7 +489,7 @@ export const ResearchOpInputSchema = z.object({
   passages: z.array(z.string().trim().min(1).max(160)).min(2).max(4).optional(),
   include_dlm: z.boolean().optional(),
   combine: z.enum(['intersect', 'union', 'difference']).optional(),
-  refs: z.array(z.string().trim().min(1).max(64)).min(1).max(6).optional(),
+  refs: z.array(z.string().trim().min(1).max(64)).min(1).max(16).optional(),
   include: z.array(z.string().trim().min(1).max(64)).min(1).max(8).optional(),
   exclude: z.array(z.string().trim().min(1).max(64)).max(8).optional(),
   hydrate_verses: z.boolean().optional(),
@@ -998,14 +998,15 @@ async function hydrateCompactVersesByIds(
   read: DatabaseReader,
   verseIds: number[],
 ): Promise<Record<string, unknown>[]> {
+  const sorted = [...new Set(verseIds)].sort((a, b) => a - b);
   const chunks: number[][] = [];
-  for (let offset = 0; offset < verseIds.length; offset += 8) {
-    chunks.push(verseIds.slice(offset, offset + 8));
+  for (let offset = 0; offset < sorted.length; offset += 12) {
+    chunks.push(sorted.slice(offset, offset + 12));
   }
   const verses: Record<string, unknown>[] = [];
-  for (let i = 0; i < chunks.length; i += 3) {
+  for (let i = 0; i < chunks.length; i += 2) {
     const pages = await Promise.all(
-      chunks.slice(i, i + 3).map(ids =>
+      chunks.slice(i, i + 2).map(ids =>
         callRpc(read, 'get_passage_compact_v1', { verse_ids: ids, include_profiles: false, max_verses: ids.length }, ids.length, 0)
           .then(rows => extractRowsOrField(rows, 'verses', 'items', 'passages'))
           .catch(() => [] as Record<string, unknown>[]),
@@ -1281,7 +1282,7 @@ async function executeOccurrences(
         matchesBookOrTestament(inferBookFromVid(vid, profile.vidBookMap), op.book, op.testament),
       );
     } else if (profile.allVids.length > 0) {
-      const probeSlice = profile.allVids.slice(0, 200);
+      const probeSlice = profile.allVids.slice(0, 48);
       const hydratedAll = await hydrateCompactVersesByIds(ctx.read, probeSlice);
       const matched = hydratedAll.filter((v) => {
         const b = typeof v.book === 'number' ? v.book : null;
@@ -2065,7 +2066,9 @@ async function executeChronologyOccurrences(
   if (op.word) {
     const resolved = await resolveWordFast(ctx.read, op.word);
     if (resolved) {
-      const profile = await fetchWordProfileWithVids(ctx.read, resolved);
+      const baseKey = padStrongs(resolved.strongs || resolved.lemmaKey);
+      const batchMap = baseKey ? await fetchWordProfilesBatchWithVids(ctx.read, [baseKey]) : new Map();
+      const profile = (baseKey ? batchMap.get(baseKey)?.vids : undefined) ?? parseVidsPayload(null, baseKey);
       allIds = profile.allVids;
       totalMatchingVerses = profile.totalVerses;
     }
@@ -3759,11 +3762,12 @@ export async function executeResearch(
             output = { status: 'invalid_request', error: `Could not parse passage: ${op.passage}` };
             break;
           }
+          const viewModeLit = op.view ?? effectiveView;
           const mode: 'compact' | 'standard' | 'deep' = op.detail === 'deep' || op.detail === 'full'
             ? 'deep'
             : op.detail === 'standard' || op.detail === 'evidence'
               ? 'standard'
-              : op.detail === 'compact' || op.detail === 'clues' || op.detail === 'clue' || op.detail === 'concise' || op.detail === 'summary'
+              : (op.detail === 'compact' || op.detail === 'clues' || op.detail === 'clue' || op.detail === 'concise' || op.detail === 'summary' || viewModeLit === 'clues')
                 ? 'compact'
                 : effectiveView === 'full'
                   ? 'deep'
@@ -3786,37 +3790,96 @@ export async function executeResearch(
               error: 'Literary source chunks unavailable for requested passage.',
               retryable: true,
             };
-          } else if (mode === 'compact') {
+          } else if (mode === 'compact' || viewModeLit === 'clues') {
             const seg = asRecord(formatted.segmentation);
             const tmpl = asRecord(formatted.template);
+            const stripWordArrays = (x: unknown) => {
+              const r = asRecord(x);
+              if (!r) return x;
+              const {
+                word_ids: _wids, witness_word_ids: _wwids, unit_counts: _uc,
+                matched_char_indices: _mci, etymology_disclaimer: _ed, ...rest
+              } = r;
+              return rest;
+            };
             output = {
               ...formatted,
               ...(seg ? {
                 segmentation: {
-                  ...seg,
+                  anchor_text: seg.anchor_text,
+                  anchor_side: seg.anchor_side,
+                  signals: seg.signals,
+                  mdl_savings_bits: seg.mdl_savings_bits,
+                  confidence: seg.confidence,
+                  epistemic_class: seg.epistemic_class,
+                  ...(seg.introduction ? { introduction: { from_ref: asRecord(seg.introduction)?.fromRef ?? asRecord(seg.introduction)?.from_ref, to_ref: asRecord(seg.introduction)?.toRef ?? asRecord(seg.introduction)?.to_ref } } : {}),
                   units: asArray(seg.units).slice(0, 6),
                   sections: asArray(seg.sections).slice(0, 5),
                 },
               } : {}),
               ...(tmpl ? {
                 template: {
-                  ...tmpl,
+                  mdl_savings_bits: tmpl.mdl_savings_bits,
+                  compression_proxy: tmpl.compression_proxy,
                   slots: asArray(tmpl.slots).slice(0, 5),
                 },
               } : {}),
-              pattern_families: asArray(formatted.pattern_families).slice(0, 4),
-              deviations: asArray(formatted.deviations).slice(0, 3),
+              pattern_families: asArray(formatted.pattern_families).slice(0, 4).map(pf => {
+                const pfr = asRecord(pf);
+                if (!pfr) return pf;
+                const { description: _d, ...restPf } = pfr;
+                return restPf;
+              }),
+              deviations: asArray(formatted.deviations).slice(0, 3).map(stripWordArrays),
               command_fulfillments: asArray(formatted.command_fulfillments).slice(0, 3),
-              correspondences: asArray(formatted.correspondences).slice(0, 3),
+              correspondences: asArray(formatted.correspondences).slice(0, 3).map(c => {
+                const cr = asRecord(c);
+                if (!cr) return c;
+                return {
+                  ...cr,
+                  shared_lexemes: asArray(cr.shared_lexemes).slice(0, 4).map(lx => {
+                    const lr = asRecord(lx);
+                    if (!lr) return lx;
+                    const { wordIdsA: _a, wordIdsB: _b, ...restLx } = lr;
+                    return restLx;
+                  }),
+                };
+              }),
               symmetries: asArray(formatted.symmetries).slice(0, 2).map(s => {
                 const sr = asRecord(s);
-                return sr ? { ...sr, pairs: asArray(sr.pairs).slice(0, 3) } : s;
+                if (!sr) return s;
+                const centerRec = asRecord(sr.center);
+                return {
+                  ...sr,
+                  ...(centerRec ? { center: { ref: centerRec.ref, text: centerRec.text } } : {}),
+                  pairs: asArray(sr.pairs).slice(0, 3),
+                };
               }),
-              wordplays: asArray(formatted.wordplays).slice(0, 2),
-              key_words: asArray(formatted.key_words).slice(0, 5),
+              wordplays: asArray(formatted.wordplays).slice(0, 2).map(wp => {
+                const wpr = asRecord(wp);
+                if (!wpr) return wp;
+                const wa = asRecord(wpr.word_a);
+                const wb = asRecord(wpr.word_b);
+                return {
+                  epistemic_class: wpr.epistemic_class,
+                  overlap_kind: wpr.overlap_kind,
+                  shared_consonants: wpr.shared_consonants,
+                  score: wpr.score,
+                  confidence: wpr.confidence,
+                  word_a: wa ? { ref: wa.ref, form: wa.form, strongs: wa.strongs, lemma: wa.lemma, gloss: wa.gloss } : wpr.word_a,
+                  word_b: wb ? { ref: wb.ref, form: wb.form, strongs: wb.strongs, lemma: wb.lemma, gloss: wb.gloss } : wpr.word_b,
+                };
+              }),
+              key_words: asArray(formatted.key_words).slice(0, 5).map(stripWordArrays),
+              acrostics: asArray(formatted.acrostics).map(ac => {
+                const acr = asRecord(ac);
+                if (!acr) return ac;
+                const { entries: _ent, ...restAc } = acr;
+                return restAc;
+              }),
               thematic_clusters: asArray(formatted.thematic_clusters).slice(0, 3),
               speaker_shifts: asArray(formatted.speaker_shifts).slice(0, 2),
-              limitations: asArray(formatted.limitations).slice(0, 2),
+              limitations: asArray(formatted.limitations).slice(0, 1),
             };
           } else {
             output = formatted;
@@ -3897,11 +3960,57 @@ export async function executeResearch(
           }, 1, 0);
           const payload = extractFirstObject(rows) ?? { status: 'not_found' };
           const viewMode = op.view ?? effectiveView;
-          if (viewMode === 'clues' && Array.isArray(payload.matches) && payload.matches.length > 8) {
-            output = {
-              ...payload,
-              matches: payload.matches.slice(0, 8),
+          const compactClauseProject = (cl: unknown) => {
+            const c = asRecord(cl);
+            if (!c) return cl;
+            const pred = asRecord(c.predicate);
+            return {
+              clause_id: c.clause_id,
+              polarity: c.polarity,
+              ...(pred ? {
+                predicate: {
+                  s: pred.s,
+                  lemma: pred.lm ?? pred.lemma,
+                  gloss: pred.gloss,
+                  mood: pred.mood,
+                  stem: pred.stem,
+                },
+              } : {}),
+              ...(asArray(c.subjects).length ? { subjects: c.subjects } : {}),
+              ...(asArray(c.objects).length ? { objects: c.objects } : {}),
+              ...(asArray(c.neg_markers).length ? { neg_markers: c.neg_markers } : {}),
             };
+          };
+          if (viewMode === 'clues') {
+            if (Array.isArray(payload.verses)) {
+              output = {
+                ...payload,
+                verses: payload.verses.slice(0, 12).map((v: unknown) => {
+                  const vr = asRecord(v);
+                  if (!vr) return v;
+                  return {
+                    vid: vr.vid,
+                    ref: vr.ref,
+                    clauses: asArray(vr.clauses).map(compactClauseProject),
+                  };
+                }),
+              };
+            } else if (Array.isArray(payload.matches)) {
+              output = {
+                ...payload,
+                matches: payload.matches.slice(0, 8).map((m: unknown) => {
+                  const mr = asRecord(m);
+                  if (!mr) return m;
+                  return {
+                    vid: mr.vid,
+                    ref: mr.ref,
+                    clauses: asArray(mr.clauses).map(compactClauseProject),
+                  };
+                }),
+              };
+            } else {
+              output = payload;
+            }
           } else {
             output = payload;
           }

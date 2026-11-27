@@ -1,0 +1,25 @@
+{
+  "cycle": 2,
+  "fresh_validation": [
+    {
+      "id": "V1",
+      "domain": "Vocabulary-independent structural and decreation inversion",
+      "prompt": "Examine Jeremiah 4:23-26 alongside Genesis 1:1-2:3 and Isaiah 24:1-12, tracing structural reversals, decreation imagery, clause polarity flips, LXX renderings, and intermediate prophetic bridges."
+    },
+    {
+      "id": "V2",
+      "domain": "Greek and Hebrew wordplay, naming, and status reversals",
+      "prompt": "Investigate Philemon 1:8-21 alongside Genesis 27:30-40 and Isaiah 62:1-5, tracing lexical wordplay, evaluative valence shifts, name/status reversals, and LXX semantic backgrounds."
+    },
+    {
+      "id": "V3",
+      "domain": "Botanical/agricultural physical process metaphors and grafting",
+      "prompt": "Explore Romans 11:16-24 alongside Isaiah 5:1-7, Jeremiah 11:16-19, and Psalm 80:8-16, separating original-language lexical links, botanical/physical process properties, LXX bridges, and structural parallels."
+    },
+    {
+      "id": "V4",
+      "domain": "Distributed shepherd-king pattern and multi-book LXX bridges",
+      "prompt": "Analyze Ezekiel 34:1-16 alongside Zechariah 11:4-17, Micah 5:1-6, and John 10:1-18, tracing rare lexical constellations, LXX shifts, and multi-book intermediate bridges."
+    }
+  ]
+}

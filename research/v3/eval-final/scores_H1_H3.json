@@ -1,0 +1,107 @@
+{
+  "evaluator": "H1-H3",
+  "tasks": {
+    "H1": {
+      "scores": {
+        "System X": {
+          "depth_grounding": 8.0,
+          "verified_nonredundant_connections": 7.5,
+          "surprising_rare_discoveries": 8.5,
+          "intermediate_bridges_macro_patterns": 8.0,
+          "evidence_accuracy_low_fp": 8.0,
+          "overall_research_utility": 8.0
+        },
+        "System Y": {
+          "depth_grounding": 8.5,
+          "verified_nonredundant_connections": 9.0,
+          "surprising_rare_discoveries": 8.5,
+          "intermediate_bridges_macro_patterns": 9.0,
+          "evidence_accuracy_low_fp": 9.0,
+          "overall_research_utility": 9.0
+        },
+        "System Z": {
+          "depth_grounding": 9.5,
+          "verified_nonredundant_connections": 9.5,
+          "surprising_rare_discoveries": 9.5,
+          "intermediate_bridges_macro_patterns": 9.5,
+          "evidence_accuracy_low_fp": 9.5,
+          "overall_research_utility": 9.5
+        }
+      },
+      "rank_order": [
+        "System Z",
+        "System Y",
+        "System X"
+      ],
+      "rationale": "System Z leads with unmatched original-language precision, clean epistemic separation, and rare LXX/Hebrew bridges (such as Exod 40:35 שָׁכַן → ἐπισκιάζω → Luke 1:35/9:34, Exod 15:13/16 → Isa 43:21 עַם־זוּ, and פָּסַח → σκεπάζω) across all major prophetic and NT trajectories. System Y offers broader canonical synthesis and strong MT/LXX contrasts (Isa 63:9 Kethib/Qere, John 1:14/17, Heb 3:8) than System X, which surfaces sharp LXX catches (Isa 48:21 LXX, Zech 9:11, Isa 11:16) but is narrower in scope and leaks internal tool IDs and witness-text typos."
+    },
+    "H2": {
+      "scores": {
+        "System X": {
+          "depth_grounding": 8.0,
+          "verified_nonredundant_connections": 7.5,
+          "surprising_rare_discoveries": 8.0,
+          "intermediate_bridges_macro_patterns": 8.0,
+          "evidence_accuracy_low_fp": 7.5,
+          "overall_research_utility": 8.0
+        },
+        "System Y": {
+          "depth_grounding": 9.5,
+          "verified_nonredundant_connections": 9.0,
+          "surprising_rare_discoveries": 9.5,
+          "intermediate_bridges_macro_patterns": 9.5,
+          "evidence_accuracy_low_fp": 9.0,
+          "overall_research_utility": 9.5
+        },
+        "System Z": {
+          "depth_grounding": 8.0,
+          "verified_nonredundant_connections": 8.5,
+          "surprising_rare_discoveries": 8.0,
+          "intermediate_bridges_macro_patterns": 8.5,
+          "evidence_accuracy_low_fp": 9.0,
+          "overall_research_utility": 8.5
+        }
+      },
+      "rank_order": [
+        "System Y",
+        "System Z",
+        "System X"
+      ],
+      "rationale": "System Y excels with ten verified LXX semantic hinges (including Hos 10:12 φωτίσατε φῶς γνώσεως, 2 Kgs 17:27 יָרָה → φωτίζω, and Dan 2:22 OG ἀνακαλύπτω feeding 2 Cor 3:14–4:6), crisp homograph/stem disambiguations, and unexpected intermediate chains (1 Sam 14:27–29 → Ezra 9:8 → Ps 13:3; Ezek 40:4 reversing Isa 6:10). System Z ranks second for its broader narrative bridges (1 Sam 3, Luke 24, Wis 7:25–26), vital counter-motif guardrails (Deut 4:12, 1 Kgs 8:12), and transparent epistemic boundaries despite lacking corpus-verified counts, while System X adds good lexical gems (Jer 13:16, Job 12:22) but suffers from leaked ontology/lexicon IDs and narrower coverage."
+    },
+    "H3": {
+      "scores": {
+        "System X": {
+          "depth_grounding": 8.0,
+          "verified_nonredundant_connections": 8.0,
+          "surprising_rare_discoveries": 8.5,
+          "intermediate_bridges_macro_patterns": 8.0,
+          "evidence_accuracy_low_fp": 7.5,
+          "overall_research_utility": 8.0
+        },
+        "System Y": {
+          "depth_grounding": 8.0,
+          "verified_nonredundant_connections": 8.5,
+          "surprising_rare_discoveries": 8.5,
+          "intermediate_bridges_macro_patterns": 9.0,
+          "evidence_accuracy_low_fp": 9.0,
+          "overall_research_utility": 8.5
+        },
+        "System Z": {
+          "depth_grounding": 9.5,
+          "verified_nonredundant_connections": 9.5,
+          "surprising_rare_discoveries": 9.5,
+          "intermediate_bridges_macro_patterns": 9.5,
+          "evidence_accuracy_low_fp": 9.5,
+          "overall_research_utility": 9.5
+        }
+      },
+      "rank_order": [
+        "System Z",
+        "System Y",
+        "System X"
+      ],
+      "rationale": "System Z delivers an exhaustive, artifact-free synthesis anchored by exact rare intersections (שָׁלַךְ + מֶלַח in 2 Kgs 2:21/Ezek 43:24; עֵץ + עָלֶה + נָבֵל in Ps 1:3/Ezek 47:12; כָּתֵף + יְמָנִי + נֶגֶב), eight major LXX shifts (47:3 ὕδωρ ἀφέσεως, 47:8–12 ὑγιάζω, 47:12 ἀνάβασις corrected to φύλλα in Rev 22:2), Matt 13:47–48 (σαγήνη), and the chapter-wide נַחַל ↔ נָחַל hinge. System Y edges out System X for second via clean epistemic discipline, strong physical/hydrological analogies, and unique structural parallels (Isa 25:11 Moab swimming, John 19:34 side-typology, Dan 7:10 river of fire), whereas System X has sharp corpus locks (Day 5, מִפְתָּן, Tyre reversal) offset by leaked tool/WordNet tags and a Hebrew-transliterated Arabic canal artifact (שַׁטּ אֵן נִיל) on Ezek 1:1–3."
+    }
+  }
+}

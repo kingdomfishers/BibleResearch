@@ -1,5 +1,128 @@
 /* Loaded after component styles so responsive rules share one predictable cascade. */
 @media (max-width: 900px) {
+  html, body { max-width: 100%; overflow-x: clip; }
+  body {
+    padding: 0;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Override desktop split-pane shell back to normal vertical flow */
+  #app { height: auto; overflow: visible; }
+  .workspace-split { display: block; }
+  #resizer-slot, .workspace-resizer, .inspector-reopen-fab { display: none; }
+  .workspace-main-pane { height: auto; overflow: visible; }
+  .workspace-main-inner { padding: 0.6rem 0.7rem 5rem; gap: 0.75rem; }
+  .workspace-inspector-pane { height: auto; overflow: visible; border-left: 0; background: transparent; }
+
+  /* Responsive trail header & toolbar (no horizontal overflow at 320px or 200% zoom) */
+  .research-trail-header { flex-wrap: wrap; padding: 8px 10px; gap: 6px; }
+  .trail-brand__text { display: none; }
+  .trail-breadcrumbs { order: 3; flex-basis: 100%; border-top: 1px solid var(--border); padding-top: 6px; }
+  .trail-actions { margin-left: auto; flex-wrap: wrap; justify-content: flex-end; }
+  .trail-btn, .seg-btn { min-height: 40px; padding: 5px 9px; font-size: 12px; }
+
+  .study-toolbar {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+    padding: 0.55rem 0.7rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface, var(--panel));
+    max-width: 100%;
+  }
+  .study-toolbar #study-search,
+  .study-toolbar #navigation,
+  .study-toolbar .passage-stepper {
+    width: 100%;
+    max-width: 100%;
+    flex: none;
+    min-width: 0;
+    margin-left: 0;
+  }
+  .study-toolbar .passage-nav {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(110px, 1.5fr);
+    align-items: end;
+    gap: 8px;
+    padding: 10px;
+  }
+  .study-toolbar .passage-nav .book-field { grid-column: 1 / -1; min-width: 0; }
+  .study-toolbar .passage-nav input,
+  .study-toolbar .passage-nav select,
+  .study-toolbar .primary-button { width: 100%; min-width: 0; min-height: 44px; height: 44px; font-size: 16px; }
+  .study-toolbar .millennium { display: none; }
+  .study-toolbar .passage-stepper { justify-content: space-between; padding: 0; }
+  .study-toolbar .study-search-results { left: 0; right: 0; width: 100%; max-width: 100%; }
+  .study-toolbar .study-search-results .study-examples { gap: 6px 10px; }
+
+  /* Mobile bottom drawer / docked inspector */
+  .word-inspector { position: static; max-height: none; }
+  .word-inspector:not([data-open="true"]) .inspector-occurrences,
+  .word-inspector:not([data-open="true"]) .inspector-formation,
+  .word-inspector:not([data-open="true"]) .inspector-categorized,
+  .word-inspector:not([data-open="true"]) .inspector-connections { display: none; }
+  .word-inspector[data-open="true"] {
+    position: fixed;
+    z-index: 80;
+    bottom: 0;
+    inset-inline: 0;
+    top: auto;
+    max-height: 78dvh;
+    overflow: auto;
+    border-radius: 12px 12px 0 0;
+    box-shadow: 0 -10px 60px #0004;
+    padding: 18px 16px calc(18px + env(safe-area-inset-bottom));
+    background: var(--panel);
+    border: 1px solid var(--border);
+  }
+  .word-inspector .inspector-pane-bar {
+    margin: -18px -20px 12px;
+    padding: 10px 16px;
+    background: var(--panel);
+  }
+  .word-inspector[data-open="true"] .inspector-pane-bar {
+    margin: -18px -16px 12px;
+    padding: 10px 16px;
+    background: var(--panel);
+  }
+  .word-inspector .inspector-close {
+    display: inline-flex;
+    min-width: 40px;
+    min-height: 40px;
+    width: 40px;
+    height: 40px;
+  }
+
+  .word-hover-preview, .context-preview { display: none; }
+  .reader-heading { padding: 16px 16px 0; }
+  .reader-heading h2 { font-size: 26px; }
+  .english-reading { padding: 12px 16px 10px; }
+  .english-verse { font-size: 21px; }
+  .interlinear-toolbar { padding: 10px 16px 0; }
+  .passage-context { padding: 8px 16px; }
+  .highlight-legend-mount { padding: 8px 16px 0; }
+  .reader-context-before, .reader-context-after, .reader-chapter-stream { padding: 10px 16px; }
+  .word-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    align-items: flex-start;
+    gap: 8px 4px;
+    padding: 10px 12px 14px;
+  }
+  .comparison-columns { grid-template-columns: 1fr; }
+  .study-preview-sheet { top: auto; bottom: 0; width: 100%; max-height: 80dvh; border-radius: 12px 12px 0 0; padding: 20px; }
+  .rendering-link, .place-name-link, .reference-link, .text-action, .inspector-pill-btn, .inspector-homograph-chip {
+    min-height: 40px;
+    display: inline-flex;
+    align-items: center;
+  }
+  .study-button { min-height: 44px; }
+  .word-token select { font-size: 16px; min-height: 44px; }
+  .discovery-graph__layout { grid-template-columns: 1fr !important; }
+  .quick-note-composer { right: 8px; left: 8px; bottom: 8px; width: auto; max-height: 82vh; }
+
   .research-panel, .research-tabpanel, .prompt-meta, .spec-card,
   .inputs-row > label, .inputs-row input, .inputs-row select { min-width: 0; }
   .api-signature, .spec-row { max-width: 100%; overflow-wrap: anywhere; }
@@ -12,8 +135,8 @@
 
 @media (max-width: 680px) {
   body {
-    padding-left: max(14px, env(safe-area-inset-left));
-    padding-right: max(14px, env(safe-area-inset-right));
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
     padding-bottom: env(safe-area-inset-bottom);
   }
   .site-header { height: 74px; gap: 14px; }
@@ -57,14 +180,20 @@
   .workspace-heading .eyebrow { font-size: 10px; }
   .click-hint { font-size: 11px; line-height: 1.5; }
   .click-hint span { margin-left: 4px; }
-  .reader-heading { padding: 20px 16px 0; gap: 12px; flex-wrap: wrap; }
+  .reader-heading { padding: 16px 14px 0; gap: 10px; flex-wrap: wrap; }
   .reader-heading .eyebrow { font-size: 9px; }
-  .source-badge { font-size: 11px; }
-  .word-grid { padding: 20px 8px; gap: 8px 4px; align-items: start; }
-  .word-grid .word-token { min-width: 0; padding: 10px 6px; gap: 9px; }
-  .word-inspect { min-width: 44px; min-height: 48px; max-width: 100%; }
+  .english-reading { padding: 12px 14px 10px; }
+  .english-verse { font-size: 20px; }
+  .interlinear-toolbar { padding: 10px 14px 0; gap: 8px; }
+  .interlinear-toolbar__controls { width: 100%; margin-left: 0; justify-content: flex-start; }
+  .passage-context { padding: 8px 14px; }
+  .reader-context-before, .reader-context-after, .reader-chapter-stream { padding: 10px 14px; }
+  .source-badge { font-size: 10px; }
+  .word-grid { padding: 10px 12px 14px; gap: 8px 4px; align-items: flex-start; }
+  .word-grid .word-token { min-width: 52px; padding: 6px 8px; }
+  .word-inspect { min-width: 40px; min-height: 36px; max-width: 100%; }
   .original { overflow-wrap: anywhere; }
-  .transliteration { max-width: 100%; overflow-wrap: anywhere; font-size: 13px; text-align: center; }
+  .transliteration { max-width: 100%; overflow-wrap: anywhere; font-size: 11.5px; text-align: center; }
   .translation-choice .english-slot { min-height: 44px; font-size: 16px; max-width: min(220px, 64vw); }
   .translation-status { font-size: 11px; }
   .translation-reset { min-height: 44px; min-width: 44px; font-size: 12px; }
@@ -135,4 +264,22 @@
   .study-guide h3 { font-size: 14px; }
   .study-guide p { font-size: 13px; }
   .site-footer { flex-wrap: wrap; gap: 12px; margin-top: 32px; font-size: 11px; }
+  .reader-controls-bar { width: 100%; justify-content: space-between; }
+  .seg-btn { min-height: 40px; padding: 6px 8px; }
+  .passage-comparison { padding: 14px 12px; }
+  .drag-drop-zone--pin-a, .drag-drop-zone--compare-b { width: 112px; padding: 10px 6px; margin-top: 96px; }
+  .highlight-legend-mount { padding: 8px 14px 0; }
+}
+
+@media (max-width: 430px) {
+  .study-toolbar .passage-nav { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 10px; gap: 8px 6px; }
+  .study-toolbar .primary-button { grid-column: 1 / -1; }
+  .reader-heading h2 { font-size: 24px; }
+  .word-grid { display: flex; flex-wrap: wrap; justify-content: flex-start; align-items: flex-start; padding: 10px 10px 14px; gap: 8px 4px; }
+  .word-grid .word-token { min-width: 52px; padding: 6px 7px; }
+  .timeline-neighbors { flex-direction: column; }
+  .timeline-neighbors li { border-top: 0; border-left: 1px solid var(--border); padding: 4px 0 4px 12px; }
+  .timeline-dot { left: -3px; top: 10px; }
+  .trail-btn { padding: 5px 7px; font-size: 11px; }
+  .rendering-link, .inspector-pill-btn { min-height: 40px; }
 }

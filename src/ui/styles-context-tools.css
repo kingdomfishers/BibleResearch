@@ -1,0 +1,1981 @@
+/* Context Tools: Dialogs, Curated Media, Atlas Search, Feasts, Genealogy, Architecture & Inspector Spotlight */
+
+:root[data-theme="light"] {
+  --ctx-backdrop: rgba(24, 32, 30, 0.56);
+  --ctx-lightbox-backdrop: rgba(12, 18, 16, 0.82);
+  --ctx-shadow: 0 22px 64px rgba(18, 28, 24, 0.24);
+  --ctx-pill-bg: color-mix(in srgb, var(--soft) 80%, transparent);
+  --ctx-gold-wash: color-mix(in srgb, var(--gold) 12%, transparent);
+  --ctx-green-wash: color-mix(in srgb, var(--green) 13%, transparent);
+}
+
+:root[data-theme="dark"] {
+  --ctx-backdrop: rgba(4, 9, 12, 0.74);
+  --ctx-lightbox-backdrop: rgba(2, 5, 8, 0.88);
+  --ctx-shadow: 0 28px 80px rgba(0, 0, 0, 0.65);
+  --ctx-pill-bg: color-mix(in srgb, var(--soft) 72%, transparent);
+  --ctx-gold-wash: color-mix(in srgb, var(--gold) 14%, transparent);
+  --ctx-green-wash: color-mix(in srgb, var(--green) 14%, transparent);
+}
+
+/* ==========================================================================
+   Inline Context Tool Strips & Inspector Chips
+   ========================================================================== */
+
+.context-tools-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-alt);
+}
+
+.context-tool-chip,
+.context-chip-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 32px;
+  padding: 5px 11px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.3;
+  cursor: pointer;
+  max-width: 100%;
+  transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+}
+
+.context-tool-chip:hover,
+.context-tool-chip:focus-visible,
+.context-chip-btn:hover,
+.context-chip-btn:focus-visible {
+  border-color: var(--gold);
+  background: var(--ctx-gold-wash);
+  color: var(--gold-light);
+}
+
+.context-tool-chip__badge,
+.context-chip-btn__badge {
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: var(--soft);
+  color: var(--gold);
+  flex-shrink: 0;
+}
+
+.inspector-context-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+/* ==========================================================================
+   WordInspector Top-of-Inspector Visual Spotlight & Mini Place Map
+   ========================================================================== */
+
+.inspector-visual-spotlight {
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 10px 0 12px;
+  padding: 11px 12px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--panel);
+  min-width: 0;
+}
+
+.inspector-spotlight-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 10px;
+}
+
+.inspector-spotlight-title {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.inspector-spotlight-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.inspector-spotlight-expand-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 28px;
+  padding: 4px 9px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface-alt);
+  color: var(--gold-light);
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.inspector-spotlight-expand-btn:hover,
+.inspector-spotlight-expand-btn:focus-visible {
+  border-color: var(--gold);
+  background: var(--ctx-gold-wash);
+}
+
+.inspector-spotlight-tabs {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface-alt);
+  width: fit-content;
+  max-width: 100%;
+}
+
+.inspector-spotlight-tab {
+  border: 0;
+  border-radius: 5px;
+  padding: 4px 9px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 11.5px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.inspector-spotlight-tab:hover,
+.inspector-spotlight-tab:focus-visible {
+  color: var(--text);
+  background: color-mix(in srgb, var(--soft) 65%, transparent);
+}
+
+.inspector-spotlight-tab.is-active,
+.inspector-spotlight-tab[aria-selected="true"],
+.inspector-spotlight-tab[aria-pressed="true"] {
+  background: var(--ctx-gold-wash);
+  color: var(--gold-light);
+  font-weight: 600;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold) 55%, transparent);
+}
+
+.inspector-spotlight-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  gap: 10px;
+  align-items: start;
+  min-width: 0;
+}
+
+.inspector-spotlight-grid--single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.mini-place-map-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.mini-place-map-canvas {
+  width: 100%;
+  height: 175px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  background: var(--surface-alt);
+  position: relative;
+}
+
+.mini-place-map-canvas .maplibregl-map,
+.mini-place-map-canvas canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.inspector-spotlight-photo {
+  min-width: 0;
+}
+
+.inspector-spotlight-grid .curated-media-figure {
+  padding: 8px;
+  gap: 6px;
+  border-radius: 7px;
+}
+
+.inspector-spotlight-grid .curated-media-img {
+  max-height: 122px;
+}
+
+.inspector-spotlight-grid .curated-media-title {
+  font-size: 12px;
+}
+
+.inspector-spotlight-grid .curated-media-desc,
+.inspector-spotlight-grid .curated-media-license {
+  font-size: 11px;
+}
+
+.inspector-spotlight-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+@container (max-width: 359px) {
+  .inspector-spotlight-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.inspector-person-spotlight,
+.inspector-tribe-spotlight {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 11px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-alt);
+  min-width: 0;
+}
+
+.inspector-lineage-chain {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text);
+}
+
+.inspector-rel-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
+
+.inspector-rel-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px 6px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--panel);
+  font-size: 11.5px;
+}
+
+.inspector-rel-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-alt);
+  color: var(--gold-light);
+  font-size: 11.5px;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+}
+
+.inspector-rel-chip:hover,
+.inspector-rel-chip:focus-visible {
+  border-color: var(--gold);
+  background: var(--ctx-gold-wash);
+  color: var(--gold-light);
+}
+
+.inspector-disambig-note {
+  margin: 0;
+  padding: 7px 10px;
+  border-left: 3px solid var(--gold);
+  border-radius: 6px;
+  background: var(--ctx-gold-wash);
+  color: var(--text);
+  font-size: 11.5px;
+  line-height: 1.45;
+}
+
+.context-timeline-expand-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 28px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--gold-light);
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.context-timeline-expand-btn:hover,
+.context-timeline-expand-btn:focus-visible {
+  border-color: var(--gold);
+  background: var(--ctx-gold-wash);
+}
+
+/* ==========================================================================
+   Modal Context Tool Dialog
+   ========================================================================== */
+
+dialog.context-tool-dialog {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel);
+  color: var(--text);
+  box-shadow: var(--ctx-shadow);
+  padding: 0;
+  margin: auto;
+  width: min(1040px, calc(100vw - 24px));
+  max-width: calc(100vw - 24px);
+  max-height: min(88dvh, 880px);
+  overflow: hidden;
+}
+
+dialog.context-tool-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+dialog.context-tool-dialog:modal {
+  overscroll-behavior: contain;
+}
+
+dialog.context-tool-dialog::backdrop {
+  background: var(--ctx-backdrop);
+  backdrop-filter: blur(4px);
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+
+.context-tool-header {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 22px 0;
+  background: var(--surface-alt);
+  border-bottom: 1px solid var(--border);
+}
+
+.context-tool-header-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.context-tool-title-wrap {
+  min-width: 0;
+}
+
+.context-tool-title-wrap .eyebrow {
+  margin: 0 0 3px;
+}
+
+.context-tool-dialog-title {
+  margin: 0;
+  font: 400 22px/1.2 Georgia, serif;
+  color: var(--text);
+}
+
+.context-tool-close-btn {
+  flex: 0 0 auto;
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--text);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.context-tool-close-btn:hover,
+.context-tool-close-btn:focus-visible {
+  border-color: var(--gold);
+  background: var(--soft);
+  color: var(--gold-light);
+}
+
+.context-tool-tabs,
+.context-tool-tablist {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.context-tool-tab {
+  position: relative;
+  flex: none;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  padding: 10px 14px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  border-radius: 6px 6px 0 0;
+}
+
+.context-tool-tab:hover,
+.context-tool-tab:focus-visible {
+  color: var(--text);
+  background: color-mix(in srgb, var(--soft) 55%, transparent);
+}
+
+.context-tool-tab[aria-selected="true"] {
+  color: var(--gold-light);
+  font-weight: 600;
+}
+
+.context-tool-tab[aria-selected="true"]::after {
+  content: "";
+  position: absolute;
+  inset: auto 8px 0;
+  border-block-end: 3px solid var(--gold);
+  border-radius: 2px 2px 0 0;
+}
+
+.context-tool-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 20px 24px 26px;
+  background: var(--panel);
+}
+
+.context-tool-tabpanel {
+  min-width: 0;
+}
+
+/* ==========================================================================
+   Media Lightbox Dialog
+   ========================================================================== */
+
+dialog.media-lightbox-dialog {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel);
+  color: var(--text);
+  box-shadow: var(--ctx-shadow);
+  padding: 0;
+  margin: auto;
+  width: min(940px, calc(100vw - 24px));
+  max-width: calc(100vw - 24px);
+  max-height: calc(100dvh - 24px);
+  overflow: hidden;
+}
+
+dialog.media-lightbox-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+dialog.media-lightbox-dialog:modal {
+  overscroll-behavior: contain;
+}
+
+dialog.media-lightbox-dialog::backdrop {
+  background: var(--ctx-lightbox-backdrop);
+  backdrop-filter: blur(6px);
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+
+.media-lightbox-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 20px;
+  background: var(--surface-alt);
+  border-bottom: 1px solid var(--border);
+}
+
+.media-lightbox-title-wrap {
+  min-width: 0;
+}
+
+.media-lightbox-title {
+  margin: 0;
+  font: 400 19px/1.25 Georgia, serif;
+}
+
+.media-lightbox-stage {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: var(--surface-alt);
+  overflow: auto;
+}
+
+.media-lightbox-img {
+  display: block;
+  max-width: 100%;
+  max-height: 62dvh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.media-lightbox-meta {
+  padding: 14px 20px 18px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 28dvh;
+  overflow-y: auto;
+}
+
+.media-lightbox-note {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text);
+}
+
+.media-lightbox-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.context-tool-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--ctx-pill-bg);
+  color: var(--muted);
+  font-size: 11px;
+}
+
+/* ==========================================================================
+   Curated Media Figures, Place Cards & Bible Places Atlas Search
+   ========================================================================== */
+
+.curated-media-figure {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-alt);
+  min-width: 0;
+}
+
+.curated-media-visual {
+  position: relative;
+  min-width: 0;
+}
+
+.curated-media-thumb-btn {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: zoom-in;
+  border-radius: 7px;
+  overflow: hidden;
+}
+
+.curated-media-img {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  max-height: 260px;
+  object-fit: cover;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  cursor: zoom-in;
+}
+
+.curated-media-figure--compact .curated-media-img {
+  max-height: 190px;
+}
+
+.curated-media-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.curated-media-badges > span,
+.curated-media-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--gold-light);
+  font-size: 11px;
+}
+
+.curated-media-caption {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.curated-media-title {
+  font-size: 13.5px;
+  color: var(--text);
+}
+
+.curated-media-desc,
+.curated-media-note {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.curated-media-refs {
+  font-size: 11.5px;
+  color: var(--gold-light);
+}
+
+.curated-media-license {
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.curated-media-license a,
+.curated-media-fallback-link {
+  color: var(--gold-light);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.curated-media-fallback {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px 14px;
+  border-radius: 7px;
+  border: 1px dashed var(--border);
+  background: var(--panel);
+  color: var(--muted);
+  font-size: 12.5px;
+  text-align: center;
+}
+
+.curated-media-attribution {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.context-media-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.context-media-card-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.context-media-zoom-btn {
+  font-size: 11.5px;
+  padding: 4px 10px;
+}
+
+.context-place-chooser {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.context-place-pill {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 13px;
+  background: var(--surface-alt);
+  color: var(--text);
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.context-place-pill:hover,
+.context-place-pill.is-active {
+  border-color: var(--gold);
+  background: var(--ctx-gold-wash);
+  color: var(--gold-light);
+}
+
+.place-detail-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  min-width: 0;
+}
+
+.place-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.place-detail-title-block {
+  min-width: 0;
+  flex: 1 1 260px;
+}
+
+.place-detail-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 12px;
+}
+
+.place-detail-name {
+  margin: 0;
+  font: 400 21px/1.2 Georgia, serif;
+}
+
+.place-detail-ancient {
+  font-size: 12.5px;
+  color: var(--gold-light);
+}
+
+.place-detail-scripts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 4px;
+  font-size: 18px;
+  color: var(--gold);
+}
+
+.place-detail-modern {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.place-detail-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.place-detail-evidence,
+.place-detail-identification,
+.place-alt-summary {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+.place-alt-summary {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.place-detail-alternatives {
+  padding-top: 10px;
+  border-top: 1px dashed var(--border);
+}
+
+.place-detail-refs,
+.context-strongs-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.place-detail-refs-label,
+.context-strongs-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.context-ref-chip,
+.context-strongs-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface-alt);
+  color: var(--gold-light);
+  font-size: 12px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.context-ref-chip:hover,
+.context-strongs-chip:hover {
+  border-color: var(--gold);
+  background: var(--ctx-gold-wash);
+}
+
+.context-ref-text {
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: var(--soft);
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.context-source-link {
+  color: var(--gold-light);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.place-detail-media,
+.context-featured-places,
+.places-atlas-section {
+  margin-top: 18px;
+}
+
+.place-media-heading,
+.context-section-header h3 {
+  margin: 0 0 10px;
+  font: 400 17px/1.25 Georgia, serif;
+}
+
+.context-section-header .eyebrow {
+  margin: 0 0 3px;
+}
+
+.context-place-media-grid,
+.context-place-gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 14px;
+}
+
+.places-atlas-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-alt);
+}
+
+.places-search-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 12px;
+}
+
+.places-search-input {
+  flex: 1 1 280px;
+  min-width: 0;
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--panel);
+  color: var(--text);
+  font-size: 13.5px;
+}
+
+.places-search-input:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+
+.places-search-status {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.places-search-results {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 8px;
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 4px 2px;
+}
+
+.places-search-result-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  padding: 8px 11px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.places-search-result-btn:hover,
+.places-search-result-btn:focus-visible,
+.places-search-result-btn.is-selected {
+  border-color: var(--gold);
+  background: var(--ctx-gold-wash);
+}
+
+.places-search-result-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+  width: 100%;
+}
+
+.places-search-result-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.places-search-result-type {
+  font-size: 10.5px;
+  color: var(--gold-light);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.places-search-result-meta {
+  font-size: 11.5px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.place-atlas-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel);
+  min-width: 0;
+}
+
+.place-atlas-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px 14px;
+}
+
+.place-atlas-title-wrap {
+  min-width: 0;
+  flex: 1 1 240px;
+}
+
+.place-atlas-name {
+  margin: 0;
+  font: 400 18.5px/1.25 Georgia, serif;
+  color: var(--text);
+}
+
+.place-atlas-aliases,
+.place-atlas-coords {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.place-atlas-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.place-atlas-media {
+  margin-top: 4px;
+}
+
+/* ==========================================================================
+   Feasts & Calendar Panel
+   ========================================================================== */
+
+.feast-controls-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 14px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.feast-season-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.feast-season-tabs button {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 5px 12px;
+  background: var(--surface-alt);
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.feast-season-tabs button:hover,
+.feast-season-tabs button[aria-pressed="true"],
+.feast-season-tabs button.is-active {
+  border-color: var(--gold);
+  background: var(--ctx-gold-wash);
+  color: var(--gold-light);
+}
+
+.feast-list {
+  display: grid;
+  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.feast-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-alt);
+  min-width: 0;
+}
+
+.feast-card.is-selected,
+.feast-card[aria-current="true"] {
+  border-color: var(--gold);
+  background: var(--ctx-gold-wash);
+}
+
+.feast-dates-box {
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.feast-epistemic-box {
+  padding: 12px 14px;
+  border-radius: 8px;
+  border-left: 3px solid var(--gold);
+  background: var(--ctx-gold-wash);
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+.feast-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+/* ==========================================================================
+   People & Genealogy Panel + Stats / Edge Category Badges
+   ========================================================================== */
+
+.genealogy-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.genealogy-search {
+  flex: 1 1 220px;
+  min-width: 0;
+  max-width: 380px;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface-alt);
+  color: var(--text);
+  font-size: 13px;
+}
+
+.genealogy-stats-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--ctx-pill-bg);
+  color: var(--gold-light);
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.genealogy-edge-cat--explicit,
+.genealogy-edge-cat--inferred {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  line-height: 1.35;
+}
+
+.genealogy-edge-cat--explicit {
+  border: 1px solid color-mix(in srgb, var(--green) 55%, var(--border));
+  background: var(--ctx-green-wash);
+  color: var(--green);
+}
+
+.genealogy-edge-cat--inferred {
+  border: 1px solid color-mix(in srgb, var(--gold) 55%, var(--border));
+  background: var(--ctx-gold-wash);
+  color: var(--gold-light);
+}
+
+.genealogy-zoom-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 10px;
+  margin-bottom: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-alt);
+}
+
+.genealogy-zoom-bar button {
+  min-height: 28px;
+  padding: 4px 9px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.genealogy-zoom-bar button:hover,
+.genealogy-zoom-bar button:focus-visible {
+  border-color: var(--gold);
+  background: var(--ctx-gold-wash);
+  color: var(--gold-light);
+}
+
+.genealogy-zoom-readout {
+  font-size: 11.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  min-width: 44px;
+  text-align: center;
+}
+
+.genealogy-viewport {
+  overflow: hidden;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  position: relative;
+  min-height: 290px;
+  max-height: 440px;
+  touch-action: none;
+  width: 100%;
+  margin-bottom: 14px;
+}
+
+.genealogy-canvas-stage {
+  transform-origin: 0 0;
+  cursor: grab;
+  will-change: transform;
+  display: inline-block;
+}
+
+.genealogy-canvas-stage.is-panning {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.genealogy-svg-wrap {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-alt);
+  padding: 12px;
+  margin-bottom: 14px;
+}
+
+.genealogy-svg {
+  display: block;
+  min-width: 540px;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.genealogy-node {
+  cursor: pointer;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.genealogy-node rect {
+  fill: var(--panel);
+  stroke: var(--border);
+  stroke-width: 1.25;
+}
+
+.genealogy-node:hover rect,
+.genealogy-node.is-selected rect {
+  stroke: var(--gold);
+  stroke-width: 2;
+  fill: var(--accent);
+}
+
+.genealogy-node text {
+  fill: var(--text);
+  font-size: 12px;
+}
+
+.genealogy-homonyms {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  margin-bottom: 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-alt);
+}
+
+.genealogy-edges-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+/* ==========================================================================
+   2D Tabernacle, Temple & Ancient Jerusalem Gates Blueprints
+   ========================================================================== */
+
+.arch-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.arch-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px 14px;
+}
+
+.arch-plan-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.arch-plan-tab {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 13px;
+  background: var(--surface-alt);
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+}
+
+.arch-plan-tab:hover,
+.arch-plan-tab:focus-visible {
+  border-color: var(--gold);
+  color: var(--text);
+  background: var(--soft);
+}
+
+.arch-plan-tab.is-active,
+.arch-plan-tab[aria-selected="true"],
+.arch-plan-tab[aria-pressed="true"] {
+  border-color: var(--gold);
+  background: var(--ctx-gold-wash);
+  color: var(--gold-light);
+  font-weight: 600;
+}
+
+.arch-element-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.arch-element-pill {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 4px 10px;
+  background: var(--surface-alt);
+  color: var(--text);
+  font-size: 12px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+}
+
+.arch-element-pill:hover,
+.arch-element-pill:focus-visible {
+  border-color: var(--gold);
+  background: var(--soft);
+}
+
+.arch-element-pill.is-active,
+.arch-element-pill.is-highlighted,
+.arch-element-pill[aria-pressed="true"] {
+  border-color: var(--gold);
+  background: var(--ctx-gold-wash);
+  color: var(--gold-light);
+  font-weight: 600;
+}
+
+.arch-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(260px, 0.9fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.arch-svg-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-alt);
+}
+
+.arch-svg {
+  display: block;
+  width: 100%;
+  min-width: 440px;
+  height: auto;
+  overflow: visible;
+}
+
+.arch-compass {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.arch-el {
+  cursor: pointer;
+  outline: none;
+  transition: opacity 0.15s ease, filter 0.15s ease;
+}
+
+.arch-el:hover,
+.arch-el:focus-visible {
+  filter: brightness(1.12);
+}
+
+.arch-el.is-highlighted {
+  stroke: var(--gold-light);
+  stroke-width: 2.5px;
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--gold) 72%, transparent));
+}
+
+.arch-el.is-highlighted rect,
+.arch-el.is-highlighted path,
+.arch-el.is-highlighted circle,
+.arch-el.is-highlighted polygon {
+  stroke: var(--gold-light);
+  stroke-width: 2.5px;
+}
+
+@keyframes archPulse {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 4px color-mix(in srgb, var(--gold) 55%, transparent));
+  }
+  50% {
+    filter: drop-shadow(0 0 11px color-mix(in srgb, var(--gold-light) 92%, transparent));
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .arch-el.is-highlighted {
+    animation: archPulse 1.8s ease-in-out infinite;
+  }
+}
+
+.arch-detail-card {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  min-width: 0;
+}
+
+.arch-detail-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px 12px;
+}
+
+.arch-dimensions-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--green) 45%, var(--border));
+  background: var(--ctx-green-wash);
+  color: var(--green);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.arch-epistemic-box {
+  padding: 11px 13px;
+  border-radius: 8px;
+  border-left: 3px solid var(--gold);
+  background: var(--ctx-gold-wash);
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--text);
+}
+
+.arch-refs-row,
+.arch-strongs-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ==========================================================================
+   Global Table of Nations Panel
+   ========================================================================== */
+
+.nations-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.nations-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 14px;
+}
+
+.nations-branch-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.nations-branch-pill {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 5px 12px;
+  background: var(--surface-alt);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+}
+
+.nations-branch-pill:hover,
+.nations-branch-pill:focus-visible {
+  border-color: var(--gold);
+  background: var(--soft);
+  color: var(--text);
+}
+
+.nations-branch-pill.is-active,
+.nations-branch-pill[aria-pressed="true"],
+.nations-branch-pill[aria-selected="true"] {
+  border-color: var(--gold);
+  background: var(--ctx-gold-wash);
+  color: var(--gold-light);
+  font-weight: 600;
+}
+
+.nations-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(260px, 0.95fr);
+  gap: 16px;
+  align-items: start;
+  min-width: 0;
+}
+
+.nations-map-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.nations-map-canvas {
+  width: 100%;
+  height: 390px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  background: var(--surface-alt);
+  position: relative;
+}
+
+.nations-map-canvas .maplibregl-map,
+.nations-map-canvas canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.nations-chain {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 11px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-alt);
+  font-size: 12px;
+}
+
+.nations-chain-node {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+}
+
+.nations-chain-node:hover,
+.nations-chain-node:focus-visible,
+.nations-chain-node.is-active,
+.nations-chain-node[aria-current="true"] {
+  border-color: var(--gold);
+  background: var(--ctx-gold-wash);
+  color: var(--gold-light);
+  font-weight: 600;
+}
+
+.nations-epistemic-note {
+  padding: 11px 13px;
+  border-radius: 8px;
+  border-left: 3px solid var(--gold);
+  background: var(--ctx-gold-wash);
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--text);
+}
+
+.nations-card {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  min-width: 0;
+}
+
+/* ==========================================================================
+   Multi-Track Synchronized Timeline Panel
+   ========================================================================== */
+
+.synced-timeline-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.synced-timeline-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 14px;
+}
+
+.synced-timeline-eras {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.synced-timeline-eras button {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 5px 12px;
+  background: var(--surface-alt);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+}
+
+.synced-timeline-eras button:hover,
+.synced-timeline-eras button:focus-visible {
+  border-color: var(--gold);
+  background: var(--soft);
+  color: var(--text);
+}
+
+.synced-timeline-eras button.is-active,
+.synced-timeline-eras button[aria-pressed="true"],
+.synced-timeline-eras button[aria-selected="true"] {
+  border-color: var(--gold);
+  background: var(--ctx-gold-wash);
+  color: var(--gold-light);
+  font-weight: 600;
+}
+
+.synced-timeline-tracks-scroll {
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: 420px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  position: relative;
+}
+
+.timeline-track-row {
+  display: flex;
+  align-items: stretch;
+  min-width: max-content;
+  border-bottom: 1px solid var(--border);
+}
+
+.timeline-track-row:last-child {
+  border-bottom: 0;
+}
+
+.timeline-track-label {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  flex: 0 0 165px;
+  width: 165px;
+  padding: 10px 12px;
+  border-right: 1px solid var(--border);
+  background: var(--surface-alt);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+}
+
+.timeline-track-lane {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 54px;
+  padding: 8px 10px;
+  background: var(--surface);
+}
+
+.timeline-event-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--text);
+  font-size: 11.5px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.timeline-event-bar:hover,
+.timeline-event-bar:focus-visible {
+  border-color: var(--gold);
+  background: var(--ctx-gold-wash);
+  color: var(--gold-light);
+}
+
+.timeline-event-bar.is-active,
+.timeline-event-bar.is-selected,
+.timeline-event-bar[aria-pressed="true"],
+.timeline-event-bar[aria-current="true"] {
+  border-color: var(--gold);
+  background: var(--ctx-gold-wash);
+  color: var(--gold-light);
+  font-weight: 600;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--gold) 28%, transparent);
+}
+
+.timeline-concurrent-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-alt);
+  min-width: 0;
+}
+
+/* ==========================================================================
+   Mobile Responsive Reflow (No Horizontal Overflow at 320px)
+   ========================================================================== */
+
+@media (max-width: 720px) {
+  dialog.context-tool-dialog,
+  dialog.media-lightbox-dialog {
+    width: calc(100vw - 12px);
+    max-width: calc(100vw - 12px);
+    max-height: 92dvh;
+    border-radius: 10px;
+  }
+
+  .context-tool-header {
+    padding: 12px 14px 0;
+  }
+
+  .context-tool-dialog-title {
+    font-size: 18px;
+  }
+
+  .context-tool-body {
+    padding: 14px 14px 20px;
+  }
+
+  .context-tool-tab {
+    padding: 9px 11px 11px;
+    font-size: 12.5px;
+    min-height: 40px;
+  }
+
+  .context-tool-close-btn,
+  .context-tool-chip,
+  .context-chip-btn,
+  .context-ref-chip,
+  .context-strongs-chip,
+  .context-place-pill,
+  .arch-plan-tab,
+  .arch-element-pill,
+  .nations-branch-pill,
+  .nations-chain-node,
+  .inspector-rel-chip,
+  .context-timeline-expand-btn {
+    min-height: 36px;
+  }
+
+  .place-detail-card,
+  .place-atlas-card,
+  .places-atlas-section,
+  .arch-detail-card,
+  .nations-card,
+  .timeline-concurrent-panel {
+    padding: 14px;
+  }
+
+  .place-detail-header,
+  .place-atlas-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .place-map-cta {
+    width: 100%;
+  }
+
+  .context-place-media-grid,
+  .context-place-gallery-grid,
+  .places-search-results,
+  .feast-list,
+  .feast-detail-grid,
+  .genealogy-edges-grid,
+  .arch-layout,
+  .nations-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .nations-map-canvas {
+    height: 300px;
+  }
+
+  .timeline-track-label {
+    flex: 0 0 124px;
+    width: 124px;
+    padding: 8px 9px;
+    font-size: 11.5px;
+  }
+
+  .genealogy-search,
+  .places-search-input {
+    max-width: 100%;
+    flex-basis: 100%;
+    min-height: 42px;
+    font-size: 16px;
+  }
+
+  .genealogy-svg,
+  .arch-svg {
+    min-width: 380px;
+  }
+}
+
+.context-tools-strip[hidden],
+.context-tool-panel[hidden],
+.curated-media-fallback[hidden],
+.curated-media-thumb-btn[hidden],
+.genealogy-homonyms[hidden],
+.media-lightbox-fallback[hidden],
+.media-lightbox-img[hidden],
+.places-search-results[hidden],
+.place-atlas-card[hidden],
+.inspector-visual-spotlight[hidden],
+.inspector-person-spotlight[hidden],
+.inspector-tribe-spotlight[hidden],
+.timeline-concurrent-panel[hidden] {
+  display: none !important;
+}
