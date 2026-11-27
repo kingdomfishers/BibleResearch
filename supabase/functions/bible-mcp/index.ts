@@ -46,6 +46,15 @@ const corpusRpcs = new Set([
   'get_passage_compact_v1',
   'get_word_profiles_batch_v1',
   'resolve_fast_lookup_v1',
+  'get_literary_source_v1',
+  'analyze_literary_structure_v1',
+  'lxx_concordance_v3',
+  'tri_textual_diff_v3',
+  'clause_role_query_v3',
+  'sequence_parallels_v3',
+  'wordplay_scan_v3',
+  'expand_clue_v3',
+  'set_combine_v3',
 ]);
 const allowedRpcs = new Set([
   'prompt_verse_words',
@@ -77,6 +86,15 @@ const allowedRpcs = new Set([
   'get_passage_compact_v1',
   'get_word_profiles_batch_v1',
   'resolve_fast_lookup_v1',
+  'get_literary_source_v1',
+  'analyze_literary_structure_v1',
+  'lxx_concordance_v3',
+  'tri_textual_diff_v3',
+  'clause_role_query_v3',
+  'sequence_parallels_v3',
+  'wordplay_scan_v3',
+  'expand_clue_v3',
+  'set_combine_v3',
   'lookup_concept_properties_v1',
   'get_word_formation_v1',
   'suggest_orthographic_candidates_v1',
@@ -91,6 +109,15 @@ const allowedRpcs = new Set([
   'get_note_v1',
   'search_note_targets_v1',
   'list_note_connection_types_v1',
+  'rg_resolve_entity_v1',
+  'rg_search_v1',
+  'rg_concept_dossier_v1',
+  'rg_expand_neighborhood_v1',
+  'rg_find_paths_v1',
+  'rg_trace_evidence_v1',
+  'rg_find_contradictions_v1',
+  'rg_list_trails_v1',
+  'rg_get_trail_v1',
 ]);
 const singlePacketRpcs = new Set([
   'get_dlm_notes_for_verse_v1',
@@ -124,6 +151,15 @@ const singlePacketRpcs = new Set([
   'get_passage_compact_v1',
   'get_word_profiles_batch_v1',
   'resolve_fast_lookup_v1',
+  'get_literary_source_v1',
+  'analyze_literary_structure_v1',
+  'lxx_concordance_v3',
+  'tri_textual_diff_v3',
+  'clause_role_query_v3',
+  'sequence_parallels_v3',
+  'wordplay_scan_v3',
+  'expand_clue_v3',
+  'set_combine_v3',
   'lookup_concept_properties_v1',
   'get_word_formation_v1',
   'suggest_orthographic_candidates_v1',
@@ -132,6 +168,15 @@ const singlePacketRpcs = new Set([
   'get_note_v1',
   'search_note_targets_v1',
   'list_note_connection_types_v1',
+  'rg_resolve_entity_v1',
+  'rg_search_v1',
+  'rg_concept_dossier_v1',
+  'rg_expand_neighborhood_v1',
+  'rg_find_paths_v1',
+  'rg_trace_evidence_v1',
+  'rg_find_contradictions_v1',
+  'rg_list_trails_v1',
+  'rg_get_trail_v1',
 ]);
 const customReadOps = new Set([
   'get_word_details',
@@ -155,6 +200,15 @@ const corpusOnlyRpcs = new Set([
   'get_passage_compact_v1',
   'get_word_profiles_batch_v1',
   'resolve_fast_lookup_v1',
+  'get_literary_source_v1',
+  'analyze_literary_structure_v1',
+  'lxx_concordance_v3',
+  'tri_textual_diff_v3',
+  'clause_role_query_v3',
+  'sequence_parallels_v3',
+  'wordplay_scan_v3',
+  'expand_clue_v3',
+  'set_combine_v3',
 ]);
 const wordColumns = 'id,strongs_nr,original_word,transliteration,grammar_code,biblical_def,physical_def,english_translations';
 const cors = {
@@ -221,11 +275,11 @@ export function createDatabaseReader(
           name === 'compare_patterns_v1' ||
           name === 'trace_evidence_v1' ||
           name === 'discover_subgraph_v1'
-            ? [502, 504]
+            ? [502, 503, 504]
             : [500, 502, 503, 504];
         for (let attempt = 0; attempt < 2 && retryableCorpusStatuses.includes(corpRes.status); attempt++) {
           await corpRes.body?.cancel();
-          const backoffMs = 60 * (attempt + 1) + Math.floor(Math.random() * 80);
+          const backoffMs = 80 * (attempt + 1) + Math.floor(Math.random() * 100);
           await new Promise(resolve => setTimeout(resolve, backoffMs));
           corpRes = await fetcher(corpUrl, {
             ...corpReq,
@@ -273,8 +327,8 @@ export function createDatabaseReader(
         ? [...new Set(args.word_ids.map(Number).filter(n => Number.isInteger(n) && n > 0))]
         : [];
       const chunks: number[][] = [];
-      for (let i = 0; i < ids.length; i += 100) {
-        chunks.push(ids.slice(i, i + 100));
+      for (let i = 0; i < ids.length; i += 250) {
+        chunks.push(ids.slice(i, i + 250));
       }
       const pages: Record<string, unknown>[][] = [];
       for (let i = 0; i < chunks.length; i += 4) {
@@ -313,8 +367,13 @@ export function createDatabaseReader(
         return { source: 'live', rows: [{ places: [] }], page: { limit: 1, offset: 0, has_more: false, next_offset: null } };
       }
       const lim = Math.min(Math.max(1, Number(limit || 10)), 25);
+      const collapsed = q.replace(/[\s\-''`]+/g, '');
+      const hasVariant = collapsed.length >= 3 && collapsed.toLowerCase() !== q.toLowerCase();
+      const filterClause = hasVariant
+        ? `or=(biblical_name.ilike.*${encodeURIComponent(q)}*,biblical_name.ilike.*${encodeURIComponent(collapsed)}*)`
+        : `biblical_name=ilike.*${encodeURIComponent(q)}*`;
       const placesRaw = await publicRestGet(
-        `/rest/v1/places?published=eq.true&biblical_name=ilike.*${encodeURIComponent(q)}*&select=id,place_key,biblical_name,place_type,hebrew_name,greek_name,is_non_physical&order=id.asc&limit=${lim}`,
+        `/rest/v1/places?published=eq.true&${filterClause}&select=id,place_key,biblical_name,place_type,hebrew_name,greek_name,is_non_physical&order=id.asc&limit=${lim}`,
       );
       if (placesRaw.length === 0) {
         return { source: 'live', rows: [{ places: [] }], page: { limit: 1, offset: 0, has_more: false, next_offset: null } };

@@ -27,6 +27,9 @@ export interface NotesWriterConfig {
 export interface NotesWriter {
   saveNote(agent: AgentIdentity, note: Record<string, unknown>): Promise<Record<string, unknown>>;
   deleteNote(agent: AgentIdentity, noteId: string): Promise<Record<string, unknown>>;
+  saveGraphBatch(agent: AgentIdentity, payload: Record<string, unknown>): Promise<Record<string, unknown>>;
+  deleteGraphClaim(agent: AgentIdentity, claimId: string): Promise<Record<string, unknown>>;
+  saveGraphTrail(agent: AgentIdentity, trail: Record<string, unknown>): Promise<Record<string, unknown>>;
   checkAuth(headers?: Headers | null): boolean;
   hasAgentKey(): boolean;
 }
@@ -128,6 +131,9 @@ export function createNotesWriter(config: NotesWriterConfig, fetcher: typeof fet
   return {
     saveNote: (agent: AgentIdentity, note: Record<string, unknown>) => callRpc('agent_save_note_v1', { p_agent: agent, p_note: note }),
     deleteNote: (agent: AgentIdentity, noteId: string) => callRpc('agent_delete_note_v1', { p_agent: agent, p_note_id: noteId }),
+    saveGraphBatch: (agent: AgentIdentity, payload: Record<string, unknown>) => callRpc('rg_agent_save_batch_v1', { p_agent: agent, p_payload: payload }),
+    deleteGraphClaim: (agent: AgentIdentity, claimId: string) => callRpc('rg_agent_delete_claim_v1', { p_agent: agent, p_claim_id: claimId }),
+    saveGraphTrail: (agent: AgentIdentity, trail: Record<string, unknown>) => callRpc('rg_agent_save_trail_v1', { p_agent: agent, p_trail: trail }),
     checkAuth: (headers?: Headers | null) => checkAgentAuth(headers, config.agentKey),
     hasAgentKey: () => Boolean(config.agentKey),
   };

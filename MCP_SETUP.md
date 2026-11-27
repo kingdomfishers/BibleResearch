@@ -337,7 +337,13 @@ npx supabase functions deploy bible-mcp --project-ref ejoperxiwxlcbsqrkrvb --no-
 
 This command requires an authenticated CLI or a scoped `SUPABASE_ACCESS_TOKEN` with `edge_functions_write`.
 The current deployment is complete; you do not need to run it to connect your assistants.
-When deploying through the Supabase MCP tool (`deploy_edge_function`), explicitly set `import_map_path` to `deno.json` along with all 13 server modules (`index.ts`, `catalog.ts`, `relationships-v2.ts`, `research-lenses.ts`, `verse-hydrated.ts`, `syntax-research.ts`, `notes-tools.ts`, `notes-write.ts`, `dlm-notes.ts`, `pattern-prompts.ts`, `research-workflow.ts`, `workflow-contract.ts`, and `deno.json`), to avoid retaining an old import-map path or omitting workflow/tool dependencies. Run the package builder first when modifying `skills/bible-research/SKILL.md`.
+When deploying through the Supabase MCP tool (`deploy_edge_function`), explicitly set `import_map_path` to `deno.json` along with all server modules (`index.ts`, `catalog.ts`, `discovery-v2-tools.ts`, `research-engine.ts`, `research-graph-tools.ts`, `relationships-v2.ts`, `research-lenses.ts`, `verse-hydrated.ts`, `syntax-research.ts`, `notes-tools.ts`, `notes-write.ts`, `dlm-notes.ts`, `pattern-prompts.ts`, `research-workflow.ts`, `workflow-contract.ts`, plus the `literary/` module files and `deno.json`), to avoid retaining an old import-map path or omitting workflow/tool dependencies.
+
+### Research Knowledge Graph in the 7-Tool Interface
+
+- `research` supports 7 bounded KG operations (`kg_search`, `kg_dossier`, `kg_neighbors`, `kg_paths`, `kg_trace`, `kg_contradictions`, `kg_trail`) returning `epistemic_layer: "research_knowledge"`, `KG_UNTRUSTED_NOTICE`, provenance (`origin_layer`, `author_kind`, `evidence_class`, `review_status`, `epistemic_state`, `is_potentially_stale`), and recursive upstream evidence checks (`independent_primary_witness_count`, `shared_upstream_warnings`). `notes_search` also surfaces `untrusted_kg_claims` unless `include_kg: false`.
+- `follow_connectionchain` supports `layer_mode: "source" | "algorithmic" | "research" | "combined"` (default `"algorithmic"`).
+- `write_Note` supports transactional batch graph actions (`kg_save_batch`, `kg_update_claim`, `kg_challenge`, `kg_supersede`, `kg_save_trail`), guarded by `NOTES_AGENT_KEY`, `note_settings.ai_writes_enabled`, author ownership, optimistic `expected_version`, and `client_request_id` idempotency. Run the package builder first when modifying `skills/bible-research/SKILL.md`.
 
 After changing tool descriptions or schemas, refresh the ChatGPT plugin connection and start a new conversation.
 In Gemini Developer Mode use **Sync schema**, or refresh/reconnect the custom app. Restart Gemini CLI to rediscover tools.

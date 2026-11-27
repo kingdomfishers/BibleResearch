@@ -5,7 +5,7 @@ import { McpServer } from '@modelcontextprotocol/server';
 import * as z from 'zod';
 import type { DatabaseQuery, DatabaseReader } from './catalog.ts';
 import type { ChainState, ChainStep, ChainStore } from './chain-store.ts';
-import { chainEvidenceTarget, selectChainEvidence, type ChainEvidence } from './chain-evidence.ts';
+import { chainEvidenceTarget, matchesAxisFilter, selectChainEvidence, type AxisFilter, type ChainEvidence } from './chain-evidence.ts';
 import {
   bookName,
   formatRef,
@@ -27,7 +27,14 @@ import {
   type NotesWriter,
 } from './notes-write.ts';
 import { dlmCardInputSchema, executeSaveDlmCard } from './dlm-notes.ts';
-import { ResearchOpSchema, executeResearch } from './research-engine.ts';
+import { ResearchOpInputSchema, executeResearch, runLiteraryStructureMcp } from './research-engine.ts';
+import {
+  executeKgWriteAction,
+  fetchKgNeighborsForChain,
+  kgBatchInputSchema,
+  kgClaimInputSchema,
+  kgTrailInputSchema,
+} from './research-graph-tools.ts';
 import { WORKFLOW_INSTRUCTIONS, WORKFLOW_VERSION } from './research-workflow.ts';
 import {
   verifyWordRowAlignment,
@@ -99,12 +106,12 @@ function textReply(text: string) {
 }
 
 function jsonReply(payload: Rec) {
-  return { content: textReply(JSON.stringify(payload)), structuredContent: payload };
+  return { content: textReply(JSON.stringify(payload)) };
 }
 
 function errorReply(message: string, details?: Rec) {
   const payload = { status: 'error', error: message, ...(details ?? {}) };
-  return { isError: true, content: textReply(JSON.stringify(payload)), structuredContent: payload };
+  return { isError: true, content: textReply(JSON.stringify(payload)) };
 }
 
 async function callRpc(
@@ -132,6 +139,247 @@ async function safeCallFirst(
   }
 }
 
+async function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>(resolve => {
+        timer = setTimeout(() => resolve(fallback), ms);
+      }),
+    ]);
+  } finally {
+    if (timer !== undefined) clearTimeout(timer);
+  }
+}
+
+export type McpView = 'clues' | 'evidence' | 'full';
+
+const VIEW_ALIAS_VALUES = [
+  'clues',
+  'clue',
+  'evidence',
+  'full',
+  'concise',
+  'compact',
+  'standard',
+  'summary',
+  'deep',
+] as const;
+
+const ViewAliasSchema = z.enum(VIEW_ALIAS_VALUES);
+
+function resolveViewMode(view?: string, detail?: string): McpView {
+  const raw = (view || detail || 'clues').toLowerCase();
+  if (raw === 'full' || raw === 'deep') return 'full';
+  if (raw === 'evidence' || raw === 'standard') return 'evidence';
+  return 'clues';
+}
+
+function parseMcpView(view: unknown, compact?: boolean): McpView {
+  if (view === 'evidence' || view === 'full' || view === 'clues') return view;
+  if (typeof view === 'string') return resolveViewMode(view);
+  return compact ? 'clues' : 'clues';
+}
+
+const utf8Encoder = new TextEncoder();
+const utf8Decoder = new TextDecoder();
+
+function toBase64Url(strVal: string): string {
+  const bytes = utf8Encoder.encode(strVal);
+  let bin = '';
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+}
+
+function fromBase64Url(b64u: string): string {
+  const padLen = (4 - (b64u.length % 4)) % 4;
+  const b64 = b64u.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat(padLen);
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return utf8Decoder.decode(bytes);
+}
+
+const CHAIN_DEFAULT_TTL_MS = 24 * 60 * 60 * 1000;
+
+function encodeStatelessChainToken(state: ChainState, sessionId?: string | null): string {
+  const compactSteps = state.steps.slice(-10).map(s => ({
+    i: s.step_index,
+    f: s.from_node,
+    t: s.to_node,
+    ...(s.edge_id ? { e: s.edge_id } : {}),
+    rel: s.relation,
+    ep: s.epistemic,
+    r: (s.refs || []).slice(0, 2),
+    ...(s.branched_from_step !== undefined ? { b: s.branched_from_step } : {}),
+  }));
+  const payload = {
+    v: 1,
+    id: state.chain_id,
+    r: state.root,
+    c: state.current_node,
+    vn: state.visited_nodes.slice(-24),
+    ve: state.visited_edges.slice(-24),
+    st: compactSteps,
+    br: state.branches.slice(-6),
+    exp: state.expires_at,
+    ...(sessionId ? { sid: sessionId.slice(0, 32) } : {}),
+  };
+  return toBase64Url(JSON.stringify(payload));
+}
+
+function decodeStatelessChainToken(
+  token: string,
+  sessionId?: string | null,
+): { ok: true; state: ChainState } | { ok: false; error: string; message: string } {
+  try {
+    const raw = JSON.parse(fromBase64Url(token)) as Rec;
+    if (!raw || raw.v !== 1 || typeof raw.r !== 'string' || typeof raw.c !== 'string') {
+      return { ok: false, error: 'invalid_chain_handle', message: 'Invalid connection chain handle.' };
+    }
+    if (typeof raw.sid === 'string' && raw.sid.length > 0) {
+      if (!sessionId || sessionId.slice(0, 32) !== raw.sid) {
+        return { ok: false, error: 'chain_access_denied', message: 'Connection chain does not belong to this session.' };
+      }
+    }
+    const expIso = typeof raw.exp === 'string' && raw.exp ? raw.exp : new Date(Date.now() + CHAIN_DEFAULT_TTL_MS).toISOString();
+    const expMs = Date.parse(expIso);
+    if (Number.isFinite(expMs) && Date.now() >= expMs) {
+      return { ok: false, error: 'chain_expired', message: 'Connection chain has expired.' };
+    }
+    const nowIso = new Date().toISOString();
+    const steps: ChainStep[] = asArr(raw.st).map(asRec).filter((s): s is Rec => s !== null).map((s, idx) => ({
+      step_index: typeof s.i === 'number' ? s.i : idx + 1,
+      from_node: str(s.f),
+      to_node: str(s.t),
+      ...(str(s.e) ? { edge_id: str(s.e) } : {}),
+      relation: str(s.rel, 'exploratory_step'),
+      epistemic: str(s.ep, 'exploratory_hypothesis'),
+      refs: asArr(s.r).filter((x): x is string => typeof x === 'string'),
+      ...(typeof s.b === 'number' ? { branched_from_step: s.b } : {}),
+    }));
+    const branches = asArr(raw.br).map(asRec).filter((b): b is Rec => b !== null).map(b => ({
+      branch_id: str(b.branch_id, 'br_1'),
+      from_step: typeof b.from_step === 'number' ? b.from_step : 0,
+      from_node: str(b.from_node, str(raw.r)),
+      created_at: str(b.created_at, nowIso),
+    }));
+    return {
+      ok: true,
+      state: {
+        chain_id: str(raw.id, 'stateless'),
+        root: str(raw.r),
+        current_node: str(raw.c),
+        visited_nodes: asArr(raw.vn).filter((x): x is string => typeof x === 'string'),
+        visited_edges: asArr(raw.ve).filter((x): x is string => typeof x === 'string'),
+        steps,
+        branches,
+        active_candidates: [],
+        created_at: nowIso,
+        updated_at: nowIso,
+        expires_at: expIso,
+      },
+    };
+  } catch {
+    return { ok: false, error: 'invalid_chain_handle', message: 'Invalid connection chain handle.' };
+  }
+}
+
+function parseCompositeChainHandle(rawHandle: string): { storeHandle: string | null; statelessToken: string | null } {
+  const trimmed = rawHandle.trim();
+  if (trimmed.startsWith('v3c:')) {
+    return { storeHandle: null, statelessToken: trimmed.slice(4) };
+  }
+  const idx = trimmed.indexOf('~v3c:');
+  if (idx > 0) {
+    return {
+      storeHandle: trimmed.slice(0, idx),
+      statelessToken: trimmed.slice(idx + 5),
+    };
+  }
+  return { storeHandle: trimmed, statelessToken: null };
+}
+
+function formatCompositeChainHandle(storeHandle: string | null, state: ChainState, sessionId?: string | null): string {
+  const token = encodeStatelessChainToken(state, sessionId);
+  return storeHandle ? `${storeHandle}~v3c:${token}` : `v3c:${token}`;
+}
+
+function trimConcise(val: string | undefined, maxLen: number): string {
+  if (!val) return '';
+  const s = val.replace(/\s+/g, ' ').trim();
+  return s.length <= maxLen ? s : `${s.slice(0, Math.max(0, maxLen - 3)).trimEnd()}...`;
+}
+
+function projectClue(c: CompactConnection, view: McpView): CompactConnection {
+  const expandId = c.expand_id || c.id;
+  if (view === 'full') return { ...c, expand_id: expandId };
+  if (view === 'evidence') {
+    const { score_breakdown: _sb, ...rest } = c;
+    return { ...rest, expand_id: expandId };
+  }
+  // 'clues' view: crisp, non-redundant progressive clue (no verbose witness paragraphs or raw score_breakdown)
+  const conciseTitle = trimConcise(c.title, 90);
+  const conciseWhy = trimConcise(c.why, 80);
+  return {
+    id: c.id,
+    expand_id: expandId,
+    relation: c.relation,
+    epistemic: c.epistemic,
+    ...(c.tier !== undefined ? { tier: c.tier } : {}),
+    ...(c.e_perp ? { e_perp: c.e_perp } : {}),
+    ...(c.axes && c.axes.length > 0 ? { axes: c.axes.slice(0, 4) } : {}),
+    title: conciseTitle,
+    ...(conciseWhy && conciseWhy !== conciseTitle ? { why: conciseWhy } : {}),
+    refs: (c.refs || []).slice(0, 2),
+    ...(c.bridge_preview ? { bridge_preview: trimConcise(c.bridge_preview, 75) } : {}),
+    ...(c.matched_endpoints ? { matched_endpoints: c.matched_endpoints } : {}),
+    ...(c.target
+      ? {
+          target: {
+            ...(c.target.strongs ? { strongs: c.target.strongs } : {}),
+            ...(c.target.script ? { script: c.target.script } : {}),
+            ...(c.target.gloss ? { gloss: trimConcise(c.target.gloss, 36) } : {}),
+          },
+        }
+      : {}),
+  };
+}
+
+async function expandClueById(
+  read: DatabaseReader,
+  expandId: string,
+  detail: 'clue' | 'evidence' | 'full' = 'evidence',
+): Promise<Rec> {
+  const v3Res = await safeCallFirst(read, 'expand_clue_v3', { expand_id: expandId, detail });
+  if (v3Res && v3Res.status !== 'not_found' && v3Res.status !== 'error') {
+    return { ...v3Res, expand_id: expandId, detail };
+  }
+  const evRes = await safeCallFirst(read, 'get_connection_evidence_v1', { evidence_id: expandId });
+  if (evRes && evRes.status !== 'not_found') {
+    return { status: 'ok', expand_id: expandId, detail, ...evRes };
+  }
+  return v3Res ?? { status: 'not_found', expand_id: expandId, detail, error: `No evidence record found for "${expandId}".` };
+}
+
+function withChainNext(
+  neighbors: CompactConnection[],
+  fromNode: string,
+  view: McpView = 'clues',
+): Array<CompactConnection & { next: string; next_id: string }> {
+  return neighbors.map(c => {
+    const projected = projectClue(c, view);
+    const nextTarget = String(chainEvidenceTarget(c as unknown as ChainEvidence, fromNode) || c.id);
+    const nextId = String(c.expand_id || c.id || nextTarget);
+    return {
+      ...projected,
+      next: nextTarget,
+      next_id: nextId,
+    };
+  });
+}
+
 // Split profile decoding across bounded read RPCs to respect the free Worker CPU budget.
 // Candidate selection and ordering use the identical plan produced by the corpus handler.
 export async function fetchCompactPassage(read: DatabaseReader, args: Rec): Promise<Rec | null> {
@@ -141,9 +389,9 @@ export async function fetchCompactPassage(read: DatabaseReader, args: Rec): Prom
   const candidates = asArr(plan.candidates).map(asRec).filter((c): c is Rec => c !== null);
   const loaded: Rec = {};
   let unavailable = false;
-  for (let offset = 0; offset < candidates.length; offset += 4) {
+  for (let offset = 0; offset < candidates.length; offset += 8) {
     const page = await safeCallFirst(read, 'get_word_profiles_batch_v1', {
-      strongs: candidates.slice(offset, offset + 4).map(c => c.bs),
+      strongs: candidates.slice(offset, offset + 8).map(c => c.bs),
       include_vids: false, include_forms: false, include_orth: true, include_pilot: false,
     });
     if (!page) unavailable = true;
@@ -245,13 +493,15 @@ function buildProfileDerivedConnections(profile: Rec, limit: number): CompactCon
     .filter(Boolean)
     .slice(0, 2);
 
-  for (const rawLex of asArr(profile.lexical_relations).slice(0, 4)) {
+  for (const rawLex of asArr(profile.lexical_relations).slice(0, 6)) {
     const lr = asRec(rawLex);
     if (!lr) continue;
     const tBs = padStrongsToken(str(lr.target_strongs));
     const tSc = str(lr.script);
     const tGl = str(lr.gloss);
     const kind = str(lr.type, 'lexical_relation');
+    if (kind === 'shared_name_base' || kind === 'group_member_of') continue;
+    if (kind === 'shares_root' && bs && tBs && bs[0] !== tBs[0]) continue;
     if (kind === 'shares_root' && bs && tBs && bs[0] === tBs[0]) {
       const tgtConsSet = extractScriptConsSet(tSc);
       if (srcConsSet.size > 0 && tgtConsSet.size > 0) {
@@ -316,6 +566,8 @@ function buildProfileDerivedConnections(profile: Rec, limit: number): CompactCon
   return out.slice(0, limit);
 }
 
+const XREF_TRIVIAL_PHRASE_RE = /^(?:then|this\s+is|and|for|so|but|now|therefore|behold|or|that|in|on|at|to|of|the|a|an|it|is|was|were|he|she|they|we|you|i)$/i;
+
 function buildXrefConnection(fromRef: string, fromVid: number, rawXr: unknown, concise = false): CompactConnection | null {
   let targetVid = 0;
   let targetRef = '';
@@ -337,6 +589,7 @@ function buildXrefConnection(fromRef: string, fromVid: number, rawXr: unknown, c
     votes = obj.flags === undefined && typeof obj.votes === 'number' ? Number(obj.votes) : 0;
   }
   if (!targetRef) return null;
+  if (XREF_TRIVIAL_PHRASE_RE.test(phrase.trim())) phrase = '';
   const fromOt = fromVid <= 23213;
   const toNt = targetVid > 23213;
   const isCrossTestament = (fromOt && toNt) || (!fromOt && targetVid > 0 && !toNt);
@@ -444,6 +697,35 @@ function padStrongsToken(raw: string): string {
   return m ? `${m[1].toUpperCase()}${m[2].padStart(4, '0')}` : raw.trim().toUpperCase();
 }
 
+function hasHebrewNiqqud(raw: string): boolean {
+  return /[\u05B0-\u05C7]/.test(raw);
+}
+
+function normalizeHebrewPointed(raw: string): string {
+  return raw
+    .normalize('NFC')
+    .replace(/[\u0591-\u05AF\u05AB\u05BC\u05BD\u05BF\u05C0\u05C3-\u05C6]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function buildGreekTranslitVariants(raw: string): string[] {
+  const q = raw.trim().toLowerCase();
+  if (!/^[a-z\s\-']+$/.test(q) || q.length < 3) return [];
+  const variants = new Set<string>();
+  const add = (v: string) => { if (v && v !== q) variants.add(v); };
+  if (q.includes('y')) add(q.replace(/y/g, 'u'));
+  if (q.includes('u')) add(q.replace(/u/g, 'y'));
+  if (q.includes('ch')) add(q.replace(/ch/g, 'kh'));
+  if (q.includes('kh')) add(q.replace(/kh/g, 'ch'));
+  if (q.includes('ph')) add(q.replace(/ph/g, 'f'));
+  if (q.includes('oo')) add(q.replace(/oo/g, 'o'));
+  if (q.includes('ou')) add(q.replace(/ou/g, 'u'));
+  if (q.includes('ei')) add(q.replace(/ei/g, 'i'));
+  if (q.includes('y') && q.includes('oo')) add(q.replace(/y/g, 'u').replace(/oo/g, 'o'));
+  return [...variants].slice(0, 6);
+}
+
 async function resolveWordCandidate(
   read: DatabaseReader,
   wordQuery: string,
@@ -516,14 +798,36 @@ async function resolveWordCandidate(
 
   let lookupRes: Rec | null = null;
   try {
-    const rows = await callRpc(read, 'resolve_fast_lookup_v1', { query: lookupQuery, limit: 10 }, 1, 0);
+    const rows = await callRpc(read, 'resolve_fast_lookup_v1', { query: lookupQuery, limit: 15 }, 1, 0);
     lookupRes = asRec(rows[0]);
   } catch {
     warnings.push(`Lexical fast lookup unavailable for "${lookupQuery}".`);
   }
-  const matches = asArr(lookupRes?.matches).map(asRec).filter((m): m is Rec => m !== null);
+  let matches = asArr(lookupRes?.matches).map(asRec).filter((m): m is Rec => m !== null);
+  if (matches.length === 0) {
+    for (const variant of buildGreekTranslitVariants(lookupQuery)) {
+      try {
+        const vRows = await callRpc(read, 'resolve_fast_lookup_v1', { query: variant, limit: 10 }, 1, 0);
+        const vMatches = asArr(asRec(vRows[0])?.matches).map(asRec).filter((m): m is Rec => m !== null);
+        if (vMatches.length > 0) {
+          matches = vMatches;
+          break;
+        }
+      } catch { /* try next transliteration variant */ }
+    }
+  }
+  if (matches.length > 1 && hasHebrewNiqqud(lookupQuery)) {
+    const targetPointed = normalizeHebrewPointed(lookupQuery);
+    const exactPointed: Rec[] = [];
+    const rest: Rec[] = [];
+    for (const m of matches) {
+      if (normalizeHebrewPointed(str(m.sc)) === targetPointed) exactPointed.push(m);
+      else rest.push(m);
+    }
+    if (exactPointed.length > 0) matches = [...exactPointed, ...rest];
+  }
   const primary = matches[0] ?? null;
-  const ambiguous = matches.slice(1, 6);
+  const ambiguous = matches.slice(1, 11);
   return { primary, ambiguous, anchoredToken, anchoredWordRow, anchoredPassageRef, warnings };
 }
 
@@ -581,15 +885,21 @@ export async function buildFullCompactWord(
   }
 
   const bs = extractPrimaryStrong(primary);
-  const isStrongsCode = /^[HG]\d{1,5}[A-Z]?$/i.test(wordQuery.trim());
+  const trimmedWordQuery = wordQuery.trim();
+  const isStrongsCode = /^[HG]\d{1,5}[A-Z]?$/i.test(trimmedWordQuery);
+  const extStrongsMatch = /^([HG])0*(\d+)([A-Z]+)$/i.exec(trimmedWordQuery);
+  const explicitExtendedCode = extStrongsMatch
+    ? `${extStrongsMatch[1].toUpperCase()}${extStrongsMatch[2].padStart(4, '0')}${extStrongsMatch[3].toUpperCase()}`
+    : '';
+  const explicitLemmaKey = explicitExtendedCode ? `lemma:${explicitExtendedCode}` : '';
   const nonStopTerms = wordQuery
     .toLowerCase()
     .replace(/[^a-z0-9\s]/g, ' ')
     .split(/\s+/)
     .filter(t => t.length >= 2 && !WORD_QUERY_STOPWORDS.has(t));
   const isMultiConceptWordQuery = !isStrongsCode && !options.passage && nonStopTerms.length >= 2;
-  const anchorLemmaKey = anchoredToken ? str(anchoredToken.lemma_key) : '';
-  const anchorExtendedStrongs = anchorLemmaKey ? anchorLemmaKey.replace(/^lemma:/i, '') : '';
+  const anchorLemmaKey = anchoredToken ? str(anchoredToken.lemma_key) : explicitLemmaKey;
+  const anchorExtendedStrongs = anchorLemmaKey ? anchorLemmaKey.replace(/^lemma:/i, '') : explicitExtendedCode;
 
   const [batchRes, wordDetailsRes, discRes] = await Promise.all([
     callRpc(read, 'get_word_profiles_batch_v1', {
@@ -604,7 +914,7 @@ export async function buildFullCompactWord(
     }),
     anchoredWordRow
       ? Promise.resolve({ wordId: Number(anchoredToken?.word_id || 0) || null, wordRow: anchoredWordRow })
-      : fetchWordDetailsRow(read, bs),
+      : withTimeout(fetchWordDetailsRow(read, bs), 2500, { wordId: null, wordRow: null }),
     options.connections > 0
       ? callRpc(read, 'discover_biblical_connections_v2', {
           query: isMultiConceptWordQuery ? wordQuery : bs,
@@ -635,23 +945,41 @@ export async function buildFullCompactWord(
           : 'ok';
 
   const profilesMap = asRec(batchRes?.profiles);
-  const fullProfile = asRec(profilesMap?.[bs]) ?? primary;
+  const rawFullProfile = asRec(profilesMap?.[bs]) ?? primary;
+  const matchedExplicitSense = (!anchoredToken && explicitLemmaKey)
+    ? asArr(rawFullProfile.senses).map(asRec).find(s =>
+        str(s?.key ?? s?.lk).toLowerCase() === explicitLemmaKey.toLowerCase(),
+      )
+    : undefined;
+  const fullProfile = matchedExplicitSense
+    ? {
+        ...rawFullProfile,
+        lk: str(matchedExplicitSense.key ?? matchedExplicitSense.lk, explicitLemmaKey),
+        gl: str(matchedExplicitSense.gl ?? matchedExplicitSense.gloss, str(rawFullProfile.gl)),
+        ...(matchedExplicitSense.sc ? { sc: matchedExplicitSense.sc } : {}),
+        ...(matchedExplicitSense.tr ? { tr: matchedExplicitSense.tr } : {}),
+      }
+    : rawFullProfile;
   const wordId = wordDetailsRes.wordId;
   const wordRow = wordDetailsRes.wordRow;
 
   const [etymologyData, realworldData, wordNotesRaw] = await Promise.all([
     options.etymology > 0 ? buildWordEtymology(read, bs, fullProfile, options.etymology,
-      anchoredToken ? { activeLemmaKey: str(anchoredToken.lemma_key), wordId } : {}) : Promise.resolve(null),
+      (anchoredToken || explicitLemmaKey) ? { activeLemmaKey: anchoredToken ? str(anchoredToken.lemma_key) : explicitLemmaKey, wordId } : {}) : Promise.resolve(null),
     options.realworld === 1
-      ? buildWordRealworld(read, bs, str(fullProfile.gl), wordRow, fullProfile)
+      ? withTimeout(buildWordRealworld(read, bs, str(fullProfile.gl), wordRow, fullProfile), 2500, { status: 'unavailable', sources: [] })
       : Promise.resolve(null),
     wordId
-      ? safeCallFirst(read, 'get_notes_for_word_v1', {
-          p_word_id: wordId,
-          p_verse_id: null,
-          p_word_position: null,
-          p_limit: 5,
-        })
+      ? withTimeout(
+          safeCallFirst(read, 'get_notes_for_word_v1', {
+            p_word_id: wordId,
+            p_verse_id: null,
+            p_word_position: null,
+            p_limit: 5,
+          }),
+          2500,
+          null,
+        )
       : Promise.resolve(null),
   ]);
 
@@ -717,7 +1045,7 @@ export async function buildFullCompactWord(
     if (!key || ambSeen.has(key)) continue;
     ambSeen.add(key);
     ambiguousCandidates.push(item);
-    if (ambiguousCandidates.length >= 6) break;
+    if (ambiguousCandidates.length >= 10) break;
   }
 
   const compactWord = compactWordFromData({
@@ -746,10 +1074,21 @@ export async function buildFullCompactWord(
       count: typeof f.cnt === 'number' ? f.cnt : 0,
     }));
 
+  const isSanctuaryGlossary = /temple|sanctuary|tabernacle|altar|ark|lampstand|menorah|cherub|curtain|veil|holy|priest|incense|showbread|mercy|cubit|court|brazen|gold|sacred|anoint|offering|sacrifice|lamp|oil|olive/i.test(str(fullProfile.gl));
   const clusters = asArr(fullProfile.clusters)
     .map(asRec)
     .filter((c): c is Rec => c !== null)
-    .slice(0, 5);
+    .slice(0, 5)
+    .map(c => {
+      if (str(c.category) === 'temple_and_sanctuary_architecture' && !isSanctuaryGlossary) {
+        return {
+          ...c,
+          category: 'geographical_and_historical_narrative',
+          label: str(c.label).replace(/Temple\s*&\s*Sanctuary Architecture/i, 'Historical & Geographical Narrative'),
+        };
+      }
+      return c;
+    });
 
   return {
     status: warnings.length > 0 || discoveryStatus === 'unavailable' || discoveryStatus === 'partial' ? 'partial' : 'ok',
@@ -795,8 +1134,11 @@ export async function handleGetPassage(read: DatabaseReader, input: {
   word_depth: number;
   etymology: number;
   realworld: 0 | 1;
+  literary?: 0 | 1 | 2;
   offset: number;
   limit: number;
+  compact?: boolean;
+  view?: McpView;
 }): Promise<Rec> {
   const parsed = parsePassageString(input.passage);
   if (!parsed) {
@@ -808,45 +1150,112 @@ export async function handleGetPassage(read: DatabaseReader, input: {
 
   const firstSpan = parsed.passages[0];
   const anchorVerse = firstSpan.start_verse;
+  const literaryLevel = input.literary ?? 1;
+  const compactFlag = input.compact === true;
+  const view = parseMcpView(input.view, compactFlag);
+  const expectedSpan = parsed.passages.reduce(
+    (sum, sp) => sum + Math.max(1, sp.end_verse - sp.start_verse + 1),
+    0,
+  );
+  const isLargeCluesRange = view === 'clues' && Math.min(expectedSpan, input.limit) > 3;
+
   const compactPromise = fetchCompactPassage(read, {
     passages: parsed.passages,
     max_verses: input.limit,
     offset: input.offset,
     include_profiles: true,
-    profile_limit: 24,
+    profile_limit: isLargeCluesRange ? 12 : 24,
   });
 
-  const geoPromise = safeCallFirst(read, 'get_verse_geography', {
-    p_book: firstSpan.book,
-    p_chapter: firstSpan.chapter,
-    p_verse: anchorVerse,
-  });
-
-  const chronPromise = safeCallFirst(read, 'get_verse_chronology_v1', {
-    p_book: firstSpan.book,
-    p_chapter: firstSpan.chapter,
-    p_verse: anchorVerse,
-  });
-
-  const notesPromise = Promise.all(
-    parsed.passages.slice(0, 3).map(sp =>
-      safeCallFirst(read, 'get_notes_for_passage_v1', {
-        p_book: sp.book,
-        p_chapter: sp.chapter,
-        p_verse_start: sp.start_verse,
-        p_verse_end: Math.min(sp.end_verse, sp.start_verse + 49),
-        p_author_kind: null,
-        p_note_kind: null,
-        p_limit: 20,
-      }),
-    ),
+  const geoSampleCoords: Array<{ book: number; chapter: number; verse: number }> = [
+    { book: firstSpan.book, chapter: firstSpan.chapter, verse: anchorVerse },
+  ];
+  const effectiveEndV = Math.min(firstSpan.end_verse, firstSpan.start_verse + Math.max(1, input.limit) - 1);
+  if (effectiveEndV > anchorVerse) {
+    const midV = Math.floor((anchorVerse + effectiveEndV) / 2);
+    if (midV > anchorVerse && midV < effectiveEndV) {
+      geoSampleCoords.push({ book: firstSpan.book, chapter: firstSpan.chapter, verse: midV });
+    }
+    geoSampleCoords.push({ book: firstSpan.book, chapter: firstSpan.chapter, verse: effectiveEndV });
+  } else if (parsed.passages.length > 1) {
+    const lastSpan = parsed.passages[parsed.passages.length - 1];
+    geoSampleCoords.push({ book: lastSpan.book, chapter: lastSpan.chapter, verse: lastSpan.end_verse });
+  }
+  const geoPromise = withTimeout(
+    Promise.all(
+      geoSampleCoords.slice(0, 3).map(coord =>
+        safeCallFirst(read, 'get_verse_geography', {
+          p_book: coord.book,
+          p_chapter: coord.chapter,
+          p_verse: coord.verse,
+        }).catch(() => null),
+      ),
+    ).then(results => {
+      const mergedLocations: unknown[] = [];
+      const seenPlaceKeys = new Set<string>();
+      let firstRaw: Rec | null = null;
+      for (const r of results) {
+        if (!r) continue;
+        if (!firstRaw) firstRaw = r;
+        for (const loc of asArr(r.locations)) {
+          const rec = asRec(loc);
+          const pk = rec ? str(rec.place_key, str(rec.biblical_name, str(rec.place))) : '';
+          if (pk && !seenPlaceKeys.has(pk)) {
+            seenPlaceKeys.add(pk);
+            mergedLocations.push(loc);
+          }
+        }
+      }
+      return firstRaw ? { ...firstRaw, locations: mergedLocations } : null;
+    }),
+    2500,
+    null,
   );
 
-  const [compact, rawGeo, rawChron, noteBatches] = await Promise.all([
+  const chronPromise = withTimeout(
+    safeCallFirst(read, 'get_verse_chronology_v1', {
+      p_book: firstSpan.book,
+      p_chapter: firstSpan.chapter,
+      p_verse: anchorVerse,
+    }),
+    2500,
+    null,
+  );
+
+  const notesPromise = withTimeout(
+    Promise.all(
+      parsed.passages.slice(0, 3).map(sp =>
+        safeCallFirst(read, 'get_notes_for_passage_v1', {
+          p_book: sp.book,
+          p_chapter: sp.chapter,
+          p_verse_start: sp.start_verse,
+          p_verse_end: Math.min(sp.end_verse, sp.start_verse + 49),
+          p_author_kind: null,
+          p_note_kind: null,
+          p_limit: 20,
+        }),
+      ),
+    ),
+    2500,
+    [] as Array<Rec | null>,
+  );
+
+  const literaryPromise = literaryLevel > 0
+    ? runLiteraryStructureMcp(read, {
+        passage: parsed.normalized,
+        passages: parsed.passages,
+        detail: literaryLevel === 2 ? 'standard' : 'compact',
+        compare_lxx: false,
+        include_alternatives: literaryLevel === 2,
+      }).catch(() => null)
+    : Promise.resolve(null);
+
+  const [compact, rawGeo, rawChron, noteBatches, literarySummary] = await Promise.all([
     compactPromise,
     geoPromise,
     chronPromise,
     notesPromise,
+    literaryPromise,
   ]);
 
   if (!compact || compact.status !== 'ok') {
@@ -874,11 +1283,15 @@ export async function handleGetPassage(read: DatabaseReader, input: {
     Number(versesRaw[versesRaw.length - 1]?.verse_id || 0),
   ].filter(n => n > 0))];
 
-  // Pick up to 3 anchor verse refs across the page for R12 discovery
+  const skipWordDetailsBatch = view === 'clues'
+    && !compactFlag
+    && input.etymology === 0
+    && input.realworld === 0
+    && input.word_depth === 0;
+
+  // Pick anchor verse ref(s) for R12 discovery: 1 richest anchor for multi-verse chapters in clues mode, up to 2 for <=3 verses.
   const anchorVerseRefs: string[] = [];
   if (input.depth > 0 && versesRaw.length > 0) {
-    const firstRef = str(versesRaw[0].ref);
-    if (firstRef) anchorVerseRefs.push(firstRef);
     let richest: Rec | null = null;
     let richestScore = -1;
     for (const v of versesRaw) {
@@ -888,25 +1301,40 @@ export async function handleGetPassage(read: DatabaseReader, input: {
         richest = v;
       }
     }
+    const firstRef = str(versesRaw[0].ref);
     const richRef = richest ? str(richest.ref) : '';
-    if (richRef && !anchorVerseRefs.includes(richRef)) anchorVerseRefs.push(richRef);
-    const lastRef = str(versesRaw[versesRaw.length - 1].ref);
-    if (lastRef && !anchorVerseRefs.includes(lastRef) && anchorVerseRefs.length < 3) {
-      anchorVerseRefs.push(lastRef);
+    if (view === 'clues' && versesRaw.length > 3) {
+      const chosen = richRef || firstRef;
+      if (chosen) anchorVerseRefs.push(chosen);
+    } else {
+      if (firstRef) anchorVerseRefs.push(firstRef);
+      if (richRef && !anchorVerseRefs.includes(richRef)) anchorVerseRefs.push(richRef);
     }
   }
 
+  const discoveryLimit = view === 'clues' && versesRaw.length > 3
+    ? Math.min(12, Math.max(input.depth * 2, 6))
+    : Math.min(25, Math.max(input.depth, 15));
+
   const [wordRows, chronBatch, ...discPages] = await Promise.all([
-    wordIdSet.size > 0
-      ? callRpc(read, 'get_words_batch', { word_ids: [...wordIdSet] }, wordIdSet.size, 0).catch(() => [])
+    !skipWordDetailsBatch && wordIdSet.size > 0
+      ? withTimeout(
+          callRpc(read, 'get_words_batch', { word_ids: [...wordIdSet] }, wordIdSet.size, 0).catch(() => []),
+          2500,
+          [] as Rec[],
+        )
       : Promise.resolve([]),
     anchorVids.length > 0
-      ? safeCallFirst(read, 'query_chronology_assertions_batch', { verse_ids: anchorVids })
+      ? withTimeout(
+          safeCallFirst(read, 'query_chronology_assertions_batch', { verse_ids: anchorVids }),
+          2500,
+          null,
+        )
       : Promise.resolve(null),
     ...anchorVerseRefs.map(ref =>
       safeCallFirst(read, 'discover_biblical_connections_v2', {
         query: ref,
-        limit: Math.min(25, Math.max(input.depth, 15)),
+        limit: discoveryLimit,
       }),
     ),
   ]);
@@ -941,7 +1369,7 @@ export async function handleGetPassage(read: DatabaseReader, input: {
     }
   }
 
-  // Build deduplicated shared lexicon keyed by Strong's (plus distinct homograph lemma_key if multiple senses share a base Strong's)
+  // Build deduplicated shared lexicon keyed by Strong's (plus distinct homograph lemma_key only when multiple senses share a base Strong's)
   const contentStrongsOrder: string[] = [];
   const seenContentStrongs = new Set<string>();
   const sampleTokenByStrongs = new Map<string, Rec>();
@@ -964,6 +1392,39 @@ export async function handleGetPassage(read: DatabaseReader, input: {
     }
   }
 
+  const pickLexiconProfile = (prof: Rec | null, tok: Rec | undefined, bs: string): Rec | null => {
+    const lk = tok ? str(tok.lemma_key) : '';
+    const tokLemma = tok ? str(tok.lemma) : '';
+    const tokPos = tok ? str(tok.pos_class) : '';
+    const tokGloss = tok ? str(tok.gloss).replace(/^(?:and|the|a|an|of|to|in|for)\s+/i, '').trim() : '';
+    const wid = Number(tok?.word_id || 0);
+    const wRow = wid > 0 ? wordById.get(wid) ?? null : null;
+    const rowGloss = wRow ? str(wRow.short_gloss) : '';
+    if (!prof) {
+      return tok
+        ? { bs, sc: tokLemma, gl: rowGloss || tokGloss, lk, pos: tokPos }
+        : null;
+    }
+    const profLk = str(prof.lk);
+    const senses = asArr(prof.senses).map(asRec).filter((s): s is Rec => s !== null);
+    const matchingSense = lk
+      ? senses.find(s => str(s.key, str(s.lk)).toLowerCase() === lk.toLowerCase())
+      : null;
+    const sameSense = !lk || !profLk || lk.toLowerCase() === profLk.toLowerCase();
+    const resolvedGloss = matchingSense
+      ? str(matchingSense.gl, str(matchingSense.gloss))
+      : sameSense
+        ? str(prof.gl)
+        : (rowGloss || tokGloss || str(prof.gl));
+    return {
+      ...prof,
+      ...(lk ? { lk } : {}),
+      ...(tokLemma ? { sc: tokLemma } : {}),
+      ...(resolvedGloss ? { gl: resolvedGloss } : {}),
+      ...(tokPos ? { pos: tokPos } : {}),
+    };
+  };
+
   const enrichTargets = contentStrongsOrder.slice(0, 10);
   const etymByStrongs = new Map<string, CompactWord['etymology']>();
   const rwByStrongs = new Map<string, Rec>();
@@ -977,7 +1438,7 @@ export async function handleGetPassage(read: DatabaseReader, input: {
           const wid = Number(tok?.word_id || 0);
           const wRow = wid > 0 ? wordById.get(wid) ?? null : null;
           if (input.etymology > 0) {
-            etymByStrongs.set(bs, await buildWordEtymology(read, bs, prof, input.etymology, { activeLemmaKey: str(prof?.lk) }));
+            etymByStrongs.set(bs, await buildWordEtymology(read, bs, prof, input.etymology, { activeLemmaKey: str(tok?.lemma_key, str(prof?.lk)) }));
           }
           if (input.realworld === 1) {
             rwByStrongs.set(bs, await buildWordRealworld(read, bs, str(prof?.gl), wRow, prof));
@@ -985,23 +1446,36 @@ export async function handleGetPassage(read: DatabaseReader, input: {
         }),
       );
     }
+    if (input.realworld === 1) {
+      for (const bs of contentStrongsOrder.slice(10)) {
+        const prof = asRec(profiles[bs]);
+        const tok = sampleTokenByStrongs.get(bs);
+        const wid = Number(tok?.word_id || 0);
+        const wRow = wid > 0 ? wordById.get(wid) ?? null : null;
+        const bridges = asArr(prof?.pilot_bridges ?? asRec(prof?.r12_pilot_anchor)?.property_bridges);
+        if (wRow?.biblical_def || wRow?.physical_def || bridges.length > 0) {
+          rwByStrongs.set(bs, await buildWordRealworld(read, bs, str(prof?.gl), wRow, prof));
+        }
+      }
+    }
   }
 
   const lexicon: Record<string, CompactWord> = {};
   for (const bs of contentStrongsOrder) {
-    const prof = asRec(profiles[bs]);
+    const rawProf = asRec(profiles[bs]);
     const tok = sampleTokenByStrongs.get(bs);
+    const prof = pickLexiconProfile(rawProf, tok, bs);
     const wid = Number(tok?.word_id || 0);
     const wRow = wid > 0 ? wordById.get(wid) ?? null : null;
     if (!prof && !tok) continue;
-    const perWordConns = input.word_depth > 0 && prof
-      ? buildProfileDerivedConnections(prof, input.word_depth)
+    const perWordConns = input.word_depth > 0 && rawProf
+      ? buildProfileDerivedConnections(rawProf, input.word_depth)
       : null;
 
     // Lexicon entries describe the lexeme, not the first inflected occurrence (those live in verses[].words).
     lexicon[bs] = compactWordFromData({
       token: null,
-      profile: prof ?? (tok ? { bs, sc: str(tok.lemma), gl: str(tok.gloss), lk: str(tok.lemma_key), pos: str(tok.pos_class) } : null),
+      profile: prof,
       wordRow: wRow,
       etymology: etymByStrongs.get(bs) ?? null,
       realworld: rwByStrongs.get(bs) ?? null,
@@ -1012,22 +1486,16 @@ export async function handleGetPassage(read: DatabaseReader, input: {
     });
   }
   for (const [lk, info] of extraLemmaKeyMap.entries()) {
-    if (lexicon[lk]) continue;
+    if (lexicon[lk] || lexicon[info.bs]?.lemma_key === lk) continue;
     const tok = info.token;
     if (isFunctionWord({ pos_class: str(tok.pos_class), strongs: info.bs })) continue;
-    const prof = asRec(profiles[info.bs]);
+    const rawProf = asRec(profiles[info.bs]);
+    const prof = pickLexiconProfile(rawProf, tok, info.bs);
     const wid = Number(tok.word_id || 0);
     const wRow = wid > 0 ? wordById.get(wid) ?? null : null;
     lexicon[lk] = compactWordFromData({
       token: null,
-      profile: {
-        ...(prof ?? {}),
-        bs: info.bs,
-        lk,
-        sc: str(tok.lemma, str(prof?.sc)),
-        gl: str(tok.gloss, str(prof?.gl)),
-        pos: str(tok.pos_class, str(prof?.pos)),
-      },
+      profile: prof,
       wordRow: wRow,
       etymology: etymByStrongs.get(info.bs) ?? null,
       realworld: rwByStrongs.get(info.bs) ?? null,
@@ -1057,19 +1525,23 @@ export async function handleGetPassage(read: DatabaseReader, input: {
       const verified = verifyWordRowAlignment(t, wRow);
       const tr = verified ? cleanTransliteration(str(wRow?.transliteration)) : '';
       const code = verified ? str(wRow?.grammar_code) : '';
+      const leanMode = input.word_depth === 0 && input.etymology === 0;
+      const inLexSameLemma = Boolean(bs && lexicon[bs] && (!str(t.lemma_key) || lexicon[bs].lemma_key === str(t.lemma_key)));
+      const lemmaStr = str(t.lemma, str(t.lemma_key) === str(prof?.lk) ? str(prof?.sc) : '');
+      const ambigCandidates = Array.isArray(t.lemma_candidates) && t.lemma_candidates.length > 1 ? t.lemma_candidates : null;
       return {
         pos: Number(t.position),
         ...(Number.isInteger(wid) && wid > 0 ? { word_id: wid } : {}),
         form: surface,
-        lemma: str(t.lemma, str(t.lemma_key) === str(prof?.lk) ? str(prof?.sc) : ''),
+        ...(!leanMode || !inLexSameLemma ? (lemmaStr ? { lemma: lemmaStr } : {}) : {}),
         ...(bs ? { strongs: bs } : {}),
-        ...(str(t.lemma_key) ? { lemma_key: str(t.lemma_key) } : {}),
-        ...(str(t.sense_status) ? { sense_status: str(t.sense_status) } : {}),
-        ...(Array.isArray(t.lemma_candidates) ? { lemma_candidates: t.lemma_candidates } : {}),
+        ...((!leanMode || !inLexSameLemma) && str(t.lemma_key) ? { lemma_key: str(t.lemma_key) } : {}),
+        ...(str(t.sense_status) && str(t.sense_status) !== 'resolved' ? { sense_status: str(t.sense_status) } : {}),
+        ...(ambigCandidates ? { lemma_candidates: ambigCandidates } : {}),
         ...(tr ? { tr } : {}),
         gloss: str(t.gloss, verified ? str(asArr(wRow?.english_translations)[0]) : ''),
         ...(code ? { code } : {}),
-        ...(verified ? {} : { alignment_status: 'partial_source_only' }),
+        ...(!verified && !leanMode ? { alignment_status: 'partial_source_only' } : {}),
       };
     });
 
@@ -1098,7 +1570,7 @@ export async function handleGetPassage(read: DatabaseReader, input: {
       ? filterConnectionsForPrimary([...vXrefs, ...vRare], '', input.depth, false).map((c) => {
         const display = vXrefsConcise.find(x => x.id === c.id) ?? c;
         if (display.epistemic === 'editorial_cross_reference') {
-          return { id: display.id, relation: display.relation, refs: display.refs, title: display.title };
+          return { id: display.id, relation: display.relation, epistemic: display.epistemic, refs: display.refs, title: display.title };
         }
         const { witness: _w, why, ...rest } = display;
         return { ...rest, why: typeof why === 'string' && why.length > 100 ? `${why.slice(0, 97)}...` : why };
@@ -1205,15 +1677,196 @@ export async function handleGetPassage(read: DatabaseReader, input: {
   );
 
   const hasAnyNotes = versesOut.some(v => Array.isArray(v.notes) && v.notes.length > 0);
+  if (compactFlag) {
+    for (const v of versesOut) {
+      for (const word of v.words) {
+        const w = word as Rec;
+        delete w.word_id;
+        delete w.tr;
+        delete w.code;
+        delete w.alignment_status;
+      }
+    }
+    for (const key of Object.keys(lexicon)) {
+      const entry = lexicon[key] as unknown as Rec;
+      delete entry.senses;
+      delete entry.occurrences_sample;
+      delete entry.etymology;
+      delete entry.realworld;
+      delete entry.gematria;
+    }
+  }
+
+  if (view === 'clues' && !compactFlag) {
+    const isMultiVerseClues = versesOut.length > 1;
+    const isChapterClues = versesOut.length > 4;
+
+    // Track per-Strong's occurrence frequency across the returned verses for range deduplication
+    const rangeFreq = new Map<string, number>();
+    for (const v of versesOut) {
+      for (const w of v.words) {
+        const bs = str((w as Rec).strongs);
+        if (bs && lexicon[bs]) rangeFreq.set(bs, (rangeFreq.get(bs) ?? 0) + 1);
+      }
+    }
+
+    const lexEntries = Object.entries(lexicon);
+    if (isMultiVerseClues) {
+      lexEntries.sort((a, b) => {
+        const fa = rangeFreq.get(a[0]) ?? 0;
+        const fb = rangeFreq.get(b[0]) ?? 0;
+        if (fb !== fa) return fb - fa;
+        return Number((a[1] as unknown as Rec).total_verses ?? 99999) - Number((b[1] as unknown as Rec).total_verses ?? 99999);
+      });
+    }
+    const maxLexEntries = isChapterClues ? 14 : isMultiVerseClues ? 20 : lexEntries.length;
+    const clueLexicon: Record<string, Rec> = {};
+    for (const [key, entry] of lexEntries.slice(0, maxLexEntries)) {
+      const e = entry as unknown as Rec;
+      const countInRange = rangeFreq.get(key);
+      clueLexicon[key] = {
+        lemma: e.lemma,
+        strongs: e.strongs,
+        ...(e.tr || e.transliteration ? { tr: e.tr ?? e.transliteration } : {}),
+        gloss: e.gloss,
+        ...(isMultiVerseClues && countInRange ? { count: countInRange } : {}),
+        ...(e.total_verses !== undefined ? { total_verses: e.total_verses } : {}),
+        ...(!isChapterClues && e.etymology ? { etymology: e.etymology } : {}),
+        ...(!isChapterClues && e.realworld ? { realworld: e.realworld } : {}),
+        ...(!isChapterClues && e.connections ? { connections: (e.connections as CompactConnection[]).map(c => projectClue(c, 'clues')) } : {}),
+      };
+    }
+
+    const extractUniqueContentStrongs = (words: Rec[], maxTags: number): string[] => {
+      const out: string[] = [];
+      const seen = new Set<string>();
+      for (const w of words) {
+        const bs = str(w.strongs);
+        if (!bs || seen.has(bs) || !lexicon[bs]) continue;
+        seen.add(bs);
+        out.push(bs);
+        if (out.length >= maxTags) break;
+      }
+      return out;
+    };
+
+    const clueVerses = versesOut.map(v => {
+      if (isChapterClues) {
+        return {
+          ref: v.ref,
+          en: v.english,
+          strongs: extractUniqueContentStrongs(v.words as Rec[], 6),
+          ...(v.notes ? { notes: v.notes } : {}),
+        };
+      }
+      if (isMultiVerseClues) {
+        return {
+          ref: v.ref,
+          verse_id: v.verse_id,
+          ...(v.mt_ref ? { mt_ref: v.mt_ref } : {}),
+          original: v.original,
+          en: v.english,
+          strongs: extractUniqueContentStrongs(v.words as Rec[], 10),
+          ...(v.notes ? { notes: v.notes } : {}),
+        };
+      }
+      return {
+        ref: v.ref,
+        verse_id: v.verse_id,
+        ...(v.mt_ref ? { mt_ref: v.mt_ref } : {}),
+        original: v.original,
+        english: v.english,
+        words: v.words.map(w => {
+          const wr = w as Rec;
+          const bs = str(wr.strongs);
+          return {
+            pos: wr.pos,
+            form: wr.form,
+            ...(bs ? { strongs: bs } : {}),
+            ...(!bs || !clueLexicon[bs] ? { gloss: wr.gloss } : {}),
+          };
+        }),
+        ...(v.notes ? { notes: v.notes } : {}),
+      };
+    });
+
+    const litRec = asRec(literarySummary);
+    const litSeg = asRec(litRec?.segmentation);
+    const clueLiterary = litRec && literaryLevel === 1
+      ? {
+          units_count: asArr(litSeg?.units).length,
+          units: asArr(litSeg?.units).slice(0, 4).map(u => {
+            const ur = asRec(u);
+            return ur ? { label: ur.label, from_ref: ur.from_ref, to_ref: ur.to_ref } : u;
+          }),
+          symmetries_count: asArr(litRec.symmetries).length,
+          wordplays_count: asArr(litRec.wordplays).length,
+          key_words: asArr(litRec.key_words).slice(0, 5).map(kw => {
+            const kr = asRec(kw);
+            return kr ? { strongs: kr.strongs, script: kr.script, gloss: kr.gloss, count: kr.count } : kw;
+          }),
+        }
+      : literarySummary;
+    const clueConns = passageConnections.map(c => projectClue(c, 'clues'));
+    const resultPacket: Rec = {
+      status: 'ok',
+      view: 'clues',
+      passage: parsed.normalized,
+      pagination: compact.pagination,
+      ...(geography.status === 'ok' ? { geography } : { geography: { status: geography.status } }),
+      ...(chronology.status === 'ok' ? { chronology } : { chronology: { status: chronology.status } }),
+      ...(input.depth > 0 ? { passage_connections: clueConns } : {}),
+      ...(discoveryPartial ? { discovery_status: 'partial' } : {}),
+      ...(clueLiterary ? { literary_summary: clueLiterary } : literaryLevel > 0 ? { literary_status: 'unavailable' } : {}),
+      lexicon: clueLexicon,
+      ...(compact.profiles_status ? { lexical_status: compact.profiles_status } : {}),
+      verses: clueVerses,
+      ...(hasAnyNotes ? { notes_notice: NOTE_SECURITY_NOTICE } : {}),
+    };
+
+    // Guard chapter wire budget (<= 11.8 KB payload) without clipping single-verse payloads
+    if (isChapterClues && JSON.stringify(resultPacket).length > 11800) {
+      const trimmedLex: Record<string, Rec> = {};
+      for (const [k, v] of Object.entries(clueLexicon).slice(0, 8)) trimmedLex[k] = v;
+      resultPacket.lexicon = trimmedLex;
+      if (Array.isArray(resultPacket.passage_connections) && resultPacket.passage_connections.length > 3) {
+        resultPacket.passage_connections = (resultPacket.passage_connections as unknown[]).slice(0, 3);
+      }
+      if (JSON.stringify(resultPacket).length > 11800) {
+        resultPacket.verses = (clueVerses as Rec[]).map(v => ({
+          ref: v.ref,
+          en: v.en,
+          strongs: asArr(v.strongs).slice(0, 4),
+          ...(v.notes ? { notes: v.notes } : {}),
+        }));
+      }
+    }
+
+    return resultPacket;
+  }
+
+  const compactConns = compactFlag
+    ? passageConnections.map(c => ({
+        id: c.id,
+        expand_id: c.expand_id || c.id,
+        relation: c.relation,
+        epistemic: c.epistemic,
+        ...(c.tier !== undefined ? { tier: c.tier } : {}),
+        title: c.title,
+        refs: c.refs,
+      }))
+    : passageConnections.map(c => projectClue(c, view));
 
   return {
     status: 'ok',
+    ...(!compactFlag ? { view } : {}),
     passage: parsed.normalized,
     pagination: compact.pagination,
     geography,
     chronology,
-    ...(input.depth > 0 ? { passage_connections: passageConnections } : {}),
+    ...(input.depth > 0 ? { passage_connections: compactConns } : {}),
     ...(discoveryPartial ? { discovery_status: 'partial' } : {}),
+    ...(literarySummary ? { literary_structure: literarySummary } : literaryLevel > 0 ? { literary_status: 'unavailable' } : {}),
     lexicon,
     ...(compact.profiles_status ? { lexical_status: compact.profiles_status } : {}),
     word_fields: 'Missing lemma/lemma_key inherit from lexicon[strongs]. word_id identifies a word form; verse_id + pos identifies its occurrence. Verse cross_reference entries are editorial links, not proof of dependence.',
@@ -1323,6 +1976,8 @@ export async function handleGetConnection(
   read: DatabaseReader,
   items: string[],
   maxConnections: number,
+  compact = false,
+  view: McpView = 'evidence',
 ): Promise<Rec> {
   const itemEntries: Array<{
     input: string;
@@ -1380,6 +2035,15 @@ export async function handleGetConnection(
     if (entry.kind === 'passage' && entry.parsed) {
       const verses = asArr(entry.compactPassage?.verses).map(asRec).filter((v): v is Rec => v !== null);
       const profiles = asRec(entry.compactPassage?.profiles) ?? {};
+      const contextualGlossByBs = new Map<string, string>();
+      for (const v of verses) {
+        for (const rawT of asArr(v.tokens)) {
+          const t = asRec(rawT);
+          const bsKey = padStrongsToken(str(t?.strongs));
+          const tGl = str(t?.gloss);
+          if (bsKey && tGl && !contextualGlossByBs.has(bsKey)) contextualGlossByBs.set(bsKey, tGl);
+        }
+      }
       return {
         input: entry.input,
         kind: 'passage',
@@ -1399,20 +2063,22 @@ export async function handleGetConnection(
             strongs: str(p.bs),
             lemma: str(p.sc),
             transliteration: cleanTransliteration(str(p.tr), str(p.sc)),
-            gloss: str(p.gl),
+            gloss: contextualGlossByBs.get(padStrongsToken(str(p.bs))) || str(p.gl),
             total_verses: p.total_verses ?? 0,
           })),
       };
     }
     if (entry.wordResult?.word) {
+      const occ = asRec(entry.wordResult.occurrences);
       return {
         input: entry.input,
         kind: 'word',
         ...(entry.wordResult.status !== 'ok' ? { status: entry.wordResult.status } : {}),
         word: entry.wordResult.word,
-        grammar_forms: entry.wordResult.grammarForms,
-        grammar_forms_scope: 'Attested forms of this Strong\'s group, including possible homograph lemmas; not morphology of the selected occurrence.',
-        occurrences: entry.wordResult.occurrences,
+        occurrences: {
+          total_verses: typeof occ?.total_verses === 'number' ? occ.total_verses : 0,
+          clusters: asArr(occ?.clusters).slice(0, 3),
+        },
         ...(entry.wordResult.ambiguousCandidates.length ? { ambiguous_candidates: entry.wordResult.ambiguousCandidates } : {}),
       };
     }
@@ -1475,18 +2141,18 @@ export async function handleGetConnection(
           const wVerses = asArr(hyd?.verses).map(asRec).filter((v): v is Rec => v !== null);
           const refs = wVerses.map(v => str(v.ref)).filter(Boolean);
           const totalMatches = sameVerse.length > 0 ? sameVerse.length : nearbyVerse.length;
-          // Nearby (±2v) co-attestation across >= 3 common words is an exploratory lead, not a direct multi-anchor proof
-          const isNearbyMulti = sameVerse.length === 0 && vidArrays.length >= 3;
+          // Nearby (±2v) co-attestation without any same-verse overlap is an indirect exploratory lead, not a direct proof
+          const isNearbyOnly = sameVerse.length === 0;
           pushTagged({
             id: `intersect:${wordStrongs.join('+')}`,
             relation: sameVerse.length > 0 ? 'same_verse_co_attestation' : 'nearby_verse_co_attestation',
-            epistemic: 'documented_collocation_or_cooccurrence',
-            tier: isNearbyMulti ? 4 : 3,
+            epistemic: isNearbyOnly ? 'candidate_literary_pattern' : 'documented_collocation_or_cooccurrence',
+            tier: isNearbyOnly ? 4 : 3,
             title: `${wordStrongs.join(' + ')} co-occur in ${totalMatches} ${sameVerse.length > 0 ? 'verse(s)' : 'nearby (±2v) passage(s)'}`,
             why: `Attested together in ${refs.join(', ')}. Co-occurrence provides textual witnesses to inspect, not automatic equivalence.`,
             refs,
             witness: wVerses[0] ? str(wVerses[0].web).slice(0, 160) : undefined,
-          }, vidArrays.map(a => a.idx), isNearbyMulti);
+          }, vidArrays.map(a => a.idx), isNearbyOnly);
         }
       }
       // Pairwise word-to-word orthographic / wordplay / root links from profiles (check both directions pA and pB)
@@ -1535,21 +2201,25 @@ export async function handleGetConnection(
             const provenRoot = Boolean(wpMatch.proven_common_root) && str(wpMatch.shared_consonants).length >= 2;
             const isAttestedWp = rel === 'attested_textual_wordplay' || hasCue;
             const isDocRoot = rel === 'documented_root_family' || rel === 'morphological_derivation' || provenRoot;
+            const wRefs = asArr(wpMatch.witness_refs).filter((r): r is string => typeof r === 'string').slice(0, 4);
+            const isSameVerseRepeated = rel === 'proximate_wordplay_candidate' && sameV >= 2 && wRefs.length > 0;
             const isProximateWitnessed = rel === 'proximate_wordplay_candidate' && (sameV > 0 || adjV > 0);
             const epClass = isAttestedWp
               ? 'direct_textual_evidence'
               : isDocRoot
                 ? 'documented_lexical_relationship'
-                : isProximateWitnessed
-                  ? 'candidate_literary_pattern'
-                  : 'orthographic_similarity_only';
-            const tier = isAttestedWp ? 2 : isDocRoot ? 3 : isProximateWitnessed ? 4 : 5;
-            const wRefs = asArr(wpMatch.witness_refs).filter((r): r is string => typeof r === 'string').slice(0, 4);
+                : isSameVerseRepeated
+                  ? 'documented_collocation_or_cooccurrence'
+                  : isProximateWitnessed
+                    ? 'candidate_literary_pattern'
+                    : 'orthographic_similarity_only';
+            const evTypeOut = isSameVerseRepeated ? 'proximate_wordplay_witnessed_same_verse' : rel;
+            const tier = isAttestedWp ? 2 : (isDocRoot || isSameVerseRepeated) ? 3 : isProximateWitnessed ? 4 : 5;
             pushTagged({
               id: `r13:wp:${canonicalFromBs}:${canonicalToBs}`,
               relation: rel,
               epistemic: epClass,
-              evidence_type: rel,
+              evidence_type: evTypeOut,
               tier,
               title: isAttestedWp
                 ? `Attested biblical wordplay: ${wA.e.wordResult!.word!.lemma} (${bsA}) <-> ${wB.e.wordResult!.word!.lemma} (${bsB})`
@@ -1667,29 +2337,52 @@ export async function handleGetConnection(
     }
   }
 
+  const BRIDGE_STOPWORD_STRONGS = new Set([
+    'H3605', 'G3956', 'H1961', 'G1096', 'H7200', 'G1492', 'G3708', 'H8147', 'G1417',
+    'H0559', 'G3004', 'G2036', 'H0834', 'H3588', 'H5921', 'H0413', 'H4480', 'H0376',
+    'G2532', 'G0846', 'G3588', 'G1722', 'G1519', 'H3068', 'G2962', 'H0853', 'H5973',
+  ]);
+  const explicitWordStrongs = new Set(
+    itemEntries.filter(e => e.kind === 'word' && e.wordResult?.word?.strongs).map(e => padStrongsToken(str(e.wordResult!.word!.strongs))),
+  );
+
   if (passageEntries.length >= 2) {
     const pSets = passageEntries.map(({ e: pe, idx }) => {
       const verses = asArr(pe.compactPassage?.verses).map(asRec).filter((v): v is Rec => v !== null);
       const vids = new Set(verses.map(v => Number(v.verse_id)).filter(n => n > 0));
       const profiles = asRec(pe.compactPassage?.profiles) ?? {};
       const strongsSet = new Set(Object.keys(profiles));
+      const rootsByRoot = new Map<string, Array<{ bs: string; sc: string; gl: string; kind: string }>>();
       const lxxOut = new Map<string, { fromBs: string; fromSc: string; toSc: string; toGl: string; count: number }>();
       for (const [bs, rawP] of Object.entries(profiles)) {
         const p = asRec(rawP);
+        const tv = typeof p?.total_verses === 'number' ? p.total_verses : 0;
+        const padBs = padStrongsToken(bs);
+        if (tv <= 220 && !BRIDGE_STOPWORD_STRONGS.has(padBs)) {
+          for (const rawLr of asArr(p?.lexical_relations).map(asRec)) {
+            const root = str(rawLr?.root).trim();
+            if (!root || root.length < 2) continue;
+            const list = rootsByRoot.get(root) ?? [];
+            list.push({ bs: padBs, sc: str(p?.sc, bs), gl: str(p?.gl), kind: str(rawLr?.type, 'shared_root') });
+            rootsByRoot.set(root, list);
+          }
+        }
+        if (BRIDGE_STOPWORD_STRONGS.has(padBs) || tv > 600) continue;
         const lxxList = asArr(p?.lxx_relations).map(asRec).filter((x): x is Rec => x !== null);
         const maxCnt = lxxList.reduce((m, x) => Math.max(m, Number(x.count ?? 1)), 1);
         for (const lx of lxxList) {
           const tbs = str(lx.target_strongs).toUpperCase();
+          if (!tbs || BRIDGE_STOPWORD_STRONGS.has(padStrongsToken(tbs))) continue;
           const cnt = Number(lx.count ?? 1);
           // Skip secondary low-share co-occurrence noise (< 22% of the lemma's primary LXX translation count)
-          if (!tbs || (maxCnt >= 10 && cnt < maxCnt * 0.22)) continue;
+          if (maxCnt >= 10 && cnt < maxCnt * 0.22) continue;
           const prev = lxxOut.get(tbs);
           if (!prev || cnt > prev.count) {
             lxxOut.set(tbs, { fromBs: bs, fromSc: str(p?.sc), toSc: str(lx.script), toGl: str(lx.gloss), count: cnt });
           }
         }
       }
-      return { pe, idx, verses, vids, profiles, strongsSet, lxxOut };
+      return { pe, idx, verses, vids, profiles, strongsSet, rootsByRoot, lxxOut };
     });
 
     for (let i = 0; i < pSets.length; i++) {
@@ -1711,6 +2404,8 @@ export async function handleGetConnection(
         // Shared rare content Strong's (with homograph lemma_key & contextual sense disambiguation, EV13)
         for (const bs of a.strongsSet) {
           if (b.strongsSet.has(bs)) {
+            const padBs = padStrongsToken(bs);
+            if (BRIDGE_STOPWORD_STRONGS.has(padBs) && !explicitWordStrongs.has(padBs)) continue;
             const p = asRec(a.profiles[bs]);
             const sc = str(p?.sc, bs);
             const gl = str(p?.gl);
@@ -1778,7 +2473,6 @@ export async function handleGetConnection(
               const isRootOrCue =
                 Boolean(rawWp.proven_common_root) ||
                 Boolean(rawWp.has_explicit_cue) ||
-                evType === 'attested_textual_wordplay' ||
                 evType === 'documented_root_family' ||
                 evType === 'morphological_derivation';
               if (!isRootOrCue && Number(rawWp.score ?? 0) < 0.78) continue;
@@ -1825,6 +2519,29 @@ export async function handleGetConnection(
               }, [a.idx, b.idx], false);
             }
           }
+        }
+        // Cross-passage shared root bridge (even when direct target_strongs links were omitted between cognate lemmas)
+        for (const [root, aItems] of a.rootsByRoot.entries()) {
+          const bItems = b.rootsByRoot.get(root);
+          if (!bItems || bItems.length === 0) continue;
+          const aSrc = aItems[0];
+          const bDst = bItems[0];
+          if (!aSrc || !bDst || aSrc.bs === bDst.bs || aSrc.bs[0] !== bDst.bs[0]) continue;
+          const pairKey = [aSrc.bs, bDst.bs].sort().join(':');
+          if (seenRootBridgePair.has(pairKey)) continue;
+          seenRootBridgePair.add(pairKey);
+          const aRef = a.pe.parsed?.normalized ?? a.pe.input;
+          const bRef = b.pe.parsed?.normalized ?? b.pe.input;
+          pushTagged({
+            id: `passage_root_bridge:${aSrc.bs}:${bDst.bs}`,
+            relation: 'shared_root_cognates',
+            epistemic: 'direct_textual_evidence',
+            evidence_type: 'documented_root_family',
+            tier: 2,
+            title: `Shared root family (${root}): ${aSrc.sc} (${aSrc.bs}, "${aSrc.gl}") <-> ${bDst.sc} (${bDst.bs}, "${bDst.gl}")`,
+            why: `${aRef} attests ${aSrc.sc} (${aSrc.bs}, "${aSrc.gl}") and ${bRef} attests ${bDst.sc} (${bDst.bs}, "${bDst.gl}"), both documented under root ${root}.`,
+            refs: [aRef, bRef],
+          }, [a.idx, b.idx], false);
         }
         // Bidirectional cross-testament LXX bridges (A -> B AND B -> A)
         const seenLxxPair = new Set<string>();
@@ -1937,18 +2654,32 @@ export async function handleGetConnection(
     }
   }
 
-  const isVerifiedPairwiseCandidate = (t: typeof taggedCandidates[number]) =>
-    t.matchedIndices.length >= 2 &&
-    !t.isIndirect &&
-    (t.conn.epistemic === 'direct_textual_evidence' ||
-      t.conn.epistemic === 'authorial_typology_or_quote' ||
-      t.conn.epistemic === 'documented_cross_language_bridge' ||
-      t.conn.epistemic === 'documented_collocation_or_cooccurrence' ||
-      t.conn.epistemic === 'documented_lexical_relationship' ||
-      t.conn.epistemic === 'verified_cross_reference' ||
-      t.conn.epistemic === 'editorial_cross_reference' ||
-      t.conn.epistemic === 'shared_motif_evidence' ||
-      (t.conn.tier !== undefined && t.conn.tier <= 4));
+  const isVerifiedPairwiseCandidate = (t: typeof taggedCandidates[number]) => {
+    if (t.matchedIndices.length < 2 || t.isIndirect) return false;
+    const ep = t.conn.epistemic || '';
+    const id = t.conn.id || '';
+    const evType = t.conn.evidence_type || '';
+    if (ep === 'orthographic_similarity_only' || id.startsWith('r13:orth:') || id.startsWith('orth:')) return false;
+    if (/^Close pericope proximity:/i.test(t.conn.title || '')) return false;
+    if (
+      id.startsWith('r13:wp:') &&
+      ep !== 'direct_textual_evidence' &&
+      evType !== 'attested_textual_wordplay' &&
+      evType !== 'proximate_wordplay_witnessed_same_verse'
+    ) return false;
+    if (id.startsWith('r13:beam:') && ep !== 'direct_textual_evidence') return false;
+    return (
+      ep === 'direct_textual_evidence' ||
+      ep === 'authorial_typology_or_quote' ||
+      ep === 'documented_cross_language_bridge' ||
+      ep === 'explicit_intertextual_witness' ||
+      ep === 'documented_collocation_or_cooccurrence' ||
+      ep === 'documented_lexical_relationship' ||
+      ep === 'verified_cross_reference' ||
+      ep === 'editorial_cross_reference' ||
+      ep === 'shared_motif_evidence'
+    );
+  };
 
   // Rank pairwise proof candidates by evidential & original-language specificity (explicit/wordplay/lexical/LXX first, editorial xrefs last)
   const scoreProofEdgePriority = (c: CompactConnection): number => {
@@ -2063,7 +2794,7 @@ export async function handleGetConnection(
     const edgeSummaries = proofEdges.map(
       pe => `[${compareTargets[pe.u]} <-> ${compareTargets[pe.v]}] ${pe.conn.title}${pe.conn.refs?.length ? ` (${pe.conn.refs.slice(0, 2).join(', ')})` : ''}`,
     );
-    const synthesizedConn: CompactConnection = {
+    const synthesizedConn: CompactConnection & { constituent_evidence_ids?: string[] } = {
       id: `r13:proof:${proofType}:${compareTargets.join('+')}`,
       relation: isTrueTriangle ? 'verified_three_edge_triangle' : 'verified_steiner_network',
       epistemic: worstSpanTier <= 2 ? 'direct_textual_evidence' : 'documented_lexical_relationship',
@@ -2073,6 +2804,7 @@ export async function handleGetConnection(
         : `Verified ${proofType.replace(/_/g, ' ')} (${proofEdges.length} independent edges) connecting ${compareTargets.join(' <-> ')}`,
       why: edgeSummaries.join(' | '),
       ...(spanRefs.length ? { refs: spanRefs } : {}),
+      constituent_evidence_ids: proofEdges.map(pe => pe.conn.id),
       score: 480,
     };
     // Prepend verified multi-anchor proof summary followed by each individual verified proof edge (deduplicated by ID)
@@ -2130,13 +2862,24 @@ export async function handleGetConnection(
     })),
   };
 
-  const dedupeConnList = (arr: CompactConnection[]) => filterConnectionsForPrimary(arr, '', maxConnections, false);
+  const dedupeById = (arr: CompactConnection[]): CompactConnection[] => {
+    const out: CompactConnection[] = [];
+    const seen = new Set<string>();
+    for (const c of arr) {
+      if (!c.id || seen.has(c.id)) continue;
+      seen.add(c.id);
+      out.push(c);
+    }
+    return out;
+  };
+  const dedupeConnList = (arr: CompactConnection[]) => dedupeById(filterConnectionsForPrimary(arr, '', maxConnections, false));
   const completeMultiAnchor = dedupeConnList(
-    taggedCandidates.filter(t => !t.isIndirect && t.matchedIndices.length === items.length).map(t => t.conn),
+    taggedCandidates.filter(t => isVerifiedPairwiseCandidate(t) && t.matchedIndices.length === items.length).map(t => t.conn),
   );
+  const completeAnchorIds = items.length >= 3 ? new Set(completeMultiAnchor.map(c => c.id)) : new Set<string>();
   const directPairwise = dedupeConnList(
     taggedCandidates
-      .filter(isVerifiedPairwiseCandidate)
+      .filter(t => isVerifiedPairwiseCandidate(t) && !completeAnchorIds.has(t.conn.id))
       .map(t => t.conn),
   );
   const indirectPaths = dedupeConnList(
@@ -2148,11 +2891,13 @@ export async function handleGetConnection(
     taggedCandidates.filter(t => t.matchedIndices.length <= 1).map(t => t.conn),
   );
 
-  const connections = filterConnectionsForPrimary(
-    [...completeMultiAnchor, ...directPairwise, ...indirectPaths],
-    '',
-    maxConnections,
-    false,
+  const connections = dedupeById(
+    filterConnectionsForPrimary(
+      [...completeMultiAnchor, ...directPairwise, ...indirectPaths],
+      '',
+      maxConnections,
+      false,
+    ),
   );
   const directLinkFound = completeMultiAnchor.length > 0 || directPairwise.length > 0;
   const allEndpointsConnected = completeMultiAnchor.length > 0;
@@ -2162,19 +2907,122 @@ export async function handleGetConnection(
   for (const entry of itemEntries) if (entry.compactPassage?.profiles_status === 'partial') warnings.push(`Lexical profiles incomplete for ${entry.input}; retry for missing lexical bridges.`);
   if (!discRes) warnings.push('Graph discovery unavailable. Returned direct witnesses are partial; retry to retrieve graph connections.');
 
+  const projectConn = (c: CompactConnection): CompactConnection => {
+    if (!compact) return projectClue(c, view);
+    return {
+      id: c.id,
+      expand_id: c.expand_id || c.id,
+      relation: c.relation,
+      epistemic: c.epistemic,
+      ...(c.evidence_type ? { evidence_type: c.evidence_type } : {}),
+      ...(c.tier !== undefined ? { tier: c.tier } : {}),
+      title: c.title,
+      why: c.why,
+      refs: c.refs,
+      ...(c.target ? { target: c.target } : {}),
+    };
+  };
+
+  if (view === 'clues' && !compact) {
+    const clueItems = itemSummaries.map(it => {
+      if (it.kind === 'word') {
+        const w = asRec(it.word);
+        return {
+          input: it.input,
+          kind: 'word',
+          ...(it.status ? { status: it.status } : {}),
+          strongs: str(w?.strongs),
+          lemma: str(w?.lemma),
+          tr: str(w?.transliteration),
+          gloss: str(w?.gloss),
+          ...(w?.total_verses !== undefined ? { total_verses: w.total_verses } : {}),
+        };
+      }
+      if (it.kind === 'passage') {
+        return {
+          input: it.input,
+          kind: 'passage',
+          ...(it.status ? { status: it.status } : {}),
+          passage: it.passage,
+          verse_count: it.verse_count,
+          key_lemmas: asArr(it.key_lemmas).slice(0, 5).map(l => {
+            const lr = asRec(l);
+            return lr ? { strongs: lr.strongs, lemma: lr.lemma, gloss: lr.gloss } : l;
+          }),
+        };
+      }
+      return it;
+    });
+    const clueGraphProof = {
+      proof_type: graphProof.proof_type,
+      is_complete: graphProof.is_complete,
+      is_valid: graphProof.is_valid,
+      independent_edge_count: graphProof.independent_edge_count,
+      distinct_anchor_pairs_connected: graphProof.distinct_anchor_pairs_connected,
+      ...(graphProof.partial_reason ? { partial_reason: graphProof.partial_reason } : {}),
+      verified_edges: proofEdges.map(pe => ({
+        from_anchor: itemEntries[pe.u]?.input ?? String(pe.u),
+        to_anchor: itemEntries[pe.v]?.input ?? String(pe.v),
+        evidence_id: pe.conn.id,
+        expand_id: pe.conn.expand_id || pe.conn.id,
+        relation: pe.conn.relation,
+        epistemic: pe.conn.epistemic,
+        tier: pe.conn.tier ?? 3,
+        witness_refs: (pe.conn.refs ?? []).slice(0, 3),
+        title: trimConcise(pe.conn.title, 90),
+      })),
+    };
+    return {
+      status: warnings.length ? 'partial' : 'ok',
+      view: 'clues',
+      ...(warnings.length ? { warnings } : {}),
+      items: clueItems,
+      direct_link_found: directLinkFound,
+      all_endpoints_connected: allEndpointsConnected && isGraphComplete,
+      graph_proof: clueGraphProof,
+      ...(!directLinkFound ? { no_direct_link_reason: 'No direct verse co-occurrence, lexical/LXX match, explicit cross-reference, or verified pairwise motif connected at least two requested items.' } : {}),
+      connections: connections.slice(0, Math.min(maxConnections, 5)).map(c => projectClue(c, 'clues')),
+      ...(!directLinkFound && individualSuggestions.length > 0
+        ? {
+            individual_suggestions: individualSuggestions.slice(0, 3).map(s => ({
+              id: s.id,
+              expand_id: s.expand_id || s.id,
+              relation: s.relation,
+              title: trimConcise(s.title, 90),
+              refs: (s.refs ?? []).slice(0, 2),
+            })),
+          }
+        : {}),
+    };
+  }
+
   return {
     status: warnings.length ? 'partial' : 'ok',
+    ...(!compact ? { view } : {}),
     ...(warnings.length ? { warnings } : {}),
-    items: itemSummaries,
+    items: compact
+      ? itemSummaries.map(it => it.kind === 'passage' ? { ...it, verses_preview: asArr(it.verses_preview).slice(0, 2) } : it)
+      : itemSummaries,
     direct_link_found: directLinkFound,
     all_endpoints_connected: allEndpointsConnected && isGraphComplete,
     graph_proof: graphProof,
     ...(!directLinkFound ? { no_direct_link_reason: 'No direct verse co-occurrence, lexical/LXX match, explicit cross-reference, or verified pairwise motif connected at least two requested items.' } : {}),
-    connections,
-    complete_multi_anchor: completeMultiAnchor,
-    direct_pairwise: directPairwise,
-    indirect_paths: indirectPaths,
-    ...(individualSuggestions.length > 0 ? { individual_suggestions: individualSuggestions.slice(0, 6) } : {}),
+    connections: connections.map(projectConn),
+    complete_multi_anchor: completeMultiAnchor.map(projectConn),
+    direct_pairwise: directPairwise.map(projectConn),
+    indirect_paths: indirectPaths.map(projectConn),
+    ...(individualSuggestions.length > 0
+      ? {
+          individual_suggestions: directLinkFound
+            ? individualSuggestions.slice(0, compact ? 3 : 6).map(projectConn)
+            : individualSuggestions.slice(0, 3).map(s => ({
+                id: s.id,
+                relation: s.relation,
+                title: s.title,
+                refs: s.refs,
+              })),
+        }
+      : {}),
     uncertainty: directLinkFound
       ? 'Only verified connections linking at least two requested items count toward direct_link_found; inspect quoted verses before concluding authorial dependence.'
       : 'No direct verse co-occurrence or explicit textual witness linked at least two requested items; any single-anchor leads under individual_suggestions are non-linking suggestions.',
@@ -2207,10 +3055,18 @@ async function fetchNodeNeighbors(
   visitedNodes: Set<string>,
   visitedEdges: Set<string>,
   limit: number,
+  axisFilter?: AxisFilter,
+  layerMode: 'source_only' | 'algorithm_only' | 'research_only' | 'combined' = 'algorithm_only',
 ): Promise<{ resolvedNode: string; neighbors: CompactConnection[] }> {
   const trimmed = node.trim();
+  if (layerMode === 'research_only') {
+    const kgConns = (await fetchKgNeighborsForChain(read, trimmed, limit)) as unknown as CompactConnection[];
+    const unseenKg = kgConns.filter(c => !visitedEdges.has(c.id));
+    return { resolvedNode: trimmed, neighbors: unseenKg.slice(0, limit) };
+  }
   let queryStr = trimmed;
   let focusLemma: string | undefined;
+  let parsedPassage: ReturnType<typeof parsePassageString> = null;
 
   if (/^r1[0123]:/i.test(trimmed)) {
     const rawEv = await safeCallFirst(read, 'get_connection_evidence_v1', { evidence_id: trimmed });
@@ -2220,8 +3076,8 @@ async function fetchNodeNeighbors(
     const nextSeed = str(origWords[1]?.strongs ?? origWords[0]?.strongs ?? passages[0]?.ref, trimmed);
     queryStr = nextSeed;
   } else if (isPassageLike(trimmed)) {
-    const parsed = parsePassageString(trimmed);
-    if (parsed) queryStr = parsed.normalized;
+    parsedPassage = parsePassageString(trimmed);
+    if (parsedPassage) queryStr = parsedPassage.normalized;
   } else {
     const lk = await safeCallFirst(read, 'resolve_fast_lookup_v1', { query: trimmed, limit: 3 });
     const first = asArr(lk?.matches).map(asRec).find(Boolean);
@@ -2231,28 +3087,278 @@ async function fetchNodeNeighbors(
     }
   }
 
-  const disc = await safeCallFirst(read, 'discover_biblical_connections_v2', {
-    query: queryStr,
-    ...(focusLemma ? { focus_lemma: focusLemma } : {}),
-    limit: Math.min(25, limit * 3),
-  });
+  const isMultiVerseRange = Boolean(
+    parsedPassage && (
+      parsedPassage.passages.length > 1 ||
+      (parsedPassage.passages[0]?.end_verse ?? 0) > (parsedPassage.passages[0]?.start_verse ?? 0)
+    ),
+  );
 
-  const allConns = asArr(disc?.strongest_connections ?? disc?.connections)
-    .map(asRec)
-    .filter((c): c is Rec => c !== null)
-    .map(normalizeDiscoveryConnection)
-    .filter((c): c is CompactConnection => c !== null);
+  const [disc, rangeCompact] = await Promise.all([
+    safeCallFirst(read, 'discover_biblical_connections_v2', {
+      query: queryStr,
+      ...(focusLemma ? { focus_lemma: focusLemma } : {}),
+      limit: Math.min(25, limit * 3),
+    }),
+    isMultiVerseRange && parsedPassage
+      ? safeCallFirst(read, 'get_passage_compact_v1', {
+          passages: parsedPassage.passages.slice(0, 4),
+          max_verses: 30,
+          offset: 0,
+          include_profiles: true,
+          profile_limit: 24,
+        })
+      : Promise.resolve(null),
+  ]);
 
-  const unseen = allConns.filter(c => {
-    if (visitedEdges.has(c.id)) return false;
-    const targetNode = str(c.target?.strongs ?? c.refs[0] ?? c.id).toLowerCase();
-    if (targetNode && visitedNodes.has(targetNode)) return false;
+  const rangeExtras: CompactConnection[] = [];
+  if (isMultiVerseRange && parsedPassage && rangeCompact) {
+    const RANGE_STOP = new Set([
+      'H3605', 'G3956', 'H1961', 'G1096', 'H7200', 'G1492', 'G3708', 'H8147', 'G1417',
+      'H0559', 'G3004', 'G2036', 'H0834', 'H3588', 'H5921', 'H0413', 'H4480', 'H0376',
+      'G2532', 'G0846', 'G3588', 'G1722', 'G1519', 'H3068', 'G2962', 'H0853', 'H5973',
+      'H1697', 'H0430', 'H3117', 'H0935', 'H3318', 'H5414', 'H6213',
+    ]);
+    const FUNC_POS = new Set(['conjunction', 'preposition', 'article', 'particle', 'pronoun', 'cj', 'prep', 'ptcl', 'adv', 'rel', 'om', 'intj', 'pron', 'det', 'conj']);
+    const rangeVerseCountByBs = new Map<string, number>();
+    const rangeVerses = asArr(rangeCompact.verses).map(asRec).filter((v): v is Rec => v !== null);
+    for (const v of rangeVerses) {
+      const seenInV = new Set<string>();
+      for (const rawT of asArr(v.tokens)) {
+        const t = asRec(rawT);
+        if (!t) continue;
+        const pos = str(t.pos_class).toLowerCase();
+        if (FUNC_POS.has(pos)) continue;
+        const padBs = padStrongsToken(str(t.strongs));
+        if (!padBs || /^H900/.test(padBs) || RANGE_STOP.has(padBs)) continue;
+        if (!seenInV.has(padBs)) {
+          seenInV.add(padBs);
+          rangeVerseCountByBs.set(padBs, (rangeVerseCountByBs.get(padBs) || 0) + 1);
+        }
+      }
+    }
+    const profiles = asRec(rangeCompact.profiles) ?? {};
+    const scoredSalient = [...rangeVerseCountByBs.entries()]
+      .map(([bs, occ]) => {
+        const p = asRec(profiles[bs]);
+        const tv = typeof p?.total_verses === 'number' && p.total_verses > 0 ? p.total_verses : 150;
+        const idf = Math.log2(31203 / Math.max(1, tv));
+        const salience = idf * (1 + 0.4 * Math.min(5, occ - 1)) * (tv > 2000 ? 0.35 : 1);
+        return { bs, occ, tv, salience, prof: p };
+      })
+      .sort((a, b) => b.salience - a.salience);
+
+    const topSalient = scoredSalient.slice(0, 4);
+    const salientDiscs = await Promise.all(
+      topSalient.slice(0, 2).map(s =>
+        safeCallFirst(read, 'discover_biblical_connections_v2', {
+          query: s.bs,
+          focus_lemma: s.bs,
+          limit: Math.min(10, Math.max(4, limit)),
+        }),
+      ),
+    );
+    for (const sd of salientDiscs) {
+      for (const rawC of asArr(sd?.strongest_connections ?? sd?.connections)) {
+        const rec = asRec(rawC);
+        if (!rec) continue;
+        const norm = normalizeDiscoveryConnection(rec);
+        if (norm) rangeExtras.push(norm);
+      }
+    }
+    for (const s of topSalient) {
+      if (!s.prof) continue;
+      if (!visitedNodes.has(s.bs.toLowerCase())) {
+        const eid = `passage_lexeme:${parsedPassage.normalized}:${s.bs}`;
+        rangeExtras.push({
+          id: eid,
+          relation: 'passage_salient_lemma',
+          epistemic: 'direct_textual_evidence',
+          tier: 2,
+          title: `Salient lemma across ${parsedPassage.normalized} (${s.occ}/${rangeVerses.length} vv): ${str(s.prof.sc, s.bs)} (${s.bs}) "${str(s.prof.gl)}"`,
+          why: `${str(s.prof.sc, s.bs)} (${s.bs}, "${str(s.prof.gl)}") recurs in ${s.occ} verses across ${parsedPassage.normalized} (${s.tv} total corpus vv).`,
+          refs: [parsedPassage.normalized],
+          target: { strongs: s.bs, script: str(s.prof.sc), transliteration: str(s.prof.tr), gloss: str(s.prof.gl) },
+        });
+      }
+      for (const rawLx of asArr(s.prof.lxx_relations).slice(0, 2)) {
+        const lx = asRec(rawLx);
+        const tBs = str(lx?.target_strongs);
+        const tSc = str(lx?.script);
+        if (!tBs && !tSc) continue;
+        rangeExtras.push({
+          id: `lxx:${s.bs}:${tBs || tSc}`,
+          relation: 'lxx_translation_bridge',
+          epistemic: 'documented_cross_language_bridge',
+          tier: 3,
+          title: `LXX bridge from ${parsedPassage.normalized}: ${str(s.prof.sc, s.bs)} (${s.bs}) -> ${tSc} (${tBs})`,
+          why: `Salient range lemma ${str(s.prof.sc, s.bs)} (${s.bs}) is rendered in LXX as ${tSc}${str(lx?.gloss) ? ` ("${str(lx?.gloss)}")` : ''}.`,
+          refs: [parsedPassage.normalized],
+          target: { strongs: tBs || undefined, script: tSc, gloss: str(lx?.gloss) },
+        });
+      }
+    }
+    // Include xrefs from verses beyond verse 1 across the range
+    for (const v of rangeVerses.slice(1)) {
+      const vRef = str(v.ref, parsedPassage.normalized);
+      const vid = Number(v.verse_id || 0);
+      for (const xr of asArr(v.xrefs).slice(0, 2)) {
+        const xc = buildXrefConnection(vRef, vid, xr, true);
+        if (xc) rangeExtras.push(xc);
+      }
+    }
+  }
+
+  const seenEdgeIds = new Set<string>();
+  const allConns = [
+    ...rangeExtras,
+    ...asArr(disc?.strongest_connections ?? disc?.connections)
+      .map(asRec)
+      .filter((c): c is Rec => c !== null)
+      .map(normalizeDiscoveryConnection)
+      .filter((c): c is CompactConnection => c !== null),
+  ].filter(c => {
+    if (!c.id || seenEdgeIds.has(c.id)) return false;
+    seenEdgeIds.add(c.id);
     return true;
   });
 
+  const unseen = allConns.filter(c => {
+    if (visitedEdges.has(c.id)) return false;
+    const targetNode = chainEvidenceTarget(c, focusLemma ?? queryStr).toLowerCase();
+    if (targetNode && visitedNodes.has(targetNode)) return false;
+    if (axisFilter && !matchesAxisFilter(c as unknown as ChainEvidence, axisFilter)) return false;
+    return true;
+  });
+
+  if (unseen.length === 0 && isPassageLike(trimmed)) {
+    const parsed = parsePassageString(trimmed);
+    if (parsed) {
+      const compact = await safeCallFirst(read, 'get_passage_compact_v1', {
+        passages: parsed.passages.slice(0, 1),
+        max_verses: 10,
+        offset: 0,
+        include_profiles: true,
+        profile_limit: 16,
+      });
+      const fallbackConns: CompactConnection[] = [];
+      const profiles = asRec(compact?.profiles) ?? {};
+      for (const [bs, rawP] of Object.entries(profiles)) {
+        const p = asRec(rawP);
+        if (!p || !bs) continue;
+        const padBs = padStrongsToken(bs);
+        if (visitedNodes.has(padBs.toLowerCase())) continue;
+        const eid = `passage_lexeme:${parsed.normalized}:${padBs}`;
+        if (!visitedEdges.has(eid)) {
+          fallbackConns.push({
+            id: eid,
+            relation: 'passage_key_lemma',
+            epistemic: 'direct_textual_evidence',
+            tier: 2,
+            title: `Key lemma in ${parsed.normalized}: ${str(p.sc, padBs)} (${padBs}) "${str(p.gl)}"`,
+            why: `${parsed.normalized} contains ${str(p.sc, padBs)} (${padBs}, ${p.total_verses ?? 0} vv).`,
+            refs: [parsed.normalized],
+            target: { strongs: padBs, script: str(p.sc), transliteration: str(p.tr), gloss: str(p.gl) },
+          });
+        }
+        if (axisFilter === 'lxx') {
+          for (const rawLx of asArr(p.lxx_relations).slice(0, 2)) {
+            const lx = asRec(rawLx);
+            const tBs = str(lx?.target_strongs);
+            const tSc = str(lx?.script);
+            if (!tBs && !tSc) continue;
+            const lxxId = `lxx:${padBs}:${tBs || tSc}`;
+            if (visitedEdges.has(lxxId)) continue;
+            fallbackConns.push({
+              id: lxxId,
+              relation: 'lxx_translation_bridge',
+              epistemic: 'documented_cross_language_bridge',
+              tier: 3,
+              title: `LXX bridge in ${parsed.normalized}: ${str(p.sc, padBs)} (${padBs}) -> ${tSc} (${tBs})`,
+              why: `Septuagint renders ${str(p.sc, padBs)} (${padBs}) as ${tSc}${str(lx?.gloss) ? ` ("${str(lx?.gloss)}")` : ''}.`,
+              refs: [parsed.normalized],
+              target: { strongs: tBs || undefined, script: tSc, gloss: str(lx?.gloss) },
+            });
+          }
+        }
+      }
+      for (const rawV of asArr(compact?.verses)) {
+        const v = asRec(rawV);
+        if (!v) continue;
+        const vRef = str(v.ref, parsed.normalized);
+        const vid = Number(v.verse_id || 0);
+        for (const xr of asArr(v.xrefs).slice(0, 3)) {
+          const xc = buildXrefConnection(vRef, vid, xr, true);
+          if (!xc || visitedEdges.has(xc.id)) continue;
+          const tNode = chainEvidenceTarget(xc, vRef).toLowerCase();
+          if (tNode && visitedNodes.has(tNode)) continue;
+          fallbackConns.push(xc);
+        }
+      }
+      if (fallbackConns.length > 0) {
+        unseen.push(...fallbackConns.filter(c => !axisFilter || matchesAxisFilter(c as unknown as ChainEvidence, axisFilter)));
+      }
+    }
+  } else if (unseen.length === 0 && focusLemma) {
+    const batch = await safeCallFirst(read, 'get_word_profiles_batch_v1', {
+      strongs: [focusLemma],
+      include_vids: false,
+      include_forms: false,
+      include_orth: false,
+      include_pilot: false,
+    });
+    const prof = asRec(asRec(batch?.profiles)?.[focusLemma]);
+    if (prof) {
+      const derived = buildProfileDerivedConnections(prof, limit);
+      for (const c of derived) {
+        if (visitedEdges.has(c.id)) continue;
+        const tNode = chainEvidenceTarget(c, focusLemma).toLowerCase();
+        if (tNode && visitedNodes.has(tNode)) continue;
+        if (axisFilter && !matchesAxisFilter(c as unknown as ChainEvidence, axisFilter)) continue;
+        unseen.push(c);
+      }
+      if (unseen.length === 0) {
+        for (const rawOcc of asArr(prof.first_occ_passages).slice(0, limit)) {
+          const occ = asRec(rawOcc);
+          const ref = str(occ?.ref);
+          if (!ref || visitedNodes.has(ref.toLowerCase())) continue;
+          const eid = `first_occ:${focusLemma}:${ref}`;
+          if (visitedEdges.has(eid)) continue;
+          unseen.push({
+            id: eid,
+            relation: 'lexical_occurrence_passage',
+            epistemic: 'direct_textual_evidence',
+            tier: 2,
+            title: `${str(prof.sc, focusLemma)} (${focusLemma}, "${str(prof.gl)}") in ${ref}`,
+            why: str(occ?.snippet, `Attested occurrence of ${focusLemma} at ${ref}.`),
+            refs: [ref],
+          });
+        }
+      }
+    }
+  }
+
+  unseen.sort((a, b) => {
+    const isNoise = (c: CompactConnection) =>
+      c.epistemic === 'orthographic_similarity_only' ||
+      c.id.startsWith('r13:orth:') ||
+      c.id.startsWith('orth:') ||
+      (c.id.startsWith('r13:wp:') && c.epistemic !== 'direct_textual_evidence');
+    return (Number(isNoise(a)) - Number(isNoise(b))) || ((a.tier ?? 3) - (b.tier ?? 3));
+  });
+
+  const filtered = filterConnectionsForPrimary(unseen, focusLemma ?? '', limit, Boolean(focusLemma));
+  if (layerMode === 'combined') {
+    const kgConns = (await fetchKgNeighborsForChain(read, focusLemma ?? trimmed, Math.min(6, limit))) as unknown as CompactConnection[];
+    const unseenKg = kgConns.filter(c => !visitedEdges.has(c.id));
+    return {
+      resolvedNode: focusLemma ?? queryStr,
+      neighbors: [...unseenKg, ...filtered].slice(0, limit),
+    };
+  }
   return {
     resolvedNode: focusLemma ?? queryStr,
-    neighbors: filterConnectionsForPrimary(unseen, focusLemma ?? '', limit, Boolean(focusLemma)),
+    neighbors: filtered,
   };
 }
 
@@ -2271,28 +3377,43 @@ export function createDiscoveryV2Server(
   server.registerTool('get_Passage', {
     title: 'Read original-language Bible passage with connections and context',
     description:
-      'Primary tool for reading any verse, range, or chapter (including cross-chapter ranges like "1COR12:10-1COR13:4" and Psalm headings like "Ps 45:0"). Returns complete original text, readable WEB English, compact word table linked to a deduplicated shared lexicon, top z passage/verse connections, scoped geography, and named chronology models. Keep word_depth=0, etymology=0, realworld=0 on initial read unless deeper word detail is needed.',
+      'Primary tool for reading any verse, range, or chapter (including cross-chapter ranges like "1COR12:10-1COR13:4" and Psalm headings like "Ps 45:0"). Defaults to view="clues" (2-6 KB crisp progressive clues with expand_id handles, E_perp, and axes). Pass view="evidence" or view="full", or pass expand_id to hydrate any clue on demand.',
     inputSchema: z.strictObject({
-      passage: z.string().trim().min(1).max(160).describe('Verse, range, or chapter (e.g. "Gen 6:14", "Zechariah 4", "1COR12:10-1COR13:4", "Ps 45:0").'),
+      passage: z.string().trim().min(1).max(160).optional().describe('Verse, range, or chapter (e.g. "Gen 6:14", "Zechariah 4", "1COR12:10-1COR13:4", "Ps 45:0"). Required unless expand_id is provided.'),
       depth: z.number().int().min(0).max(25).default(3).describe('Top z connections for the passage and for each verse (0 omits connections).'),
       word_depth: z.number().int().min(0).max(15).default(0).describe('Top x connections per content word in shared lexicon (0 omits per-word connections).'),
       etymology: z.number().int().min(0).max(15).default(0).describe('0 omits; y > 0 adds documented roots/formations plus up to y separated spelling suggestions.'),
       realworld: z.union([z.literal(0), z.literal(1), z.boolean()]).default(0).describe('0 omits; 1 adds supported biblical/physical definitions and external property bridges.'),
+      literary: z.number().int().min(0).max(2).default(1).describe('0 omits literary structure; 1 adds compact structural summary (default); 2 adds standard pattern_families, template cells, alternatives, and occurrence word_ids.'),
       offset: z.number().int().min(0).max(200).default(0).describe('Verse offset when paginating long ranges.'),
       limit: z.number().int().min(1).max(40).default(30).describe('Maximum complete verses per call (default 30, max 40).'),
+      compact: z.boolean().optional().describe('Optional slim payload projection: strips token word_id/tr/code and secondary lexicon sections while keeping text, glosses, links, and literary summary.'),
+      view: ViewAliasSchema.optional().describe('Progressive detail level: "clues" (default, crisp <=6-12 KB clues with expand_id), "evidence" (token/witness hydration), or "full".'),
+      detail: ViewAliasSchema.optional().describe('Alias for view.'),
+      expand_id: z.string().trim().min(1).max(220).optional().describe('Optional expand_id handle from a prior clue to hydrate rich witnesses/alignments on demand.'),
     }),
-    outputSchema: z.record(z.string(), z.unknown()),
     ...readOnlyMeta,
-  }, async ({ passage, depth = 3, word_depth = 0, etymology = 0, realworld = 0, offset = 0, limit = 30 }) => {
+  }, async ({ passage, depth = 3, word_depth = 0, etymology = 0, realworld = 0, literary = 1, offset = 0, limit = 30, compact = false, view, detail, expand_id }) => {
+    const resolvedView = resolveViewMode(view, detail);
     try {
+      if (expand_id) {
+        const expDetail = resolvedView === 'full' ? 'full' : 'evidence';
+        return jsonReply(await expandClueById(read, expand_id, expDetail));
+      }
+      if (!passage) {
+        return errorReply('Provide passage (e.g. "Gen 6:14") or expand_id.');
+      }
       const payload = await handleGetPassage(read, {
         passage,
         depth,
         word_depth,
         etymology,
         realworld: parseRealworldFlag(realworld),
+        literary,
         offset,
         limit,
+        compact,
+        view: resolvedView,
       });
       return jsonReply(payload);
     } catch {
@@ -2304,21 +3425,33 @@ export function createDiscoveryV2Server(
   server.registerTool('get_Word', {
     title: 'Inspect an original-language biblical word and its connections',
     description:
-      'Primary lexical tool accepting English concepts, original Hebrew/Greek script, transliteration ("Ruach"), Strong\'s ("H7307"), or a word in a specific passage. Returns the shared CompactWord object with senses, grammar forms, biblical occurrences, LXX links, explicit-method gematria, optional documented etymology separated from spelling suggestions, real-world meaning where supported, and top diverse connections.',
+      'Primary lexical tool accepting English concepts, pointed Hebrew/Greek script, transliteration ("Ruach", "pyroo"), Strong\'s ("H4417"), or a word in a specific passage. Defaults to view="clues" with sense-gated real-world properties, ambiguous candidates, and expand_id handles; pass view="evidence"|"full" or expand_id for deeper hydration.',
     inputSchema: z.strictObject({
-      word: z.string().trim().min(1).max(128).describe('English word, original Hebrew/Greek, transliteration, lemma, or Strong\'s ID (e.g. "Ruach", "H7307", "πνεῦμα", "kaphar").'),
-      connections: z.number().int().min(0).max(25).default(10).describe('Top x diverse connections with short witnesses (default 10).'),
+      word: z.string().trim().min(1).max(128).optional().describe('English word, original Hebrew/Greek, transliteration, lemma, or Strong\'s ID (e.g. "Ruach", "H7307", "πνεῦμα", "kaphar"). Required unless expand_id is provided.'),
+      connections: z.number().int().min(0).max(25).optional().describe('Top x diverse connections with short witnesses (default 10).'),
+      occurrences: z.number().int().min(0).max(50).optional().describe('Optional cap on occurrence sample references returned (default 3 in clues view).'),
       etymology: z.number().int().min(0).max(15).default(0).describe('0 omits; y > 0 adds documented roots/formations plus up to y separated spelling-similarity candidates.'),
       passage: z.string().trim().min(1).max(120).optional().describe('Optional passage reference (e.g. "Gen 6:14") to anchor a specific occurrence.'),
       mode: z.enum(['discover', 'bridge']).optional().describe('Optional discovery mode: "discover" (default) or "bridge" for physical-world property bridges.'),
       realworld: z.union([z.literal(0), z.literal(1), z.boolean()]).default(1).describe('1 (default) includes supported real-world/physical definitions and property bridges; 0 omits.'),
+      view: ViewAliasSchema.optional().describe('Progressive detail level: "clues" (default, concise <=6 KB), "evidence", or "full".'),
+      detail: ViewAliasSchema.optional().describe('Alias for view.'),
+      expand_id: z.string().trim().min(1).max(220).optional().describe('Optional expand_id handle to hydrate rich evidence on demand.'),
     }),
-    outputSchema: z.record(z.string(), z.unknown()),
     ...readOnlyMeta,
-  }, async ({ word, connections = 10, etymology = 0, passage, mode, realworld = 1 }) => {
+  }, async ({ word, connections, occurrences: occLimit, etymology = 0, passage, mode, realworld = 1, view, detail, expand_id }) => {
+    const resolvedView = resolveViewMode(view, detail);
+    const connLimit = connections ?? 10;
     try {
+      if (expand_id) {
+        const expDetail = resolvedView === 'full' ? 'full' : 'evidence';
+        return jsonReply(await expandClueById(read, expand_id, expDetail));
+      }
+      if (!word) {
+        return errorReply('Provide word or expand_id.');
+      }
       const res = await buildFullCompactWord(read, word, {
-        connections,
+        connections: connLimit,
         etymology,
         realworld: parseRealworldFlag(realworld),
         passage,
@@ -2327,7 +3460,9 @@ export function createDiscoveryV2Server(
       if (!res.word) {
         return jsonReply({
           status: res.warnings.length > 0 ? 'partial' : 'not_found',
+          view: resolvedView,
           query: word,
+          resolution: 'not_found',
           discovery_status: res.discovery_status,
           coverage: res.coverage,
           ...(res.warnings.length > 0 ? { warnings: res.warnings } : {}),
@@ -2336,18 +3471,58 @@ export function createDiscoveryV2Server(
             : `No canonical Hebrew/Greek lexical entry found matching "${word}".`,
         });
       }
+      const rawOccSamples = asArr(res.occurrences?.samples);
+      if (resolvedView === 'clues') {
+        const sampleCap = occLimit !== undefined ? occLimit : 3;
+        const clueWord: Rec = {
+          ...(res.word.form ? { form: res.word.form } : {}),
+          lemma: res.word.lemma,
+          strongs: res.word.strongs,
+          ...(res.word.lemma_key ? { lemma_key: res.word.lemma_key } : {}),
+          transliteration: res.word.transliteration,
+          gloss: res.word.gloss,
+          ...(res.word.pos ? { pos: res.word.pos } : {}),
+          ...(res.word.total_verses !== undefined ? { total_verses: res.word.total_verses } : {}),
+          ...(res.word.senses ? { senses: res.word.senses.slice(0, 4).map(s => ({ ...(s.key ? { key: s.key } : {}), gloss: s.gloss })) } : {}),
+          ...(res.word.lxx ? { lxx: res.word.lxx.slice(0, 3) } : {}),
+          ...(res.word.etymology ? { etymology: res.word.etymology } : {}),
+          ...(res.word.realworld ? { realworld: res.word.realworld } : {}),
+          ...(res.word.connections ? { connections: res.word.connections.slice(0, Math.min(connLimit, 4)).map(c => projectClue(c, 'clues')) } : {}),
+          ...(sampleCap > 0 && rawOccSamples.length > 0
+            ? { occurrences_sample: rawOccSamples.slice(0, sampleCap).map(s => ({ ref: str(asRec(s)?.ref) })).filter(s => s.ref) }
+            : {}),
+        };
+        return jsonReply({
+          status: res.status,
+          view: 'clues',
+          query: word,
+          ...(res.discovery_status !== 'ok' ? { discovery_status: res.discovery_status } : {}),
+          ...(res.warnings.length > 0 ? { warnings: res.warnings } : {}),
+          ...(res.anchored_occurrence ? { anchored_occurrence: res.anchored_occurrence } : {}),
+          word: clueWord,
+          resolution: res.ambiguousCandidates.length ? 'selected_candidate_with_alternatives' : 'selected_lexical_entry',
+          ...(res.ambiguousCandidates.length > 0 ? { ambiguous_candidates: res.ambiguousCandidates } : {}),
+        });
+      }
+      const occurrencesOut = occLimit !== undefined
+        ? { ...res.occurrences, samples: rawOccSamples.slice(0, occLimit) }
+        : res.occurrences;
       return jsonReply({
         status: res.status,
+        view: resolvedView,
         query: word,
         discovery_status: res.discovery_status,
         coverage: res.coverage,
         ...(res.warnings.length > 0 ? { warnings: res.warnings } : {}),
         ...(res.anchored_occurrence ? { anchored_occurrence: res.anchored_occurrence } : {}),
-        word: res.word,
+        word: {
+          ...res.word,
+          ...(res.word.connections ? { connections: res.word.connections.map(c => projectClue(c, resolvedView)) } : {}),
+        },
         grammar_forms: res.grammarForms,
         grammar_forms_scope: 'Attested forms of this Strong\'s group, including possible homograph lemmas; not morphology of the selected occurrence.',
         resolution: res.ambiguousCandidates.length ? 'selected_candidate_with_alternatives' : 'selected_lexical_entry',
-        occurrences: res.occurrences,
+        occurrences: occurrencesOut,
         ambiguous_candidates: res.ambiguousCandidates,
       });
     } catch {
@@ -2359,16 +3534,27 @@ export function createDiscoveryV2Server(
   server.registerTool('get_Connection', {
     title: 'Find actual textual and lexical links between words or passages',
     description:
-      'Compare 2 to 6 words, passages, or mixed inputs (e.g. ["Genesis 6:14", "Exodus 2:3"], ["Ruach", "Zechariah 4"], ["Zechariah 4", "Revelation 11"]). Returns full CompactWord objects for word inputs, compact context (without per-word expansion) for passage inputs, multiple real connection lanes, supporting verses, and explicit uncertainty.',
+      'Compare 2 to 6 words, passages, or mixed inputs (e.g. ["Genesis 6:14", "Exodus 2:3"], ["Ruach", "Zechariah 4"], ["Zechariah 4", "Revelation 11"]). Defaults to view="clues" (non-redundant clues with expand_id handles and graph_proof). Pass view="evidence"|"full" or expand_id to hydrate rich witnesses/subgraphs.',
     inputSchema: z.strictObject({
-      items: z.array(z.string().trim().min(1).max(200)).min(2).max(6).describe('Two or more words, Strong\'s IDs, concepts, or passage references to compare.'),
+      items: z.array(z.string().trim().min(1).max(200)).min(2).max(6).optional().describe('Two or more words, Strong\'s IDs, concepts, or passage references to compare. Required unless expand_id is provided.'),
       connections: z.number().int().min(1).max(25).default(10).describe('Maximum connections to return (default 10).'),
+      compact: z.boolean().optional().describe('Optional slim payload projection omitting verbose per-card witnesses and ranking breakdowns.'),
+      view: ViewAliasSchema.optional().describe('Progressive detail level: "clues" (default, crisp <=6 KB clues), "evidence", or "full".'),
+      detail: ViewAliasSchema.optional().describe('Alias for view.'),
+      expand_id: z.string().trim().min(1).max(220).optional().describe('Optional expand_id handle to hydrate rich evidence or subgraph witnesses on demand.'),
     }),
-    outputSchema: z.record(z.string(), z.unknown()),
     ...readOnlyMeta,
-  }, async ({ items, connections = 10 }) => {
+  }, async ({ items, connections = 10, compact = false, view, detail, expand_id }) => {
+    const resolvedView = resolveViewMode(view, detail);
     try {
-      const payload = await handleGetConnection(read, items, connections);
+      if (expand_id) {
+        const expDetail = resolvedView === 'full' ? 'full' : 'evidence';
+        return jsonReply(await expandClueById(read, expand_id, expDetail));
+      }
+      if (!items || items.length < 2) {
+        return errorReply('Provide at least 2 items to compare or an expand_id.');
+      }
+      const payload = await handleGetConnection(read, items, connections, compact, resolvedView);
       return jsonReply(payload);
     } catch {
       return errorReply('Connection comparison is temporarily unavailable.');
@@ -2379,27 +3565,38 @@ export function createDiscoveryV2Server(
   server.registerTool('follow_connectionchain', {
     title: 'Start, follow, branch, or revisit a remembered connection chain',
     description:
-      'Maintains a private expiring server-side session chain of visited nodes and evidence so you can explore multi-step connections without repeating already-seen nodes. Omit chain with next="..." to start; pass chain handle with action="follow"|"branch"|"revisit"|"inspect" to advance, branch, or inspect.',
+      'Maintains a private expiring server-side session chain of visited nodes and evidence so you can explore multi-step connections without repeating already-seen nodes. Omit chain with next/next_id="..." to start; pass chain handle with action="follow"|"branch"|"revisit"|"inspect" and optional axis_filter. Defaults to view="clues" (< 8 KB wire); pass view="evidence"|"full" or expand_id to hydrate.',
     inputSchema: z.strictObject({
-      chain: z.string().trim().min(10).max(120).optional().describe('Opaque chain handle returned by a prior follow_connectionchain call. Omit to start a new chain.'),
+      chain: z.string().trim().min(10).max(4000).optional().describe('Opaque chain handle returned by a prior follow_connectionchain call. Omit to start a new chain.'),
       next: z.string().trim().min(1).max(220).optional().describe('Target word, passage, or evidence_id to seed or advance to.'),
+      next_id: z.string().trim().min(1).max(220).optional().describe('Alias for next: explicit clue/edge ID or next_id handle from a prior step.'),
       action: z.enum(['follow', 'branch', 'revisit', 'inspect']).default('follow').describe('Action on an existing chain (default: follow).'),
       from_node: z.string().trim().min(1).max(220).optional().describe('Node or step to branch from or revisit.'),
-      limit: z.number().int().min(1).max(15).default(8).describe('Maximum next connections to return (default 8).'),
+      axis_filter: z.enum(['lexical', 'lxx', 'wordplay', 'structure', 'concept_proc', 'xref']).optional().describe('Optional axis filter for neighbor suggestions.'),
+      layer_mode: z.enum(['source_only', 'algorithm_only', 'research_only', 'combined']).optional().describe('Optional layer filter: algorithm_only (default), source_only, research_only (persistent KG), or combined.'),
+      limit: z.number().int().min(1).max(25).default(8).describe('Maximum next connections to return (default 8).'),
+      view: ViewAliasSchema.optional().describe('Progressive detail level: "clues" (default), "evidence", or "full".'),
+      detail: ViewAliasSchema.optional().describe('Alias for view.'),
+      expand_id: z.string().trim().min(1).max(220).optional().describe('Optional expand_id handle to hydrate rich evidence for a chain step.'),
     }),
-    outputSchema: z.record(z.string(), z.unknown()),
     ...readOnlyMeta,
-  }, async ({ chain, next, action = 'follow', from_node, limit = 8 }) => {
+  }, async ({ chain, next, next_id, action = 'follow', from_node, axis_filter, layer_mode = 'algorithm_only', limit = 8, view, detail, expand_id }) => {
+    const resolvedView = resolveViewMode(view, detail);
     const sessionId = getHeaders?.()?.get('mcp-session-id') ?? getHeaders?.()?.get('Mcp-Session-Id') ?? null;
     try {
+      if (expand_id) {
+        const expDetail = resolvedView === 'full' ? 'full' : 'evidence';
+        return jsonReply(await expandClueById(read, expand_id, expDetail));
+      }
+      const initialTarget = next || next_id;
       if (!chain) {
-        if (!next) {
-          return errorReply('Provide next (a word, passage, or evidence_id) to start a new connection chain.');
+        if (!initialTarget) {
+          return errorReply('Provide next or next_id (a word, passage, or evidence_id) to start a new connection chain.');
         }
-        const visitedNodes = new Set<string>([next.toLowerCase()]);
-        const { resolvedNode, neighbors } = await fetchNodeNeighbors(read, next, visitedNodes, new Set(), limit);
+        const visitedNodes = new Set<string>([initialTarget.toLowerCase()]);
+        const { resolvedNode, neighbors } = await fetchNodeNeighbors(read, initialTarget, visitedNodes, new Set(), limit, axis_filter, layer_mode);
         visitedNodes.add(resolvedNode.toLowerCase());
-        const created = await chainStore.create({
+        const initPayload = {
           root: resolvedNode,
           current_node: resolvedNode,
           visited_nodes: [...visitedNodes],
@@ -2407,75 +3604,132 @@ export function createDiscoveryV2Server(
           steps: [],
           branches: [],
           active_candidates: neighbors as unknown as Rec[],
-        }, sessionId);
-        if (!created.ok) return errorReply(created.message, { code: created.error });
+        };
+        const created = await chainStore.create(initPayload, sessionId);
+        const nowIso = new Date().toISOString();
+        const fallbackState: ChainState = created.ok
+          ? created.state
+          : {
+              chain_id: 'stateless',
+              ...initPayload,
+              created_at: nowIso,
+              updated_at: nowIso,
+              expires_at: new Date(Date.now() + CHAIN_DEFAULT_TTL_MS).toISOString(),
+            };
+        const compositeHandle = formatCompositeChainHandle(created.ok ? created.handle : null, fallbackState, sessionId);
         return jsonReply({
           status: 'ok',
-          chain: created.handle,
-          expires_at: created.state.expires_at,
+          view: resolvedView,
+          chain: compositeHandle,
+          expires_at: fallbackState.expires_at,
           step: 0,
-          current_node: created.state.current_node,
-          path_trail: [created.state.root],
-          visited_count: created.state.visited_nodes.length,
-          chain_epistemic_summary: summarizeChainEpistemics(created.state.steps),
-          next_connections: neighbors,
-          branches: created.state.branches,
+          current_node: fallbackState.current_node,
+          path_trail: [fallbackState.root],
+          visited_count: fallbackState.visited_nodes.length,
+          chain_epistemic_summary: summarizeChainEpistemics(fallbackState.steps),
+          next_connections: withChainNext(neighbors, fallbackState.current_node, resolvedView),
+          branches: fallbackState.branches,
         });
       }
 
-      const loaded = await chainStore.load(chain, sessionId);
-      if (!loaded.ok) return errorReply(loaded.message, { code: loaded.error });
+      const { storeHandle, statelessToken } = parseCompositeChainHandle(chain);
+      let loadedState: ChainState | null = null;
+      let isStatelessFallback = !storeHandle;
+
+      if (storeHandle) {
+        const loaded = await chainStore.load(storeHandle, sessionId);
+        if (loaded.ok) {
+          loadedState = loaded.state;
+        } else if ((loaded.error === 'chain_not_found' || loaded.error === 'chain_store_error') && statelessToken) {
+          const decoded = decodeStatelessChainToken(statelessToken, sessionId);
+          if (!decoded.ok) return errorReply(decoded.message, { code: decoded.error });
+          loadedState = decoded.state;
+          isStatelessFallback = true;
+        } else {
+          return errorReply(loaded.message, { code: loaded.error });
+        }
+      } else if (statelessToken) {
+        const decoded = decodeStatelessChainToken(statelessToken, sessionId);
+        if (!decoded.ok) return errorReply(decoded.message, { code: decoded.error });
+        loadedState = decoded.state;
+      } else {
+        return errorReply('Invalid connection chain handle.', { code: 'invalid_chain_handle' });
+      }
 
       const st: ChainState = {
-        ...loaded.state,
-        visited_nodes: [...loaded.state.visited_nodes],
-        visited_edges: [...loaded.state.visited_edges],
-        steps: [...loaded.state.steps],
-        branches: [...loaded.state.branches],
+        ...loadedState,
+        visited_nodes: [...loadedState.visited_nodes],
+        visited_edges: [...loadedState.visited_edges],
+        steps: [...loadedState.steps],
+        branches: [...loadedState.branches],
+      };
+
+      const persistOrEncode = async (): Promise<{ ok: true; handle: string; state: ChainState } | { ok: false; error: string; message: string }> => {
+        if (!isStatelessFallback && storeHandle) {
+          const updated = await chainStore.update(storeHandle, st, sessionId);
+          if (updated.ok) {
+            return {
+              ok: true,
+              handle: formatCompositeChainHandle(storeHandle, updated.state, sessionId),
+              state: updated.state,
+            };
+          }
+          if (updated.error !== 'chain_not_found' && updated.error !== 'chain_store_error') {
+            return { ok: false, error: updated.error, message: updated.message };
+          }
+        }
+        st.updated_at = new Date().toISOString();
+        return {
+          ok: true,
+          handle: formatCompositeChainHandle(null, st, sessionId),
+          state: st,
+        };
       };
 
       if (action === 'inspect') {
         const visitedSet = new Set(st.visited_nodes.map(v => v.toLowerCase()));
         const edgeSet = new Set(st.visited_edges);
-        const { neighbors } = await fetchNodeNeighbors(read, st.current_node, visitedSet, edgeSet, limit);
+        const { neighbors } = await fetchNodeNeighbors(read, st.current_node, visitedSet, edgeSet, limit, axis_filter, layer_mode);
         st.active_candidates = neighbors as unknown as Rec[];
-        const updated = await chainStore.update(chain, st, sessionId);
-        if (!updated.ok) return errorReply(updated.message, { code: updated.error });
+        const saved = await persistOrEncode();
+        if (!saved.ok) return errorReply(saved.message, { code: saved.error });
         return jsonReply({
           status: 'ok',
-          chain,
-          expires_at: st.expires_at,
-          step: st.steps.length,
-          current_node: st.current_node,
-          path_trail: [st.root, ...st.steps.map(s => `${s.from_node} -> ${s.to_node} [${s.relation}]`)],
-          visited_count: st.visited_nodes.length,
-          chain_epistemic_summary: summarizeChainEpistemics(st.steps),
-          next_connections: neighbors,
-          branches: st.branches,
+          view: resolvedView,
+          chain: saved.handle,
+          expires_at: saved.state.expires_at,
+          step: saved.state.steps.length,
+          current_node: saved.state.current_node,
+          path_trail: [saved.state.root, ...saved.state.steps.map(s => `${s.from_node} -> ${s.to_node} [${s.relation}]`)],
+          visited_count: saved.state.visited_nodes.length,
+          chain_epistemic_summary: summarizeChainEpistemics(saved.state.steps),
+          next_connections: withChainNext(neighbors, saved.state.current_node, resolvedView),
+          branches: saved.state.branches,
         });
       }
 
       if (action === 'revisit') {
-        const target = from_node || next || st.root;
+        const target = from_node || initialTarget || st.root;
         st.current_node = target;
         const visitedSet = new Set(st.visited_nodes.map(v => v.toLowerCase()));
         const edgeSet = new Set(st.visited_edges);
-        const { neighbors } = await fetchNodeNeighbors(read, target, visitedSet, edgeSet, limit);
+        const { neighbors } = await fetchNodeNeighbors(read, target, visitedSet, edgeSet, limit, axis_filter, layer_mode);
         st.active_candidates = neighbors as unknown as Rec[];
-        const updated = await chainStore.update(chain, st, sessionId);
-        if (!updated.ok) return errorReply(updated.message, { code: updated.error });
+        const saved = await persistOrEncode();
+        if (!saved.ok) return errorReply(saved.message, { code: saved.error });
         return jsonReply({
           status: 'ok',
-          chain,
+          view: resolvedView,
+          chain: saved.handle,
           action: 'revisit',
-          expires_at: updated.state.expires_at,
-          step: updated.state.steps.length,
-          current_node: updated.state.current_node,
-          path_trail: [updated.state.root, ...updated.state.steps.map(s => `${s.from_node} -> ${s.to_node} [${s.relation}]`)],
-          visited_count: updated.state.visited_nodes.length,
-          chain_epistemic_summary: summarizeChainEpistemics(updated.state.steps),
-          next_connections: neighbors,
-          branches: updated.state.branches,
+          expires_at: saved.state.expires_at,
+          step: saved.state.steps.length,
+          current_node: saved.state.current_node,
+          path_trail: [saved.state.root, ...saved.state.steps.map(s => `${s.from_node} -> ${s.to_node} [${s.relation}]`)],
+          visited_count: saved.state.visited_nodes.length,
+          chain_epistemic_summary: summarizeChainEpistemics(saved.state.steps),
+          next_connections: withChainNext(neighbors, saved.state.current_node, resolvedView),
+          branches: saved.state.branches,
         });
       }
 
@@ -2489,70 +3743,83 @@ export function createDiscoveryV2Server(
           created_at: new Date().toISOString(),
         });
         st.current_node = origin;
-        if (!next) {
+        if (!initialTarget) {
           const visitedSet = new Set(st.visited_nodes.map(v => v.toLowerCase()));
           const edgeSet = new Set(st.visited_edges);
-          const { neighbors } = await fetchNodeNeighbors(read, origin, visitedSet, edgeSet, limit);
+          const { neighbors } = await fetchNodeNeighbors(read, origin, visitedSet, edgeSet, limit, axis_filter, layer_mode);
           st.active_candidates = neighbors as unknown as Rec[];
-          const updated = await chainStore.update(chain, st, sessionId);
-          if (!updated.ok) return errorReply(updated.message, { code: updated.error });
+          const saved = await persistOrEncode();
+          if (!saved.ok) return errorReply(saved.message, { code: saved.error });
           return jsonReply({
             status: 'ok',
-            chain,
+            view: resolvedView,
+            chain: saved.handle,
             action: 'branch',
             branch_id: branchId,
-            expires_at: updated.state.expires_at,
-            step: updated.state.steps.length,
-            current_node: updated.state.current_node,
-            chain_epistemic_summary: summarizeChainEpistemics(updated.state.steps),
-            next_connections: neighbors,
-            branches: updated.state.branches,
+            expires_at: saved.state.expires_at,
+            step: saved.state.steps.length,
+            current_node: saved.state.current_node,
+            chain_epistemic_summary: summarizeChainEpistemics(saved.state.steps),
+            next_connections: withChainNext(neighbors, saved.state.current_node, resolvedView),
+            branches: saved.state.branches,
           });
         }
       }
 
-      if (!next) {
-        return errorReply('Provide next (a target word, passage, or evidence_id) to follow this chain.');
+      let resolvedNext = initialTarget;
+      if (action === 'follow' && !resolvedNext && Array.isArray(st.active_candidates) && st.active_candidates.length > 0) {
+        const firstCand = st.active_candidates[0] as unknown as ChainEvidence;
+        resolvedNext = chainEvidenceTarget(firstCand, st.current_node) || String((firstCand as unknown as Rec).id || '');
       }
+      if (!resolvedNext) {
+        return errorReply('Provide next or next_id (a target word, passage, or evidence_id) to follow this chain.', {
+          code: 'invalid_request',
+        });
+      }
+      const targetNext = resolvedNext;
 
       const fromNode = action === 'branch' && from_node ? from_node : st.current_node;
       let edgeId: string | undefined;
       let relation = 'exploratory_step';
       let epistemic = 'exploratory_hypothesis';
       let stepRefs: string[] = [];
-      let toNode = next;
+      let toNode = targetNext;
 
       // Preserve a selected returned edge, including ordinary passage targets.
       // A branch origin has different candidates; never reuse the prior node's list.
       let candidates = action === 'branch' && from_node
         ? [] : (st.active_candidates ?? []) as unknown as ChainEvidence[];
-      let selected = selectChainEvidence(candidates, fromNode, next);
+      let selected = selectChainEvidence(candidates, fromNode, targetNext);
       if (!selected) {
-        const origin = await fetchNodeNeighbors(read, fromNode, new Set(), new Set(), 15);
+        const origin = await fetchNodeNeighbors(read, fromNode, new Set(), new Set(), 15, axis_filter, layer_mode);
         candidates = origin.neighbors;
-        selected = selectChainEvidence(candidates, fromNode, next);
+        selected = selectChainEvidence(candidates, fromNode, targetNext);
       }
       if (selected) {
         edgeId = selected.id;
         relation = selected.relation;
         epistemic = selected.epistemic;
         stepRefs = selected.refs;
-        if (next === selected.id) toNode = chainEvidenceTarget(selected, fromNode);
-      } else if (/^r1[0123]:/i.test(next)) {
-        const rawEv = await safeCallFirst(read, 'get_connection_evidence_v1', { evidence_id: next });
+        if (targetNext === selected.id || targetNext === selected.expand_id) {
+          toNode = chainEvidenceTarget(selected, fromNode);
+        }
+      } else if (/^r1[0123]:|^v3:/i.test(targetNext)) {
+        const rawEv = /^v3:/i.test(targetNext)
+          ? await safeCallFirst(read, 'expand_clue_v3', { expand_id: targetNext, detail: 'evidence' })
+          : await safeCallFirst(read, 'get_connection_evidence_v1', { evidence_id: targetNext });
         const ev = unwrapEvidencePayload(rawEv);
         if (ev && rawEv?.status !== 'not_found') {
-          edgeId = next;
-          relation = str(ev.predicate ?? ev.relation, relation);
+          edgeId = targetNext;
+          relation = str(ev.predicate ?? ev.relation ?? ev.kind, relation);
           epistemic = str(ev.epistemic_class ?? ev.epistemic, 'documented_lexical_relationship');
           stepRefs = asArr(ev.passages).map(asRec).filter(Boolean).map(p => str(p?.ref)).filter(Boolean).slice(0, 4);
           const words = asArr(ev.original_words).map(asRec).filter(Boolean);
           const cand = words.find(w => str(w?.strongs).toLowerCase() !== fromNode.toLowerCase());
-          toNode = str(cand?.strongs) || stepRefs[0] || next;
+          toNode = str(cand?.strongs) || stepRefs[0] || str(asRec(ev.pivot)?.ref) || str(asRec(ev.verse)?.ref) || targetNext;
         }
       } else {
         // Pairwise fallback when manually jumping to a target not present in top-15 single-anchor neighbors
-        const pairRes = await handleGetConnection(read, [fromNode, next], 5).catch(() => null);
+        const pairRes = await handleGetConnection(read, [fromNode, targetNext], 5, false, 'evidence').catch(() => null);
         const pairCand = asArr(pairRes?.complete_multi_anchor)
           .concat(asArr(pairRes?.direct_pairwise))
           .concat(asArr(pairRes?.indirect_paths))
@@ -2569,7 +3836,7 @@ export function createDiscoveryV2Server(
       const visitedSet = new Set(st.visited_nodes.map(v => v.toLowerCase()));
       const edgeSet = new Set(st.visited_edges);
       if (edgeId) edgeSet.add(edgeId);
-      const { resolvedNode, neighbors } = await fetchNodeNeighbors(read, toNode, visitedSet, edgeSet, limit);
+      const { resolvedNode, neighbors } = await fetchNodeNeighbors(read, toNode, visitedSet, edgeSet, limit, axis_filter, layer_mode);
       if (!visitedSet.has(toNode.toLowerCase())) st.visited_nodes.push(toNode);
       visitedSet.add(toNode.toLowerCase());
       if (!visitedSet.has(resolvedNode.toLowerCase())) st.visited_nodes.push(resolvedNode);
@@ -2589,21 +3856,22 @@ export function createDiscoveryV2Server(
       st.steps.push(newStep);
       st.current_node = resolvedNode;
 
-      const updated = await chainStore.update(chain, st, sessionId);
-      if (!updated.ok) return errorReply(updated.message, { code: updated.error });
+      const saved = await persistOrEncode();
+      if (!saved.ok) return errorReply(saved.message, { code: saved.error });
 
       return jsonReply({
         status: 'ok',
-        chain,
-        expires_at: updated.state.expires_at,
-        step: updated.state.steps.length,
+        view: resolvedView,
+        chain: saved.handle,
+        expires_at: saved.state.expires_at,
+        step: saved.state.steps.length,
         added_step: newStep,
-        current_node: updated.state.current_node,
-        path_trail: [updated.state.root, ...updated.state.steps.map(s => `${s.from_node} -> ${s.to_node} [${s.relation}]`)],
-        visited_count: updated.state.visited_nodes.length,
-        chain_epistemic_summary: summarizeChainEpistemics(updated.state.steps),
-        next_connections: neighbors,
-        branches: updated.state.branches,
+        current_node: saved.state.current_node,
+        path_trail: [saved.state.root, ...saved.state.steps.map(s => `${s.from_node} -> ${s.to_node} [${s.relation}]`)],
+        visited_count: saved.state.visited_nodes.length,
+        chain_epistemic_summary: summarizeChainEpistemics(saved.state.steps),
+        next_connections: withChainNext(neighbors, saved.state.current_node, resolvedView),
+        branches: saved.state.branches,
       });
     } catch {
       return errorReply('Connection chain traversal failed.');
@@ -2614,17 +3882,24 @@ export function createDiscoveryV2Server(
   server.registerTool('research', {
     title: 'Run targeted combined searches and calculations',
     description:
-      'Flexible composable investigation tool. Supply a natural-language query or an array of up to 8 operations in one call: evidence, occurrences, intersect_words, grammar_search, lxx, gematria, numbers, chronology_occurrences, geography_search, passage_compare, notes_search, set_combine, discover_patterns, compare_patterns, trace_evidence, genealogy, tribe_lineage, sacred_architecture, feasts_calendar.',
+      'Flexible composable investigation tool. Supply query, expand_id, or 1-8 structured operations (`{ op, ... }`). v3 flagship ops: `lxx_concordance`, `tri_textual_diff`, `clause_role_query`, `sequence_parallels`, `wordplay_scan`, `expand_clue`, and bitset `set_combine`, plus persistent Research Knowledge Graph ops (`kg_search`, `kg_dossier`, `kg_neighbors`, `kg_paths`, `kg_trace`, `kg_contradictions`, `kg_trail`), alongside `evidence`, `occurrences`, `intersect_words`, `grammar_search`, `lxx`, `gematria`, `numbers`, `chronology_occurrences`, `geography_search`, `passage_compare`, `notes_search`, `discover_patterns`, `compare_patterns`, `trace_evidence`, `literary_structure`, `genealogy`, `tribe_lineage`, `sacred_architecture`, `feasts_calendar`.',
     inputSchema: z.strictObject({
       query: z.string().trim().min(1).max(400).optional().describe('Shorthand query (evidence_id, passages to compare, or topic/concept).'),
-      operations: z.array(ResearchOpSchema).min(1).max(8).optional().describe('Batch of 1-8 declarative operations executed together with optional set_combine across results.'),
-      limit: z.number().int().min(1).max(50).optional().describe('Default per-operation result cap (default 15, max 50).'),
+      operations: z.array(ResearchOpInputSchema).min(1).max(8).optional().describe('Batch of 1-8 declarative operations executed together with optional set_combine across results.'),
+      limit: z.number().int().min(1).max(100).optional().describe('Default per-operation result cap (default 15, max 50).'),
+      view: ViewAliasSchema.optional().describe('Progressive detail level: "clues" (default), "evidence", or "full".'),
+      detail: ViewAliasSchema.optional().describe('Alias for view.'),
+      expand_id: z.string().trim().min(1).max(220).optional().describe('Optional expand_id handle to hydrate rich evidence on demand.'),
     }),
-    outputSchema: z.record(z.string(), z.unknown()),
     ...readOnlyMeta,
-  }, async ({ query, operations, limit }) => {
+  }, async ({ query, operations, limit, view, detail, expand_id }) => {
+    const resolvedView = resolveViewMode(view, detail);
     try {
-      const payload = await executeResearch(read, { query, operations, limit });
+      if (expand_id && !operations) {
+        const expDetail = resolvedView === 'full' ? 'full' : 'evidence';
+        return jsonReply(await expandClueById(read, expand_id, expDetail));
+      }
+      const payload = await executeResearch(read, { query, operations, limit, view: resolvedView, detail });
       return jsonReply(payload);
     } catch {
       return errorReply('Research query execution failed.');
@@ -2644,11 +3919,14 @@ export function createDiscoveryV2Server(
     });
 
     server.registerTool('write_Note', {
-      title: 'Create, update, delete, or save DLM study notes (user-authorized only)',
+      title: 'Create, update, delete, or save DLM/Knowledge Graph research (user-authorized only)',
       description:
-        'Preserves existing note-writing permissions, agent-key auth, ownership, kill switch, and DLM evidence separation. Only call when the user explicitly authorizes saving/updating/deleting a note. Supports action="create"|"update"|"delete"|"save_dlm".',
+        'Preserves existing note-writing permissions, agent-key auth, ownership, kill switch, and DLM evidence separation. Only call when the user explicitly authorizes saving/updating/deleting research. Supports note actions ("create"|"update"|"delete"|"save_dlm") and persistent Knowledge Graph actions ("kg_save_batch"|"kg_update_claim"|"kg_challenge"|"kg_supersede"|"kg_save_trail").',
       inputSchema: z.strictObject({
-        action: z.enum(['create', 'update', 'delete', 'save_dlm']).default('create'),
+        action: z.enum([
+          'create', 'update', 'delete', 'save_dlm',
+          'kg_save_batch', 'kg_update_claim', 'kg_challenge', 'kg_supersede', 'kg_save_trail',
+        ]).default('create'),
         note_id: z.string().trim().max(64).optional().describe('Required UUID for update or delete.'),
         expected_version: z.number().int().min(1).optional().describe('Required current version for update.'),
         title: z.string().trim().max(200).optional(),
@@ -2663,12 +3941,27 @@ export function createDiscoveryV2Server(
         source_context: z.record(z.string(), z.unknown()).optional(),
         model: z.string().trim().max(80).optional(),
         dlm: dlmCardInputSchema.optional().describe('Required payload when action="save_dlm".'),
+        kg: kgBatchInputSchema.optional().describe('Batch payload (nodes, claims, links) when action="kg_save_batch".'),
+        claim: kgClaimInputSchema.partial({ claim_kind: true, predicate: true, evidence_class: true }).optional().describe('Claim payload for kg_update_claim, kg_challenge, or kg_supersede.'),
+        target_claim_id: z.string().trim().max(64).optional().describe('Target claim UUID for kg_challenge or kg_supersede.'),
+        explanation: z.string().trim().max(1000).optional().describe('Explanation for kg_challenge link.'),
+        trail: kgTrailInputSchema.optional().describe('Research trail payload for kg_save_trail.'),
       }),
       outputSchema: z.record(z.string(), z.unknown()),
       ...writeMeta,
     }, async (args) => {
       const headers = getHeaders?.();
       const clientInfo = server.server.getClientVersion?.();
+
+      if (
+        args.action === 'kg_save_batch' ||
+        args.action === 'kg_update_claim' ||
+        args.action === 'kg_challenge' ||
+        args.action === 'kg_supersede' ||
+        args.action === 'kg_save_trail'
+      ) {
+        return await executeKgWriteAction(writer, args.action, args as unknown as Record<string, unknown>, clientInfo, headers);
+      }
 
       if (args.action === 'delete') {
         if (!args.note_id) return errorReply('note_id is required for action="delete".');
@@ -2776,17 +4069,10 @@ export function createDiscoveryV2Server(
     title: 'Get BibleResearch discovery guidelines prompt',
     description: 'Return the BibleResearch research guidelines explaining how to use the tools, verify connections with actual passages, and separate textual facts from hypotheses.',
     inputSchema: z.strictObject({}),
-    outputSchema: z.object({
-      version: z.string(),
-      instructions: z.string(),
-    }),
     ...readOnlyMeta,
-  }, () => ({
-    content: textReply(WORKFLOW_INSTRUCTIONS),
-    structuredContent: {
-      version: WORKFLOW_VERSION,
-      instructions: WORKFLOW_INSTRUCTIONS,
-    },
+  }, () => jsonReply({
+    version: WORKFLOW_VERSION,
+    instructions: WORKFLOW_INSTRUCTIONS,
   }));
 
   server.registerPrompt('bible_research', {

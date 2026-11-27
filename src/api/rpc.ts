@@ -8,6 +8,7 @@
 import { ensureReaderSession, restoreReaderSession, supabase } from './supabase';
 import { callCorpusRpc, isStaticCorpusRpc } from './corpus-client';
 import { NotesRPC } from './notes-rpc';
+import { ResearchGraphRPC } from './research-graph-rpc';
 import { RelationshipsRPC } from './relationships-rpc';
 import type { ActivePassage, ChronologyResponse, DataResult, HydratedCoOccurrence,
   RelationshipResearchPacket, TranslationSaveResult, VerseGeographyResponse, VerseTranslationToken,
@@ -21,6 +22,13 @@ import type { ActivePassage, ChronologyResponse, DataResult, HydratedCoOccurrenc
   HebrewSeptuagintAlignmentsResponse, HebrewSeptuagintCompareArgs,
   WordFormationResponse, OrthographicCandidatesResponse, VerseResearchV2Response } from './types';
 import type { ReaderPassage, ReaderOverview, ReaderWord, ReaderTimeline, ReaderSearchResult } from './types';
+import type { LiteraryAnalysisOptions, LiteraryAnalysisResult } from '../relationships/literary-types';
+import { analyzeLiteraryPassage } from '../relationships/literary-engine';
+import {
+  defaultLiteraryPackBaseUrl,
+  loadLiteraryVersesFromPack,
+  normalizePassageCoords,
+} from '../relationships/literary-pack-loader';
 
 // === @section:logic:sample-words ===
 // Negative IDs isolate fixtures from the database's positive word IDs.
@@ -238,16 +246,21 @@ async function readerRPC<T>(name: string, args: Record<string, unknown>): Promis
 const passageCache = new Map<string, ReaderPassage>();
 const passagePending = new Map<string, Promise<DataResult<ReaderPassage | null>>>();
 const passageKey = (p: ActivePassage) => `webp-2026-11:${p.book}:${p.chapter}:${p.verse}`;
-async function readerPassages(passages: ActivePassage[]): Promise<void> {
+async function readerPassages(passages: ActivePassage[]): Promise<ReaderPassage[]> {
   const missing = passages.filter(p => !passageCache.has(passageKey(p))).slice(0, 12);
-  if (!missing.length) return;
-  const response = await readerRPC<{ status: string; passages: ReaderPassage[] }>('get_reader_passages_v1', { p_passages: missing });
-  if (response.data?.status !== 'ok') return;
-  for (const item of response.data.passages) {
-    if (!item.text) continue;
-    if (passageCache.size >= 150) passageCache.delete(passageCache.keys().next().value!);
-    passageCache.set(passageKey(item.passage), item);
+  if (missing.length) {
+    const response = await readerRPC<{ status: string; passages: ReaderPassage[] }>('get_reader_passages_v1', { p_passages: missing });
+    if (response.data?.status === 'ok') {
+      for (const item of response.data.passages) {
+        if (!item.text) continue;
+        if (passageCache.size >= 150) passageCache.delete(passageCache.keys().next().value!);
+        passageCache.set(passageKey(item.passage), item);
+      }
+    }
   }
+  return passages
+    .map(p => passageCache.get(passageKey(p)))
+    .filter((item): item is ReaderPassage => !!item);
 }
 function readerPassage(p: ActivePassage): Promise<DataResult<ReaderPassage | null>> {
   const key = passageKey(p), cached = passageCache.get(key);
@@ -429,7 +442,51 @@ export const BibleRPC = {
   researchRelationships,
   getWordPopupDetails: wordDetails,
   notes: NotesRPC,
+  graph: ResearchGraphRPC,
   relationships: RelationshipsRPC,
+  async analyzeLiteraryStructure(params: {
+    passage?: string;
+    passages?: { book: number; chapter: number; verse?: number; start_verse?: number; end_verse?: number }[];
+    book?: number;
+    chapter?: number;
+    start_verse?: number;
+    end_verse?: number;
+    detail?: LiteraryAnalysisOptions['detail'];
+    compare_lxx?: boolean;
+    include_alternatives?: boolean;
+    min_strength?: number;
+  }): Promise<DataResult<(LiteraryAnalysisResult & { status: string }) | null>> {
+    try {
+      const coords = normalizePassageCoords(params);
+      if (!coords.length) {
+        return result(null, 'live', 'No canonical passage coordinates provided.');
+      }
+      const { verses, truncated } = await loadLiteraryVersesFromPack(defaultLiteraryPackBaseUrl(), coords);
+      if (!verses.length) {
+        return result(null, 'live', 'Literary source verses unavailable.');
+      }
+      const detail = params.detail ?? 'standard';
+      const label =
+        params.passage?.trim() ||
+        `${verses[0].book}:${verses[0].chapter}:${verses[0].verse_nr}-${verses[verses.length - 1].verse_nr}`;
+      const analysis = analyzeLiteraryPassage(
+        {
+          passage: label,
+          verses,
+          truncated,
+        },
+        {
+          detail,
+          compareLxx: Boolean(params.compare_lxx),
+          includeAlternatives: params.include_alternatives ?? (detail !== 'compact'),
+          minStrength: params.min_strength ?? 0,
+        }
+      );
+      return result({ status: 'ok', ...analysis }, 'live');
+    } catch (err) {
+      return result(null, 'live', err instanceof Error ? err.message : 'Literary analysis failed.');
+    }
+  },
   async resolveWordId(query: string): Promise<number | null> {
     if (!supabase) return null;
     try {

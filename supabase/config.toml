@@ -1,5 +1,23 @@
 project_id = "ejoperxiwxlcbsqrkrvb"
 
+[db]
+major_version = 17
+
+[db.migrations]
+# Historical pre-20261126 migrations have out-of-order timestamps and pre-Cloudflare
+# reclamation schema drift. Local startup uses the production-faithful DDL baseline
+# in supabase/local/ plus minimal reference seeds and post-20261126 migrations.
+enabled = false
+
+[db.seed]
+enabled = true
+sql_paths = [
+  "./local/00_extensions.sql",
+  "./local/00_production_schema.sql",
+  "./local/01_minimal_seed.sql",
+  "./migrations/20261126*.sql",
+]
+
 [auth]
 enable_anonymous_sign_ins = true
 

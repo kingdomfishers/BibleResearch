@@ -152,6 +152,10 @@ export interface NoteConnectionType {
   is_symmetric: boolean;
   description: string;
   is_system: boolean;
+  is_transitive?: boolean;
+  implies_equivalence?: boolean;
+  usage_tier?: string;
+  discouraged?: boolean;
 }
 
 // === @section:types:blocks ===
