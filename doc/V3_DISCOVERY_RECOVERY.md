@@ -46,3 +46,14 @@ Root causes isolated via `verify-r12-worker.mjs --mode v3` and Git diff inspecti
 | Wordplay negative `H5986 ↔ H5971` | — | `attested_textual_wordplay: false`, `wordplay_candidate: false` | — | PASS |
 
 Local gate checks: `verify-r12-worker.mjs --mode v3` (`0` HTTP errors, `0` HTTP 1102), `verify-corpus-security.mjs` (`PASS`, `19` assertions), `verify-research-workflow.mjs` (`PASS`, `26` rubrics), `tsc --noEmit` (`0`), and `vite build` (`0`).
+
+## 5. Post-Deploy Cold & Warm CPU Hardening
+
+Live Cloudflare Free (`ZRH` PoP) verification after the initial deploy surfaced cold-isolate `HTTP 503 Worker exceeded resource limits` (`1102`) bursts when requests loaded large uncached assets or enumerated excessive candidates. Profiling `discoverBiblicalConnections` and `workerd` CPU traces isolated and fixed the following remaining hotspots:
+
+- **Bounded E2 cross-reference & target hydration (`src/relationships/r10-discovery.ts`):** Scaled `e2SliceLimit` inversely with passage span length (`max(4, ceil(36 / verses))` vs `28` per verse) and replaced the per-verse hydration quota (`4` per verse) with a global cap (`2` total on passage-only queries, `1` on mixed), preventing `555`-candidate explosions on chapters like `Zechariah 4`.
+- **Response payload size bounds (`src/relationships/r10-discovery.ts`):** Capped `clusters` (`6`), `bridges` (`8`), `connection_paths` (`8`), and `related_discoveries.cross_references` (`20`), reducing full JSON responses from up to `440 KB` (`Zechariah 4`) / `301 KB` (`Isaiah 55:8-13`) and keeping serialization well inside Cloudflare Free limits.
+- **Lazy `motifs-and-patterns.json.gz` & genealogy fallback (`src/relationships/r10-discovery.ts`, `src/relationships/subgraph-engine.ts`):** Avoided cold `827 KB` gzip (`1.37 MB` JSON) decodes in `E2` unless `motifsData` is already loaded, and gated `subgraph-engine.ts`'s `genealogy_index_b64gz` check to lexical/person subgraphs lacking direct inter-anchor edges.
+- **`resolveDisplaySense` early exit & `lite_subgraph_mode` Tier-5 trim (`src/relationships/r10-discovery.ts`):** Bounded `prof.forms` scanning (`max 80` scanned / `6` matched instead of scanning 550+ forms per candidate) and skipped Tier-5 `r12PropertyBridgeToRecord` / optional orthographic expansion during `lite_subgraph_mode`.
+- **Native async gzip streaming & LRU ceiling (`scripts/corpus-worker.mjs`):** Restored `MAX_SINGLE_LRU_BYTES = 4 MiB` and `DecompressionStream('gzip')` for compressed shards `>= 32 KB` (`v3` `workerd` handler CPU p50 `4.828 ms`, p99 `11.119 ms`, `0` `1102`).
+

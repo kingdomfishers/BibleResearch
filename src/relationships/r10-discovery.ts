@@ -319,7 +319,15 @@ function resolveDisplaySense(
   const matchingExplicitToks = (explicitToks || []).filter(t => t.s === prof.bs && (t.g || t.lk));
   const explicitLks = new Set(matchingExplicitToks.map(t => String(t.lk || '').toLowerCase()).filter(Boolean));
   const witnessVids = new Set(witnessPassages.map(p => Number(p.verse_id || 0)).filter(v => v > 0));
-  const matchingForms = (prof.forms || []).filter(f => f.vid && witnessVids.has(f.vid) && f.gl);
+  const matchingForms: any[] = [];
+  const profForms = prof.forms || [];
+  for (let fi = 0; fi < profForms.length && fi < 80; fi++) {
+    const f = profForms[fi];
+    if (f?.vid && witnessVids.has(f.vid) && f.gl) {
+      matchingForms.push(f);
+      if (matchingForms.length >= 6) break;
+    }
+  }
   const snippetTexts = witnessPassages.slice(0, 6).map(p => p.snippet).filter((s): s is string => Boolean(s));
 
   const explicitStemsList = matchingExplicitToks.filter(t => t.g).map(t => extractSenseStems(t.g));
@@ -3560,7 +3568,7 @@ export async function discoverBiblicalConnections(
           ? 'lexical'
           : 'open_discovery';
   const profileSliceLimit = isPassageOnlyQuery
-    ? (query.mode === 'bridge' ? 6 : (explicitPassageVidSet.size > 1 ? Math.min(7, Math.max(5, explicitPassageVidSet.size)) : 5))
+    ? (query.mode === 'bridge' ? 6 : (query.lite_subgraph_mode ? 4 : 5))
     : (resolvedConcepts.length >= 3 ? Math.min(8, resolvedConcepts.length * 2 + 2) : 6);
   const rawCandidateStrongs = [...new Set([...prioritized, ...matchedStrongs])];
   const orderedCandidateStrongs = isPassageOnlyQuery
@@ -4161,10 +4169,12 @@ export async function discoverBiblicalConnections(
   // E2. Passage-level Embedded Cross-References, Structural Scenes & Chronological Events
   const surfacedXrefTargetVids = new Set<number>();
   if (explicitPassageMeta.length > 0) {
-    const needEventsMd = explicitPassageMeta.some(m => m.eventIds.length > 0);
-    const mdForEvents = needEventsMd ? await ensureMotifsData() : null;
-    const e2SliceLimit = isPassageOnlyQuery && query.mode !== 'bridge' ? 28 : 8;
-    const e2HydrateLimit = query.mode === 'bridge' ? 0 : (isPassageOnlyQuery ? 4 : 2);
+    const mdForEvents = motifsData && explicitPassageMeta.some(m => m.eventIds.length > 0) ? motifsData : null;
+    const e2SliceLimit = explicitPassageMeta.length > 1
+      ? Math.max(4, Math.ceil(36 / explicitPassageMeta.length))
+      : (isPassageOnlyQuery && query.mode !== 'bridge' ? 24 : 8);
+    const e2MaxTotalHydrate = query.mode === 'bridge' ? 0 : (isPassageOnlyQuery ? 2 : 1);
+    let e2TotalHydrated = 0;
     for (const { ep, xrefs, eventIds, scenes, contentStrongs } of explicitPassageMeta) {
       const seedContentSet = new Set(contentStrongs.filter(s => !HIGH_FREQ_CONTENT_STOP_STRONGS.has(s)));
       const seedLxxToSource = new Map<string, string[]>();
@@ -4225,17 +4235,16 @@ export async function discoverBiblicalConnections(
       });
       preScoredXrefs.sort((a, b) => b.preScore - a.preScore || a.toVid - b.toVid);
 
-      let hydratedTargetCount = 0;
       for (const item of preScoredXrefs.slice(0, e2SliceLimit)) {
         const { toVid, toRef, phrase, isReciprocal, isCrossTest, hasTupleStats } = item;
         surfacedXrefTargetVids.add(toVid);
         const toBook = bookForVid(toVid);
-        const canHydrate = !hasTupleStats && hydratedTargetCount < e2HydrateLimit && budget.used < budget.max - 8;
+        const canHydrate = !hasTupleStats && e2TotalHydrated < e2MaxTotalHydrate && budget.used < budget.max - 8;
         const rawToPassage: R10PassageRef = (canHydrate
           ? await hydratePassageByVid(toVid, false)
           : null) || buildRefStub(toVid, toRef);
         const toPassage = applyRangeRef(rawToPassage, toRef);
-        if (canHydrate) hydratedTargetCount++;
+        if (canHydrate) e2TotalHydrated++;
 
         let sharedContentCount = item.lexCount;
         let lxxBridgeCount = item.lxxCount;
@@ -5290,10 +5299,12 @@ export async function discoverBiblicalConnections(
         r12TailCursor = String(offset + limit);
       }
 
-      const props: any[] = anchorData.property_bridges || [];
-      for (const b of props.slice(0, 6)) {
-        allCandidates.push(demoteR12IfBackground(r12PropertyBridgeToRecord(anchorData, b), false));
-        r12PropertyCount++;
+      if (!query.lite_subgraph_mode) {
+        const props: any[] = anchorData.property_bridges || [];
+        for (const b of props.slice(0, 6)) {
+          allCandidates.push(demoteR12IfBackground(r12PropertyBridgeToRecord(anchorData, b), false));
+          r12PropertyCount++;
+        }
       }
 
       const structs: any[] = anchorData.structural_candidates || [];
@@ -5302,12 +5313,14 @@ export async function discoverBiblicalConnections(
         r12StructuralCount++;
       }
 
-      const orths: any[] = [...(anchorData.orthographic_candidates || [])].sort(
-        (a, b) => Number((b.cooccurrence_verses || 0) > 0) - Number((a.cooccurrence_verses || 0) > 0) || (b.score || 0) - (a.score || 0)
-      );
-      for (const o of orths.slice(0, 5)) {
-        allCandidates.push(demoteR12IfBackground(r12OrthographicToRecord(anchorData, o), false));
-        r12OrthographicCount++;
+      if (!query.lite_subgraph_mode || query.filters?.include_orthographic) {
+        const orths: any[] = [...(anchorData.orthographic_candidates || [])].sort(
+          (a, b) => Number((b.cooccurrence_verses || 0) > 0) - Number((a.cooccurrence_verses || 0) > 0) || (b.score || 0) - (a.score || 0)
+        );
+        for (const o of orths.slice(0, 5)) {
+          allCandidates.push(demoteR12IfBackground(r12OrthographicToRecord(anchorData, o), false));
+          r12OrthographicCount++;
+        }
       }
     }
   }
@@ -6484,9 +6497,9 @@ export async function discoverBiblicalConnections(
       multi_cluster_mode: clusters.length >= 2,
     },
     strongest_connections: summaries,
-    clusters: query.lite_subgraph_mode ? [] : clusters,
-    bridges: query.lite_subgraph_mode ? [] : bridges,
-    connection_paths: connectionPaths,
+    clusters: query.lite_subgraph_mode ? [] : clusters.slice(0, 6),
+    bridges: query.lite_subgraph_mode ? [] : bridges.slice(0, 8),
+    connection_paths: connectionPaths.slice(0, 8),
     related_discoveries: query.lite_subgraph_mode
       ? {
           additional_motifs: [],
@@ -6503,7 +6516,7 @@ export async function discoverBiblicalConnections(
             passage_count: motifsData?.motifs?.[mId]?.total_verses || 0,
           })),
           roots_and_wordplay: summaries.filter(s => s.predicate === 'orthographic_wordplay' || s.predicate === 'orthographic_overlap' || s.predicate === 'cross_language_bridge'),
-          cross_references: crossReferencesOut,
+          cross_references: crossReferencesOut.slice(0, 20),
           literary_parallels: summaries.filter(s => s.predicate === 'literary_pattern' || s.predicate === 'literary_correspondence'),
           biblical_events: matchedEvents.slice(0, 6).map(e => ({
             event_id: e.event_id,

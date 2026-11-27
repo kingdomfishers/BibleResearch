@@ -994,8 +994,18 @@ export async function findConnectedSubgraph(
     }
   }
 
-  // Also check genealogy_index_b64gz in motifs-and-patterns.json.gz for direct kinship edges between resolved Strong's
-  try {
+  const hasDirectInterAnchorEdge = (() => {
+    if (anchorRecords.length < 2) return false;
+    for (const edge of edgesById.values()) {
+      const ua = nodesById.get(edge.from_node)?.anchor_indices || [];
+      const va = nodesById.get(edge.to_node)?.anchor_indices || [];
+      if (ua.length > 0 && va.length > 0 && ua.some(u => va.some(v => u !== v))) return true;
+    }
+    return false;
+  })();
+
+  // Also check genealogy_index_b64gz in motifs-and-patterns.json.gz only for non-passage lexical/person subgraphs lacking direct edges
+  if (!hasDirectInterAnchorEdge && anchorRecords.every(a => a.resolved_refs.length === 0) && anchorRecords.some(a => a.resolved_strongs.length > 0)) try {
     const mpRes = await reader.readJson('/v2/relationships/r11-v1.0/r10/motifs-and-patterns.json.gz');
     const mp = mpRes?.data as any;
     if (mp?.genealogy_index_b64gz && reader.decodeB64GzJson) {
