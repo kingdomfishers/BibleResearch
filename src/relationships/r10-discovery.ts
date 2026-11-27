@@ -278,7 +278,7 @@ function extractSenseStems(text: string): Set<string> {
       if (ms.length >= 3) stems.add(ms);
     }
   }
-  if (SENSE_STEMS_CACHE.size >= 4096) SENSE_STEMS_CACHE.clear();
+  if (SENSE_STEMS_CACHE.size >= 512) SENSE_STEMS_CACHE.clear();
   SENSE_STEMS_CACHE.set(raw, stems);
   return stems;
 }

@@ -119,9 +119,9 @@ const PINNED_BASE_PATHS = new Set([
 const pinnedBaseCache = new Map();
 const shardLru = new Map();
 let shardInflightCount = 0;
-const MAX_LRU_SHARDS = 256;
-const MAX_LRU_BYTES = 16 * 1024 * 1024;
-const MAX_SINGLE_LRU_BYTES = 4 * 1024 * 1024;
+const MAX_LRU_SHARDS = 64;
+const MAX_LRU_BYTES = 6 * 1024 * 1024;
+const MAX_SINGLE_LRU_BYTES = 2 * 1024 * 1024;
 let shardLruBytes = 0;
 let r12TraceIsolateId;
 
@@ -132,9 +132,9 @@ let pinnedV3Bmw = null;
 let pinnedV3Nodes = undefined;
 const pinnedV3Idx = new Map();
 const v3BinaryCache = new Map();
-const MAX_V3_BINARY_ENTRIES = 36;
+const MAX_V3_BINARY_ENTRIES = 8;
 const v3RecordLru = new Map();
-const MAX_V3_RECORDS = 2048;
+const MAX_V3_RECORDS = 512;
 const v3Lru = new Map();
 let v3LruBytes = 0;
 const MAX_V3_LRU_ENTRIES = 4;
