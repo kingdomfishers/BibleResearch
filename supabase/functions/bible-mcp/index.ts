@@ -15,6 +15,7 @@ import { registerDlmWriteTools } from './dlm-notes.ts';
 import { createChainStore } from './chain-store.ts';
 import { formatRef } from './bible-ref.ts';
 import { createDiscoveryV2Server, V2_READ_TOOL_NAMES } from './discovery-v2-tools.ts';
+import { SUPABASE_DISCOVERY_COMPUTE_RPCS, executeSupabaseDiscoveryRpc } from './discovery-runtime.ts';
 
 // === @section:types ===
 export interface DatabaseConfig {
@@ -258,6 +259,25 @@ export function createDatabaseReader(
     const pageLimit = single ? 1 : limit;
     const pageOffset = single ? 0 : offset;
     const corpusBase = (resolveCorpusUrl?.() || config.corpusUrl || DEFAULT_CORPUS_URL).replace(/\/+$/, '');
+    if (SUPABASE_DISCOVERY_COMPUTE_RPCS.has(name)) {
+      const payload = await executeSupabaseDiscoveryRpc(name, args ?? {}, {
+        corpusBase,
+        fetcher,
+      });
+      return {
+        source: 'live',
+        rows: [{
+          ...payload,
+          verification_release: {
+            mcp_release: WORKFLOW_VERSION,
+            compute_host: 'supabase-edge',
+            corpus_target: corpusBase.includes('staging') ? 'staging' : 'production',
+            corpus_url: corpusBase,
+          },
+        }],
+        page: { limit: 1, offset: 0, has_more: false, next_offset: null },
+      };
+    }
     if (corpusRpcs.has(name)) {
       try {
         const corpReq: RequestInit = {
@@ -538,6 +558,7 @@ export function createApp(config: DatabaseConfig, fetcher: typeof fetch = fetch)
         writes: writesEnabled ? 'enabled' : 'disabled',
         corpus_target: corpusTarget,
         corpus_url: activeCorpusUrl,
+        discovery_compute: 'supabase-edge',
         tools: legacyTools,
         prompts: Object.keys(PROMPTS).length,
       } : {
@@ -551,12 +572,47 @@ export function createApp(config: DatabaseConfig, fetcher: typeof fetch = fetch)
         writes: writesEnabled ? 'enabled' : 'disabled',
         corpus_target: corpusTarget,
         corpus_url: activeCorpusUrl,
+        discovery_compute: 'supabase-edge',
         tools: v2Tools,
         prompts: 1,
         legacy_endpoint: '/legacy/mcp',
         legacy_tools: legacyTools,
         legacy_prompts: Object.keys(PROMPTS).length,
       }));
+    }
+    const rpcMatch = path.match(/^(?:\/(?:functions\/v1\/)?bible-mcp(?:-staging)?)?\/v1\/rpc\/([a-z0-9_]+)$/i);
+    if (rpcMatch && (request.method === 'POST' || request.method === 'GET')) {
+      const op = rpcMatch[1];
+      if (!SUPABASE_DISCOVERY_COMPUTE_RPCS.has(op)) {
+        return withCors(Response.json({ error: 'unsupported_rpc_operation', operation: op }, { status: 404 }));
+      }
+      let params: Record<string, unknown> = {};
+      if (request.method === 'POST') {
+        try {
+          const text = await request.text();
+          if (text.trim()) params = JSON.parse(text) as Record<string, unknown>;
+        } catch {
+          return withCors(Response.json({ error: 'invalid_json_body' }, { status: 400 }));
+        }
+      } else {
+        const u = new URL(request.url);
+        for (const [k, v] of u.searchParams.entries()) params[k] = v;
+      }
+      const corpusUrl = config.corpusUrl || (path.includes('bible-mcp-staging') ? DEFAULT_STAGING_CORPUS_URL : DEFAULT_CORPUS_URL);
+      try {
+        const payload = await executeSupabaseDiscoveryRpc(op, params, { corpusBase: corpusUrl, fetcher });
+        const resp = withCors(Response.json(payload));
+        resp.headers.set('X-BibleResearch-Compute', 'supabase-edge');
+        resp.headers.set('Access-Control-Expose-Headers', 'X-BibleResearch-Compute');
+        return resp;
+      } catch (err) {
+        const resp = withCors(Response.json(
+          { error: 'discovery_compute_failed', message: err instanceof Error ? err.message : String(err) },
+          { status: 502 },
+        ));
+        resp.headers.set('X-BibleResearch-Compute', 'supabase-edge');
+        return resp;
+      }
     }
     const isLegacy = legacyPaths.has(path);
     if (!v2Paths.has(path) && !isLegacy) return withCors(Response.json({ error: 'Not found' }, { status: 404 }));

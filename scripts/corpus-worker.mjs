@@ -3239,6 +3239,82 @@ const corpusWorker = {
     const pathname = url.pathname;
 
     try {
+      // Zero-copy static shard / packed v3 passthrough for Supabase Edge discovery compute host.
+      // Security: /tables/* and /v1/* are blocked upstream by withCorpusSecurity; never bypass those prefixes.
+      if (
+        (request.method === 'GET' || request.method === 'HEAD') &&
+        ((pathname.startsWith('/v2/relationships/') && url.searchParams.get('raw') === '1') ||
+          pathname.startsWith('/v3/'))
+      ) {
+        if (pathname.includes('..') || !env.ASSETS) {
+          return jsonResponse({ error: 'invalid_asset_path', path: pathname }, 400, 'no-store');
+        }
+        const candidates =
+          pathname.startsWith('/v2/relationships/') && !pathname.endsWith('.gz')
+            ? [`${pathname}.gz`, pathname]
+            : [pathname];
+        const rangeHeader = request.headers.get('Range');
+        const rangeMatch = /^bytes=(\d+)-(\d+)$/.exec(rangeHeader || '');
+        const reqHeaders = {
+          'Accept-Encoding': 'identity',
+          ...(rangeHeader ? { Range: rangeHeader } : {}),
+        };
+        let assetRes = null;
+        let resolvedPath = pathname;
+        for (const cand of candidates) {
+          const assetReq = new Request(new URL(cand, 'https://corpus.internal').toString(), {
+            method: request.method === 'HEAD' && rangeMatch ? 'GET' : request.method,
+            headers: reqHeaders,
+          });
+          const res = await env.ASSETS.fetch(assetReq);
+          if (res.ok) {
+            assetRes = res;
+            resolvedPath = cand;
+            break;
+          }
+          await res.body?.cancel();
+        }
+        if (!assetRes) {
+          return jsonResponse({ error: 'asset_not_found', path: pathname }, 404, 'no-store');
+        }
+        const isActivePointer =
+          pathname === '/v2/relationships/active.json' ||
+          pathname === '/v2/relationships/active.json.gz';
+        const contentType = resolvedPath.endsWith('.gz')
+          ? 'application/gzip'
+          : resolvedPath.endsWith('.bin')
+            ? 'application/octet-stream'
+            : resolvedPath.endsWith('.json')
+              ? 'application/json; charset=utf-8'
+              : 'application/octet-stream';
+        const outHeaders = new Headers(CORS_HEADERS);
+        outHeaders.set('Content-Type', contentType);
+        outHeaders.set(
+          'Cache-Control',
+          isActivePointer ? 'public, max-age=300' : 'public, max-age=31536000, immutable'
+        );
+        if (pathname.startsWith('/v3/')) outHeaders.set('Accept-Ranges', 'bytes');
+        const contentRange = assetRes.headers.get('Content-Range');
+        if (contentRange) outHeaders.set('Content-Range', contentRange);
+        const contentLength = assetRes.headers.get('Content-Length');
+        if (contentLength) outHeaders.set('Content-Length', contentLength);
+        if (rangeMatch && assetRes.status === 200) {
+          const start = Number(rangeMatch[1]);
+          const end = Number(rangeMatch[2]);
+          const sliced = await readPackedRange(assetRes.body, start, end, env.__r12Trace);
+          outHeaders.set('Content-Range', `bytes ${start}-${end}/*`);
+          outHeaders.set('Content-Length', String(sliced.byteLength));
+          return new Response(request.method === 'HEAD' ? null : sliced, {
+            status: 206,
+            headers: outHeaders,
+          });
+        }
+        return new Response(request.method === 'HEAD' ? null : assetRes.body, {
+          status: assetRes.status,
+          headers: outHeaders,
+        });
+      }
+
       if (pathname === '/__integrity/chunks') return await handleCorpusChunkIntegrity(env, url);
       // 1. Health check
       if (pathname === '/health' || pathname === '/v1/health') {

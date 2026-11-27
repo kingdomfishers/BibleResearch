@@ -34,4 +34,24 @@ await fs.mkdir(mcpLiteraryDir, { recursive: true });
 for (const file of ['epistemic-taxonomy.ts', 'literary-structure.mjs', 'literary-types.ts', 'wordplay-engine.ts', 'literary-engine.ts', 'literary-pack-loader.ts']) {
   await fs.copyFile(path.join(root, 'src/relationships', file), path.join(mcpLiteraryDir, file));
 }
+const mcpDiscoveryDir = path.join(root, 'supabase/functions/bible-mcp/discovery');
+await fs.mkdir(mcpDiscoveryDir, { recursive: true });
+for (const file of [
+  'adjacency-loader.ts',
+  'epistemic-taxonomy.ts',
+  'motif-discovery.ts',
+  'multihop-types.ts',
+  'r10-discovery.ts',
+  'r10-types.ts',
+  'subgraph-engine.ts',
+  'symbolic-patterns.ts',
+  'tesserae-retrieval.ts',
+  'v3-binary-index.ts',
+  'v3-runtime-adapter.ts',
+  'v3-scorer.ts',
+  'v3-verifiers.ts',
+  'wordplay-engine.ts',
+]) {
+  await fs.copyFile(path.join(root, 'src/relationships', file), path.join(mcpDiscoveryDir, file));
+}
 console.log(`Built BibleResearch ${manifest.version} at ${output}`);

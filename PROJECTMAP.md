@@ -47,7 +47,7 @@ Use this index to locate code, then search the relevant paths with rg. Read a fi
 ## Corpus gateway, Supabase and Cloudflare
 
 - Browser gateway: [rpc.ts](src/api/rpc.ts), especially logic:request, logic:reader, logic:corpus-lookups, logic:gateway. Shared contracts start at [types.ts](src/api/types.ts).
-- Static routing/cache: [corpus-client.ts](src/api/corpus-client.ts), isStaticCorpusRpc, logic:registry, logic:client.
+- Static routing/cache: [corpus-client.ts](src/api/corpus-client.ts), isStaticCorpusRpc, logic:registry, logic:client (routes heavy discovery/subgraph RPCs to Supabase Edge `DISCOVERY_BASE_URL` and fast/static/`*_v3` RPCs to `CORPUS_BASE_URL`).
 - Supabase initialization/auth: [supabase.ts](src/api/supabase.ts). SQL contracts/history: [supabase/migrations/](supabase/migrations/); locate the latest relevant function definition with rg rather than loading every migration.
 - REST contract: [supabase/openapi.json](supabase/openapi.json).
 - Worker entry: [corpus-worker.mjs](scripts/corpus-worker.mjs); restricted fields: [corpus-security.mjs](scripts/corpus-security.mjs); config: [wrangler.corpus.jsonc](wrangler.corpus.jsonc).
@@ -56,7 +56,7 @@ Use this index to locate code, then search the relevant paths with rg. Read a fi
 
 ## MCP and integrations
 
-- Transport/database reader: [index.ts](supabase/functions/bible-mcp/index.ts), createApp, createDatabaseReader, logic:transport.
+- Transport/database reader & shared discovery HTTP RPC: [index.ts](supabase/functions/bible-mcp/index.ts), createApp, createDatabaseReader, logic:transport; Edge discovery compute host: [discovery-runtime.ts](supabase/functions/bible-mcp/discovery-runtime.ts) (synced `discovery/` modules via [build-research-plugin.mjs](scripts/build-research-plugin.mjs)).
 - Isolated public staging MCP: [staging.ts](supabase/functions/bible-mcp/staging.ts), fixed corpus-only routing with no database or notes tools; boundary tests: [verify-r12-staging-mcp.test.ts](scripts/verify-r12-staging-mcp.test.ts).
 - v2 discovery MCP (7 tools on /mcp; legacy on /legacy/mcp): [discovery-v2-tools.ts](supabase/functions/bible-mcp/discovery-v2-tools.ts), [word-model.ts](supabase/functions/bible-mcp/word-model.ts), [research-engine.ts](supabase/functions/bible-mcp/research-engine.ts), [bible-ref.ts](supabase/functions/bible-mcp/bible-ref.ts), [gematria.ts](supabase/functions/bible-mcp/gematria.ts), [chain-store.ts](supabase/functions/bible-mcp/chain-store.ts), [chain-evidence.ts](supabase/functions/bible-mcp/chain-evidence.ts) (match selected hops to retrieved evidence); tests: [verify-mcp-v2-local.mjs](scripts/verify-mcp-v2-local.mjs) (run with `--import ./scripts/mcp-deno-loader.mjs`), [verify-mcp-token-alignment.mjs](scripts/verify-mcp-token-alignment.mjs), [verify-mcp-v2-audit.mjs](scripts/verify-mcp-v2-audit.mjs) (`--live`, bounded audit without note writes).
 - Tools/catalog: [catalog.ts](supabase/functions/bible-mcp/catalog.ts); workflow: [research-workflow.ts](supabase/functions/bible-mcp/research-workflow.ts), [workflow-contract.ts](supabase/functions/bible-mcp/workflow-contract.ts), [research-lenses.ts](supabase/functions/bible-mcp/research-lenses.ts).

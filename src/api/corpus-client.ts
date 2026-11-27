@@ -41,9 +41,21 @@ export function clearCorpusSessionCache(): void {
 
 // === @section:logic:registry ===
 const DEFAULT_CORPUS_URL = 'https://bibleresearch-corpus.kingdomfishers-custom.workers.dev';
+const DEFAULT_DISCOVERY_URL = 'https://ejoperxiwxlcbsqrkrvb.supabase.co/functions/v1/bible-mcp';
 
 const rawEnvUrl = (import.meta.env?.VITE_CORPUS_BASE_URL as string | undefined)?.trim();
 export const CORPUS_BASE_URL = (rawEnvUrl && rawEnvUrl.length > 0 ? rawEnvUrl : DEFAULT_CORPUS_URL).replace(/\/+$/, '');
+
+const rawDiscoveryEnvUrl = (import.meta.env?.VITE_DISCOVERY_BASE_URL as string | undefined)?.trim();
+export const DISCOVERY_BASE_URL = (rawDiscoveryEnvUrl && rawDiscoveryEnvUrl.length > 0 ? rawDiscoveryEnvUrl : DEFAULT_DISCOVERY_URL).replace(/\/+$/, '');
+
+const SUPABASE_DISCOVERY_OPS = new Set([
+  'discover_biblical_connections_v1',
+  'discover_biblical_connections_v2',
+  'discover_subgraph_v1',
+  'get_connection_evidence_v1',
+  'expand_biblical_connection_v1',
+]);
 
 // Pure static-evidence RPCs only (`get_reader_word_v1` excluded because Supabase merges mutable custom_definition).
 const CORPUS_RO_OPS = new Set<string>([
@@ -131,17 +143,19 @@ export async function callCorpusRpc<T>(
   args: Record<string, unknown>,
   opts: CorpusClientOptions = {}
 ): Promise<DataResult<T | null>> {
-  const cacheKey = `rpc:${CORPUS_BASE_URL}:${name}:${JSON.stringify(args ?? {})}`;
+  const isEdgeDiscovery = SUPABASE_DISCOVERY_OPS.has(name);
+  const rpcBaseUrl = isEdgeDiscovery ? DISCOVERY_BASE_URL : CORPUS_BASE_URL;
+  const cacheKey = `rpc:${rpcBaseUrl}:${name}:${JSON.stringify(args ?? {})}`;
   if (!opts.bypassCache) {
     const hit = readCorpusCache<T>(cacheKey);
     if (hit !== undefined) return { data: hit, source: 'live', error: null };
   }
-  const timeoutMs = opts.timeoutMs ?? 8000;
+  const timeoutMs = opts.timeoutMs ?? (isEdgeDiscovery ? 12000 : 8000);
   try {
     const signal = opts.signal
       ? AbortSignal.any([opts.signal, AbortSignal.timeout(timeoutMs)])
       : AbortSignal.timeout(timeoutMs);
-    const response = await fetch(`${CORPUS_BASE_URL}/v1/rpc/${name}`, {
+    const response = await fetch(`${rpcBaseUrl}/v1/rpc/${name}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
       body: JSON.stringify(args ?? {}),
