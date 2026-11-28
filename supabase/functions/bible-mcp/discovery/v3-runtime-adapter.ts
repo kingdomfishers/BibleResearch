@@ -6,17 +6,23 @@
 import type { AssetReader } from './adjacency-loader.ts';
 import {
   NUM_VERSES,
+  coalescePackedRanges,
+  lookupCsrEdges,
+  lookupPackedKey,
+  lookupPprTop64,
+  lookupTerm,
   parseBmwIndex,
   parseCsrPart,
   parseNodesBin,
+  parsePackedIntIndex,
+  parsePackedKeyIndex,
   parsePprShard,
-  lookupCsrEdges,
-  lookupPprTop64,
-  lookupTerm,
   type BinaryNodesTable,
   type BmwIndex,
   type CsrEdge,
   type CsrPart,
+  type PackedIntIndex,
+  type PackedKeyIndex,
   type PprEntry,
   type PprShard,
 } from './v3-binary-index.ts';
@@ -32,6 +38,15 @@ import {
   type PivotRankedResult,
 } from './v3-scorer.ts';
 import type { ClauseSig, NtToken, OtAlignedSlot, OtLxxCandidateGroup } from './v3-verifiers.ts';
+import {
+  decodeCompactHreg,
+  parsePericopeTable,
+  parsePredSimTable,
+  type CompactHreg,
+  type PericopeTable,
+  type PredicateSimOracle,
+} from './v4-hreg-types.ts';
+import { parseRmacBmwIndex, type RmacBmwIndex } from './v4-rmac-index.ts';
 
 export interface V3NodesData {
   schema_version: number;
@@ -105,6 +120,15 @@ export interface V3ContextHooks {
   getV3MtLxx?: (vid: number) => Promise<any | null>;
   getV3MtLxxBatch?: (vids: number[]) => Promise<Map<number, any>>;
   getV3RahlfsConcordance?: (lemma: string) => Promise<any | null>;
+  // v4 hooks (zero-change compatible with v3-only callers)
+  getV4Pericopes?: () => Promise<PericopeTable | null>;
+  getV4PredSim?: () => Promise<PredicateSimOracle | null>;
+  getV4Rmac?: () => Promise<RmacBmwIndex | null>;
+  getV4Hreg?: (pericopeId: number) => Promise<CompactHreg | null>;
+  getV4HregBatch?: (pericopeIds: number[]) => Promise<Map<number, CompactHreg | null>>;
+  getV4EsideVid?: (vid: number) => Promise<{ vid: number; records: any[] } | null>;
+  getV4EsideVidBatch?: (vids: number[]) => Promise<Map<number, { vid: number; records: any[] } | null>>;
+  getV4EsideBs?: (bs: string) => Promise<{ bs: string; records: any[] } | null>;
 }
 
 const NODE_ENTITY_META_CACHE = new WeakMap<V3NodesData, Array<NodeAxisMeta | null | undefined>>();
@@ -241,6 +265,14 @@ export class V3RuntimeSession {
   private clausePromises = new Map<number, Promise<any | null>>();
   private mtLxxPromises = new Map<number, Promise<any | null>>();
   private rahlfsPromises = new Map<number, Promise<any | null>>();
+  private v4PericopePromise: Promise<PericopeTable | null> | null = null;
+  private v4PredSimPromise: Promise<PredicateSimOracle | null> | null = null;
+  private v4RmacPromise: Promise<RmacBmwIndex | null> | null = null;
+  private v4EsideVidIdxPromise: Promise<PackedIntIndex | null> | null = null;
+  private v4EsideBsIdxPromise: Promise<PackedKeyIndex | null> | null = null;
+  private v4HregCache = new Map<number, CompactHreg | null>();
+  private v4EsideVidCache = new Map<number, { vid: number; records: any[] } | null>();
+  private v4EsideBsCache = new Map<string, { bs: string; records: any[] } | null>();
   private utf8Decoder = new TextDecoder('utf-8');
 
   constructor(reader: AssetReader, hooks?: V3ContextHooks) {
@@ -564,6 +596,253 @@ export class V3RuntimeSession {
     }
     const shard = await p;
     return shard?.lemmas?.[clean] ?? null;
+  }
+
+  private async gunzipBytes(bytes: Uint8Array): Promise<Uint8Array> {
+    if (bytes.byteLength < 2 || bytes[0] !== 0x1f || bytes[1] !== 0x8b) return bytes;
+    if (typeof DecompressionStream === 'function') {
+      const ds = new DecompressionStream('gzip');
+      const ab = await new Response(new Blob([bytes as BlobPart]).stream().pipeThrough(ds)).arrayBuffer();
+      return new Uint8Array(ab);
+    }
+    return bytes;
+  }
+
+  getV4Pericopes(): Promise<PericopeTable | null> {
+    if (!this.v4PericopePromise) {
+      this.v4PericopePromise = (async () => {
+        if (this.hooks?.getV4Pericopes) {
+          const hit = await this.hooks.getV4Pericopes();
+          if (hit) return hit;
+        }
+        const [pBytes, vBytes] = await Promise.all([
+          this.readBinaryAsset('/v4/index/pericopes.bin'),
+          this.readBinaryAsset('/v4/index/vid-to-pericopes.bin'),
+        ]);
+        if (!pBytes || !vBytes) return null;
+        try {
+          return parsePericopeTable(pBytes, vBytes);
+        } catch {
+          return null;
+        }
+      })();
+    }
+    return this.v4PericopePromise;
+  }
+
+  getV4PredSim(): Promise<PredicateSimOracle | null> {
+    if (!this.v4PredSimPromise) {
+      this.v4PredSimPromise = (async () => {
+        if (this.hooks?.getV4PredSim) {
+          const hit = await this.hooks.getV4PredSim();
+          if (hit) return hit;
+        }
+        const bytes = await this.readBinaryAsset('/v4/index/pred-sim.bin');
+        if (!bytes) return null;
+        try {
+          return parsePredSimTable(bytes);
+        } catch {
+          return null;
+        }
+      })();
+    }
+    return this.v4PredSimPromise;
+  }
+
+  getV4Rmac(): Promise<RmacBmwIndex | null> {
+    if (!this.v4RmacPromise) {
+      this.v4RmacPromise = (async () => {
+        if (this.hooks?.getV4Rmac) {
+          const hit = await this.hooks.getV4Rmac();
+          if (hit) return hit;
+        }
+        const bytes = await this.readBinaryAsset('/v4/index/rmac-bmw.bin');
+        if (!bytes) return null;
+        try {
+          return parseRmacBmwIndex(bytes);
+        } catch {
+          return null;
+        }
+      })();
+    }
+    return this.v4RmacPromise;
+  }
+
+  async getV4Hreg(pericopeId: number): Promise<CompactHreg | null> {
+    if (!(pericopeId > 0)) return null;
+    if (this.v4HregCache.has(pericopeId)) return this.v4HregCache.get(pericopeId) ?? null;
+    if (this.hooks?.getV4Hreg) {
+      const h = await this.hooks.getV4Hreg(pericopeId);
+      this.v4HregCache.set(pericopeId, h);
+      return h;
+    }
+    const batch = await this.getV4HregBatch([pericopeId]);
+    return batch.get(pericopeId) ?? null;
+  }
+
+  async getV4HregBatch(pericopeIds: number[]): Promise<Map<number, CompactHreg | null>> {
+    const uniq = [...new Set((pericopeIds || []).filter((id) => Number.isInteger(id) && id > 0))];
+    const out = new Map<number, CompactHreg | null>();
+    if (uniq.length === 0) return out;
+    const missing: number[] = [];
+    for (const id of uniq) {
+      if (this.v4HregCache.has(id)) out.set(id, this.v4HregCache.get(id) ?? null);
+      else missing.push(id);
+    }
+    if (missing.length === 0) return out;
+    if (this.hooks?.getV4HregBatch) {
+      const res = await this.hooks.getV4HregBatch(missing);
+      for (const [id, val] of res.entries()) {
+        this.v4HregCache.set(id, val ?? null);
+        out.set(id, val ?? null);
+      }
+      return out;
+    }
+    const perTable = await this.getV4Pericopes();
+    if (!perTable) return out;
+    const byPack = new Map<number, Array<{ id: number; off: number; len: number }>>();
+    for (const id of missing) {
+      const meta = perTable.records[id - 1];
+      if (!meta) {
+        this.v4HregCache.set(id, null);
+        out.set(id, null);
+        continue;
+      }
+      let arr = byPack.get(meta.packFile);
+      if (!arr) { arr = []; byPack.set(meta.packFile, arr); }
+      arr.push({ id, off: meta.byteOff, len: meta.byteLen });
+    }
+    for (const [packFile, items] of byPack.entries()) {
+      items.sort((a, b) => a.off - b.off);
+      const packPath = `/v4/hreg/pack-${String(packFile).padStart(2, '0')}.bin`;
+      let packBytes: Uint8Array | null = null;
+      if (items.length <= 6 && typeof this.reader.readBinary === 'function') {
+        for (const it of items) {
+          const slice = await this.readBinaryAsset(`${packPath}#bytes=${it.off}-${it.off + it.len - 1}`);
+          if (!slice) { out.set(it.id, null); continue; }
+          try {
+            const plain = await this.gunzipBytes(slice);
+            const hreg = decodeCompactHreg(plain);
+            this.v4HregCache.set(it.id, hreg);
+            out.set(it.id, hreg);
+          } catch {
+            out.set(it.id, null);
+          }
+        }
+        continue;
+      }
+      packBytes = await this.readBinaryAsset(packPath);
+      if (!packBytes) continue;
+      for (const it of items) {
+        try {
+          const plain = await this.gunzipBytes(packBytes.subarray(it.off, it.off + it.len));
+          const hreg = decodeCompactHreg(plain);
+          this.v4HregCache.set(it.id, hreg);
+          out.set(it.id, hreg);
+        } catch {
+          out.set(it.id, null);
+        }
+      }
+    }
+    return out;
+  }
+
+  private getV4EsideVidIdx(): Promise<PackedIntIndex | null> {
+    if (!this.v4EsideVidIdxPromise) {
+      this.v4EsideVidIdxPromise = this.readBinaryAsset('/v4/eside/eside-vid.idx').then((b) =>
+        b ? parsePackedIntIndex(b) : null,
+      ).catch(() => null);
+    }
+    return this.v4EsideVidIdxPromise;
+  }
+
+  private getV4EsideBsIdx(): Promise<PackedKeyIndex | null> {
+    if (!this.v4EsideBsIdxPromise) {
+      this.v4EsideBsIdxPromise = this.readBinaryAsset('/v4/eside/eside-bs.idx').then((b) =>
+        b ? parsePackedKeyIndex(b) : null,
+      ).catch(() => null);
+    }
+    return this.v4EsideBsIdxPromise;
+  }
+
+  async getV4EsideVid(vid: number): Promise<{ vid: number; records: any[] } | null> {
+    if (!(vid >= 1 && vid <= NUM_VERSES)) return null;
+    if (this.v4EsideVidCache.has(vid)) return this.v4EsideVidCache.get(vid) ?? null;
+    if (this.hooks?.getV4EsideVid) {
+      const r = await this.hooks.getV4EsideVid(vid);
+      this.v4EsideVidCache.set(vid, r ?? null);
+      return r ?? null;
+    }
+    const batch = await this.getV4EsideVidBatch([vid]);
+    return batch.get(vid) ?? null;
+  }
+
+  async getV4EsideVidBatch(vids: number[]): Promise<Map<number, { vid: number; records: any[] } | null>> {
+    const uniq = [...new Set((vids || []).filter((v) => Number.isInteger(v) && v >= 1 && v <= NUM_VERSES))];
+    const out = new Map<number, { vid: number; records: any[] } | null>();
+    if (uniq.length === 0) return out;
+    const missing: number[] = [];
+    for (const v of uniq) {
+      if (this.v4EsideVidCache.has(v)) out.set(v, this.v4EsideVidCache.get(v) ?? null);
+      else missing.push(v);
+    }
+    if (missing.length === 0) return out;
+    if (this.hooks?.getV4EsideVidBatch) {
+      const res = await this.hooks.getV4EsideVidBatch(missing);
+      for (const [v, val] of res.entries()) {
+        this.v4EsideVidCache.set(v, val ?? null);
+        out.set(v, val ?? null);
+      }
+      return out;
+    }
+    const idx = await this.getV4EsideVidIdx();
+    if (!idx) return out;
+    const spans = coalescePackedRanges(idx, missing);
+    for (const span of spans) {
+      const packPath = `/v4/eside/pack-${String(span.fileIdx).padStart(2, '0')}.bin#bytes=${span.start}-${span.end}`;
+      const raw = await this.readBinaryAsset(packPath);
+      if (!raw) continue;
+      for (const it of span.items) {
+        try {
+          const plain = await this.gunzipBytes(raw.subarray(it.relStart, it.relStart + it.length));
+          const parsed = JSON.parse(this.utf8Decoder.decode(plain));
+          this.v4EsideVidCache.set(it.id, parsed);
+          out.set(it.id, parsed);
+        } catch {
+          this.v4EsideVidCache.set(it.id, null);
+          out.set(it.id, null);
+        }
+      }
+    }
+    return out;
+  }
+
+  async getV4EsideBs(rawBs: string): Promise<{ bs: string; records: any[] } | null> {
+    const bs = normStrongs4(rawBs) || String(rawBs || '').trim();
+    if (!bs) return null;
+    if (this.v4EsideBsCache.has(bs)) return this.v4EsideBsCache.get(bs) ?? null;
+    if (this.hooks?.getV4EsideBs) {
+      const r = await this.hooks.getV4EsideBs(bs);
+      this.v4EsideBsCache.set(bs, r ?? null);
+      return r ?? null;
+    }
+    const idx = await this.getV4EsideBsIdx();
+    if (!idx) return null;
+    const loc = lookupPackedKey(idx, bs);
+    if (!loc) {
+      this.v4EsideBsCache.set(bs, null);
+      return null;
+    }
+    const raw = await this.readBinaryAsset(`/v4/eside/pack-${String(loc.fileIdx).padStart(2, '0')}.bin#bytes=${loc.start}-${loc.start + loc.length - 1}`);
+    if (!raw) return null;
+    try {
+      const plain = await this.gunzipBytes(raw);
+      const parsed = JSON.parse(this.utf8Decoder.decode(plain));
+      this.v4EsideBsCache.set(bs, parsed);
+      return parsed;
+    } catch {
+      return null;
+    }
   }
 
   resolveNodeKey(nodes: V3NodesData, nodeId: number): string | null {

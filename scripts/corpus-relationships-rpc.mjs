@@ -35,7 +35,9 @@ import {
   intersectTerms,
   lookupTerm,
 } from '../src/relationships/v3-binary-index.ts';
-import { alignClauseSequencesPiecewise, alignTriTextualQuote } from '../src/relationships/v3-verifiers.ts';
+import { alignClauseSequencesPiecewise, alignTriTextualQuote, alignTriTextualQuoteV4 } from '../src/relationships/v3-verifiers.ts';
+import { queryRmacCandidates } from '../src/relationships/v4-rmac-index.ts';
+import { evaluateSmePair, runSeqlGeneralization } from '../src/relationships/v4-sme-engine.ts';
 import {
   V3RuntimeSession,
   buildClauseSigsFromV3Verse,
@@ -5845,7 +5847,9 @@ export async function handleTriTextualDiffV3(ctx, params = {}) {
   let otGroups = (await mapBatched(otVids, 4, ov => buildOtCandidateFromV3(session, ov, null, bmw, { loadProfiles: false })))
     .filter(Boolean)
     .map(attachPrior);
-  let alignment = alignTriTextualQuote(ntTokens, otGroups);
+  const runTriAlign = (ntT, groups) =>
+    alignTriTextualQuoteV4(ntT, groups, { hasCitationFormula: xrefPriors.size > 0 }) || alignTriTextualQuote(ntT, groups);
+  let alignment = runTriAlign(ntTokens, otGroups);
   const pass2Vids = alignment?.sources?.length > 0
     ? alignment.sources.slice(0, 2).map(s => Number(s.vid)).filter(Boolean)
     : otVids.slice(0, 2);
@@ -5856,7 +5860,7 @@ export async function handleTriTextualDiffV3(ctx, params = {}) {
     const enrichedByVid = new Map(enriched.map(g => [g.vid, g]));
     if (enrichedByVid.size > 0) {
       otGroups = otGroups.map(g => enrichedByVid.get(g.vid) || g);
-      alignment = alignTriTextualQuote(ntTokens, otGroups);
+      alignment = runTriAlign(ntTokens, otGroups);
     }
   }
   const status = alignment && alignment.sources.length > 0 ? 'ok' : 'no_alignment';
@@ -5914,6 +5918,8 @@ export async function handleClauseRoleQueryV3(ctx, params = {}) {
   const wantNeg = polarityParam === 'NEG' || polarityParam === 'NEGATIVE';
   const wantPos = polarityParam === 'POS' || polarityParam === 'POSITIVE';
   const idiomOnly = parseBoolParam(params.idiom_only, false);
+  const existentialOnly = parseBoolParam(params.existential_only, false);
+  const hoTypeFilter = params.ho_type ? String(params.ho_type).toUpperCase() : null;
   const predFilter = params.predicate ? normalizeBmwKey(params.predicate) : null;
   const subjFilter = params.subject || params.agent ? normalizeBmwKey(params.subject || params.agent) : null;
   const objFilter = params.object || params.patient ? normalizeBmwKey(params.object || params.patient) : null;
@@ -5926,6 +5932,11 @@ export async function handleClauseRoleQueryV3(ctx, params = {}) {
     if (wantNeg && cl.polarity !== 'negative' && !(cl.neg_markers?.length > 0)) return false;
     if (wantPos && cl.polarity === 'negative') return false;
     if (idiomOnly && !cl.slot_atom?.is_idiom) return false;
+    if (existentialOnly) {
+      const ps = normStrongs4(cl.predicate?.s);
+      const isEx = ps === 'H1961' || ps === 'H0369' || ps === 'H3426' || ps === 'H3808' || ps === 'G1510' || ps === 'G1096' || (cl.neg_markers || []).some((m) => /אין|לֹא|לא|οὐ|μὴ/i.test(String(m)));
+      if (!isEx) return false;
+    }
     if (predFilter && normStrongs4(cl.predicate?.s) !== predFilter && cl.predicate?.concept_id !== predFilter.replace(/^c:/, '')) return false;
     if (subjFilter && !(cl.subjects || []).some(s => normStrongs4(s) === subjFilter)) return false;
     if (objFilter && !(cl.objects || []).some(o => normStrongs4(o) === objFilter)) return false;
@@ -5961,6 +5972,7 @@ export async function handleClauseRoleQueryV3(ctx, params = {}) {
       mode: 'passage_clauses',
       total_clauses: totalClauses,
       verses: versesOut,
+      ...(hoTypeFilter ? { ho_type_filter: hoTypeFilter } : {}),
     };
   }
 
@@ -7016,6 +7028,108 @@ export async function handleSetCombineV3(ctx, params = {}) {
     vids: pagedVids,
     verses,
   };
+}
+
+/**
+ * 4. get_eside_interpretations_v4
+ */
+export async function handleGetEsideInterpretationsV4(ctx, params = {}) {
+  const session = createV3SessionFromCtx(ctx);
+  const vids = await resolvePassagesToVidsV3(ctx, params);
+  if (vids.length > 0) {
+    const slice = vids.slice(0, 24);
+    const batch = await session.getV4EsideVidBatch(slice);
+    const records = [];
+    for (const v of slice) {
+      const entry = batch.get(v);
+      if (entry?.records?.length) records.push(...entry.records);
+    }
+    return { schema_version: 4, status: 'ok', vids: slice, records };
+  }
+  const strongs = params.strongs || params.word ? String(params.strongs || params.word).trim() : '';
+  if (strongs) {
+    const entry = await session.getV4EsideBs(strongs);
+    return { schema_version: 4, status: 'ok', strongs, records: entry?.records || [] };
+  }
+  return { schema_version: 4, status: 'invalid_request', error: 'Provide passage/vid or strongs.' };
+}
+
+/**
+ * 5. discover_structural_analogies_v4
+ */
+export async function handleDiscoverStructuralAnalogiesV4(ctx, params = {}) {
+  const session = createV3SessionFromCtx(ctx);
+  const [perTable, simOracle, rmacIdx] = await Promise.all([
+    session.getV4Pericopes(),
+    session.getV4PredSim(),
+    session.getV4Rmac(),
+  ]);
+  if (!perTable || !simOracle || !rmacIdx) {
+    return { schema_version: 4, status: 'unavailable', error: 'v4 HREG/R-MAC indexes unavailable.' };
+  }
+  const vids = await resolvePassagesToVidsV3(ctx, params);
+  const pidSet = new Set();
+  for (const v of vids) {
+    for (const p of perTable.lookupVidPericopes(v)) pidSet.add(p);
+  }
+  for (const p of parseListParam(params.pericope_ids)) {
+    const n = Number(p);
+    if (Number.isInteger(n) && n >= 1 && n <= perTable.records.length) pidSet.add(n);
+  }
+  const seedPids = [...pidSet].slice(0, 6);
+  if (seedPids.length === 0) return { schema_version: 4, status: 'not_found', matches: [] };
+  const bMap = await session.getV4HregBatch(seedPids);
+
+  if (parseBoolParam(params.seql, false) && seedPids.length >= 3) {
+    const hregs = seedPids.map(p => bMap.get(p)).filter(Boolean);
+    if (hregs.length >= 3) {
+      return { schema_version: 4, status: 'ok', mode: 'seql', schema: runSeqlGeneralization(hregs, simOracle, { bPerm: 24 }) };
+    }
+  }
+
+  const candMap = new Map();
+  for (const sp of seedPids.slice(0, 2)) {
+    const bh = bMap.get(sp);
+    if (!bh) continue;
+    for (const c of queryRmacCandidates(rmacIdx, bh, { kTotal: 20, pericopeTable: perTable })) {
+      candMap.set(c.pericopeId, Math.max(candMap.get(c.pericopeId) || 0, c.combinedScore));
+    }
+  }
+  const candPids = [...candMap.entries()].sort((a, b) => b[1] - a[1]).slice(0, 16).map(x => x[0]);
+  const tMap = await session.getV4HregBatch(candPids);
+  const matches = [];
+  for (const sp of seedPids.slice(0, 2)) {
+    const bh = bMap.get(sp);
+    if (!bh) continue;
+    for (const tp of candPids) {
+      if (tp === sp) continue;
+      const th = tMap.get(tp);
+      if (!th) continue;
+      const ev = evaluateSmePair(bh, th, simOracle, { bPerm: 24 });
+      if (ev.pStruct < 0.05 && ev.deltaSmeStruct > 0) {
+        matches.push({
+          base_pericope_id: bh.pericopeId,
+          target_pericope_id: th.pericopeId,
+          target_start_vid: th.startVid,
+          target_end_vid: th.endVid,
+          regime: ev.regime,
+          classification: ev.classification,
+          sub_tag: ev.subTag,
+          sms: Number(ev.winning.sms.toFixed(3)),
+          p_struct: Number(ev.pStruct.toFixed(4)),
+          delta_sme_struct: Number(ev.deltaSmeStruct.toFixed(3)),
+          rho_ent: Number(ev.rhoEnt.toFixed(3)),
+          mapped_events: ev.winning.mappedEvents.length,
+          mapped_ho: ev.winning.mappedHo.length,
+          candidate_inferences: ev.candidateInferences.slice(0, 4),
+          divergences: ev.divergences.slice(0, 6),
+        });
+      }
+    }
+  }
+  matches.sort((a, b) => b.delta_sme_struct - a.delta_sme_struct || b.sms - a.sms);
+  const limit = clampLimit(params.limit, 8, 16);
+  return { schema_version: 4, status: 'ok', mode: 'sme_rmac', seed_pericope_ids: seedPids, matches: matches.slice(0, limit) };
 }
 
 

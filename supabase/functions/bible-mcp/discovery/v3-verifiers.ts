@@ -57,6 +57,10 @@ export interface TriTextualSplice {
   ntEndIdx: number;
   score: number;
   contentMatches: number;
+  maxContentIdf?: number;
+  isInversion?: boolean;
+  lxxStartIdx?: number;
+  lxxEndIdx?: number;
 }
 
 export interface TriTextualResult {
@@ -84,7 +88,7 @@ function normGreekLemma(raw: string): string {
     .toLowerCase()
     .replace(/ς/g, 'σ')
     .trim();
-  if (NORM_GREEK_CACHE.size >= 4096) NORM_GREEK_CACHE.clear();
+  if (NORM_GREEK_CACHE.size >= 32768) NORM_GREEK_CACHE.clear();
   NORM_GREEK_CACHE.set(key, normalized);
   return normalized;
 }
@@ -97,15 +101,33 @@ function greekStemPrefix(raw: string): string {
 
 interface SwPeak {
   cand: OtLxxCandidateGroup;
+  candIdx: number;
   ntStart: number;
   ntEnd: number;
+  coreStart: number;
+  coreEnd: number;
   lxxStart: number;
   lxxEnd: number;
   score: number;
   contentMatches: number;
   idfSum: number;
-  pairs: Array<{ ntIdx: number; lxxIdx: number; matchKind: 'exact_lxx' | 'stem_lxx' | 'mt_equiv' | 'func' }>;
+  maxContentIdf: number;
+  pairs: Array<{ ntIdx: number; lxxIdx: number; matchKind: 'exact_lxx' | 'stem_lxx' | 'mt_equiv' | 'func'; idfContribution: number; pairScore: number }>;
 }
+
+const BASIC_GREEK_FUNC_LEMMAS = new Set([
+  'ειμι', 'ο', 'και', 'δε', 'γαρ', 'αλλα', 'ουν', 'τε', 'μεν', 'η',
+  'ου', 'μη', 'ουδε', 'μηδε', 'ουτε', 'μητε', 'εν', 'εισ', 'εκ', 'απο',
+  'επι', 'προσ', 'δια', 'κατα', 'μετα', 'περι', 'υπο', 'υπερ', 'παρα',
+  'εγω', 'συ', 'αυτοσ', 'εαυτου', 'οσ', 'ουτοσ', 'εκεινοσ', 'τισ',
+  'οστισ', 'οτι', 'ινα', 'ωσ', 'εαν', 'ει', 'αν', 'ουτωσ', 'ουτω',
+  'νυν', 'ετι', 'τοτε', 'ιδου', 'καθωσ', 'ωσπερ',
+]);
+
+const CLAUSE_SPLIT_LEMMAS = new Set([
+  'και', 'δε', 'αλλα', 'γαρ', 'οτι', 'ουν', 'διο', 'εαν', 'ει', 'ινα',
+  'καθωσ', 'ωσπερ', 'ωσ', 'πλην', 'εωσ', 'μεχρι', 'οπου', 'οταν',
+]);
 
 interface PreparedNtToken {
   norm: string;
@@ -134,6 +156,11 @@ function scorePreparedPair(
       return { score: 0.50, isContentMatch: false, idfContribution: 0, kind: 'func' };
     }
     if (nt.isFunction || slot.isFunction) {
+      // Correlative/quantifier words (e.g. ὅσος) tagged as pron in MACULA but adj in LXX are lexical content when non-stopword
+      if (!slot.isFunction && !BASIC_GREEK_FUNC_LEMMAS.has(ntNorm) && idf >= 4.5) {
+        const w = Math.round(0.85 * idf * 100) / 100;
+        return { score: w, isContentMatch: true, idfContribution: w, kind: 'exact_lxx' };
+      }
       const rareFuncScore = idf >= 5.5 ? Math.min(2.6, Math.round(0.35 * idf * 100) / 100) : 0.60;
       return { score: rareFuncScore, isContentMatch: false, idfContribution: 0, kind: 'func' };
     }
@@ -157,38 +184,42 @@ function scorePreparedPair(
   return { score: -0.95, isContentMatch: false, idfContribution: 0, kind: 'mismatch' };
 }
 
-function extractNonOverlappingSmithWatermanPeaks(
-  ntTokens: NtToken[],
+function extractWindowSwPeaks(
+  pNt: PreparedNtToken[],
+  ntStartIdx: number,
+  ntEndIdx: number,
   cand: OtLxxCandidateGroup,
-  opts: { minScore: number; minContentMatches: number; minIdfSum: number },
-  prepNt?: PreparedNtToken[],
+  candIdx: number,
+  pSlots: PreparedSlot[],
+  minScore: number,
+  dpBuf: { H: Float64Array; dir: Uint8Array; usedNt: Uint8Array; usedLxx: Uint8Array },
 ): SwPeak[] {
-  const n = ntTokens.length;
+  const n = ntEndIdx - ntStartIdx + 1;
   const m = cand.slots.length;
-  if (n === 0 || m === 0) return [];
-
-  const pNt: PreparedNtToken[] = prepNt || ntTokens.map((t) => ({
-    norm: normGreekLemma(t.lemma),
-    stem: greekStemPrefix(t.lemma),
-    isFunction: Boolean(t.isFunction),
-  }));
-  const pSlots: PreparedSlot[] = cand.slots.map((s) => ({
-    norm: normGreekLemma(s.lxxLemma),
-    stem: greekStemPrefix(s.lxxLemma),
-    equivNorms: (s.mtEquivLemmas || []).map(normGreekLemma),
-    idf: Math.max(0.8, s.lxxIdf || 1.5),
-    isFunction: Boolean(s.isFunction),
-  }));
+  if (n <= 0 || m === 0) return [];
 
   const gapOpen = -1.10;
   const gapExtend = -0.55;
   const w = m + 1;
-  const H = new Float64Array((n + 1) * w);
-  const dir = new Uint8Array((n + 1) * w); // 0=stop, 1=diag, 2=up(gap in cand), 3=left(gap in nt)
+  const needed = (n + 1) * w;
+  if (dpBuf.H.length < needed) {
+    dpBuf.H = new Float64Array(needed);
+    dpBuf.dir = new Uint8Array(needed);
+  } else {
+    dpBuf.H.fill(0, 0, needed);
+    dpBuf.dir.fill(0, 0, needed);
+  }
+  if (dpBuf.usedNt.length < n) dpBuf.usedNt = new Uint8Array(n);
+  else dpBuf.usedNt.fill(0, 0, n);
+  if (dpBuf.usedLxx.length < m) dpBuf.usedLxx = new Uint8Array(m);
+  else dpBuf.usedLxx.fill(0, 0, m);
+
+  const H = dpBuf.H;
+  const dir = dpBuf.dir; // 0=stop, 1=diag, 2=up(gap in cand), 3=left(gap in nt)
 
   const candidates: Array<{ i: number; j: number; score: number }> = [];
   for (let i = 1; i <= n; i++) {
-    const ntP = pNt[i - 1];
+    const ntP = pNt[ntStartIdx + i - 1];
     for (let j = 1; j <= m; j++) {
       const k = i * w + j;
       const sub = scorePreparedPair(ntP, pSlots[j - 1]).score;
@@ -202,23 +233,27 @@ function extractNonOverlappingSmithWatermanPeaks(
       if (left > best) { best = left; d = 3; }
       H[k] = best;
       dir[k] = d;
-      if (best >= opts.minScore) {
+      if (best >= minScore) {
         candidates.push({ i, j, score: best });
       }
     }
   }
+  if (candidates.length === 0) return [];
 
   candidates.sort((a, b) => b.score - a.score);
-  const usedNt = new Uint8Array(n);
+  const usedNt = dpBuf.usedNt;
+  const usedLxx = dpBuf.usedLxx;
   const peaks: SwPeak[] = [];
 
   for (const c of candidates) {
+    if (usedNt[c.i - 1] || usedLxx[c.j - 1]) continue;
     let i = c.i;
     let j = c.j;
     const pairs: SwPeak['pairs'] = [];
     let conflict = false;
     let contentMatches = 0;
     let idfSum = 0;
+    let maxContentIdf = 0;
     let ntMin = n;
     let ntMax = -1;
     let lxxMin = m;
@@ -227,13 +262,20 @@ function extractNonOverlappingSmithWatermanPeaks(
     while (i > 0 && j > 0 && dir[i * w + j] !== 0) {
       const d = dir[i * w + j];
       if (d === 1) {
-        if (usedNt[i - 1]) { conflict = true; break; }
-        const evalRes = scorePreparedPair(pNt[i - 1], pSlots[j - 1]);
+        if (usedNt[i - 1] || usedLxx[j - 1]) { conflict = true; break; }
+        const evalRes = scorePreparedPair(pNt[ntStartIdx + i - 1], pSlots[j - 1]);
         if (evalRes.kind !== 'mismatch') {
-          pairs.push({ ntIdx: i - 1, lxxIdx: j - 1, matchKind: evalRes.kind });
+          pairs.push({
+            ntIdx: ntStartIdx + i - 1,
+            lxxIdx: j - 1,
+            matchKind: evalRes.kind,
+            idfContribution: evalRes.idfContribution,
+            pairScore: evalRes.score,
+          });
           if (evalRes.isContentMatch) {
             contentMatches++;
             idfSum += evalRes.idfContribution;
+            if (evalRes.idfContribution > maxContentIdf) maxContentIdf = evalRes.idfContribution;
           }
         }
         ntMin = Math.min(ntMin, i - 1);
@@ -246,90 +288,428 @@ function extractNonOverlappingSmithWatermanPeaks(
         if (usedNt[i - 1]) { conflict = true; break; }
         i--;
       } else {
+        if (usedLxx[j - 1]) { conflict = true; break; }
         j--;
       }
     }
 
     if (conflict || pairs.length === 0) continue;
-    if (contentMatches < opts.minContentMatches || idfSum < opts.minIdfSum) continue;
 
     for (let x = ntMin; x <= ntMax; x++) usedNt[x] = 1;
+    for (let y = lxxMin; y <= lxxMax; y++) usedLxx[y] = 1;
+    const orderedPairs = pairs.reverse();
+    const coreStart = orderedPairs[0].ntIdx;
+    const coreEnd = orderedPairs[orderedPairs.length - 1].ntIdx;
     peaks.push({
       cand,
-      ntStart: ntMin,
-      ntEnd: ntMax,
+      candIdx,
+      ntStart: coreStart,
+      ntEnd: coreEnd,
+      coreStart,
+      coreEnd,
       lxxStart: lxxMin,
       lxxEnd: lxxMax,
       score: Math.round(c.score * 100) / 100,
       contentMatches,
       idfSum: Math.round(idfSum * 100) / 100,
-      pairs: pairs.reverse(),
+      maxContentIdf: Math.round(maxContentIdf * 100) / 100,
+      pairs: orderedPairs,
     });
   }
 
   return peaks;
 }
 
-function expandAdaptationHalo(ntTokens: NtToken[], peak: SwPeak, haloRadius = 3): SwPeak {
-  const newNtStart = Math.max(0, peak.ntStart - haloRadius);
-  const newNtEnd = Math.min(ntTokens.length - 1, peak.ntEnd + haloRadius);
+function buildClauseWindows(ntTokens: NtToken[], pNt: PreparedNtToken[]): Array<[number, number]> {
+  const n = ntTokens.length;
+  if (n === 0) return [];
+  const windows: Array<[number, number]> = [[0, n - 1]];
+  const seen = new Set<string>([`0:${n - 1}`]);
+
+  const splitPoints: number[] = [0];
+  for (let i = 2; i < n - 1; i++) {
+    const prevSurf = ntTokens[i - 1]?.surface || '';
+    const hasPunct = /[.;·:]/.test(prevSurf);
+    const isConjBoundary = CLAUSE_SPLIT_LEMMAS.has(pNt[i].norm) && i - splitPoints[splitPoints.length - 1] >= 2 && n - i >= 2;
+    if (hasPunct || isConjBoundary) {
+      splitPoints.push(i);
+    }
+  }
+  splitPoints.push(n);
+
+  for (let k = 0; k < splitPoints.length - 1; k++) {
+    const s = splitPoints[k];
+    const e = splitPoints[k + 1] - 1;
+    if (e - s + 1 >= 2) {
+      const key = `${s}:${e}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        windows.push([s, e]);
+      }
+    }
+    // Also add merged pair of adjacent short clauses so multi-part phrases don't get fragmented
+    if (windows.length < 10 && k + 2 < splitPoints.length) {
+      const e2 = splitPoints[k + 2] - 1;
+      if (e2 - s + 1 <= 20) {
+        const key2 = `${s}:${e2}`;
+        if (!seen.has(key2)) {
+          seen.add(key2);
+          windows.push([s, e2]);
+        }
+      }
+    }
+    if (windows.length >= 12) break;
+  }
+  return windows;
+}
+
+function passesSpecificityGate(peak: SwPeak, hasCitationFormula: boolean): boolean {
+  if (peak.contentMatches >= 2 && peak.idfSum >= 5.2) return true;
+  if (hasCitationFormula && peak.contentMatches >= 1 && peak.maxContentIdf >= 8.5) return true;
+  return false;
+}
+
+function detectCitationFormulaInNtTokens(pNt: PreparedNtToken[]): boolean {
+  let hasGrapho = false;
+  let hasQuoteCue = false;
+  let hasLegw = false;
+  let hasScriptureOrProphet = false;
+  let hasPlhrow = false;
+  let hasHouto = false;
+  for (let i = 0; i < pNt.length; i++) {
+    const n = pNt[i].norm;
+    if (n === 'γραφω') hasGrapho = true;
+    if (n === 'καθωσ' || n === 'ωσ' || n === 'οτι' || n === 'γαρ' || n === 'διοτι') hasQuoteCue = true;
+    if (n === 'λεγω' || n === 'ερω' || n === 'ειπον') hasLegw = true;
+    if (n === 'γραφη' || n === 'προφητησ' || n === 'πνευμα' || n === 'μωυσησ' || n === 'δαυιδ' || n === 'ησαιασ') hasScriptureOrProphet = true;
+    if (n === 'πληροω') hasPlhrow = true;
+    if (n === 'ουτω' || n === 'ουτωσ') hasHouto = true;
+  }
+  return (hasGrapho && hasQuoteCue) || (hasLegw && (hasScriptureOrProphet || hasHouto)) || hasPlhrow;
+}
+
+function makeTrimmedSubPeak(peak: SwPeak, trimLeft: boolean): SwPeak | null {
+  if (peak.pairs.length < 3) return null;
+  const subPairs = trimLeft ? peak.pairs.slice(1) : peak.pairs.slice(0, -1);
+  const dropped = trimLeft ? peak.pairs[0] : peak.pairs[peak.pairs.length - 1];
+  let contentMatches = 0;
+  let idfSum = 0;
+  let maxContentIdf = 0;
+  let lxxMin = Number.MAX_SAFE_INTEGER;
+  let lxxMax = -1;
+  for (const pr of subPairs) {
+    if (pr.idfContribution > 0) {
+      contentMatches++;
+      idfSum += pr.idfContribution;
+      if (pr.idfContribution > maxContentIdf) maxContentIdf = pr.idfContribution;
+    }
+    if (pr.lxxIdx < lxxMin) lxxMin = pr.lxxIdx;
+    if (pr.lxxIdx > lxxMax) lxxMax = pr.lxxIdx;
+  }
+  const coreStart = subPairs[0].ntIdx;
+  const coreEnd = subPairs[subPairs.length - 1].ntIdx;
+  const newScore = Math.max(0, Math.round((peak.score - Math.max(0.2, dropped.pairScore)) * 100) / 100);
   return {
-    ...peak,
-    ntStart: newNtStart,
-    ntEnd: newNtEnd,
+    cand: peak.cand,
+    candIdx: peak.candIdx,
+    ntStart: coreStart,
+    ntEnd: coreEnd,
+    coreStart,
+    coreEnd,
+    lxxStart: lxxMin,
+    lxxEnd: lxxMax,
+    score: newScore,
+    contentMatches,
+    idfSum: Math.round(idfSum * 100) / 100,
+    maxContentIdf: Math.round(maxContentIdf * 100) / 100,
+    pairs: subPairs,
   };
 }
 
 /**
- * Online 3-Way MT <-> LXX <-> NT Halo Smith-Waterman & Composite Splice Detector.
- * Runs over Top <= 16 OT candidates in < 0.8 ms.
+ * BibleResearch v4 Order-Flexible Multi-Clause Frame-Splice 3-Way MT <-> LXX <-> NT Aligner.
+ * Runs clause-scoped + full-verse SW over Top-20 OT candidates, solves exact 1D interval-scheduling DP
+ * supporting A_left + B + A_right frame-splices and reversed OT clauses (-0.8 inversion vs -2.2 switch),
+ * and enforces the Strict Segment Specificity Gate.
  */
-export function alignTriTextualQuote(
+export function alignTriTextualQuoteV4(
   ntTokens: NtToken[],
   candidates: OtLxxCandidateGroup[],
+  opts?: { hasCitationFormula?: boolean },
 ): TriTextualResult | null {
-  const prepNt: PreparedNtToken[] = ntTokens.map((t) => ({
+  if (!ntTokens || ntTokens.length === 0 || !candidates || candidates.length === 0) return null;
+
+  const pNt: PreparedNtToken[] = ntTokens.map((t) => ({
     norm: normGreekLemma(t.lemma),
     stem: greekStemPrefix(t.lemma),
     isFunction: Boolean(t.isFunction),
   }));
-  const allPeaks: SwPeak[] = [];
-  for (const cand of candidates.slice(0, 20)) {
-    const peaks = extractNonOverlappingSmithWatermanPeaks(ntTokens, cand, {
-      minScore: 5.5,
-      minContentMatches: 2,
-      minIdfSum: 4.0,
-    }, prepNt);
-    for (const peak of peaks) {
-      allPeaks.push(expandAdaptationHalo(ntTokens, peak, 3));
+  const hasCitationFormula = opts?.hasCitationFormula !== undefined
+    ? Boolean(opts.hasCitationFormula)
+    : detectCitationFormulaInNtTokens(pNt);
+
+  const windows = buildClauseWindows(ntTokens, pNt);
+  const topCands = candidates.slice(0, 20);
+  const rawPeaks: SwPeak[] = [];
+  const dedupMap = new Map<string, SwPeak>();
+
+  const registerPeak = (pk: SwPeak) => {
+    if (!passesSpecificityGate(pk, hasCitationFormula)) return;
+    const key = `${pk.candIdx}:${pk.coreStart}:${pk.coreEnd}:${pk.lxxStart}:${pk.lxxEnd}`;
+    const prev = dedupMap.get(key);
+    if (!prev || pk.score > prev.score) {
+      dedupMap.set(key, pk);
+    }
+  };
+
+  const dpBuf = {
+    H: new Float64Array(4096),
+    dir: new Uint8Array(4096),
+    usedNt: new Uint8Array(128),
+    usedLxx: new Uint8Array(128),
+  };
+  const ntNormSet = new Set<string>();
+  for (let i = 0; i < pNt.length; i++) {
+    if (pNt[i].norm) ntNormSet.add(pNt[i].norm);
+  }
+
+  for (let cIdx = 0; cIdx < topCands.length; cIdx++) {
+    const cand = topCands[cIdx];
+    if (!cand.slots || cand.slots.length === 0) continue;
+    const pSlots: PreparedSlot[] = cand.slots.map((s) => {
+      const equivs: string[] = [];
+      if (s.mtEquivLemmas) {
+        for (let ei = 0; ei < s.mtEquivLemmas.length; ei++) {
+          const en = normGreekLemma(s.mtEquivLemmas[ei]);
+          if (en && ntNormSet.has(en)) equivs.push(en);
+        }
+      }
+      return {
+        norm: normGreekLemma(s.lxxLemma),
+        stem: greekStemPrefix(s.lxxLemma),
+        equivNorms: equivs,
+        idf: Math.max(0.8, s.lxxIdf || 1.5),
+        isFunction: Boolean(s.isFunction),
+      };
+    });
+    const slotNormSet = new Set<string>();
+    let approxCandMatches = 0;
+    for (let j = 0; j < pSlots.length; j++) {
+      const ps = pSlots[j];
+      if (ps.norm) slotNormSet.add(ps.norm);
+      if (ps.stem.length >= 4) slotNormSet.add(ps.stem);
+      for (const eq of ps.equivNorms) if (eq) slotNormSet.add(eq);
+      if (!ps.isFunction && (ntNormSet.has(ps.norm) || ps.equivNorms.length > 0)) {
+        approxCandMatches++;
+      }
+    }
+
+    for (let wi = 0; wi < windows.length; wi++) {
+      const [wStart, wEnd] = windows[wi];
+      if (wi > 0) {
+        let approxHits = 0;
+        for (let k = wStart; k <= wEnd; k++) {
+          const nt = pNt[k];
+          if (slotNormSet.has(nt.norm) || (nt.stem.length >= 4 && slotNormSet.has(nt.stem))) {
+            if (!nt.isFunction || nt.norm === 'οσοσ') approxHits++;
+          }
+        }
+        if (approxHits < (hasCitationFormula ? 1 : 2)) continue;
+      }
+      const peaks = extractWindowSwPeaks(
+        pNt,
+        wStart,
+        wEnd,
+        cand,
+        cIdx,
+        pSlots,
+        3.5,
+        dpBuf,
+      );
+      if (wi === 0 && (peaks.length === 0 || (!hasCitationFormula && approxCandMatches < 3))) break;
+      for (const pk of peaks) {
+        registerPeak(pk);
+        if (pk.pairs.length >= 3) {
+          const trimL = makeTrimmedSubPeak(pk, true);
+          if (trimL) registerPeak(trimL);
+          const trimR = makeTrimmedSubPeak(pk, false);
+          if (trimR) registerPeak(trimR);
+        }
+      }
     }
   }
-  if (allPeaks.length === 0) return null;
 
-  // Greedily resolve multi-source composite splices (highest score + verified prior non-overlapping NT core spans)
-  allPeaks.sort((a, b) => {
-    const sa = a.score + Math.min(3.5, a.cand.priorScore || 0);
-    const sb = b.score + Math.min(3.5, b.cand.priorScore || 0);
-    return sb - sa || b.contentMatches - a.contentMatches;
+  for (const pk of dedupMap.values()) rawPeaks.push(pk);
+  if (rawPeaks.length === 0) return null;
+
+  // Pass 1: Keep top peak from each distinct (candIdx, coreStart/4, coreEnd/4, lxxStart/5) region so trimL/trimR cannot crowd out disjoint frame halves.
+  // Pass 2: Fill remaining slots up to 8 per OT candidate / 28 total with trimmed boundary variants & secondary peaks.
+  const peakVal = (p: SwPeak) => p.score + Math.min(3.5, p.cand.priorScore || 0);
+  rawPeaks.sort((a, b) => peakVal(b) - peakVal(a));
+  const perCandCount = new Map<number, number>();
+  const perCandRegion = new Set<string>();
+  const pickedSet = new Set<SwPeak>();
+  const filteredPeaks: SwPeak[] = [];
+  for (const pk of rawPeaks) {
+    const regKey = `${pk.candIdx}:${Math.floor(pk.coreStart / 4)}:${Math.floor(pk.coreEnd / 4)}:${Math.floor(pk.lxxStart / 5)}`;
+    if (perCandRegion.has(regKey)) continue;
+    const cnt = perCandCount.get(pk.candIdx) || 0;
+    if (cnt >= 5) continue;
+    perCandRegion.add(regKey);
+    perCandCount.set(pk.candIdx, cnt + 1);
+    filteredPeaks.push(pk);
+    pickedSet.add(pk);
+    if (filteredPeaks.length >= 24) break;
+  }
+  if (filteredPeaks.length < 28) {
+    for (const pk of rawPeaks) {
+      if (pickedSet.has(pk)) continue;
+      const cnt = perCandCount.get(pk.candIdx) || 0;
+      if (cnt >= 8) continue;
+      perCandCount.set(pk.candIdx, cnt + 1);
+      filteredPeaks.push(pk);
+      pickedSet.add(pk);
+      if (filteredPeaks.length >= 28) break;
+    }
+  }
+
+  // Sort ascending by coreStart, coreEnd for 1D interval-scheduling DP over [0..n_NT]
+  filteredPeaks.sort((a, b) => a.coreStart - b.coreStart || a.coreEnd - b.coreEnd || peakVal(b) - peakVal(a));
+  const P = filteredPeaks.length;
+  const segVals = new Float64Array(P);
+  for (let i = 0; i < P; i++) segVals[i] = peakVal(filteredPeaks[i]);
+
+  // nextNonOverlap[i] = smallest j > i with filteredPeaks[j].coreStart > filteredPeaks[i].coreEnd
+  const nextNonOverlap = new Int32Array(P);
+  for (let i = 0; i < P; i++) {
+    const endPos = filteredPeaks[i].coreEnd;
+    let lo = i + 1;
+    let hi = P;
+    while (lo < hi) {
+      const mid = (lo + hi) >>> 1;
+      if (filteredPeaks[mid].coreStart > endPos) hi = mid;
+      else lo = mid + 1;
+    }
+    nextNonOverlap[i] = lo;
+  }
+
+  // Admissible 1D weighted interval scheduling upper bound dp1D[i]
+  const dp1D = new Float64Array(P + 1);
+  for (let i = P - 1; i >= 0; i--) {
+    const take = segVals[i] + dp1D[nextNonOverlap[i]];
+    const skip = dp1D[i + 1];
+    dp1D[i] = take > skip ? take : skip;
+  }
+
+  // Seed initial bestScore with greedy valid partition (tight lower bound for pruning)
+  let bestScore = -1;
+  let bestChosen: number[] = [];
+  {
+    const orderByVal = Array.from({ length: P }, (_, i) => i).sort((a, b) => segVals[b] - segVals[a]);
+    const gChosen: number[] = [];
+    const gUsed = new Uint8Array(ntTokens.length);
+    const gSrcs = new Map<number, SwPeak[]>();
+    let gScore = 0;
+    for (const idx of orderByVal) {
+      const seg = filteredPeaks[idx];
+      let overlap = false;
+      for (let t = seg.coreStart; t <= seg.coreEnd; t++) {
+        if (gUsed[t]) { overlap = true; break; }
+      }
+      if (overlap) continue;
+      const prevList = gSrcs.get(seg.candIdx);
+      const prevCount = prevList ? prevList.length : 0;
+      if (prevCount >= 2) continue;
+      let invPen = 0;
+      if (prevCount === 1 && prevList) {
+        const ps = prevList[0];
+        if (!(seg.lxxEnd < ps.lxxStart || seg.lxxStart > ps.lxxEnd)) continue;
+        if ((seg.coreStart > ps.coreEnd && seg.lxxStart < ps.lxxStart) || (seg.coreEnd < ps.coreStart && seg.lxxStart > ps.lxxStart)) {
+          invPen = 0.8;
+        }
+      }
+      const swPen = gChosen.length > 0 && prevCount === 0 ? 2.2 : 0;
+      const gain = segVals[idx] - swPen - invPen;
+      if (gain <= 0) continue;
+      gScore += gain;
+      gChosen.push(idx);
+      for (let t = seg.coreStart; t <= seg.coreEnd; t++) gUsed[t] = 1;
+      if (!prevList) gSrcs.set(seg.candIdx, [seg]);
+      else prevList.push(seg);
+    }
+    if (gChosen.length > 0 && gScore > bestScore) {
+      bestScore = gScore;
+      bestChosen = gChosen;
+    }
+  }
+
+  const chosenWork: number[] = [];
+  const srcSegs = new Map<number, SwPeak[]>();
+  let visited = 0;
+  const MAX_DFS_NODES = 1024;
+
+  const dfs = (idx: number, curScore: number) => {
+    if (visited >= MAX_DFS_NODES) return;
+    visited++;
+    if (idx >= P) {
+      if (chosenWork.length > 0 && curScore > bestScore) {
+        bestScore = curScore;
+        bestChosen = [...chosenWork];
+      }
+      return;
+    }
+    if (curScore + dp1D[idx] <= bestScore + 1e-9) return;
+
+    const seg = filteredPeaks[idx];
+    const prevList = srcSegs.get(seg.candIdx);
+    const prevCount = prevList ? prevList.length : 0;
+
+    // Allow up to 2 non-overlapping segments from the SAME OT verse (frame-splice A_left + B + A_right or clause inversion)
+    let canTake = prevCount < 2;
+    let invPenalty = 0;
+    if (canTake && prevCount === 1 && prevList) {
+      const prevSeg = prevList[0];
+      const lxxDisjoint = seg.lxxEnd < prevSeg.lxxStart || seg.lxxStart > prevSeg.lxxEnd;
+      if (!lxxDisjoint) {
+        canTake = false;
+      } else if (seg.lxxStart < prevSeg.lxxStart) {
+        invPenalty = 0.8;
+      }
+    }
+
+    if (canTake) {
+      const switchPenalty = (chosenWork.length > 0 && prevCount === 0) ? 2.2 : 0;
+      const delta = segVals[idx] - switchPenalty - invPenalty;
+      if (curScore + delta + dp1D[nextNonOverlap[idx]] > bestScore + 1e-9) {
+        chosenWork.push(idx);
+        if (!prevList) srcSegs.set(seg.candIdx, [seg]);
+        else prevList.push(seg);
+        dfs(nextNonOverlap[idx], curScore + delta);
+        if (prevList) prevList.pop();
+        else srcSegs.delete(seg.candIdx);
+        chosenWork.pop();
+      }
+    }
+
+    dfs(idx + 1, curScore);
+  };
+
+  dfs(0, 0);
+  if (bestChosen.length === 0 || bestScore <= 0) return null;
+
+  const selectedRaw = bestChosen.map((i) => filteredPeaks[i]).sort((a, b) => a.coreStart - b.coreStart);
+  // Expand adaptation halo bounded by adjacent selected core boundaries
+  const selected: SwPeak[] = selectedRaw.map((p, idx) => {
+    const prevCoreEnd = idx > 0 ? selectedRaw[idx - 1].coreEnd : -1;
+    const nextCoreStart = idx + 1 < selectedRaw.length ? selectedRaw[idx + 1].coreStart : ntTokens.length;
+    const ntStart = Math.max(prevCoreEnd + 1, Math.max(0, p.coreStart - 3));
+    const ntEnd = Math.min(nextCoreStart - 1, Math.min(ntTokens.length - 1, p.coreEnd + 3));
+    return {
+      ...p,
+      ntStart: Math.min(ntStart, p.coreStart),
+      ntEnd: Math.max(ntEnd, p.coreEnd),
+    };
   });
-  const selected: SwPeak[] = [];
-  const coveredNt = new Uint8Array(ntTokens.length);
-
-  for (const p of allPeaks) {
-    const coreStart = p.pairs[0]?.ntIdx ?? p.ntStart;
-    const coreEnd = p.pairs[p.pairs.length - 1]?.ntIdx ?? p.ntEnd;
-    let overlap = 0;
-    const coreLen = Math.max(1, coreEnd - coreStart + 1);
-    for (let i = coreStart; i <= coreEnd; i++) {
-      if (coveredNt[i]) overlap++;
-    }
-    if (overlap / coreLen > 0.35) continue;
-    for (let i = coreStart; i <= coreEnd; i++) coveredNt[i] = 1;
-    selected.push(p);
-  }
-
-  if (selected.length === 0) return null;
-  selected.sort((a, b) => a.ntStart - b.ntStart);
 
   // Assign each NT token to its best peak & classify witness attribution
   const tokens: TriAlignedToken[] = [];
@@ -343,7 +723,6 @@ export function alignTriTextualQuote(
 
   for (let i = 0; i < ntTokens.length; i++) {
     const nt = ntTokens[i];
-    // Find owning peak (prefer exact pair match first, else enclosing halo)
     let owner: SwPeak | null = null;
     let matchedPair: SwPeak['pairs'][number] | null = null;
     for (const p of selected) {
@@ -390,7 +769,6 @@ export function alignTriTextualQuote(
         witness = 'agrees_both';
       }
     } else {
-      // Check splice boundary crossing within <= 25 NT tokens
       const idxInSelected = selected.indexOf(owner);
       const prevPeak = idxInSelected > 0 ? selected[idxInSelected - 1] : null;
       if (prevPeak && prevPeak.cand.ref !== owner.cand.ref && (owner.ntStart - prevPeak.ntEnd) <= 25 && i <= owner.ntStart + 2) {
@@ -414,13 +792,23 @@ export function alignTriTextualQuote(
     });
   }
 
-  const splices: TriTextualSplice[] = selected.map((p) => ({
-    sourceRef: p.cand.ref,
-    ntStartIdx: p.ntStart,
-    ntEndIdx: p.ntEnd,
-    score: p.score,
-    contentMatches: p.contentMatches,
-  }));
+  const lastLxxBySrc = new Map<number, number>();
+  const splices: TriTextualSplice[] = selected.map((p) => {
+    const prevLxx = lastLxxBySrc.get(p.candIdx);
+    const isInversion = prevLxx !== undefined && p.lxxStart < prevLxx;
+    lastLxxBySrc.set(p.candIdx, p.lxxStart);
+    return {
+      sourceRef: p.cand.ref,
+      ntStartIdx: p.ntStart,
+      ntEndIdx: p.ntEnd,
+      score: p.score,
+      contentMatches: p.contentMatches,
+      maxContentIdf: p.maxContentIdf,
+      lxxStartIdx: p.lxxStart,
+      lxxEndIdx: p.lxxEnd,
+      ...(isInversion ? { isInversion: true } : {}),
+    };
+  });
 
   // Mark splice boundaries when multiple distinct OT refs lie within 25 tokens
   for (let s = 1; s < splices.length; s++) {
@@ -439,6 +827,18 @@ export function alignTriTextualQuote(
     evidenceBits,
     summary,
   };
+}
+
+/**
+ * Online 3-Way MT <-> LXX <-> NT Halo Smith-Waterman & Composite Splice Detector.
+ * Runs over Top <= 20 OT candidates using order-flexible splice DP.
+ */
+export function alignTriTextualQuote(
+  ntTokens: NtToken[],
+  candidates: OtLxxCandidateGroup[],
+  opts?: { hasCitationFormula?: boolean },
+): TriTextualResult | null {
+  return alignTriTextualQuoteV4(ntTokens, candidates, opts);
 }
 
 // === 2. Piecewise Polarity Sequence Aligner (SW^piece_pol) ===

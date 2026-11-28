@@ -384,6 +384,13 @@ const PRIMARY_LEMMA_DISPLAY_OVERRIDES: Readonly<Record<string, {
     transliteration: 'ra.ah',
     gloss: 'to pasture, shepherd',
   },
+  G2495: {
+    badRegex: /\bJohn\b|lemma:G2491/i,
+    lemma: 'Ἰωνᾶς',
+    lemmaKey: 'lemma:G2495',
+    transliteration: 'Iōnas',
+    gloss: 'Jonah',
+  },
 };
 
 export function sanitizeLemmaDisplayFields(fields: {
@@ -399,14 +406,14 @@ export function sanitizeLemmaDisplayFields(fields: {
   const rule = PRIMARY_LEMMA_DISPLAY_OVERRIDES[normBs];
   if (!rule) return cleanedGloss !== fields.gloss ? { ...fields, gloss: cleanedGloss } : fields;
   const hitBadGloss = rule.badRegex.test(cleanedGloss || '') || /\bAlso:/i.test(fields.gloss || '');
-  const hitBadLemma = rule.badRegex.test(fields.lemma || '') || /h1540g/i.test(fields.lemmaKey || '');
+  const hitBadLemma = rule.badRegex.test(fields.lemma || '') || rule.badRegex.test(fields.lemmaKey || '') || /h1540g/i.test(fields.lemmaKey || '');
   if (!hitBadGloss && !hitBadLemma) return cleanedGloss !== fields.gloss ? { ...fields, gloss: cleanedGloss } : fields;
   const forceLemmaReplace = normBs === 'H7462' && hitBadLemma;
   return {
     lemma: ((!fields.anchored || forceLemmaReplace) && hitBadLemma && rule.lemma) ? rule.lemma : fields.lemma,
     lemmaKey: (!fields.anchored && hitBadLemma && rule.lemmaKey) ? rule.lemmaKey : fields.lemmaKey,
     transliteration: (!fields.anchored && hitBadLemma && rule.transliteration) ? rule.transliteration : fields.transliteration,
-    gloss: hitBadGloss || (forceLemmaReplace && !fields.anchored) ? rule.gloss : cleanedGloss,
+    gloss: (hitBadGloss || (hitBadLemma && !fields.anchored)) ? rule.gloss : cleanedGloss,
   };
 }
 

@@ -505,6 +505,21 @@ export async function sanitizeStepLexicon({
       }
     }
 
+    // Repair cross-Strong's STEP alias leaks (e.g., G2495 Ἰωνᾶς mapped to lemma:G2491K / "John")
+    const lkBaseMatch = /^lemma:([HG])0*(\d+)/i.exec(chosenPrimary.lk || '');
+    const lkBaseStrongs = lkBaseMatch ? `${lkBaseMatch[1].toUpperCase()}${lkBaseMatch[2].padStart(4, '0')}` : bs;
+    if (lkBaseStrongs !== bs) {
+      chosenPrimary.lk = `lemma:${bs}`;
+      if (retainedSenses[0]) retainedSenses[0].lk = chosenPrimary.lk;
+      if (topVg && stemOverlap(cleanGloss(chosenPrimary.gl), topVgStems) === 0) {
+        const cleanedVg = topVg.replace(/^(?:of|the|a|an)\s+/i, '').trim();
+        if (cleanedVg) {
+          chosenPrimary.gl = cleanedVg;
+          if (retainedSenses[0]) retainedSenses[0].gl = cleanedVg;
+        }
+      }
+    }
+
     if (bs === 'H5158' && !/\bwadi\b/i.test(chosenPrimary.gl)) {
       chosenPrimary.gl = `${chosenPrimary.gl} / wadi`;
       retainedSenses[0].gl = chosenPrimary.gl;

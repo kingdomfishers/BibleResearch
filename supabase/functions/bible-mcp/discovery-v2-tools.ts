@@ -2719,9 +2719,12 @@ export async function handleGetConnection(
   // Rank pairwise proof candidates by evidential & original-language specificity (explicit/wordplay/lexical/LXX first, hubs penalized)
   const scoreProofEdgePriority = (c: CompactConnection): number => {
     const id = c.id || '';
+    if (id.startsWith('v4:eside:')) return 115;
+    if (id.startsWith('v4:splice:')) return 108;
     if (id.startsWith('nt_typological_citation:') || id.startsWith('r10:ident:') || id.startsWith('r13:si:') || id.startsWith('r13:interp:') || id.startsWith('r10:typo:')) return 110;
     if (id.startsWith('r10:wordplay:') || (id.startsWith('r13:wp:') && c.epistemic === 'direct_textual_evidence')) return 105;
     if (id.startsWith('passage_root_wordplay:') || id.startsWith('passage_lex_bridge:')) return 98;
+    if (id.startsWith('v4:sme:')) return 96;
     if (id.startsWith('r13:wp:') || id.startsWith('r10:interp:')) return 92;
     if (id.startsWith('shared_lemma:') || id.startsWith('shared_lemma_homograph:') || id.startsWith('direct_in_passage:')) return 86;
     if (id.startsWith('passage_lxx:') || id.startsWith('lxx_in_passage:') || id.startsWith('r11:lxx:')) return 82;
@@ -3046,6 +3049,8 @@ export async function handleGetConnection(
       graph_proof: clueGraphProof,
       ...(!directLinkFound ? { no_direct_link_reason: 'No direct verse co-occurrence, lexical/LXX match, explicit cross-reference, or verified pairwise motif connected at least two requested items.' } : {}),
       connections: connections.slice(0, Math.min(maxConnections, 8)).map(c => projectClue(c, 'clues')),
+      ...(subgraphRes?.structural_analogy ? { structural_analogy: subgraphRes.structural_analogy } : {}),
+      ...(subgraphRes?.seql_schema ? { seql_schema: subgraphRes.seql_schema } : {}),
       ...(!directLinkFound && individualSuggestions.length > 0
         ? {
             individual_suggestions: individualSuggestions.slice(0, 3).map(s => ({
@@ -3075,6 +3080,8 @@ export async function handleGetConnection(
     complete_multi_anchor: completeMultiAnchor.map(projectConn),
     direct_pairwise: directPairwise.map(projectConn),
     indirect_paths: indirectPaths.map(projectConn),
+    ...(subgraphRes?.structural_analogy ? { structural_analogy: subgraphRes.structural_analogy } : {}),
+    ...(subgraphRes?.seql_schema ? { seql_schema: subgraphRes.seql_schema } : {}),
     ...(individualSuggestions.length > 0
       ? {
           individual_suggestions: directLinkFound

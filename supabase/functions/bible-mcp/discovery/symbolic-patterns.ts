@@ -85,6 +85,8 @@ const NAMING_CLAUSE_SKIP = new Set([
   'H0589', 'H2088', 'H2063', 'H0428', 'H1992', 'H3605', 'H3808', 'H3541', 'H3651', 'H4100',
   'H0559', 'H1696', 'H1961', 'H7121', 'H8034', 'H3205', 'H2029', 'H0430', 'H3068', 'H0376',
   'H0802', 'H1121', 'H1323', 'H0001', 'H0517',
+  // Temporal/idiomatic nouns ("unto this day", "year", "time", "forever") must never be mistaken for a named entity
+  'H3117', 'H8141', 'H6256', 'H5769', 'H5704',
 ]);
 
 const SKIP_CONTENT_STRONGS = new Set([
@@ -432,14 +434,20 @@ export function extractScripturalInterpretations(
             candTargets.push(cand);
           }
         }
-        // If there is a relative clause (H0834) between anchorIdx and the last candidate, the named entity is the last candidate (after the relative clause); otherwise the first candidate.
-        const hasRelBetween = toks.slice(anchorIdx + 1, anchorIdx + 9).some(t => t.s === 'H0834');
+        // If there is a relative clause (H0834) directly modifying "son/daughter who was born..." (birth verb inside),
+        // the named entity follows the relative clause; otherwise (e.g., "called its name En-hakkore, which is in Lehi unto this day"),
+        // the named entity precedes H0834!
+        const relOffset = toks.slice(anchorIdx + 1, anchorIdx + 9).findIndex(t => t.s === 'H0834');
+        const hasBirthInRel = relOffset >= 0 && toks.slice(anchorIdx + 1, anchorIdx + 1 + relOffset + 4).some(t => t.s === 'H3205' || t.s === 'H2029');
+        const beforeRelTargets = relOffset >= 0
+          ? candTargets.filter(ct => toks.indexOf(ct, anchorIdx + 1) < anchorIdx + 1 + relOffset)
+          : candTargets;
         const namedTok: VerseTokenLite | null =
           candTargets.length === 0
             ? null
-            : hasRelBetween
+            : hasBirthInRel
               ? candTargets[candTargets.length - 1]
-              : candTargets[0];
+              : (beforeRelTargets[0] ?? candTargets[0]);
 
         if (namedTok) {
           const namedBs = namedTok.s;
@@ -585,8 +593,8 @@ export function extractScripturalInterpretations(
                 strict_referent_note: `Explicit biblical naming etiology in ${spanRef}: ${namedLabel} is explained by ${refDesc}.`,
               });
             }
-          } else if (strongsSet.has('H3318')) {
-            // Check (C): Birth-attribute naming clause ([H3318 יָצָא + rare descriptive nouns/adjectives df <= 150] + [H7121 + H8034 + ProperName])
+          } else if (strongsSet.has('H3318') && (hasBirthVerb || strongsSet.has('H0990') || strongsSet.has('H8380'))) {
+            // Check (C): Birth-attribute naming clause ([H3318 יָצָא + actual birth context H3205/H2029/H0990/H8380] + [H7121 + H8034 + ProperName])
             const birthAttrToks = sameVerseClauseToks.filter(
               t =>
                 t.s !== 'H3318' &&

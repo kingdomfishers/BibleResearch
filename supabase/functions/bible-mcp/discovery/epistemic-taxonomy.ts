@@ -28,6 +28,9 @@ const LEGACY_EPISTEMIC_MAP: Readonly<Record<string, CanonicalEpistemicClass>> = 
   explicit_intertextual_witness: 'authorial_typology_or_quote',
   candidate_textual_evidence: 'candidate_literary_pattern',
   external_world_bridge: 'external_world_fact',
+  explicit_biblical_interpretation: 'direct_textual_evidence',
+  structural_analogy: 'shared_motif_evidence',
+  explicit_correlative_analogy: 'authorial_typology_or_quote',
 };
 
 const VALID_CANONICAL_SET = new Set<string>([

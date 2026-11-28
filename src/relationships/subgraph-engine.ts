@@ -17,6 +17,9 @@ import {
 import { GRAPH_PARTITIONS, NUM_VERSES, lookupPprTop64, type PprEntry } from './v3-binary-index.ts';
 import { reconstructPassagePpr } from './v3-scorer.ts';
 import { V3RuntimeSession, findV3BridgePivots, normStrongs4 } from './v3-runtime-adapter.ts';
+import { composePathEpistemicState, makeSmeEvidenceId, mapArgRoleToRgParticipantRole } from './v4-epistemic-algebra.ts';
+import { evaluateSmePair, runSeqlGeneralization } from './v4-sme-engine.ts';
+import type { CompactHreg } from './v4-hreg-types.ts';
 
 export type SubgraphNodeKind = 'lemma' | 'passage' | 'motif' | 'person' | 'concept';
 
@@ -25,8 +28,10 @@ export type SubgraphEdgeFamily =
   | 'shares_root'
   | 'co_occurs_with'
   | 'explicitly_interprets'
+  | 'explicit_interpretation'
   | 'translates_in_lxx'
   | 'parallels_scene'
+  | 'structural_analogy'
   | 'shares_motif_cluster'
   | 'genealogical_relation'
   | 'verified_cross_reference'
@@ -83,6 +88,9 @@ export interface SubgraphAnchorPath {
   node_ids: string[];
   edge_ids: string[];
   epistemic_class: string;
+  epistemic_grade?: string;
+  boundary_note?: string;
+  distinct_witness_count?: number;
   evidence_tier: 1 | 2 | 3 | 4 | 5;
   title: string;
   why: string;
@@ -122,6 +130,9 @@ export interface SubgraphVerifiedProofEdge {
   evidence_id: string;
   predicate: string;
   epistemic_class: string;
+  epistemic_grade?: string;
+  boundary_note?: string;
+  distinct_witness_count?: number;
   evidence_tier: 1 | 2 | 3 | 4 | 5;
   witness_refs: string[];
   summary: string;
@@ -160,6 +171,8 @@ export interface SubgraphDiscoveryPacket {
   motifs: SubgraphMotifClosure[];
   steiner_bridges: SubgraphNode[];
   summary: string;
+  structural_analogy?: unknown;
+  seql_schema?: unknown;
 }
 
 // === @section:logic:helpers ===
@@ -322,6 +335,8 @@ const CSR_PARTITION_TO_FAMILY: Record<number, SubgraphEdgeFamily> = {
   2: 'translates_in_lxx',
   3: 'shares_root',
   4: 'wordplay_consonantal',
+  6: 'explicit_interpretation',
+  7: 'structural_analogy',
 };
 
 const CSR_PARTITION_TO_EPISTEMIC: Record<number, { epistemic: R10EpistemicClass; tier: 1 | 2 | 3 | 4 | 5; pred: string }> = {
@@ -330,6 +345,8 @@ const CSR_PARTITION_TO_EPISTEMIC: Record<number, { epistemic: R10EpistemicClass;
   2: { epistemic: 'documented_cross_language_bridge', tier: 3, pred: 'cross_language_bridge' },
   3: { epistemic: 'documented_lexical_relationship', tier: 3, pred: 'verified_lexical_grammatical' },
   4: { epistemic: 'candidate_literary_pattern', tier: 4, pred: 'orthographic_wordplay' },
+  6: { epistemic: 'direct_textual_evidence', tier: 1, pred: 'explicit_identification' },
+  7: { epistemic: 'shared_motif_evidence', tier: 3, pred: 'structural_scene_parallel' },
 };
 
 async function augmentSubgraphWithV3PprAndCsr(params: {
@@ -1105,15 +1122,35 @@ export async function findConnectedSubgraph(
       anchorAdj.get(j)!.add(i);
 
       const pathEdges = sp.edgeIds.map((eid) => edgesById.get(eid)!).filter(Boolean);
+      const epistemicEdges = pathEdges.map((pe) => ({
+        fromNode: pe.from_node,
+        toNode: pe.to_node,
+        edgeKind: pe.evidence_id.startsWith('v4:eside:') || pe.family === 'explicit_interpretation' || pe.family === 'explicitly_interprets'
+          ? 'EXPLICIT_INTERP'
+          : pe.family === 'structural_analogy' || pe.evidence_id.includes('STRUCT_ANALOGY')
+            ? 'STRUCT_ANALOGY'
+            : pe.family === 'translates_in_lxx'
+              ? 'LXX'
+              : pe.family === 'wordplay_consonantal'
+                ? 'WP'
+                : pe.family === 'verified_cross_reference'
+                  ? 'verified_xref'
+                  : 'OCC',
+        edgeFamily: pe.family,
+        weight: pe.weight,
+      }));
+      const epistemicComposed = composePathEpistemicState(epistemicEdges);
       const worstTierNum = pathEdges.reduce<number>((acc, e) => Math.max(acc, e.evidence_tier), 1);
-      const worstTier = Math.min(5, Math.max(1, worstTierNum)) as 1 | 2 | 3 | 4 | 5;
+      const effTierNum = epistemicComposed.grade === 'EXPLORATORY_NON_TRANSITIVE_CHAIN' ? Math.max(4, worstTierNum) : worstTierNum;
+      const worstTier = Math.min(5, Math.max(1, effTierNum)) as 1 | 2 | 3 | 4 | 5;
       const witnessRefs = [...new Set(pathEdges.flatMap((e) => e.witness_refs))].slice(0, 6);
       const hopSummaries = pathEdges.map((e) => e.title);
       const pathScore = Math.max(
         40,
         Math.round(
           (pathEdges.reduce((s, e) => s + e.score, 0) / Math.max(1, pathEdges.length)) *
-            Math.pow(0.88, Math.max(0, pathEdges.length - 1)),
+            Math.pow(0.88, Math.max(0, pathEdges.length - 1)) *
+            (epistemicComposed.validForProofOrDiscovery ? 1 : 0.8),
         ),
       );
 
@@ -1127,7 +1164,15 @@ export async function findConnectedSubgraph(
         path_score: pathScore,
         node_ids: sp.nodeIds,
         edge_ids: sp.edgeIds,
-        epistemic_class: pathEdges.length === 1 ? String(pathEdges[0].epistemic_class) : 'semantic_hypothesis',
+        epistemic_class:
+          epistemicComposed.grade === 'EXPLORATORY_NON_TRANSITIVE_CHAIN'
+            ? 'semantic_hypothesis'
+            : pathEdges.length === 1
+              ? String(pathEdges[0].epistemic_class)
+              : 'semantic_hypothesis',
+        epistemic_grade: epistemicComposed.grade,
+        boundary_note: epistemicComposed.boundaryNote,
+        distinct_witness_count: epistemicComposed.distinctWitnessCount,
         evidence_tier: worstTier,
         title:
           pathEdges.length === 1
@@ -1380,6 +1425,84 @@ export async function findConnectedSubgraph(
     )
     .slice(0, maxNodes);
 
+  // 7. v4 Structural Mapping (pairwise Biblical-SME for 2 passage anchors; SEQL for 3..6)
+  let structuralAnalogySummary: unknown = undefined;
+  let seqlSchemaSummary: unknown = undefined;
+  try {
+    const passageAnchorVids = perAnchorResults.map((res) =>
+      (res.parsed_query?.explicit_passages || []).map((ep) => ep.verse_id).filter((v) => v >= 1 && v <= NUM_VERSES),
+    );
+    const activePassageCount = passageAnchorVids.filter((vs) => vs.length > 0).length;
+    if (activePassageCount >= 2) {
+      const v4Sess = new V3RuntimeSession(rawReader);
+      const [perTable, simOracle] = await Promise.all([v4Sess.getV4Pericopes(), v4Sess.getV4PredSim()]);
+      if (perTable && simOracle) {
+        const chosenPids: number[] = [];
+        for (const vs of passageAnchorVids) {
+          if (vs.length === 0) continue;
+          const sV = Math.min(...vs);
+          const eV = Math.max(...vs);
+          const pids = new Set<number>();
+          for (const v of vs) for (const pid of perTable.lookupVidPericopes(v)) pids.add(pid);
+          let bestPid = 0;
+          let bestCov = -1;
+          for (const pid of pids) {
+            const rec = perTable.records[pid - 1];
+            if (!rec) continue;
+            const ov = Math.min(rec.endVid, eV) - Math.max(rec.startVid, sV) + 1;
+            const jacc = ov / Math.max(1, eV - sV + 1 + rec.endVid - rec.startVid + 1 - ov);
+            if (jacc > bestCov) { bestCov = jacc; bestPid = pid; }
+          }
+          if (bestPid > 0 && !chosenPids.includes(bestPid)) chosenPids.push(bestPid);
+        }
+        if (chosenPids.length >= 2) {
+          const hregMap = await v4Sess.getV4HregBatch(chosenPids);
+          const hregs = chosenPids.map((p) => hregMap.get(p)).filter((h): h is CompactHreg => Boolean(h));
+          if (hregs.length === 2) {
+            const ev = evaluateSmePair(hregs[0], hregs[1], simOracle, { bPerm: 24 });
+            if (ev.pStruct < 0.05 && ev.deltaSmeStruct > 0) {
+              structuralAnalogySummary = {
+                evidence_id: makeSmeEvidenceId(hregs[0].pericopeId, hregs[1].pericopeId, ev.regime),
+                classification: ev.classification,
+                regime: ev.regime,
+                sub_tag: ev.subTag,
+                sms: Number(ev.winning.sms.toFixed(3)),
+                p_struct: Number(ev.pStruct.toFixed(4)),
+                delta_sme_struct: Number(ev.deltaSmeStruct.toFixed(3)),
+                mapped_events: ev.winning.mappedEvents.length,
+                mapped_ho: ev.winning.mappedHo.length,
+                candidate_inferences: ev.candidateInferences.slice(0, 4),
+                divergences: ev.divergences.slice(0, 6),
+                rg_projection_hint: {
+                  algorithm_evidence_id: makeSmeEvidenceId(hregs[0].pericopeId, hregs[1].pericopeId, ev.regime),
+                  evidence_kind: 'algorithm_edge',
+                  epistemic_class: 'structural_analogy',
+                  participants: ev.winning.mappedParticipants.slice(0, 6).map((mp, idx) => ({
+                    role: mapArgRoleToRgParticipantRole(idx === 0 ? 'AGENT' : 'PATIENT'),
+                    base_pid: mp.basePid,
+                    target_pid: mp.targetPid,
+                  })),
+                },
+              };
+            }
+          } else if (hregs.length >= 3 && hregs.length <= 6) {
+            const seql = runSeqlGeneralization(hregs, simOracle, { bPerm: 24 });
+            seqlSchemaSummary = {
+              tag: seql.tag,
+              passage_count: seql.passageCount,
+              pericope_ids: seql.pericopeIds,
+              schema_events: seql.schemaEvents.slice(0, 8),
+              schema_ho_edges: seql.schemaHoEdges.slice(0, 8),
+              role_slot_table: seql.roleSlotTable.slice(0, 8),
+            };
+          }
+        }
+      }
+    }
+  } catch {
+    // Non-fatal when v4 HREG packs are absent
+  }
+
   const summary = isComplete
     ? `Connected all ${anchorRecords.length} anchors (${anchorRecords.map((a) => a.input).join(', ')}) via ${steinerEdgeIds.size} Steiner/closure edges and ${steinerBridges.length} intermediate bridge node(s).`
     : anchorRecords.length >= 2
@@ -1403,5 +1526,7 @@ export async function findConnectedSubgraph(
     motifs,
     steiner_bridges: steinerBridges,
     summary,
+    ...(structuralAnalogySummary ? { structural_analogy: structuralAnalogySummary } : {}),
+    ...(seqlSchemaSummary ? { seql_schema: seqlSchemaSummary } : {}),
   };
 }

@@ -164,6 +164,8 @@ export function computeEPerpScore(
   getNodeMeta: (nodeId: number) => NodeAxisMeta | null,
   extras: {
     deltaSeqBits?: number;
+    deltaSmeStructBits?: number;
+    deltaEsideBits?: number;
     delta3WayBits?: number;
     deltaWordplayBits?: number;
     cLen?: number;
@@ -238,17 +240,32 @@ export function computeEPerpScore(
   }
 
   const deltaSeq = Math.max(0, extras.deltaSeqBits ?? 0);
+  const deltaSme = Math.max(0, extras.deltaSmeStructBits ?? 0);
+  const combinedStructBits = Math.max(deltaSeq, deltaSme);
+  const deltaEside = Math.max(0, extras.deltaEsideBits ?? 0);
   const delta3Way = Math.max(0, extras.delta3WayBits ?? 0);
   const deltaWp = Math.max(0, extras.deltaWordplayBits ?? 0);
 
-  if (deltaSeq > 0) {
+  // Anti-double-counting rule: Biblical-SME and SW^piece_pol share ONE structural axis family.
+  if (combinedStructBits > 0) {
     textualAxes.push({
-      axis: 'AXIS:SEQUENCE_ALIGNMENT',
-      bits: deltaSeq,
-      rawRatio: Math.pow(2, deltaSeq) - 1,
+      axis: deltaSme >= deltaSeq ? 'AXIS:STRUCTURAL_MAPPING' : 'AXIS:SEQUENCE_ALIGNMENT',
+      bits: combinedStructBits,
+      rawRatio: Math.pow(2, combinedStructBits) - 1,
       isPhysical: false,
-      isExplicitCue: deltaSeq >= 4.0,
-      maxRarityBits: deltaSeq + 6.0,
+      isExplicitCue: combinedStructBits >= 4.0,
+      maxRarityBits: combinedStructBits + 6.0,
+      witnessNodes: [],
+    });
+  }
+  if (deltaEside > 0) {
+    textualAxes.push({
+      axis: 'AXIS:EXPLICIT_INTERP',
+      bits: deltaEside,
+      rawRatio: Math.pow(2, deltaEside) - 1,
+      isPhysical: false,
+      isExplicitCue: true,
+      maxRarityBits: Math.max(13.5, deltaEside + 8.0),
       witnessNodes: [],
     });
   }
@@ -327,8 +344,8 @@ export function computeEPerpScore(
   const ePerpBits = Math.max(0, convergedTextual + physicalBitsCapped - lengthPenaltyBits);
 
   let dominantRegister: EpistemicRegister = 'LINGUISTIC_GRAMMATICAL';
-  if (delta3Way >= 3.0) dominantRegister = 'TEXTUAL_WITNESS';
-  else if (deltaSeq >= 3.0) dominantRegister = 'STRUCTURAL_RHETORICAL';
+  if (delta3Way >= 3.0 || deltaEside >= 3.0) dominantRegister = 'TEXTUAL_WITNESS';
+  else if (combinedStructBits >= 3.0) dominantRegister = 'STRUCTURAL_RHETORICAL';
   else if (physicalBitsCapped > convergedTextual && physicalBitsCapped > 0) dominantRegister = 'PHYSICAL_ANALOGICAL';
 
   const pNullApprox = Math.min(1, Math.pow(2, -ePerpBits));

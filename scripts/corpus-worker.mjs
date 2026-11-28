@@ -42,6 +42,12 @@ import {
   wrapBinaryNodesTable,
 } from '../src/relationships/v3-runtime-adapter.ts';
 import {
+  decodeCompactHreg,
+  parsePericopeTable,
+  parsePredSimTable,
+} from '../src/relationships/v4-hreg-types.ts';
+import { parseRmacBmwIndex } from '../src/relationships/v4-rmac-index.ts';
+import {
   fnv1a64Hex,
   handleDiscoverBiblicalConnectionsV1,
   handleDiscoverPatternsV1,
@@ -67,6 +73,8 @@ import {
   handleWordplayScanV3,
   handleExpandClueV3,
   handleSetCombineV3,
+  handleGetEsideInterpretationsV4,
+  handleDiscoverStructuralAnalogiesV4,
 } from './corpus-relationships-rpc.mjs';
 
 const CORS_HEADERS = {
@@ -609,6 +617,84 @@ function makeV3Hooks(env) {
     getV3ClauseShard: (sid) => loadJsonShard(env, `/v3/rhetoric/clauses-${String(sid).padStart(2, '0')}.json.gz`),
     getV3MtLxxShard: (sid) => loadV3CachedBinary(env, `/v3/align/mt-lxx-${String(sid).padStart(2, '0')}.bin`, (b) => parseJsonShard(decodeJsonShard(b))),
     getV3RahlfsShard: (sid) => loadV3CachedBinary(env, `/v3/align/rahlfs-concordance-${String(sid).padStart(2, '0')}.bin`, (b) => parseJsonShard(decodeJsonShard(b))),
+    getV4Hreg: async (pid) => {
+      const res = await makeV3Hooks(env).getV4HregBatch([pid]);
+      return res.get(pid) ?? null;
+    },
+    getV4HregBatch: async (pids) => {
+      const out = new Map();
+      const hooks = makeV3Hooks(env);
+      const perTable = await hooks.getV4Pericopes();
+      if (!perTable) return out;
+      const missing = [];
+      for (const id of pids || []) {
+        if (!(id > 0) || out.has(id)) continue;
+        const hit = getV3Record(`h:${id}`);
+        if (hit !== undefined) { out.set(id, hit); continue; }
+        const meta = perTable.records[id - 1];
+        if (!meta) { out.set(id, null); continue; }
+        missing.push({ id, fileIdx: meta.packFile, start: meta.byteOff, length: meta.byteLen });
+      }
+      if (missing.length === 0) return out;
+      missing.sort((a, b) => a.fileIdx - b.fileIdx || a.start - b.start);
+      const spans = [];
+      for (const item of missing) {
+        const itemEnd = item.start + item.length - 1;
+        const prev = spans[spans.length - 1];
+        if (prev && prev.fileIdx === item.fileIdx && item.start - prev.end - 1 <= 8192 && itemEnd - prev.start + 1 <= 196608) {
+          prev.end = Math.max(prev.end, itemEnd);
+          prev.items.push(item);
+        } else {
+          spans.push({ fileIdx: item.fileIdx, start: item.start, end: itemEnd, items: [item] });
+        }
+      }
+      await Promise.all(spans.map(async (span) => {
+        const raw = await readAssetBytes(env, `/v4/hreg/pack-${String(span.fileIdx).padStart(2, '0')}.bin#bytes=${span.start}-${span.end}`);
+        if (!raw) return;
+        for (const item of span.items) {
+          try {
+            const sl = raw.subarray(item.start - span.start, item.start - span.start + item.length);
+            const plain = await decompressGzipIfNeeded(sl, env.__r12Trace);
+            const parsed = decodeCompactHreg(plain);
+            setV3Record(`h:${item.id}`, parsed);
+            out.set(item.id, parsed);
+          } catch {
+            out.set(item.id, null);
+          }
+        }
+      }));
+      return out;
+    },
+    getV4Pericopes: async () => {
+      if (v3BinaryCache.has('v4:pericopes')) return v3BinaryCache.get('v4:pericopes');
+      const [pBytes, vBytes] = await Promise.all([
+        readAssetBytes(env, '/v4/index/pericopes.bin'),
+        readAssetBytes(env, '/v4/index/vid-to-pericopes.bin'),
+      ]);
+      const parsed = pBytes && vBytes ? parsePericopeTable(pBytes, vBytes) : null;
+      if (parsed) v3BinaryCache.set('v4:pericopes', parsed);
+      return parsed;
+    },
+    getV4PredSim: () => loadV3BinaryGraph(env, '/v4/index/pred-sim.bin', parsePredSimTable),
+    getV4Rmac: () => loadV3BinaryGraph(env, '/v4/index/rmac-bmw.bin', parseRmacBmwIndex),
+    async getV4EsideVid(vid) {
+      const idx = await getV3PackedIdx(env, '/v4/eside/eside-vid.idx', 'int');
+      if (!idx) return null;
+      const res = await readV3PackedIntBatch(env, idx, '/v4/eside/pack', [Number(vid)], 'ev');
+      return res.get(Number(vid)) ?? null;
+    },
+    async getV4EsideVidBatch(vids) {
+      const idx = await getV3PackedIdx(env, '/v4/eside/eside-vid.idx', 'int');
+      if (!idx) return new Map();
+      return await readV3PackedIntBatch(env, idx, '/v4/eside/pack', vids, 'ev');
+    },
+    async getV4EsideBs(bs) {
+      const norm = normStrongs4(bs) || String(bs || '').trim();
+      if (!norm) return null;
+      const idx = await getV3PackedIdx(env, '/v4/eside/eside-bs.idx', 'key');
+      if (!idx) return null;
+      return await readV3PackedKey(env, idx, '/v4/eside/pack', norm, 'eb');
+    },
     getV3RhetoricIndex: () => loadJsonShard(env, '/v3/rhetoric/rhetoric-index.json.gz'),
     getV3Onomastic: () => loadJsonShard(env, '/v3/rhetoric/onomastic-lexicon.json'),
     async getV3RhetoricBook(bookId) {
@@ -3244,7 +3330,8 @@ const corpusWorker = {
       if (
         (request.method === 'GET' || request.method === 'HEAD') &&
         ((pathname.startsWith('/v2/relationships/') && url.searchParams.get('raw') === '1') ||
-          pathname.startsWith('/v3/'))
+          pathname.startsWith('/v3/') ||
+          pathname.startsWith('/v4/'))
       ) {
         if (pathname.includes('..') || !env.ASSETS) {
           return jsonResponse({ error: 'invalid_asset_path', path: pathname }, 400, 'no-store');
@@ -3293,7 +3380,7 @@ const corpusWorker = {
           'Cache-Control',
           isActivePointer ? 'public, max-age=300' : 'public, max-age=31536000, immutable'
         );
-        if (pathname.startsWith('/v3/')) outHeaders.set('Accept-Ranges', 'bytes');
+        if (pathname.startsWith('/v3/') || pathname.startsWith('/v4/')) outHeaders.set('Accept-Ranges', 'bytes');
         const contentRange = assetRes.headers.get('Content-Range');
         if (contentRange) outHeaders.set('Content-Range', contentRange);
         const contentLength = assetRes.headers.get('Content-Length');
@@ -3498,8 +3585,14 @@ const corpusWorker = {
         if (op === 'lxx_concordance_v3') {
           return jsonResponse(await handleLxxConcordanceV3(makeWorkerRpcCtx(env), params), 200, 'public, max-age=300');
         }
-        if (op === 'tri_textual_diff_v3') {
+        if (op === 'tri_textual_diff_v3' || op === 'tri_textual_diff_v4') {
           return jsonResponse(await handleTriTextualDiffV3(makeWorkerRpcCtx(env), params), 200, 'public, max-age=300');
+        }
+        if (op === 'get_eside_interpretations_v4') {
+          return jsonResponse(await handleGetEsideInterpretationsV4(makeWorkerRpcCtx(env), params), 200, 'public, max-age=300');
+        }
+        if (op === 'discover_structural_analogies_v4') {
+          return jsonResponse(await handleDiscoverStructuralAnalogiesV4(makeWorkerRpcCtx(env), params), 200, 'public, max-age=300');
         }
         if (op === 'clause_role_query_v3') {
           return jsonResponse(await handleClauseRoleQueryV3(makeWorkerRpcCtx(env), params), 200, 'public, max-age=300');

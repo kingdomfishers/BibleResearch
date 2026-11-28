@@ -14,8 +14,8 @@
     "binding": "WORKER_VERSION"
   },
   "vars": {
-    "R12_RELEASE_ID": "r13-discovery-3",
-    "R12_ASSET_SHA256": "fb41be32c11135a5aacdac7101907b2a7ba0878472742db4160518986d9fd422",
+    "R12_RELEASE_ID": "r14-v4-discovery-1",
+    "R12_ASSET_SHA256": "5c60e7d08af466e090f9e3fd45eb39bf19a647994fe3e25f4cef0af6333ed52f",
     "R12_SOURCE_COMMIT": "1354103881e01616d7a5ca5fe9c3223c5b0254b2"
   },
   "observability": {

@@ -23,7 +23,16 @@ export const BMW_FLAG_LXX = 1 << 2;
 export const BMW_FLAG_CONCEPT = 1 << 3;
 export const BMW_FLAG_ACTANT = 1 << 4;
 
-export const GRAPH_PARTITIONS = ['OCC', 'XREF', 'LXX', 'LEX_SYN', 'WP', 'CONCEPT_PROC'] as const;
+export const GRAPH_PARTITIONS = [
+  'OCC',
+  'XREF',
+  'LXX',
+  'LEX_SYN',
+  'WP',
+  'CONCEPT_PROC',
+  'EXPLICIT_INTERP',
+  'STRUCT_ANALOGY',
+] as const;
 export type GraphPartitionName = (typeof GRAPH_PARTITIONS)[number];
 
 export interface TermEntry {

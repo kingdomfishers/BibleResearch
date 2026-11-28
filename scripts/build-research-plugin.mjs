@@ -50,6 +50,10 @@ for (const file of [
   'v3-runtime-adapter.ts',
   'v3-scorer.ts',
   'v3-verifiers.ts',
+  'v4-epistemic-algebra.ts',
+  'v4-hreg-types.ts',
+  'v4-rmac-index.ts',
+  'v4-sme-engine.ts',
   'wordplay-engine.ts',
 ]) {
   await fs.copyFile(path.join(root, 'src/relationships', file), path.join(mcpDiscoveryDir, file));

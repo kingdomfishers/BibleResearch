@@ -271,8 +271,28 @@ export const ResearchOpSchema = z.discriminatedUnion('op', [
     concept: z.string().trim().min(1).max(80).optional(),
     concepts: z.array(z.string().trim().min(1).max(80)).max(6).optional(),
     idiom_only: z.boolean().optional(),
+    existential_only: z.boolean().optional(),
+    ho_type: z.string().trim().min(1).max(40).optional(),
     include: z.array(z.string().trim().min(1).max(64)).max(6).optional(),
     exclude: z.array(z.string().trim().min(1).max(64)).max(6).optional(),
+    ...CommonOpControlFields,
+  }),
+  z.strictObject({
+    op: z.literal('structural_analogy'),
+    id: z.string().trim().min(1).max(64).optional(),
+    passage: z.string().trim().min(1).max(160).optional(),
+    ref: z.string().trim().min(1).max(160).optional(),
+    pericope_ids: z.array(z.number().int().positive()).min(1).max(6).optional(),
+    seql: z.boolean().optional(),
+    ...CommonOpControlFields,
+  }),
+  z.strictObject({
+    op: z.literal('discourse_interpretations'),
+    id: z.string().trim().min(1).max(64).optional(),
+    passage: z.string().trim().min(1).max(160).optional(),
+    ref: z.string().trim().min(1).max(160).optional(),
+    word: z.string().trim().min(1).max(128).optional(),
+    strongs: z.string().trim().min(1).max(32).optional(),
     ...CommonOpControlFields,
   }),
   z.strictObject({
@@ -404,7 +424,9 @@ export type ResearchOp =
   | { op: 'literary_structure'; id?: string; passage: string; detail?: ViewDetailAlias; view?: ViewDetailAlias; categories?: string[]; compare_lxx?: boolean; include_alternatives?: boolean; min_strength?: number; limit?: number }
   | { op: 'lxx_concordance'; id?: string; word?: string; strongs?: string; lemma?: string; passage?: string; shift_type?: string; limit?: number; offset?: number; view?: ViewDetailAlias; detail?: ViewDetailAlias }
   | { op: 'tri_textual_diff'; id?: string; target?: string; passage?: string; source?: string; sources?: string[]; view?: ViewDetailAlias; detail?: ViewDetailAlias; limit?: number }
-  | { op: 'clause_role_query'; id?: string; passage?: string; predicate?: string; subject?: string; object?: string; polarity?: 'POS' | 'NEG' | 'POSITIVE' | 'NEGATIVE'; concept?: string; concepts?: string[]; idiom_only?: boolean; include?: string[]; exclude?: string[]; limit?: number; view?: ViewDetailAlias; detail?: ViewDetailAlias }
+  | { op: 'clause_role_query'; id?: string; passage?: string; predicate?: string; subject?: string; object?: string; polarity?: 'POS' | 'NEG' | 'POSITIVE' | 'NEGATIVE'; concept?: string; concepts?: string[]; idiom_only?: boolean; existential_only?: boolean; ho_type?: string; include?: string[]; exclude?: string[]; limit?: number; view?: ViewDetailAlias; detail?: ViewDetailAlias }
+  | { op: 'structural_analogy'; id?: string; passage?: string; ref?: string; pericope_ids?: number[]; seql?: boolean; limit?: number; view?: ViewDetailAlias; detail?: ViewDetailAlias }
+  | { op: 'discourse_interpretations'; id?: string; passage?: string; ref?: string; word?: string; strongs?: string; limit?: number; view?: ViewDetailAlias; detail?: ViewDetailAlias }
   | { op: 'sequence_parallels'; id?: string; source?: string; target?: string; passage?: string; targets?: string[]; permutations?: number; switch_penalty?: number; view?: ViewDetailAlias; detail?: ViewDetailAlias; limit?: number }
   | { op: 'wordplay_scan'; id?: string; passage?: string; a?: string; b?: string; view?: ViewDetailAlias; detail?: ViewDetailAlias; limit?: number }
   | { op: 'expand_clue'; id?: string; expand_id: string; detail?: ViewDetailAlias; view?: ViewDetailAlias; limit?: number }
@@ -444,6 +466,8 @@ export const ResearchOpInputSchema = z.object({
     'lxx_concordance',
     'tri_textual_diff',
     'clause_role_query',
+    'structural_analogy',
+    'discourse_interpretations',
     'sequence_parallels',
     'wordplay_scan',
     'expand_clue',
@@ -519,6 +543,10 @@ export const ResearchOpInputSchema = z.object({
   object: z.string().trim().min(1).max(64).optional(),
   polarity: z.enum(['POS', 'NEG', 'POSITIVE', 'NEGATIVE']).optional(),
   idiom_only: z.boolean().optional(),
+  existential_only: z.boolean().optional(),
+  ho_type: z.string().trim().min(1).max(40).optional(),
+  pericope_ids: z.array(z.number().int().positive()).min(1).max(6).optional(),
+  seql: z.boolean().optional(),
   permutations: z.number().int().min(8).max(128).optional(),
   switch_penalty: z.number().min(0.1).max(10).optional(),
   a: z.string().trim().min(1).max(128).optional(),
@@ -3258,7 +3286,9 @@ const OP_PARAM_HINTS: Record<string, string> = {
   literary_structure: '{ op: "literary_structure", passage: string, detail?: "compact"|"standard"|"deep", compare_lxx?: boolean }',
   lxx_concordance: '{ op: "lxx_concordance", word?: string, strongs?: string, lemma?: string, passage?: string, shift_type?: string, limit?: number }',
   tri_textual_diff: '{ op: "tri_textual_diff", target?: string, passage?: string, source?: string, sources?: string[] }',
-  clause_role_query: '{ op: "clause_role_query", passage?: string, predicate?: string, subject?: string, object?: string, polarity?: "POS"|"NEG", concept?: string, idiom_only?: boolean }',
+  clause_role_query: '{ op: "clause_role_query", passage?: string, predicate?: string, subject?: string, object?: string, polarity?: "POS"|"NEG", concept?: string, idiom_only?: boolean, existential_only?: boolean }',
+  structural_analogy: '{ op: "structural_analogy", passage?: string, pericope_ids?: number[], seql?: boolean, limit?: number }',
+  discourse_interpretations: '{ op: "discourse_interpretations", passage?: string, word?: string, strongs?: string }',
   sequence_parallels: '{ op: "sequence_parallels", source?: string, target?: string, passage?: string, permutations?: number }',
   wordplay_scan: '{ op: "wordplay_scan", passage?: string, a?: string, b?: string }',
   expand_clue: '{ op: "expand_clue", expand_id: string, detail?: "clue"|"evidence"|"full" }',
@@ -3353,7 +3383,7 @@ function normalizeRawResearchOp(raw: unknown): Record<string, unknown> {
     else if (Array.isArray(rec.targets)) { rec.words = rec.targets; delete rec.targets; }
   }
   if (typeof rec.ref === 'string') {
-    if ((opName === 'lxx_concordance' || opName === 'tri_textual_diff' || opName === 'trace_evidence' || opName === 'wordplay_scan' || opName === 'clause_role_query' || opName === 'literary_structure' || opName === 'sequence_parallels' || opName === 'occurrences' || opName === 'grammar_search' || opName === 'lxx' || opName === 'chronology_occurrences' || opName === 'notes_search') && !rec.passage) {
+    if ((opName === 'lxx_concordance' || opName === 'tri_textual_diff' || opName === 'trace_evidence' || opName === 'wordplay_scan' || opName === 'clause_role_query' || opName === 'structural_analogy' || opName === 'discourse_interpretations' || opName === 'literary_structure' || opName === 'sequence_parallels' || opName === 'occurrences' || opName === 'grammar_search' || opName === 'lxx' || opName === 'chronology_occurrences' || opName === 'notes_search') && !rec.passage) {
       rec.passage = rec.ref;
     }
     delete rec.ref;
@@ -3399,7 +3429,7 @@ function normalizeRawResearchOp(raw: unknown): Record<string, unknown> {
         : (rawDetailOrView === 'clues' || rawDetailOrView === 'concise' || rawDetailOrView === 'compact' || rawDetailOrView === 'summary' || rawDetailOrView === 'clue')
           ? 'clue'
           : 'evidence';
-    } else if (opName === 'lxx_concordance' || opName === 'tri_textual_diff' || opName === 'clause_role_query' || opName === 'sequence_parallels' || opName === 'wordplay_scan') {
+    } else if (opName === 'lxx_concordance' || opName === 'tri_textual_diff' || opName === 'clause_role_query' || opName === 'structural_analogy' || opName === 'discourse_interpretations' || opName === 'sequence_parallels' || opName === 'wordplay_scan') {
       rec.view = (rawDetailOrView === 'full' || rawDetailOrView === 'deep')
         ? 'full'
         : (rawDetailOrView === 'evidence' || rawDetailOrView === 'standard')
@@ -3954,6 +3984,8 @@ export async function executeResearch(
             ...(op.concept ? { concept: op.concept } : {}),
             ...(op.concepts ? { concepts: op.concepts } : {}),
             ...(op.idiom_only !== undefined ? { idiom_only: op.idiom_only } : {}),
+            ...(op.existential_only !== undefined ? { existential_only: op.existential_only } : {}),
+            ...(op.ho_type ? { ho_type: op.ho_type } : {}),
             ...(op.include ? { include: op.include } : {}),
             ...(op.exclude ? { exclude: op.exclude } : {}),
             limit: lim,
@@ -4014,6 +4046,28 @@ export async function executeResearch(
           } else {
             output = payload;
           }
+          break;
+        }
+        case 'structural_analogy': {
+          const rows = await callRpc(read, 'discover_structural_analogies_v4', {
+            ...(op.passage ? { passage: op.passage } : {}),
+            ...(op.ref ? { ref: op.ref } : {}),
+            ...(op.pericope_ids ? { pericope_ids: op.pericope_ids } : {}),
+            ...(op.seql !== undefined ? { seql: op.seql } : {}),
+            limit: clampLimit(op.limit, 8, 16),
+          }, 1, 0);
+          output = extractFirstObject(rows) ?? { status: 'not_found' };
+          break;
+        }
+        case 'discourse_interpretations': {
+          const rows = await callRpc(read, 'get_eside_interpretations_v4', {
+            ...(op.passage ? { passage: op.passage } : {}),
+            ...(op.ref ? { ref: op.ref } : {}),
+            ...(op.word ? { word: op.word } : {}),
+            ...(op.strongs ? { strongs: op.strongs } : {}),
+            limit: clampLimit(op.limit, defaultLimit, 24),
+          }, 1, 0);
+          output = extractFirstObject(rows) ?? { status: 'not_found' };
           break;
         }
         case 'sequence_parallels': {

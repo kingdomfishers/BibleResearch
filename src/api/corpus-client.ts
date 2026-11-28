@@ -55,6 +55,8 @@ const SUPABASE_DISCOVERY_OPS = new Set([
   'discover_subgraph_v1',
   'get_connection_evidence_v1',
   'expand_biblical_connection_v1',
+  'discover_structural_analogies_v4',
+  'get_eside_interpretations_v4',
 ]);
 
 // Pure static-evidence RPCs only (`get_reader_word_v1` excluded because Supabase merges mutable custom_definition).
@@ -91,8 +93,11 @@ const CORPUS_RO_OPS = new Set<string>([
   'analyze_literary_structure_v1',
   'lxx_concordance_v3',
   'tri_textual_diff_v3',
+  'tri_textual_diff_v4',
   'clause_role_query_v3',
   'sequence_parallels_v3',
+  'discover_structural_analogies_v4',
+  'get_eside_interpretations_v4',
   'wordplay_scan_v3',
   'expand_clue_v3',
   'set_combine_v3',
